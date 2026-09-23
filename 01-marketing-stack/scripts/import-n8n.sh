@@ -5,7 +5,7 @@
 #
 # Before the first run: `docker compose up -d` and create the n8n owner account in the UI.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 # Read .env like docker compose does (KEY=VALUE, values may contain spaces); never execute it.
 load_env() {

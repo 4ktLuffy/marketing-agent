@@ -2,7 +2,7 @@
 # Run BEFORE `docker compose up`. Checks everything that commonly breaks a first deploy.
 # Prints PASS / WARN / FAIL per check; exits 1 if anything FAILs. Changes nothing.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 # Read .env like docker compose does (KEY=VALUE, values may contain spaces); never execute it.
 load_env() {

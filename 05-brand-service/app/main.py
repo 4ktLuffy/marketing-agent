@@ -17,6 +17,13 @@ MAX_CAPS_WORDS = 3
 # joined by ZWJ into one visible emoji. Close enough for a "max per post" rule.
 _PICTO = "[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\u231A-\u23FF]"
 _MOD = "(?:\uFE0F)?(?:[\U0001F3FB-\U0001F3FF])?"
+
+
+def strip_vs(s: str) -> str:
+    """Drop variation selectors so '☕' and '☕️' compare equal."""
+    return s.replace("\ufe0f", "").replace("\ufe0e", "")
+
+
 EMOJI_RE = re.compile(
     rf"[\U0001F1E6-\U0001F1FF]{{2}}|{_PICTO}{_MOD}(?:\u200D{_PICTO}{_MOD})*"
 )
@@ -85,7 +92,8 @@ def build_summary(b: dict) -> str:
         lines.append("Never say: " + _join(b["banned_phrases"], ", "))
     emoji_max = (b.get("emoji_policy") or {}).get("max_per_post")
     if emoji_max is not None:
-        lines.append(f"Emoji: max {emoji_max} per post")
+        allowed = (b.get("emoji_policy") or {}).get("allowed")
+        lines.append(f"Emoji: max {emoji_max} per post" + (f", only these: {' '.join(allowed)}" if allowed else ""))
     if b.get("preferred_hashtags"):
         lines.append("Hashtags: " + _join(b["preferred_hashtags"], " "))
     if b.get("key_messages"):
@@ -168,11 +176,18 @@ def check(req: CheckRequest):
             add("missing_disclaimer",
                 f"channel '{channel}' requires one of: {', '.join(options)}", "error")
 
-    emoji_max = (b.get("emoji_policy") or {}).get("max_per_post")
-    if emoji_max is not None:
-        n = len(EMOJI_RE.findall(text))
-        if n > emoji_max:
-            add("too_many_emojis", f"{n} emojis, max {emoji_max}", "warn")
+    policy = b.get("emoji_policy") or {}
+    found = EMOJI_RE.findall(text)
+    emoji_max = policy.get("max_per_post")
+    if emoji_max is not None and len(found) > emoji_max:
+        add("too_many_emojis", f"{len(found)} emojis, max {emoji_max}", "warn")
+    # Optional whitelist: small models pick odd emojis (a blood drop on a coffee post).
+    allowed = {strip_vs(e) for e in policy.get("allowed") or []}
+    if allowed:
+        for e in dict.fromkeys(strip_vs(f) for f in found):
+            if e not in allowed:
+                add("emoji_not_allowed", f"emoji {e} is not in the brand's emoji set",
+                    policy.get("not_allowed_severity", "error"), match=e)
 
     allowed = {a.upper() for a in b.get("allowed_acronyms") or []}
     caps = [w for w in CAPS_RE.findall(text) if w not in allowed]

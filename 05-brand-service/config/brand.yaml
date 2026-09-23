@@ -83,3 +83,6 @@ preferred_hashtags:
 emoji_policy:
   max_per_post: 2
   note: One or two, never as a replacement for words.
+  # Optional whitelist. Any other emoji is flagged (severity below). Remove to allow all.
+  allowed: ["☕", "🌱", "🍂", "📦", "🫘", "✨", "🙌", "👋"]
+  not_allowed_severity: error

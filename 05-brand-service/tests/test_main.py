@@ -97,7 +97,8 @@ def test_channel_without_requirement_passes():
 
 
 def test_warnings_do_not_fail_ok():
-    text = "WOW THIS COFFEE IS SO GOOD!!! \u2615\U0001F525\U0001F389 Ships to the US."
+    # emojis from the example brand's whitelist, so only warnings remain
+    text = "WOW THIS COFFEE IS SO GOOD!!! \u2615\U0001F331\U0001F342 Ships to the US."
     body = client.post("/check", json={"text": text}).json()
     assert body["ok"] is True
     assert {"too_many_emojis", "all_caps", "exclamation_marks"} <= rules(body)
@@ -108,7 +109,8 @@ def test_acronyms_and_joined_emoji_are_not_overcounted():
     # 3 caps words incl. allowed acronyms; one ZWJ family emoji + one flag = 2 emojis.
     text = "FAQ for US teams, NEW roast \U0001F468\u200D\U0001F469\u200D\U0001F467 \U0001F1FA\U0001F1F8"
     body = client.post("/check", json={"text": text}).json()
-    assert body["violations"] == []
+    # (these two emojis are outside the example brand's whitelist; that rule is tested separately)
+    assert [v for v in body["violations"] if v["rule"] != "emoji_not_allowed"] == []
 
 
 def test_check_requires_text():
@@ -140,3 +142,15 @@ def test_facts_combine_explicit_products_and_key_messages():
     assert any("roasted to order" in f for f in facts)                # the brand one-liner
     ids = [f["id"] for f in client.get("/facts").json()["facts"]]
     assert len(ids) == len(set(ids))
+
+
+def test_emoji_whitelist_flags_odd_emoji_and_accepts_variation_selector():
+    body = client.post("/check", json={"text": "Fresh roast ☕️ 🩸"}).json()
+    rules = [(v["rule"], v.get("match"), v["severity"]) for v in body["violations"]]
+    assert ("emoji_not_allowed", "🩸", "error") in rules
+    assert not any(m == "☕" for _, m, _ in rules)       # ☕️ (with VS16) is allowed
+    assert body["ok"] is False
+
+
+def test_summary_lists_allowed_emojis():
+    assert "only these: ☕" in client.get("/profile/summary").json()["summary"]

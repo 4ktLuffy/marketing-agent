@@ -6,7 +6,7 @@
 set -euo pipefail
 owner="${1:?usage: clone-all.sh <github-user> [prefix]}"
 prefix="${2:-}"
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../.." || exit 1
 
 repos=(
   02-ollama-models 03-llm-gateway 04-prompt-library 05-brand-service 06-knowledge-base

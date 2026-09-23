@@ -2,7 +2,7 @@
 # Run AFTER `docker compose up -d --build` and `scripts/import-n8n.sh`.
 # Checks the running system end to end. Only reads, plus one LLM call and one fact check.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 # Read .env like docker compose does (KEY=VALUE, values may contain spaces); never execute it.
 load_env() {

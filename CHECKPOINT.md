@@ -63,9 +63,17 @@ learning, publishing and measurement (resumed session, see "Resumed" below).
 - Fixed: the stack scripts sourced `.env` with bash, which breaks on values with spaces (`LISTENING_QUERY=coffee subscription`). They now parse it like docker compose.
 - Still untested: an actual `docker compose up`. Run preflight, then compose, then import, then the smoke test.
 
+## After the first push (CI and more testing)
+
+- **CI caught a real gateway bug:** the brand and learned-rules cache started at timestamp 0. On a machine booted less than 60 s earlier (like a CI runner, or your server after a reboot), prompts went out **without the brand profile** for the first minute. Fixed; a regression test fails on the old code.
+- Shell scripts: `cd` now exits on failure (shellcheck, run locally via `shellcheck-py`: clean).
+- New: **emoji whitelist** in the brand rules (`emoji_policy.allowed`). The quality gate removed 🩸 from a real draft 3/3 times.
+- Model comparison (tool choice): qwen2.5:7b 72/72, qwen3.5:4b 45/48, granite4 43/48. Kept qwen2.5:7b.
+- CI simulated locally (clean environment per deploy from `requirements-dev.txt`): all tests pass.
+
 ## Known quality limits seen in real drafts
 
-- The 7B model adds odd emojis (🩸, 🍒) and vague hype ("expert roasters who hand-roast").
+- The 7B model adds odd emojis (now removed by the whitelist) and vague hype ("expert roasters who hand-roast").
 - Some invented details pass the checker (about 1 in 25).
 - The fact checker flags about 1 in 8 true sentences; those posts go to you as drafts.
 

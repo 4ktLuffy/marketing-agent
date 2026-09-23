@@ -101,7 +101,7 @@ def test_ollama_down_is_502():
 @respx.mock
 def test_brand_summary_injected(monkeypatch):
     monkeypatch.setattr(main, "BRAND_URL", "http://brand.test")
-    main._brand_cache.update(at=0.0, summary="")
+    main._brand_cache.update(at=None, summary="")
     respx.get("http://brand.test/profile/summary").mock(
         return_value=httpx.Response(200, json={"summary": "Northwind Roasters"})
     )
@@ -143,8 +143,8 @@ LEARNING = "http://learning.test"
 def brand_and_learning(monkeypatch, learning_response):
     monkeypatch.setattr(main, "BRAND_URL", "http://brand.test")
     monkeypatch.setattr(main, "LEARNING_URL", LEARNING)
-    main._brand_cache.update(at=0.0, summary="")
-    main._learning_cache.update(at=0.0, summary="")
+    main._brand_cache.update(at=None, summary="")
+    main._learning_cache.update(at=None, summary="")
     respx.get("http://brand.test/profile/summary").mock(
         return_value=httpx.Response(200, json={"summary": "Northwind Roasters"})
     )
@@ -211,9 +211,24 @@ def test_caller_brand_is_not_touched_by_learning(monkeypatch):
 @respx.mock
 def test_learning_without_brand_service(monkeypatch):
     monkeypatch.setattr(main, "LEARNING_URL", LEARNING)
-    main._learning_cache.update(at=0.0, summary="")
+    main._learning_cache.update(at=None, summary="")
     respx.get(f"{LEARNING}/rules/summary").mock(
         return_value=httpx.Response(200, json={"summary": "Rules learned from your edits:\n- x"}))
     chat = respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply('{"headlines": ["A", "B"]}'))
     client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}})
     assert system_of(chat) == "Brand: Rules learned from your edits:\n- x"
+
+
+@respx.mock
+def test_brand_is_fetched_right_after_boot(monkeypatch):
+    # regression: on a machine up for < 60 s, monotonic() - 0.0 < TTL made the empty cache
+    # look fresh and the brand profile was skipped
+    import time
+    monkeypatch.setattr(time, "monotonic", lambda: 5.0)
+    monkeypatch.setattr(main, "BRAND_URL", "http://brand.test")
+    main._brand_cache.update(at=None, summary="")
+    respx.get("http://brand.test/profile/summary").mock(
+        return_value=httpx.Response(200, json={"summary": "Northwind Roasters"}))
+    route = respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply('{"headlines": ["A", "B"]}'))
+    client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}})
+    assert json.loads(route.calls[0].request.content)["messages"][0]["content"] == "Brand: Northwind Roasters"

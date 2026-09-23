@@ -57,6 +57,7 @@ Checks run by `/check`. `ok` is `false` only when there is at least one `error`.
 | `banned_phrase` | error | a `banned_phrases` entry appears (case-insensitive, whole words: `cure` does not match `secure`; `*` = up to three words, so `best * in the world` catches `best coffee in the world`) |
 | `missing_disclaimer` | error | `channel` is a key of `required_disclaimers` and none of its strings appear |
 | `too_many_emojis` | warn | more emojis than `emoji_policy.max_per_post` (flags and ZWJ sequences count once) |
+| `emoji_not_allowed` | error (configurable: `emoji_policy.not_allowed_severity`) | an emoji outside `emoji_policy.allowed` (only when that list is set); `match` holds the emoji |
 | `all_caps` | warn | more than 3 all-caps words of 2+ letters, not counting `allowed_acronyms` |
 | `exclamation_marks` | warn | more than 2 `!` |
 

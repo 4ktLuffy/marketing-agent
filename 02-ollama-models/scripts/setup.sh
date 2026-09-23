@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pull base models and build the marketing-agent variants. Safe to re-run.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
 export OLLAMA_HOST

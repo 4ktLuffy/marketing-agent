@@ -46,6 +46,18 @@ PASS structured JSON (mkt-writer): ...
 PASS embeddings (qwen3-embedding:0.6b): 2 vectors x 1024 dims
 ```
 
+## Which base model? (measured)
+
+Tool choice by the chat agent, from `23-eval-suite`, `python -m evalsuite.tools` (24 requests, 13 tools):
+
+| Model | Right tool | Notes |
+|---|---|---|
+| `qwen2.5:7b` (default) | 72/72 (3 runs each) | |
+| `qwen3.5:4b-mlx` | 45/48 (2 runs each) | smaller; slightly worse |
+| `granite4:7b-a1b-h` | 43/48 (2 runs each) | calls tools for small talk ("What can you do?") |
+
+Measure a new candidate the same way before switching: `python -m evalsuite.tools --model <name>`.
+
 ## Configuration
 
 | Env | Default | Meaning |

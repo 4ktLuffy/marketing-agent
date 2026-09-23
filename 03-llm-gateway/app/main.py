@@ -29,8 +29,11 @@ BRAND_TTL = 60.0
 log = logging.getLogger("llm-gateway")
 app = FastAPI(title="llm-gateway")
 store = PromptStore(PROMPTS_DIR)
-_brand_cache: dict = {"at": 0.0, "summary": ""}
-_learning_cache: dict = {"at": 0.0, "summary": ""}
+# "at" is None until the first successful fetch. (It used to start at 0.0, which on a
+# machine booted less than BRAND_TTL seconds ago looked like a fresh cache, so the first
+# minute of prompts went out without the brand profile.)
+_brand_cache: dict = {"at": None, "summary": ""}
+_learning_cache: dict = {"at": None, "summary": ""}
 
 THINK_RE = re.compile(r"<think>.*?</think>", re.S)
 FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$")
@@ -53,7 +56,7 @@ def brand_summary() -> str:
     if not BRAND_URL:
         return ""
     now = time.monotonic()
-    if now - _brand_cache["at"] < BRAND_TTL:
+    if _brand_cache["at"] is not None and now - _brand_cache["at"] < BRAND_TTL:
         return _brand_cache["summary"]
     try:
         r = httpx.get(f"{BRAND_URL}/profile/summary", timeout=5)
@@ -70,7 +73,7 @@ def learning_summary() -> str:
     if not LEARNING_URL:
         return ""
     now = time.monotonic()
-    if now - _learning_cache["at"] < BRAND_TTL:
+    if _learning_cache["at"] is not None and now - _learning_cache["at"] < BRAND_TTL:
         return _learning_cache["summary"]
     try:
         r = httpx.get(f"{LEARNING_URL}/rules/summary", timeout=5)
