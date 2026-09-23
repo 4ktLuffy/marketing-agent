@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: workflow.json is valid n8n export
+        run: |
+          python3 - <<'EOF'
+          import json
+          wf = json.load(open("workflow.json"))
+          assert len(wf["id"]) == 16, "n8n workflow ids are 16 chars"
+          names = {n["name"] for n in wf["nodes"]}
+          assert len(names) == len(wf["nodes"]), "duplicate node names"
+          for src, outs in wf["connections"].items():
+              assert src in names, f"connection from unknown node {src}"
+              for kind in outs.values():
+                  for branch in kind:
+                      for c in branch:
+                          assert c["node"] in names, f"connection to unknown node {c['node']}"
+          print(f"ok: {wf['name']} ({len(names)} nodes)")
+          EOF

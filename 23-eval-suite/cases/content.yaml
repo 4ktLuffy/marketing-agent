@@ -1,0 +1,71 @@
+# Each case: one prompt, fixed vars, checks every run must pass.
+# Paths: '' whole output, 'posts[*].text', 'headlines[*]'.
+
+- id: ad_copy_limits
+  prompt: ad_copy
+  vars:
+    product: Coffee subscription for remote workers
+    offer: First bag free
+  checks:
+    - {type: max_chars, path: "headlines[*]", value: 30}
+    - {type: max_chars, path: "descriptions[*]", value: 90}
+    - {type: count, path: "headlines[*]", min: 5}
+    - {type: not_contains, path: "", values: ["best in the world", "guaranteed", "#1"]}
+    - {type: numbers_from_input, path: ""}
+
+- id: social_posts_channels_and_limits
+  prompt: social_posts
+  vars:
+    topic: New limited Ethiopian single-origin roast
+    channels: x, linkedin, instagram
+    link: https://example.com/ethiopia
+  checks:
+    - {type: channels_match, path: "posts[*].channel", var: channels}
+    - {type: platform_ok, path: "posts[*]"}
+    - {type: contains, path: "posts[*].text", value: "https://example.com/ethiopia"}
+    - {type: brand_ok, path: "posts[*].text"}
+
+- id: social_posts_no_invented_stats
+  prompt: social_posts
+  vars:
+    topic: Why fresh-roasted coffee tastes better
+    channels: linkedin
+  checks:
+    - {type: numbers_from_input, path: "posts[*].text"}
+    - {type: brand_ok, path: "posts[*].text"}
+
+- id: email_subject_fits
+  prompt: email_newsletter
+  vars:
+    topic: Our autumn roast lineup
+    audience: existing subscribers
+  checks:
+    - {type: max_chars, path: subject, value: 60}
+    - {type: max_chars, path: preheader, value: 100}
+    - {type: min_chars, path: body_markdown, value: 300}
+    - {type: brand_ok, path: body_markdown}
+
+- id: blog_post_structure
+  prompt: blog_post
+  vars:
+    topic: How to stay focused working from home
+    audience: remote software engineers
+    length_words: 500
+  checks:
+    - {type: min_chars, path: "", value: 1500}
+    - {type: contains, path: "", value: "## "}
+    - {type: brand_ok, path: ""}
+    - {type: numbers_from_input, path: "", allow: [1, 2, 3, 4, 5]}
+
+- id: rewrite_removes_violations
+  prompt: rewrite_to_fix
+  vars:
+    text: "The BEST coffee in the world!!! Guaranteed to make you productive. https://example.com"
+    problems: "- Remove the banned claim \"BEST coffee in the world\" (reword it without those words)\n- Remove the banned claim \"Guaranteed\" (reword it without those words)\n- Use at most one exclamation mark"
+    channel: x
+    limit: 280
+  checks:
+    - {type: not_contains, path: text, values: ["best", "guarantee", "!!"]}
+    - {type: brand_ok, path: text}
+    - {type: contains, path: text, value: "https://example.com"}
+    - {type: max_chars, path: text, value: 280}

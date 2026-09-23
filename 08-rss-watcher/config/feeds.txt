@@ -1,0 +1,7 @@
+# Default feeds for POST /poll when the request has no "feeds".
+# One URL per line. Lines starting with # are ignored.
+https://blog.hubspot.com/marketing/rss.xml
+https://www.socialmediaexaminer.com/feed/
+https://moz.com/feeds/blog.rss
+https://www.searchenginejournal.com/feed/
+https://ahrefs.com/blog/feed/

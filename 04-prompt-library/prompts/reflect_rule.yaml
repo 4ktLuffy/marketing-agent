@@ -1,0 +1,57 @@
+name: reflect_rule
+description: Decide whether a reviewer's edit or rejection teaches a general writing rule (learning service, 46).
+output: json
+temperature: 0.2
+vars:
+  draft: required
+  final: optional
+  reason: optional
+  channel: optional
+# Pattern from langchain-ai/social-media-agent's reflection step: most edits are one-off;
+# Measured: with only "generalizable if it shows a preference", qwen2.5:7b kept an explicit
+# style reason ("shorter, no hashtags, calmer") only 1 time in 3, hence the explicit split.
+# only rules that would apply to future posts are worth keeping. A person approves every
+# proposed rule before it is used (51-wf-rules-review-form).
+system: |
+  You learn a brand's writing preferences from how a reviewer changed or rejected drafts.
+  Most edits are one-off fixes; propose a rule only when it would clearly apply to future
+  posts. Rules are short, concrete instructions a writer can follow ("Never open with a
+  question", "Name the roast date in product posts"). Never make rules about one specific
+  post, product launch or date.
+template: |
+  {% if channel %}Channel: {{ channel }}
+  {% endif %}
+  Draft the AI wrote:
+  """
+  {{ draft }}
+  """
+  {% if final %}
+  What the reviewer published instead:
+  """
+  {{ final }}
+  """
+  {% endif %}
+  {% if reason %}Reviewer's reason: {{ reason }}
+  {% endif %}
+
+  generalizable:
+  - true when the reason or the edit shows a STYLE preference: tone, length, hashtags,
+    emojis, punctuation, openers, structure, words to avoid. Those apply to future posts.
+  - false when it corrects WHAT the post says: a wrong or invented fact, price, discount,
+    offer, date or product detail. That is an error in this post, not a style rule
+    (the fact checker handles facts). Example: "there is no 50% discount, remove it" →
+    generalizable false, because future posts may have real discounts.
+  rule: one instruction under 25 words (empty string when not generalizable).
+  scope: "all", or the channel name if the rule only fits that channel.
+example_vars:
+  draft: "🚀 Ready to level up your coffee game?! Our Desk Blend is here!"
+  final: "Desk Blend: a chocolate-hazelnut medium roast for your drip machine."
+  reason: "Too hypey, no rhetorical questions, say what it tastes like"
+  channel: linkedin
+schema:
+  type: object
+  required: [generalizable, rule, scope]
+  properties:
+    generalizable: {type: boolean}
+    rule: {type: string, maxLength: 200}
+    scope: {type: string}

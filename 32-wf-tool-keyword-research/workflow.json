@@ -1,0 +1,144 @@
+{
+  "id": "mktWf32KeywordRe",
+  "name": "32 · Tool · Keyword research",
+  "nodes": [
+    {
+      "id": "76c0ad54-2cd6-5d77-a65b-b54e1edff060",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "seed",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0a3fd330-5e63-56d1-ad50-1a8826d252be",
+      "name": "Get suggestions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KEYWORDS_URL }}/suggest",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ seed: $json.seed, expand: true }) }}"
+      }
+    },
+    {
+      "id": "b22c0abe-7e40-5ad3-907c-31e2b2e2659d",
+      "name": "Shortlist",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const all = ($input.first().json.keywords || []).map(k => k.keyword);\nif (!all.length) throw new Error('No suggestions came back for this seed');\n// Keep the list small enough for a 7B model to cluster reliably.\nreturn [{ json: { seed: $('Start').first().json.seed, total: all.length, keywords: all.slice(0, 60).join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "b34d0413-46bf-5555-b9dd-d72a5aadb377",
+      "name": "Cluster",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'keyword_clusters', vars: { seed: $json.seed, keywords: $json.keywords } }) }}"
+      }
+    },
+    {
+      "id": "70fb5f82-3c3f-560e-80d2-57dd84856c2d",
+      "name": "Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $input.first().json.output.clusters;\nconst p = $('Shortlist').first().json;\nconst order = { high: 0, medium: 1, low: 2 };\nc.sort((a, b) => order[a.relevance] - order[b.relevance]);\nreturn [{ json: { result: [\n  `# Keyword clusters for \"${p.seed}\" (${p.total} real suggestions, 60 clustered)`, '',\n  ...c.flatMap(x => [`## ${x.name} — ${x.intent}, relevance ${x.relevance}`,\n    x.keywords.map(k => '`' + k + '`').join(', '), `Idea: ${x.content_idea}`, '']),\n].join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Get suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get suggestions": {
+      "main": [
+        [
+          {
+            "node": "Shortlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shortlist": {
+      "main": [
+        [
+          {
+            "node": "Cluster",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cluster": {
+      "main": [
+        [
+          {
+            "node": "Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

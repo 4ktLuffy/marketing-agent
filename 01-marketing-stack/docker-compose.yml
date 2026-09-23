@@ -1,0 +1,269 @@
+# Marketing agent: n8n + every service, on one docker network.
+#
+# Expects all deploy repos cloned side by side:
+#   marketing-agent/01-marketing-stack   (this repo)
+#   marketing-agent/03-llm-gateway
+#   ...
+# `scripts/clone-all.sh <github-user>` does that for you.
+#
+# Ollama runs on the host (Mac: native, uses Metal). Linux without host Ollama:
+#   docker compose --profile ollama up -d   and set OLLAMA_URL=http://ollama:11434
+
+name: marketing-agent
+
+x-service: &service
+  restart: unless-stopped
+  networks: [marketing]
+  extra_hosts: ["host.docker.internal:host-gateway"]
+
+x-keyed: &keyed
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY in .env}
+
+services:
+  postgres:
+    <<: *service
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: n8n
+    volumes: [pg_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n"]
+      interval: 5s
+      retries: 10
+
+  n8n:
+    <<: *service
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.40.5}
+    depends_on:
+      postgres: {condition: service_healthy}
+    ports: ["127.0.0.1:5678:5678"]
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POSTGRESDB_DATABASE: n8n
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+      WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
+      GENERIC_TIMEZONE: ${TZ:-UTC}
+      TZ: ${TZ:-UTC}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      # Workflows read service URLs with {{ $env.X }}.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      AGENT_MODEL: ${AGENT_MODEL:-mkt-agent}
+      GATEWAY_URL: http://llm-gateway:8000
+      BRAND_URL: http://brand-service:8000
+      KB_URL: http://knowledge-base:8000
+      EXTRACTOR_URL: http://page-extractor:8000
+      RSS_URL: http://rss-watcher:8000
+      MONITOR_URL: http://change-monitor:8000
+      KEYWORDS_URL: http://keyword-suggest:8000
+      LISTENING_URL: http://social-listening:8000
+      SEO_URL: http://seo-auditor:8000
+      READABILITY_URL: http://readability:8000
+      RULES_URL: http://platform-rules:8000
+      UTM_URL: http://utm-builder:8000
+      SHORTENER_URL: http://link-shortener:8000
+      CARDS_URL: http://image-cards:8000
+      EMAIL_RENDER_URL: http://email-renderer:8000
+      CALENDAR_URL: http://content-calendar:8000
+      ANALYTICS_URL: http://analytics-ingest:8000
+      REPORT_URL: http://report-builder:8000
+      CLAIMS_URL: http://claim-checker:8000
+      CAMPAIGNS_URL: http://campaign-service:8000
+      LEARNING_URL: http://learning-service:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      N8N_PUBLIC_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      LISTENING_QUERY: ${LISTENING_QUERY:-coffee subscription}
+      PUBLISH_WEBHOOK_URL: ${PUBLISH_WEBHOOK_URL:-}
+      NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
+      REPORT_EMAIL_TO: ${REPORT_EMAIL_TO:-}
+      REPORT_EMAIL_FROM: ${REPORT_EMAIL_FROM:-}
+      PLAN_CHANNELS: ${PLAN_CHANNELS:-linkedin, instagram, x}
+      PLAN_POSTS_PER_CHANNEL: ${PLAN_POSTS_PER_CHANNEL:-3}
+      PLAN_THEMES: ${PLAN_THEMES:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/import:ro
+      - ..:/deploys:ro
+
+  llm-gateway:
+    <<: *service
+    build: ../03-llm-gateway
+    ports: ["127.0.0.1:8103:8000"]
+    environment:
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      MODEL: ${WRITER_MODEL:-mkt-writer}
+      PROMPTS_DIR: /prompts
+      BRAND_URL: http://brand-service:8000
+      LEARNING_URL: http://learning-service:8000
+    volumes: ["../04-prompt-library/prompts:/prompts:ro"]
+
+  brand-service:
+    <<: *service
+    build: ../05-brand-service
+    ports: ["127.0.0.1:8105:8000"]
+    volumes: ["../05-brand-service/config:/config:ro"]
+
+  knowledge-base:
+    <<: *service
+    build: ../06-knowledge-base
+    ports: ["127.0.0.1:8106:8000"]
+    environment:
+      <<: *keyed
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      EMBED_MODEL: ${EMBED_MODEL:-qwen3-embedding:0.6b}
+    volumes: [kb_data:/data]
+
+  page-extractor:
+    <<: *service
+    build: ../07-page-extractor
+    ports: ["127.0.0.1:8107:8000"]
+
+  rss-watcher:
+    <<: *service
+    build: ../08-rss-watcher
+    ports: ["127.0.0.1:8108:8000"]
+    volumes: ["rss_data:/data", "../08-rss-watcher/config:/config:ro"]
+
+  change-monitor:
+    <<: *service
+    build: ../09-change-monitor
+    ports: ["127.0.0.1:8109:8000"]
+    environment: *keyed
+    volumes: [monitor_data:/data]
+
+  keyword-suggest:
+    <<: *service
+    build: ../10-keyword-suggest
+    ports: ["127.0.0.1:8110:8000"]
+
+  social-listening:
+    <<: *service
+    build: ../11-social-listening
+    ports: ["127.0.0.1:8111:8000"]
+
+  seo-auditor:
+    <<: *service
+    build: ../12-seo-auditor
+    ports: ["127.0.0.1:8112:8000"]
+
+  readability:
+    <<: *service
+    build: ../13-readability
+    ports: ["127.0.0.1:8113:8000"]
+
+  platform-rules:
+    <<: *service
+    build: ../14-platform-rules
+    ports: ["127.0.0.1:8114:8000"]
+
+  utm-builder:
+    <<: *service
+    build: ../15-utm-builder
+    ports: ["127.0.0.1:8115:8000"]
+
+  link-shortener:
+    <<: *service
+    build: ../16-link-shortener
+    # The only service meant to face the internet: put a reverse proxy / tunnel in front.
+    ports: ["127.0.0.1:8116:8000"]
+    environment:
+      <<: *keyed
+      BASE_URL: ${SHORT_LINK_BASE_URL:-http://localhost:8116}
+    volumes: [links_data:/data]
+
+  image-cards:
+    <<: *service
+    build: ../17-image-cards
+    ports: ["127.0.0.1:8117:8000"]
+
+  email-renderer:
+    <<: *service
+    build: ../18-email-renderer
+    ports: ["127.0.0.1:8118:8000"]
+
+  content-calendar:
+    <<: *service
+    build: ../19-content-calendar
+    ports: ["127.0.0.1:8119:8000"]
+    environment: *keyed
+    volumes: [calendar_data:/data]
+
+  analytics-ingest:
+    <<: *service
+    build: ../20-analytics-ingest
+    ports: ["127.0.0.1:8120:8000"]
+    environment: *keyed
+    volumes: [analytics_data:/data]
+
+  report-builder:
+    <<: *service
+    build: ../21-report-builder
+    ports: ["127.0.0.1:8121:8000"]
+
+  status-page:
+    <<: *service
+    build: ../22-status-page
+    ports: ["127.0.0.1:8122:8000"]
+    environment:
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+
+  claim-checker:
+    <<: *service
+    build: ../44-claim-checker
+    ports: ["127.0.0.1:8144:8000"]
+    environment:
+      GATEWAY_URL: http://llm-gateway:8000
+      BRAND_URL: http://brand-service:8000
+      KB_URL: http://knowledge-base:8000
+      CHECK_MODE: ${CLAIM_CHECK_MODE:-blind}
+      VERIFIER_MODEL: ${VERIFIER_MODEL:-}
+
+  campaign-service:
+    <<: *service
+    build: ../45-campaign-service
+    ports: ["127.0.0.1:8145:8000"]
+    environment:
+      <<: *keyed
+      SHORTENER_URL: http://link-shortener:8000
+      ANALYTICS_URL: http://analytics-ingest:8000
+      CALENDAR_URL: http://content-calendar:8000
+    volumes: [campaigns_data:/data]
+
+  learning-service:
+    <<: *service
+    build: ../46-learning-service
+    ports: ["127.0.0.1:8146:8000"]
+    environment:
+      <<: *keyed
+      GATEWAY_URL: http://llm-gateway:8000
+    volumes: [learning_data:/data]
+
+  ollama:
+    <<: *service
+    image: ollama/ollama:latest
+    profiles: [ollama]
+    ports: ["127.0.0.1:11434:11434"]
+    volumes: [ollama_data:/root/.ollama]
+
+networks:
+  marketing:
+    name: marketing
+
+volumes:
+  pg_data:
+  n8n_data:
+  kb_data:
+  rss_data:
+  monitor_data:
+  links_data:
+  calendar_data:
+  analytics_data:
+  campaigns_data:
+  learning_data:
+  ollama_data:

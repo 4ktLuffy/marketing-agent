@@ -1,0 +1,85 @@
+# Example brand profile. Replace with your own and mount it at /config/brand.yaml
+# (or point BRAND_FILE elsewhere). The service reloads it when the file changes.
+name: Northwind Roasters
+one_liner: Specialty coffee, roasted to order and delivered on your workweek schedule.
+website: https://northwind-roasters.example.com
+audience:
+  primary: Remote workers who drink 2+ cups a day at a home desk.
+  secondary: Small distributed teams that want a shared coffee perk.
+  pains:
+    - Supermarket coffee tastes flat by week two.
+    - Running out mid-week and settling for instant.
+    - No time to research beans or brew methods.
+
+voice:
+  tone: Warm, knowledgeable, a little dry - a friendly barista, not a hype man.
+  do:
+    - Use plain words and short sentences.
+    - Name the origin, roast date and tasting notes.
+    - Talk about the workday ritual.
+  dont:
+    - Make health or productivity claims.
+    - Use hype or fake urgency.
+    - Mock competitors or other coffee drinkers.
+    - Shout in ALL-CAPS or with strings of exclamation marks.
+
+products:
+  - name: Desk Blend
+    price: "$18 / 340 g"
+    one_line: Chocolate-hazelnut medium roast for drip and French press.
+  - name: Single-Origin Rotation
+    price: "$22 / 250 g"
+    one_line: A new light-roast origin every shipment.
+  - name: Team Box
+    price: "$79 / month"
+    one_line: 1.5 kg across two blends, shipped to each teammate.
+
+# Approved facts: the ONLY product/company claims copy may make. The claim checker (44)
+# rejects numbers and statements that are not backed by these, the products above,
+# the key messages below, or the knowledge base. Keep each fact one short sentence.
+facts:
+  - Desk Blend is a medium roast with chocolate and hazelnut tasting notes.
+  - Desk Blend is made for drip and French press brewing.
+  - Single-Origin Rotation is a light roast, with a different origin in every shipment.
+  - Team Box contains 1.5 kg of coffee across two blends and ships to each teammate.
+  - Our Swiss Water decaf is roasted in small batches every Tuesday.
+  - Unopened bags can be returned within 30 days for a full refund.
+  - Subscribers can skip or pause a delivery from their account page at any time, with no fee.
+
+key_messages:
+  - Roasted within 48 hours of shipping.
+  - Ships every 1, 2 or 4 weeks, skip or pause any time.
+  - Free shipping on subscriptions in the US.
+
+# '*' matches up to three words: 'best * in the world' also catches 'best coffee in the world'.
+banned_phrases:
+  - best * in the world
+  - guaranteed
+  - guarantee
+  - cure
+  - boosts your immune system
+  - burns fat
+  - miracle
+  - game-changer
+  - revolutionary
+
+# A post on that channel must contain at least one of these strings
+# (case-insensitive, whole-token match). Channels not listed have no requirement.
+required_disclaimers:
+  paid_social: ["#ad", "Ad", "Sponsored", "Paid partnership"]
+  influencer: ["#ad", "#sponsored", "Paid partnership"]
+  giveaway: ["No purchase necessary"]
+  sms: ["Reply STOP"]
+
+# All-caps words that are fine (acronyms) and do not count as shouting.
+allowed_acronyms: [US, USA, FAQ, AM, PM, UTC]
+
+preferred_hashtags:
+  - "#specialtycoffee"
+  - "#remotework"
+  - "#coffeesubscription"
+  - "#wfh"
+
+emoji_policy:
+  max_per_post: 2
+  note: One or two, never as a replacement for words.

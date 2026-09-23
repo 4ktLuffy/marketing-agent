@@ -1,0 +1,18 @@
+# Final held-out set for the sentence-level claim checker. Written before the v3 design
+# was run on anything; the accuracy reported in 44's README comes from this file only.
+- {claim: "Desk Blend is roasted medium and brews well as drip coffee.", label: supported}
+- {claim: "Team Box is $79 a month.", label: supported}
+- {claim: "We roast within 48 hours of shipping your order.", label: supported}
+- {claim: "Unopened bags come with a 30-day full refund.", label: supported}
+- {claim: "The Single-Origin Rotation is a light roast from a different origin each shipment.", label: supported}
+- {claim: "Subscriptions in the US ship for free.", label: supported}
+- {claim: "Our decaf is roasted in small batches.", label: supported}
+- {claim: "You can pause deliveries from your account page.", label: supported}
+- {claim: "Desk Blend has notes of toffee and hazelnut.", label: unsupported}
+- {claim: "Team Box ships two bags of 500 g each.", label: unsupported}
+- {claim: "The decaf is roasted every Monday.", label: unsupported}
+- {claim: "Single-Origin Rotation is a medium roast.", label: unsupported}
+- {claim: "We offer free shipping to Canada.", label: unsupported}
+- {claim: "Returns are accepted for 90 days.", label: unsupported}
+- {claim: "Desk Blend is sourced from a single farm in Colombia.", label: unsupported}
+- {claim: "Our Team Box was voted best office perk of 2026.", label: unsupported}

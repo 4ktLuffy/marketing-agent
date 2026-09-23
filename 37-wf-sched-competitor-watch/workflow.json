@@ -1,0 +1,212 @@
+{
+  "id": "mktWf37Competito",
+  "name": "37 · Schedule · Competitor watch",
+  "nodes": [
+    {
+      "id": "e0029a30-1292-5530-8c5f-9472f9ecc662",
+      "name": "Every 6 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "91e8cbf3-45b6-5e77-acd8-0492031c75d3",
+      "name": "Check pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.MONITOR_URL }}/check",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}"
+      }
+    },
+    {
+      "id": "282d64d3-d03d-5070-815c-90970a519ed4",
+      "name": "Changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const changed = $input.first().json.changed || [];\nif (!changed.length) return [];\nreturn [{ json: {\n  date: new Date().toISOString().slice(0, 10),\n  changes: changed.map(c => `### ${c.label || c.url} (${c.url})\\n${String(c.diff).slice(0, 1500)}`).join('\\n\\n'),\n} }];\n"
+      }
+    },
+    {
+      "id": "0d3e9bc6-6212-5077-957b-02123990ba35",
+      "name": "Explain changes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'competitor_changes', vars: { changes: $json.changes } }) }}"
+      }
+    },
+    {
+      "id": "6a784d3d-8379-5f52-b883-247e1a36742a",
+      "name": "Save to knowledge base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/docs",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ doc_id: 'competitors-' + $('Changes').first().json.date + '-' + Date.now(), title: 'Competitor changes ' + $('Changes').first().json.date, text: $json.output, source: 'competitor-watch' }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "ac7d2c25-0298-50cb-88dc-295681ea0b93",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no webhook is configured.\nreturn $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "14e9a382-55cd-5c8a-ac3a-07c9f57b9e95",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: '*Competitor pages changed*\\n' + $('Explain changes').first().json.output, content: '*Competitor pages changed*\\n' + $('Explain changes').first().json.output }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Every 6 hours": {
+      "main": [
+        [
+          {
+            "node": "Check pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check pages": {
+      "main": [
+        [
+          {
+            "node": "Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Changes": {
+      "main": [
+        [
+          {
+            "node": "Explain changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain changes": {
+      "main": [
+        [
+          {
+            "node": "Save to knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

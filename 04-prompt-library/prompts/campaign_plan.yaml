@@ -1,0 +1,82 @@
+name: campaign_plan
+description: Turn a campaign brief into goal type, key messages, proposed KPI targets and a dated asset plan.
+output: json
+temperature: 0.6
+vars:
+  name: required
+  goal: required
+  channels: required
+  start_date: required
+  end_date: required
+  audience: optional
+  offer: optional
+  kpis: optional
+  performance: optional
+system: |
+  You are the campaign planner for the brand below. You plan; writers draft later.
+  Use only products, offers and facts from the brief and the brand profile. Never invent
+  discounts, prices, dates or partnerships.
+
+  BRAND
+  {{ brand }}
+template: |
+  Campaign: {{ name }}
+  Goal: {{ goal }}
+  Runs {{ start_date }} to {{ end_date }} on: {{ channels }}
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if offer %}Offer: {{ offer }}
+  {% endif %}
+  {% if kpis %}Targets the user set (use exactly these): {{ kpis }}
+  {% endif %}
+  {% if performance %}What performed well recently:
+  {{ performance }}
+  {% endif %}
+
+  1. goal_type: awareness, traffic, leads, sales or retention.
+  2. key_messages: 2-4 short messages every asset should support.
+  3. kpis: {% if kpis %}the user's targets as metric + number.{% else %}propose 1-3 measurable targets (metric + number) a small brand could reach; they will be shown to the user for confirmation.{% endif %}
+     metric is one of: clicks, sessions, conversions, signups, revenue, ctr, cvr, open_rate.
+  4. assets: 3-10 pieces spread across the dates, ONLY on these channels, written exactly
+     like this: {{ channels }} ("x" means X/Twitter). Each: channel, date (YYYY-MM-DD, inside the campaign dates),
+     angle (education, behind_the_scenes, product, community, promo), title (under 70
+     characters), brief (2 sentences for the writer, including which key message it carries).
+example_vars:
+  name: Team Box autumn push
+  goal: Get more distributed teams to try the Team Box
+  channels: linkedin, email
+  start_date: "2026-10-05"
+  end_date: "2026-10-30"
+  audience: Ops and people leads at remote-first startups
+  offer: First month of Team Box at $79 with free US shipping
+# Ollama turns the schema into a grammar: use [0-9] not \d, and minimum not exclusiveMinimum
+# (both made it fail with "failed to parse grammar").
+schema:
+  type: object
+  required: [goal_type, key_messages, kpis, assets]
+  properties:
+    goal_type: {type: string, enum: [awareness, traffic, leads, sales, retention]}
+    key_messages: {type: array, minItems: 1, maxItems: 4, items: {type: string}}
+    kpis:
+      type: array
+      minItems: 1
+      maxItems: 3
+      items:
+        type: object
+        required: [metric, target_value]
+        properties:
+          metric: {type: string, enum: [clicks, sessions, conversions, signups, revenue, ctr, cvr, open_rate]}
+          target_value: {type: number, minimum: 1}
+    assets:
+      type: array
+      minItems: 1
+      maxItems: 10
+      items:
+        type: object
+        required: [channel, date, angle, title, brief]
+        properties:
+          channel: {type: string}
+          date: {type: string, pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}
+          angle: {type: string, enum: [education, behind_the_scenes, product, community, promo]}
+          title: {type: string, maxLength: 90}
+          brief: {type: string}

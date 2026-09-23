@@ -1,0 +1,330 @@
+{
+  "id": "mktWf28EmailWrit",
+  "name": "28 · Tool · Email newsletter",
+  "nodes": [
+    {
+      "id": "0acad91e-2c51-594a-bdda-33b1bcc3b789",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "topic",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            },
+            {
+              "name": "cta_url",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f4df5aff-6d30-5417-8a77-d23e54ffea6d",
+      "name": "Search knowledge base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/search",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.topic, k: 4 }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6445fa75-33bb-57ac-8a90-b0f18d5a0d4f",
+      "name": "Build context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const start = $('Start').first().json;\nconst results = ($input.first().json.results || []).filter(r => r.score >= 0.35);\nconst context = results.map((r, i) => `[${i + 1}] (${r.title}) ${r.chunk}`).join('\\n');\nreturn [{ json: { ...start, context } }];\n"
+      }
+    },
+    {
+      "id": "6e0137e2-1f44-5814-9a0f-38aa5f8ab368",
+      "name": "Write email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'email_newsletter', vars: { topic: $json.topic, audience: $json.audience || null, context: $json.context || null } }) }}"
+      }
+    },
+    {
+      "id": "b77e4029-622b-52cb-a455-f6cd5c56f314",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.output.body_markdown }}",
+            "channel": "email",
+            "context": "={{ [$('Start').first().json.topic, $('Build context').first().json.context].filter(Boolean).join('\\n') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "9d4050f1-e1f3-57c8-8781-b68cd1a8e847",
+      "name": "Subject check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.RULES_URL }}/validate",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'email_subject', text: $('Write email').first().json.output.subject }) }}"
+      }
+    },
+    {
+      "id": "25d961c9-0903-500a-82db-577319aae19d",
+      "name": "Render HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EMAIL_RENDER_URL }}/render",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ subject: $('Write email').first().json.output.subject, preheader: $('Write email').first().json.output.preheader, body_markdown: $('Quality gate').first().json.text, cta_text: $('Start').first().json.cta_url ? $('Write email').first().json.output.cta_text : null, cta_url: $('Start').first().json.cta_url || null }) }}"
+      }
+    },
+    {
+      "id": "244df9cf-ca76-5ea8-8fa2-47557b0e824b",
+      "name": "Save draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: ('Email: ' + $('Write email').first().json.output.subject).slice(0, 120), channel: 'email', body: 'Subject: ' + $('Write email').first().json.output.subject + '\\nPreheader: ' + $('Write email').first().json.output.preheader + '\\n\\n' + $('Quality gate').first().json.text, status: $('Quality gate').first().json.ok ? 'in_review' : 'draft', link: $('Start').first().json.cta_url || null }) }}"
+      }
+    },
+    {
+      "id": "e75dc964-8479-5b04-82c6-b734579443e9",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const e = $('Write email').first().json.output;\nconst g = $('Quality gate').first().json;\nconst subj = $('Subject check').first().json;\nconst s = $input.first().json;\nconst notes = [];\nif (g.rewritten) notes.push(`auto-fixed: ${g.fixed.join('; ')}`);\nif (g.problems.length) notes.push(`needs a human: ${g.problems.join('; ')}`);\nfor (const v of subj.violations || []) notes.push(`subject: ${v.detail}`);\nreturn [{ json: { result: [\n  `Saved as calendar #${s.id} (${s.status}). HTML version rendered (${$('Render HTML').first().json.html.length} chars).`,\n  `**Subject:** ${e.subject}`, `**Preheader:** ${e.preheader}`, '', g.text, '', `CTA: ${e.cta_text}`,\n  notes.length ? `_${notes.join(' · ')}_` : '',\n].join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Search knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Build context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context": {
+      "main": [
+        [
+          {
+            "node": "Write email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write email": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Subject check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subject check": {
+      "main": [
+        [
+          {
+            "node": "Render HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render HTML": {
+      "main": [
+        [
+          {
+            "node": "Save draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

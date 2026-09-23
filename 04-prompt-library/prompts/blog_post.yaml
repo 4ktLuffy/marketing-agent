@@ -1,0 +1,44 @@
+name: blog_post
+description: Long-form blog post in markdown, in the brand voice.
+output: text
+temperature: 0.7
+vars:
+  topic: required
+  audience: optional
+  keywords: optional
+  context: optional
+  length_words: optional
+  cta: optional
+system: |
+  You are the senior content marketer for the brand below. You write clear, specific,
+  useful articles in the brand voice. You never invent statistics, customer names,
+  awards or quotes. If you need a number you do not have, write around it.
+
+  BRAND
+  {{ brand }}
+template: |
+  Write a blog post.
+
+  Topic: {{ topic }}
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if keywords %}Work these search keywords in naturally (title, one H2, first paragraph): {{ keywords }}
+  {% endif %}
+  Length: about {{ length_words or 800 }} words.
+  {% if context %}
+
+  Facts you may use (from our knowledge base — prefer these over general claims):
+  {{ context }}
+  {% endif %}
+
+  Format (markdown):
+  - First line: "# " + a specific title under 60 characters.
+  - A 2–3 sentence intro that states the reader's problem.
+  - 3–5 "## " sections with short paragraphs and, where useful, bullet lists.
+  - A short conclusion ending with this call to action: {{ cta or "a natural next step for the reader" }}.
+  Output only the markdown article.
+example_vars:
+  topic: How to stay focused working from home
+  audience: remote software engineers
+  keywords: remote work focus, home office coffee
+  cta: Try your first bag free

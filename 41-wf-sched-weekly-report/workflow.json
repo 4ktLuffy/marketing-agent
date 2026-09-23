@@ -1,0 +1,263 @@
+{
+  "id": "mktWf41WeeklyRep",
+  "name": "41 · Schedule · Weekly KPI report",
+  "nodes": [
+    {
+      "id": "e190bbe2-1527-57da-9aaf-d6f3b61a0e5c",
+      "name": "Mondays 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ec891903-2b9a-56f8-a141-212edc3dc6fd",
+      "name": "Last week",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const day = n => { const d = new Date(); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };\nreturn [{ json: { from: day(7), to: day(1) } }];\n"
+      }
+    },
+    {
+      "id": "2baad7d4-63ac-5571-8796-99a3240319f3",
+      "name": "KPIs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ANALYTICS_URL }}/kpis",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $json.from }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.to }}"
+            },
+            {
+              "name": "compare",
+              "value": "true"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "832ae3b4-cc98-54f0-8bab-994cf220ba58",
+      "name": "Highlights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'weekly_report_highlights', vars: { kpis: JSON.stringify($json), period: $('Last week').first().json.from + ' to ' + $('Last week').first().json.to } }) }}"
+      }
+    },
+    {
+      "id": "7869eea3-71cd-54f6-98c4-19a0dbbb0349",
+      "name": "Render report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REPORT_URL }}/render",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: 'Weekly marketing report', period: { from: $('Last week').first().json.from, to: $('Last week').first().json.to }, kpis: $('KPIs').first().json, highlights_markdown: $json.output }) }}"
+      }
+    },
+    {
+      "id": "5ac58b85-ed58-5770-96a4-5b46cc59a5f0",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no webhook is configured.\nreturn $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "d5c60412-a744-53f4-9ced-b560fd7cd322",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Render report').first().json.markdown.slice(0, 3500), content: $('Render report').first().json.markdown.slice(0, 3500) }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "b302e6cd-c0ce-5263-839c-48f8c0bfa9fc",
+      "name": "Email set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        480
+      ],
+      "parameters": {
+        "jsCode": "return $env.REPORT_EMAIL_TO ? $('Render report').all() : [];\n"
+      }
+    },
+    {
+      "id": "9727bd54-ffa4-5f6a-a344-b164242c1f49",
+      "name": "Email report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1680,
+        480
+      ],
+      "parameters": {
+        "fromEmail": "={{ $env.REPORT_EMAIL_FROM || $env.REPORT_EMAIL_TO }}",
+        "toEmail": "={{ $env.REPORT_EMAIL_TO }}",
+        "subject": "=Weekly marketing report {{ $('Last week').first().json.from }} – {{ $('Last week').first().json.to }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Mondays 09:00": {
+      "main": [
+        [
+          {
+            "node": "Last week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Last week": {
+      "main": [
+        [
+          {
+            "node": "KPIs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KPIs": {
+      "main": [
+        [
+          {
+            "node": "Highlights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Highlights": {
+      "main": [
+        [
+          {
+            "node": "Render report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render report": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email set?": {
+      "main": [
+        [
+          {
+            "node": "Email report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

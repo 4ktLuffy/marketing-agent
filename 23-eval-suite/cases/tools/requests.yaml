@@ -1,0 +1,26 @@
+# User requests and the tool the chat agent (24) should call first. Cases whose tool is
+# not in the agent are skipped, so the same file works before and after tools are added.
+- {say: "Write a blog post about brewing coffee for a home office", expect: write_blog_post}
+- {say: "Can you draft an article on why fresh beans matter for remote teams?", expect: write_blog_post}
+- {say: "Post about our decaf on X and LinkedIn", expect: write_social_posts}
+- {say: "I need an Instagram caption for the new single origin", expect: write_social_posts}
+- {say: "Give me Google Ads headlines for the Team Box", expect: write_ad_copy}
+- {say: "Write this month's newsletter about autumn roasts", expect: write_email}
+- {say: "What should an article targeting 'best coffee subscription' cover?", expect: seo_brief}
+- {say: "Turn this into tweets: we tested three brew ratios and 1:16 won", expect: repurpose_content}
+- {say: "Repurpose https://northwind-roasters.example.com/blog/ritual into LinkedIn posts", expect: repurpose_content}
+- {say: "What is rival-roasters.example.com saying on their pricing page?", expect: research_url}
+- {say: "Keyword ideas for cold brew", expect: keyword_research}
+- {say: "What's waiting for review?", expect: content_calendar}
+- {say: "Move item 12 back to draft", expect: content_calendar}
+- {say: "Can customers pause their subscription?", expect: ask_knowledge_base}
+- {say: "What did the morning digest say today?", expect: ask_knowledge_base}
+- {say: "Is this ok to post: 'The BEST coffee ever, guaranteed!!!'", expect: check_copy}
+- {say: "Plan a campaign for the Team Box in October on LinkedIn and email, goal 20 signups", expect: plan_campaign}
+- {say: "Set up a spring launch campaign for the decaf, March 1 to 31, Instagram and X", expect: plan_campaign}
+- {say: "How is the Team Box campaign doing against its targets?", expect: campaigns}
+- {say: "Activate the decaf launch campaign", expect: campaigns}
+- {say: "List our campaigns", expect: campaigns}
+- {say: "Thanks, that's all for now", expect: "(no tool)"}
+- {say: "What can you do?", expect: "(no tool)"}
+- {say: "Write a LinkedIn post about our 48-hour roasting promise", expect: write_social_posts}

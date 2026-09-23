@@ -1,0 +1,20 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: compose file is valid
+        run: |
+          cp .env.example .env
+          # build contexts point at sibling repos; create empty stand-ins so config resolves
+          for d in $(grep -oE '\.\./[0-9]{2}-[a-z0-9-]+' docker-compose.yml | sort -u); do mkdir -p "$d"; done
+          docker compose config -q
+      - run: shellcheck scripts/*.sh
+      - run: python3 -c "import json,glob; [json.load(open(f)) for f in glob.glob('n8n/**/*.json', recursive=True)]"

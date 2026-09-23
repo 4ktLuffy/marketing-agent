@@ -1,0 +1,41 @@
+# Does the learning service (46) turn the right reviews into rules? A style preference
+# must become a rule; a correction of a fact in one post must not (it would ban e.g. all
+# future discounts). Measured 20/20 correct on qwen2.5:7b after the prompt fix.
+- id: reflect_style_edit_becomes_rule
+  prompt: reflect_rule
+  vars:
+    channel: x
+    draft: "Why wait? Northwind Roasters roasts within 48 hours for max freshness. Join our Freshness Week! 🖥️☕ #specialtycoffee #remotework"
+    final: "Why wait? We roast within 48 hours of shipping, so your coffee arrives fresh."
+    reason: "Shorter, no hashtags, calmer tone"
+  checks:
+    - {type: equals, path: generalizable, value: true}
+    - {type: min_chars, path: rule, value: 10}
+
+- id: reflect_fact_fix_is_not_a_rule
+  prompt: reflect_rule
+  vars:
+    channel: x
+    draft: "Taste the freshness! 50% off Desk Blend or Single-Origin Rotation. First order only."
+    reason: "There is no 50% discount. Remove it and mention free US shipping on subscriptions instead."
+  checks:
+    - {type: equals, path: generalizable, value: false}
+
+- id: reflect_product_detail_fix_is_not_a_rule
+  prompt: reflect_rule
+  vars:
+    channel: linkedin
+    draft: "Our Team Box ships three blends every week."
+    reason: "Wrong: it is two blends, and shipping is every 1, 2 or 4 weeks."
+  checks:
+    - {type: equals, path: generalizable, value: false}
+
+- id: reflect_opener_style_becomes_rule
+  prompt: reflect_rule
+  vars:
+    channel: linkedin
+    draft: "Ready to level up your mornings?! Our coffee is AMAZING!!!"
+    final: "Desk Blend: a chocolate-hazelnut medium roast for your drip machine."
+    reason: "Never open with a question, no shouting"
+  checks:
+    - {type: equals, path: generalizable, value: true}

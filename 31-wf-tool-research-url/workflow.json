@@ -1,0 +1,124 @@
+{
+  "id": "mktWf31ResearchU",
+  "name": "31 · Tool · Research a URL",
+  "nodes": [
+    {
+      "id": "0f923e50-f7b9-589a-a34a-dbd1a90b3de2",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "url",
+              "type": "string"
+            },
+            {
+              "name": "focus",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "acce640d-1be4-5ca8-9544-4ac7fc17448d",
+      "name": "Fetch page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EXTRACTOR_URL }}/extract",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json.url }) }}"
+      }
+    },
+    {
+      "id": "bea523e3-2d06-5abc-aa4e-180e84206778",
+      "name": "Analyse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'summarize_page', vars: { url: $('Start').first().json.url, title: $json.title, text: $json.text, focus: $('Start').first().json.focus || null } }) }}"
+      }
+    },
+    {
+      "id": "1bda17e5-332d-5645-9ff5-73aceaf3acdf",
+      "name": "Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const a = $input.first().json.output;\nconst list = (title, xs) => xs.length ? [`**${title}**`, ...xs.map(x => `- ${x}`), ''] : [];\nreturn [{ json: { result: [\n  `# ${$('Fetch page').first().json.title || $('Start').first().json.url}`,\n  $('Start').first().json.url, '', a.summary, '', `**Audience:** ${a.audience || 'not stated'}`, '',\n  ...list('Key messages', a.key_messages), ...list('Offers & pricing', a.offers_pricing),\n  ...list('Strengths', a.strengths), ...list('Weaknesses', a.weaknesses),\n  ...list('What we could do', a.opportunities_for_us),\n].join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Fetch page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch page": {
+      "main": [
+        [
+          {
+            "node": "Analyse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyse": {
+      "main": [
+        [
+          {
+            "node": "Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

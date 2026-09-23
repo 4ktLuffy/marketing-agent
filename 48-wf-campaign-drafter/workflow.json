@@ -1,0 +1,698 @@
+{
+  "id": "mktWf48CampDraft",
+  "name": "48 · Background · Campaign drafter",
+  "nodes": [
+    {
+      "id": "1d074b48-ab2e-57f4-8dbd-b3ba5303efe7",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "campaign_id",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6dc078bb-866f-5e82-8dd0-a65b0ca73131",
+      "name": "Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/campaigns/{{ $json.campaign_id }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "a2cd2453-5a02-5b99-bcfb-83732ddeed04",
+      "name": "Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "campaign_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "status",
+              "value": "idea"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2830dec4-3e28-53e3-957b-bc543c1756bc",
+      "name": "One per idea",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst items = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.id && i.status === 'idea');\nreturn items.map(i => ({ json: i }));\n"
+      }
+    },
+    {
+      "id": "f90cdc5a-1820-5d8d-a072-012fd8105892",
+      "name": "Campaign link",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CAMPAIGNS_URL }}/campaigns/{{ $('Campaign').first().json.id }}/link",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $json.channel, content: String($json.id) }) }}"
+      }
+    },
+    {
+      "id": "36c78e12-dbec-596e-929d-420129a35b74",
+      "name": "Approved examples",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.LEARNING_URL }}/examples",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $('One per idea').item.json.channel }}"
+            },
+            {
+              "name": "k",
+              "value": "2"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "cbfbecac-4e9a-5dfa-a524-2b1495dc48cf",
+      "name": "Build request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const it = $('One per idea').item.json;\nconst c = $('Campaign').first().json;\nconst link = $('Campaign link').item.json.url || null;\nconst exRaw = $('Approved examples').item.json.body;\nconst examples = (Array.isArray(exRaw) ? exRaw : []).map(e => `- ${e.text}`).join('\\n') || null;\nconst brief = `${it.body}\\nCampaign: ${c.name}. Goal: ${c.goal_text}.${c.offer ? ' Offer: ' + c.offer + '.' : ''}`;\n// Only what the USER gave counts as evidence for the fact check. The piece's brief was\n// written by the planner (an LLM) and once invented \"50% off\"; as evidence it would have\n// approved its own invention.\nconst userFacts = [`Goal: ${c.goal_text}.`, c.offer ? `Offer: ${c.offer}.` : '', c.audience ? `Audience: ${c.audience}.` : ''].filter(Boolean).join('\\n');\nlet request;\nif (it.channel === 'blog') {\n  request = { prompt: 'blog_post', vars: { topic: it.title, audience: c.audience || null, context: brief, length_words: 600 } };\n} else if (it.channel === 'email') {\n  request = { prompt: 'email_newsletter', vars: { topic: it.title, audience: c.audience || null, context: brief } };\n} else {\n  request = { prompt: 'social_posts', vars: { topic: `${it.title}. ${brief}`, channels: it.channel, link, campaign: c.slug, examples } };\n}\nreturn { json: { item_id: it.id, channel: it.channel, link, brief, userFacts, request } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "758cfaef-81f4-53d9-8e19-618f765ad1b5",
+      "name": "Write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}"
+      }
+    },
+    {
+      "id": "77cb7318-b467-5ae7-ad77-1dc1a1b632d7",
+      "name": "Draft text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $('Build request').item.json;\nconst out = $json.output;\nlet text;\nif (b.channel === 'blog') text = out;\nelse if (b.channel === 'email') text = `Subject: ${out.subject}\\nPreheader: ${out.preheader}\\n\\n${out.body_markdown}`;\nelse {\n  const post = (out.posts || []).find(p => String(p.channel).trim().toLowerCase() === b.channel) || (out.posts || [])[0];\n  if (!post) throw new Error(`No post for ${b.channel}`);\n  text = post.text.trim();\n  if (b.link && !text.includes(b.link)) text += `\\n\\n${b.link}`;\n}\nreturn { json: { ref: String(b.item_id), channel: b.channel, text, context: b.userFacts } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "bec4839c-980c-5fb2-81c1-8f69d6e0c41c",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.text }}",
+            "channel": "={{ $json.channel }}",
+            "context": "={{ $json.context }}",
+            "ref": "={{ $json.ref }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "45c5f628-be11-5758-b011-ebe57b5dafe4",
+      "name": "Save ops",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function rawOps(ops) { return ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }]; }\n\nconst base = $env.CALENDAR_URL;\nconst ops = [];\nfor (const r of $input.all().map(i => i.json)) {\n  const id = r.ref;\n  ops.push({ stage: 1, method: 'PATCH', url: `${base}/items/${id}`, body: { body: r.text } });\n  ops.push({ stage: 2, method: 'POST', url: `${base}/items/${id}/status`, body: { status: 'draft',\n    note: r.ok ? 'drafted by campaign drafter' : `drafted; needs a human. Quality gate: ${r.problems.join('; ')}` } });\n  if (r.ok) ops.push({ stage: 3, method: 'POST', url: `${base}/items/${id}/status`, body: { status: 'in_review', note: 'passed the quality gate' } });\n}\nreturn rawOps(ops);\n"
+      }
+    },
+    {
+      "id": "fde3c230-5aaf-5570-bed6-91c5bce461ab",
+      "name": "Stage 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Save ops').all().map(i => i.json).filter(o => o.stage === 1);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "8dc60e15-6ab0-5e13-81bd-eb0b3bff9221",
+      "name": "Run stage 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "31f680fc-7fe1-547e-bd5c-066fa341f3ef",
+      "name": "Stage 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Save ops').all().map(i => i.json).filter(o => o.stage === 2);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "36609ea8-3a62-592d-a18a-dcb6d27bf35e",
+      "name": "Run stage 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "08df9622-dc16-5c38-bd90-40b4670f3539",
+      "name": "Stage 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Save ops').all().map(i => i.json).filter(o => o.stage === 3);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "a136ab95-0b97-5d59-b9eb-af6c16c8c071",
+      "name": "Run stage 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "343a14b0-66b3-526b-ab8b-72977c2fbe3f",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function failedOps(runNodes) {\n  return runNodes.flatMap(n => $(n).all()).filter(r => !r.json.noop && r.json.statusCode >= 300)\n    .map(r => JSON.stringify((r.json.body || {}).detail || r.json.body));\n}\n\nconst results = $('Quality gate').all().map(i => i.json);\nconst failed = failedOps(['Run stage 1', 'Run stage 2', 'Run stage 3']);\nconst c = $('Campaign').first().json;\nconst ok = results.filter(r => r.ok).length;\nreturn [{ json: { text: `*Campaign \"${c.name}\"*: ${ok} of ${results.length} drafts ready in the approval form` +\n  (results.length - ok ? `, ${results.length - ok} saved as drafts that need a human` : '') +\n  (failed.length ? ` (${failed.length} calendar updates failed: ${failed.slice(0, 3).join('; ')})` : '') } }];\n"
+      }
+    },
+    {
+      "id": "9cc9dd25-272c-5296-ab9f-508e506b2878",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "982e392d-1c9a-5a2f-9b12-401bded97b73",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4560,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign": {
+      "main": [
+        [
+          {
+            "node": "Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ideas": {
+      "main": [
+        [
+          {
+            "node": "One per idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One per idea": {
+      "main": [
+        [
+          {
+            "node": "Campaign link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign link": {
+      "main": [
+        [
+          {
+            "node": "Approved examples",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved examples": {
+      "main": [
+        [
+          {
+            "node": "Build request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build request": {
+      "main": [
+        [
+          {
+            "node": "Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write": {
+      "main": [
+        [
+          {
+            "node": "Draft text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft text": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Save ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save ops": {
+      "main": [
+        [
+          {
+            "node": "Stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 1": {
+      "main": [
+        [
+          {
+            "node": "Run stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 1": {
+      "main": [
+        [
+          {
+            "node": "Stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 2": {
+      "main": [
+        [
+          {
+            "node": "Run stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 2": {
+      "main": [
+        [
+          {
+            "node": "Stage 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 3": {
+      "main": [
+        [
+          {
+            "node": "Run stage 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 3": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

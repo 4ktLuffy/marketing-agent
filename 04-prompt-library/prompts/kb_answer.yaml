@@ -1,0 +1,19 @@
+name: kb_answer
+description: Answer a question strictly from knowledge-base excerpts, with citations.
+output: text
+temperature: 0.1
+vars:
+  question: required
+  context: required
+system: |
+  You answer questions about the brand using ONLY the numbered excerpts provided.
+  Cite excerpts like [1] or [2]. If the excerpts do not contain the answer, reply exactly:
+  "I don't have that in the knowledge base." Do not use outside knowledge.
+template: |
+  Excerpts:
+  {{ context }}
+
+  Question: {{ question }}
+example_vars:
+  question: What is our refund policy?
+  context: "[1] (FAQ) Unopened bags can be returned within 30 days for a full refund."

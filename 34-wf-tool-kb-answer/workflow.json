@@ -1,0 +1,209 @@
+{
+  "id": "mktWf34KbAnswer0",
+  "name": "34 · Tool · Knowledge base answer",
+  "nodes": [
+    {
+      "id": "5f72fab4-575d-5971-a684-d7372754e892",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "question",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7765d972-0745-50a4-a4a0-0d293d4c2b32",
+      "name": "Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/search",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.question, k: 5 }) }}"
+      }
+    },
+    {
+      "id": "b3ab491d-234e-58a8-aaa9-1ba31a8efbca",
+      "name": "Excerpts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const hits = ($input.first().json.results || []).filter(r => r.score >= 0.3);\nreturn [{ json: {\n  found: hits.length > 0,\n  question: $('Start').first().json.question,\n  context: hits.map((r, i) => `[${i + 1}] (${r.title}) ${r.chunk}`).join('\\n'),\n  sources: hits.map((r, i) => `[${i + 1}] ${r.title}${r.source ? ' — ' + r.source : ''}`).join('\\n'),\n} }];\n"
+      }
+    },
+    {
+      "id": "3f75e662-5221-5594-b226-e17a81d0d4d8",
+      "name": "Anything found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "31b7c6cb-ac3e-5b27-bd56-295398634a3c",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "342ccac1-0287-5012-8d59-96bfc35b7a6c",
+      "name": "Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'kb_answer', vars: { question: $json.question, context: $json.context } }) }}"
+      }
+    },
+    {
+      "id": "b1bed4e6-1671-5f95-a701-ffb6cfc88f86",
+      "name": "With sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const answer = $input.first().json.output;\n// The model answered \"not in the knowledge base\": listing sources would mislead.\nif (/don't have that in the knowledge base/i.test(answer)) return [{ json: { result: answer } }];\nreturn [{ json: { result: `${answer}\\n\\nSources:\\n${$('Excerpts').first().json.sources}` } }];\n"
+      }
+    },
+    {
+      "id": "af6e97fb-435b-547c-96d1-038195e05830",
+      "name": "Nothing found",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        420
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: \"I don't have that in the knowledge base. Add it with the knowledge-base form (deploy 42).\" } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "Excerpts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Excerpts": {
+      "main": [
+        [
+          {
+            "node": "Anything found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything found?": {
+      "main": [
+        [
+          {
+            "node": "Answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer": {
+      "main": [
+        [
+          {
+            "node": "With sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

@@ -1,0 +1,54 @@
+name: repurpose
+description: Turn one long piece (article, page, transcript) into channel-native posts.
+output: json
+temperature: 0.8
+vars:
+  source_text: required
+  channels: required
+  source_title: optional
+  link: optional
+system: |
+  You repurpose long content into short social posts for the brand below. Every post must
+  be grounded in the source text — pull the most useful specific point, do not generalise.
+
+  BRAND
+  {{ brand }}
+template: |
+  Source{% if source_title %} "{{ source_title }}"{% endif %}:
+  """
+  {{ source_text[:8000] }}
+  """
+
+  {% if link %}Link to include once per post: {{ link }}
+  {% endif %}
+  {% set limits = {
+    "x": "under 260 characters, 0-2 hashtags, punchy",
+    "linkedin": "600-1200 characters, first line is a hook, short paragraphs, 3 hashtags at the end",
+    "instagram": "under 1500 characters, visual language, up to 8 hashtags at the end",
+    "facebook": "under 600 characters, conversational",
+    "threads": "under 450 characters",
+    "mastodon": "under 450 characters"} %}
+  Write EXACTLY {{ channels.split(",") | length }} post(s), one per channel below, and no other channels:
+  {% for c in channels.split(",") %}
+  - channel "{{ c.strip().lower() }}": {{ limits.get(c.strip().lower(), "keep it short") }}
+  {% endfor %}
+  No flag emojis.
+  Each post highlights a DIFFERENT point from the source.
+example_vars:
+  source_text: "Remote workers lose focus after lunch. A lighter roast has more perceived acidity and many people find it less heavy after a meal. We tested three brew ratios..."
+  source_title: Afternoon coffee for focus
+  channels: x, linkedin
+schema:
+  type: object
+  required: [posts]
+  properties:
+    posts:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [channel, text]
+        properties:
+          channel: {type: string}
+          text: {type: string, minLength: 20}
+          source_point: {type: string}

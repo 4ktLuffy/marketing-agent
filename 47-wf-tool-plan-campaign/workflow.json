@@ -1,0 +1,360 @@
+{
+  "id": "mktWf47PlanCampa",
+  "name": "47 · Tool · Plan a campaign",
+  "nodes": [
+    {
+      "id": "18817d17-ef4f-5296-a851-23146e43e402",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "goal",
+              "type": "string"
+            },
+            {
+              "name": "channels",
+              "type": "string"
+            },
+            {
+              "name": "start_date",
+              "type": "string"
+            },
+            {
+              "name": "end_date",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            },
+            {
+              "name": "offer",
+              "type": "string"
+            },
+            {
+              "name": "kpis",
+              "type": "string"
+            },
+            {
+              "name": "landing_url",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1fadc5d9-80d7-5d89-bdfc-a2b24d1dfb46",
+      "name": "Recent performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/insights",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "90"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "acbc9e3b-e969-5e67-9f66-6569d4e952f7",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Start').first().json;\nconst ins = $input.first().json;\nconst perf = (ins.top_posts || []).slice(0, 5).map(p => `- ${p.channel}: \"${p.title}\" (${p.clicks} clicks)`).join('\\n');\nconst channels = String(s.channels || '').split(/,|;| and /).map(c => c.trim().toLowerCase()).filter(Boolean);\nif (!s.name || !s.goal) throw new Error('A campaign needs at least a name and a goal');\nif (!channels.length) throw new Error('Name the channels, e.g. \"linkedin, email\"');\nconst iso = /^\\d{4}-\\d{2}-\\d{2}$/;\nif (!iso.test(s.start_date || '') || !iso.test(s.end_date || '')) throw new Error('Give start and end dates as YYYY-MM-DD');\n// Targets the user typed are parsed here, never by the model: asked for \"50 clicks\", the\n// model once saved \"signups >= 50\".\nconst METRICS = { click: 'clicks', clicks: 'clicks', session: 'sessions', sessions: 'sessions', visit: 'sessions', visits: 'sessions',\n  visitor: 'sessions', visitors: 'sessions', conversion: 'conversions', conversions: 'conversions', signup: 'signups', signups: 'signups',\n  'sign-up': 'signups', 'sign-ups': 'signups', subscriber: 'signups', subscribers: 'signups', revenue: 'revenue', sales: 'revenue',\n  ctr: 'ctr', cvr: 'cvr', 'open rate': 'open_rate', opens: 'open_rate' };\nconst parsed = [];\nconst text = String(s.kpis || '').toLowerCase();\nfor (const m of text.matchAll(/\\$?\\s*(\\d[\\d,]*(?:\\.\\d+)?)\\s*(%?)\\s*([a-z][a-z -]*)/g)) {\n  const word = m[3].trim().split(/\\s+/).slice(0, 2).join(' ');\n  const metric = METRICS[word] || METRICS[word.split(' ')[0]];\n  if (!metric) continue;\n  let value = Number(m[1].replace(/,/g, ''));\n  if (m[2] === '%' || ['ctr', 'cvr', 'open_rate'].includes(metric)) value = value > 1 ? value / 100 : value;\n  if (value > 0 && !parsed.some(k => k.metric === metric)) parsed.push({ metric, target_value: value });\n}\nif (s.kpis && s.kpis.trim() && !parsed.length) throw new Error(`Could not read the targets \"${s.kpis}\". Write them like \"500 clicks, 20 signups\".`);\nreturn [{ json: { ...s, channels, performance: perf || null, user_kpis: (s.kpis || '').trim(), parsed_kpis: parsed } }];\n"
+      }
+    },
+    {
+      "id": "7a02bd2f-0b48-560e-a559-2f567e1cec2f",
+      "name": "Plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'campaign_plan', vars: { name: $json.name, goal: $json.goal, channels: $json.channels.join(', '), start_date: $json.start_date, end_date: $json.end_date, audience: $json.audience || null, offer: $json.offer || null, kpis: $json.user_kpis || null, performance: $json.performance } }) }}"
+      }
+    },
+    {
+      "id": "4129ca1d-371f-57c3-86db-86fd50b33d73",
+      "name": "Create campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CAMPAIGNS_URL }}/campaigns",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $('Prepare').first().json.name, goal_type: $json.output.goal_type, goal_text: $('Prepare').first().json.goal, audience: $('Prepare').first().json.audience || 'Our usual audience (see the brand profile)', offer: $('Prepare').first().json.offer || null, landing_url: $('Prepare').first().json.landing_url || null, channels: $('Prepare').first().json.channels, start_date: $('Prepare').first().json.start_date, end_date: $('Prepare').first().json.end_date, notes: 'Key messages: ' + $json.output.key_messages.join(' | '), kpis: ($('Prepare').first().json.parsed_kpis.length ? $('Prepare').first().json.parsed_kpis : $json.output.kpis).map(k => ({ metric: k.metric, target_value: k.target_value })) }) }}"
+      }
+    },
+    {
+      "id": "5d85a56d-2dd3-5f34-bc47-4f651010fbd4",
+      "name": "Plan items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst plan = $('Plan').first().json.output;\nconst c = $input.first().json;\nif (!c.id) throw new Error(`Campaign not created: ${JSON.stringify(c.detail || c)}`);\n// The model often renames channels (\"Social Media (Twitter)\" for x). Map what it means;\n// pieces for channels nobody asked for are moved to the requested ones in rotation.\nconst ALIAS = { twitter: 'x', 'x (twitter)': 'x', ig: 'instagram', fb: 'facebook', newsletter: 'email', mail: 'email' };\nfunction channelOf(raw) {\n  const c = String(raw).trim().toLowerCase();\n  if (p.channels.includes(c)) return c;\n  if (ALIAS[c] && p.channels.includes(ALIAS[c])) return ALIAS[c];\n  return p.channels.find(ch => c.includes(ch.length > 2 ? ch : '(' + ch + ')')\n    || (ch === 'x' && c.includes('twitter')) || (ch === 'email' && c.includes('email'))) || null;\n}\nlet rr = 0, moved = 0;\nconst out = plan.assets\n  .filter(a => a.date >= p.start_date && a.date <= p.end_date)\n  .map(a => { let ch = channelOf(a.channel); if (!ch) { ch = p.channels[rr++ % p.channels.length]; moved++; } return { ...a, channel: ch }; })\n  .map(a => ({ json: {\n    title: a.title.slice(0, 120), channel: a.channel, status: 'idea',\n    body: `[${a.angle}] ${a.brief}\\nKey messages: ${plan.key_messages.join(' | ')}`,\n    scheduled_at: `${a.date}T09:00:00Z`, campaign_id: c.id, campaign: c.slug } }));\nif (!out.length) throw new Error('The plan had no pieces inside the campaign dates');\nout.forEach(o => { o.json.moved = moved; });\nreturn out;\n"
+      }
+    },
+    {
+      "id": "4c1406b5-1d5c-5875-935d-171355a88bbf",
+      "name": "Add to calendar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    },
+    {
+      "id": "15fbf003-a0fb-58a0-900c-0154edad6f3b",
+      "name": "Campaign id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { campaign_id: String($('Create campaign').first().json.id) } }];\n"
+      }
+    },
+    {
+      "id": "06b9db21-b87b-57c6-88c2-33345ea5235c",
+      "name": "Start drafting",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf48CampDraft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "campaign_id": "={{ $json.campaign_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "campaign_id",
+              "displayName": "campaign_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "93eec4a8-0d8a-5e97-919c-074d2d8246ef",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Create campaign').first().json;\nconst plan = $('Plan').first().json.output;\nconst p = $('Prepare').first().json;\nconst items = $('Add to calendar').all().map(i => i.json);\nconst moved = $('Plan items').first().json.moved;\nconst kpis = c.kpis.map(k => `${k.metric} ≥ ${k.target_value}`).join(', ');\nreturn [{ json: { result: [\n  `Campaign #${c.id} \"${c.name}\" created (status: planned, utm_campaign: ${c.slug}).`,\n  `Goal type: ${plan.goal_type}. Key messages: ${plan.key_messages.join(' · ')}`,\n  p.user_kpis ? `Targets (yours): ${kpis}` : `PROPOSED targets: ${kpis}. They're only suggestions: confirm or change them, then activate the campaign.`,\n  '', `${items.length} pieces planned${moved ? ` (${moved} were planned for other channels and moved to yours)` : ''}:`,\n  ...items.map(i => `- #${i.id} ${i.scheduled_at.slice(0, 10)} ${i.channel}: ${i.title}`),\n  '', 'Drafting has started in the background. Drafts appear in the approval form as they pass the quality gate.',\n].join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Recent performance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recent performance": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan": {
+      "main": [
+        [
+          {
+            "node": "Create campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create campaign": {
+      "main": [
+        [
+          {
+            "node": "Plan items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan items": {
+      "main": [
+        [
+          {
+            "node": "Add to calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to calendar": {
+      "main": [
+        [
+          {
+            "node": "Campaign id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign id": {
+      "main": [
+        [
+          {
+            "node": "Start drafting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start drafting": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

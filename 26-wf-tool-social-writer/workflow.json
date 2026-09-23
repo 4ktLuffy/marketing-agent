@@ -1,0 +1,367 @@
+{
+  "id": "mktWf26SocialWri",
+  "name": "26 · Tool · Social post writer",
+  "nodes": [
+    {
+      "id": "2b816292-2daf-52d9-961c-712682c0e19b",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "topic",
+              "type": "string"
+            },
+            {
+              "name": "channels",
+              "type": "string"
+            },
+            {
+              "name": "link",
+              "type": "string"
+            },
+            {
+              "name": "campaign",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "3beec490-ef60-5ae5-ba3d-f7d373c3fba2",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const KNOWN = ['x', 'linkedin', 'instagram', 'facebook', 'threads', 'mastodon'];\nconst ALIAS = { twitter: 'x', 'x/twitter': 'x', ig: 'instagram', insta: 'instagram', fb: 'facebook' };\nfunction normalizeChannels(raw) {\n  const list = String(raw || 'linkedin')\n    .split(/,|;|\\/| and |&/)\n    .map(c => c.trim().toLowerCase())\n    .map(c => ALIAS[c] || c)\n    .filter(c => KNOWN.includes(c));\n  const unique = [...new Set(list)];\n  if (!unique.length) throw new Error(`No supported channel in \"${raw}\". Use: ${KNOWN.join(', ')}`);\n  return unique;\n}\n\nconst s = $input.first().json;\nreturn [{ json: { topic: s.topic, channels: normalizeChannels(s.channels),\n  link: (s.link || '').trim(), campaign: (s.campaign || 'always-on').trim() } }];\n"
+      }
+    },
+    {
+      "id": "484111bf-3010-5ad3-9dd6-2550d4878d8a",
+      "name": "Approved examples",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.LEARNING_URL }}/examples",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "k",
+              "value": "3"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "f2b73cf4-7131-5359-86c4-7c11db6a8078",
+      "name": "Write posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'social_posts', vars: { topic: $('Prepare').first().json.topic, channels: $('Prepare').first().json.channels.join(', '), link: $('Prepare').first().json.link || null, campaign: $('Prepare').first().json.campaign, examples: (Array.isArray($json.body) ? $json.body : []).filter(e => e && e.text).map(e => '- (' + e.channel + ') ' + e.text).join('\\n') || null } }) }}"
+      }
+    },
+    {
+      "id": "57679638-bf9a-5cc0-8b47-c6dbed357ebe",
+      "name": "Split posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Small models sometimes add channels nobody asked for, or drop the link. Fix both here,\n// deterministically, instead of trusting the model.\nconst p = $('Prepare').first().json;\nconst seen = new Set();\nconst out = [];\nfor (const post of $input.first().json.output.posts || []) {\n  const channel = String(post.channel || '').trim().toLowerCase();\n  if (!p.channels.includes(channel) || seen.has(channel)) continue;\n  seen.add(channel);\n  let text = String(post.text || '').trim();\n  if (p.link && !text.includes(p.link)) text += `\\n\\n${p.link}`;\n  out.push({ json: { channel, text } });\n}\nif (!out.length) throw new Error('The model returned no posts for the requested channels');\nreturn out;\n"
+      }
+    },
+    {
+      "id": "b93e9b71-9a22-5024-8c7a-d252d5c82949",
+      "name": "UTM link",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.UTM_URL }}/build",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $('Prepare').first().json.link || 'none', source: $json.channel, medium: 'social', campaign: $('Prepare').first().json.campaign }) }}"
+      }
+    },
+    {
+      "id": "8ebcc59e-0a06-5eef-86d3-d877c991382e",
+      "name": "Apply UTM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const post = $('Split posts').item.json;\nconst p = $('Prepare').first().json;\nconst tagged = $json.url;  // utm-builder answer; absent when there is no link\nconst text = p.link && tagged ? post.text.split(p.link).join(tagged) : post.text;\nreturn { json: { channel: post.channel, text, link: tagged || p.link || null } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "5ff0e5c9-5127-5ab6-a23c-bd2a3dd8e3b1",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.text }}",
+            "channel": "={{ $json.channel }}",
+            "context": "={{ $('Prepare').first().json.topic }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "f0496344-9b80-5689-baa9-337d2419641c",
+      "name": "Save drafts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: ($('Prepare').first().json.topic + ' (' + $json.channel + ')').slice(0, 120), channel: $json.channel, body: $json.text, status: $json.ok ? 'in_review' : 'draft', campaign: $('Prepare').first().json.campaign, link: $('Prepare').first().json.link || null, notes: $json.problems.length ? 'Quality gate: ' + $json.problems.join('; ') : null }) }}"
+      }
+    },
+    {
+      "id": "96f6d8eb-4dd4-5796-82d3-823bed90917c",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const gate = $('Quality gate').all();\nconst parts = $input.all().map((saved, i) => {\n  const g = gate[i].json;\n  const s = saved.json;\n  const head = `### ${g.channel} — calendar #${s.id} (${s.status})`;\n  const notes = [];\n  if (g.rewritten) notes.push(`auto-fixed: ${g.fixed.join('; ')}`);\n  if (g.problems.length) notes.push(`needs a human: ${g.problems.join('; ')}`);\n  if (g.warnings.length) notes.push(`warnings: ${g.warnings.join('; ')}`);\n  return [head, g.text, notes.length ? `_${notes.join(' · ')}_` : ''].filter(Boolean).join('\\n\\n');\n});\nparts.push(\"Items marked in_review are waiting in the approval form; nothing is published until approved.\");\nreturn [{ json: { result: parts.join('\\n\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Approved examples",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved examples": {
+      "main": [
+        [
+          {
+            "node": "Write posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write posts": {
+      "main": [
+        [
+          {
+            "node": "Split posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split posts": {
+      "main": [
+        [
+          {
+            "node": "UTM link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UTM link": {
+      "main": [
+        [
+          {
+            "node": "Apply UTM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply UTM": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Save drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save drafts": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

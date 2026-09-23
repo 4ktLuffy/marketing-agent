@@ -1,0 +1,609 @@
+{
+  "id": "mktWf38Approval0",
+  "name": "38 · Form · Content approval",
+  "nodes": [
+    {
+      "id": "0aa8ebe0-20ab-5f38-b064-39354dd5f3ff",
+      "name": "Open approval form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "formTitle": "Content approval",
+        "formDescription": "Review drafts the agent wrote. Nothing is published until you approve it here. Your edits and reasons teach the agent.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Reviewer",
+              "placeholder": "your name",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "mkt-content-approval"
+    },
+    {
+      "id": "3f735f36-9aa0-5b01-828a-34c38f25230b",
+      "name": "Items in review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "in_review"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6b91490a-a180-566c-8b8d-c1914356ff9a",
+      "name": "Build review page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst items = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.id).slice(0, 8);\nconst fields = [];\nfor (const it of items) {\n  fields.push({ fieldType: 'html', html:\n    `<h3>#${it.id} · ${esc(it.channel)} · ${esc(it.title)}</h3>` +\n    (it.notes ? `<p style=\"color:#888;font-size:12px\">${esc(String(it.notes).slice(-300))}</p>` : '') });\n  fields.push({ fieldLabel: `Decision #${it.id}`, fieldType: 'dropdown', requiredField: true,\n    fieldOptions: { values: ['Skip', 'Approve', 'Edit & approve', 'Reject – rewrite it', 'Reject – drop it', 'Back to draft'].map(option => ({ option })) } });\n  fields.push({ fieldLabel: `Text #${it.id}`, fieldType: 'textarea', defaultValue: String(it.body || '') });\n  fields.push({ fieldLabel: `Reason #${it.id}`, fieldType: 'text',\n    placeholder: 'why? (required to rewrite; teaches the agent)' });\n  fields.push({ fieldLabel: `Publish at #${it.id}`, fieldType: 'text',\n    placeholder: it.scheduled_at || 'YYYY-MM-DD HH:MM (UTC) — blank = next full hour' });\n}\nreturn [{ json: { count: items.length, fields, items } }];\n"
+      }
+    },
+    {
+      "id": "4182942f-d826-587b-9109-4be0d54a278b",
+      "name": "Anything to review?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8df64c2b-b11d-53a4-a42b-8f509d05bcfe",
+              "leftValue": "={{ $json.count > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d1892f34-4466-532a-92cc-94f60d73c4ee",
+      "name": "Review page",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        200
+      ],
+      "parameters": {
+        "operation": "page",
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.fields) }}",
+        "options": {
+          "formTitle": "Content approval",
+          "buttonLabel": "Save decisions"
+        }
+      }
+    },
+    {
+      "id": "151db8fb-7349-5dee-b3cb-227e6746c537",
+      "name": "Decisions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// A field sent twice arrives as a list; the last value wins.\nconst a = Object.fromEntries(Object.entries($input.first().json).map(([k, v]) => [k, Array.isArray(v) ? v[v.length - 1] : v]));\nconst reviewer = $('Open approval form').first().json.Reviewer || 'reviewer';\nconst items = Object.fromEntries($('Build review page').first().json.items.map(i => [String(i.id), i]));\nconst cal = $env.CALENDAR_URL;\nconst nextHour = () => { const d = new Date(); d.setUTCMinutes(0, 0, 0); d.setUTCHours(d.getUTCHours() + 1); return d.toISOString(); };\nconst toIso = s => { s = String(s || '').trim(); if (!s) return null;\n  const d = new Date(s.replace(' ', 'T') + (/[zZ]|[+-]\\d\\d:?\\d\\d$/.test(s) ? '' : 'Z')); return isNaN(d) ? null : d.toISOString(); };\nconst norm = s => String(s || '').replace(/\\r\\n/g, '\\n').trim();\nconst ops = [], events = [], revisions = [], summary = [];\nfor (const [id, it] of Object.entries(items)) {\n  const choice = a[`Decision #${id}`];\n  if (!choice || choice === 'Skip') continue;\n  const edited = norm(a[`Text #${id}`]);\n  const reason = norm(a[`Reason #${id}`]);\n  const when = toIso(a[`Publish at #${id}`]) || it.scheduled_at || nextHour();\n  const note = s => `${s} by ${reviewer}${reason ? ': ' + reason : ''}`;\n  const ev = (decision, final) => events.push({ item_id: Number(id), channel: it.channel, campaign_id: it.campaign_id ?? null,\n    decision, draft: it.body, final: final ?? null, reason: reason || null, reviewer });\n  if (choice === 'Approve' || choice === 'Edit & approve') {\n    const changed = choice === 'Edit & approve' && edited && edited !== norm(it.body);\n    const patch = { scheduled_at: when };\n    if (changed) patch.body = edited;\n    ops.push({ stage: 1, method: 'PATCH', url: `${cal}/items/${id}`, body: patch });\n    ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'approved', note: note(changed ? 'edited and approved' : 'approved') } });\n    ev(changed ? 'edited' : 'approved', changed ? edited : it.body);\n    summary.push(`#${id}: ${changed ? 'edited and approved' : 'approved'} for ${when.slice(0, 16).replace('T', ' ')} UTC`);\n  } else if (choice.startsWith('Reject')) {\n    const rewrite = choice.includes('rewrite');\n    ops.push({ stage: 1, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'rejected', note: note('rejected') } });\n    ev('rejected', null);\n    if (rewrite && reason) {\n      ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'draft', note: 'sent back for an automatic rewrite' } });\n      revisions.push({ item_id: String(id), reason });\n      summary.push(`#${id}: rejected, being rewritten (\"${reason}\")`);\n    } else {\n      summary.push(`#${id}: rejected${rewrite ? ' (no reason given, so it was not rewritten)' : ''}`);\n    }\n  } else if (choice === 'Back to draft') {\n    ops.push({ stage: 1, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'draft', note: note('sent back to draft') } });\n    summary.push(`#${id}: back to draft`);\n  }\n}\nreturn [{ json: { ops, events, revisions, summary } }];\n"
+      }
+    },
+    {
+      "id": "5eff76ab-8c88-5aa2-af4c-9270302a2702",
+      "name": "Calendar ops",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const ops = $('Decisions').first().json.ops;\nreturn ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }];\n"
+      }
+    },
+    {
+      "id": "69aee9e0-6147-52a9-a1ae-9569138c49e3",
+      "name": "Stage 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Calendar ops').all().map(i => i.json).filter(o => o.stage === 1);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "e30abe67-7b5a-52cc-bfcd-c9adcd9ef5fc",
+      "name": "Run stage 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "713fa408-3299-571f-b47e-b6014d9f9357",
+      "name": "Stage 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Calendar ops').all().map(i => i.json).filter(o => o.stage === 2);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "a50f33e6-0e41-5f99-bdcc-6e7c6016ad28",
+      "name": "Run stage 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "eaef4108-97f0-54a5-9af8-009a11b079c1",
+      "name": "Learning events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        200
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst events = $('Decisions').first().json.events.map(e => ({ method: 'POST', url: `${$env.LEARNING_URL}/events`, body: e }));\nreturn opsToItems(events, $env.LEARNING_URL);\n"
+      }
+    },
+    {
+      "id": "6418f26f-5c51-5dd3-8dba-a9a6bd689574",
+      "name": "Log decisions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        200
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "4862ee02-7f1e-5d89-835a-6192e43e46ef",
+      "name": "Rewrites",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const r = $('Decisions').first().json.revisions;\nreturn r.length ? r.map(x => ({ json: x })) : [{ json: { item_id: '', reason: '' } }];\n"
+      }
+    },
+    {
+      "id": "3717ab0d-ac4e-5bc5-b96b-a3980f88ea41",
+      "name": "Start rewrites",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3600,
+        200
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf49ReviseDra"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "item_id": "={{ $json.item_id }}",
+            "reason": "={{ $json.reason }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "item_id",
+              "displayName": "item_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "68ae37fa-78cc-5a94-a7e8-3e8ba44ee977",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Decisions').first().json;\nconst failed = ['Run stage 1', 'Run stage 2'].flatMap(n => $(n).all())\n  .filter(r => !r.json.noop && r.json.statusCode >= 300).map(r => JSON.stringify((r.json.body || {}).detail || r.json.body));\nconst lines = d.summary.length ? d.summary : ['No decisions made.'];\nif (failed.length) lines.push('', 'Some updates failed:', ...failed);\nreturn [{ json: { message: lines.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "34c6f7c6-6698-51fc-bb1f-3f6c6350f613",
+      "name": "Done",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        4080,
+        200
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "Saved",
+        "completionMessage": "={{ $json.message }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "825ce678-7a85-58ef-8066-fba00b9629b3",
+      "name": "Nothing to review",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        420
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "All clear",
+        "completionMessage": "No drafts are waiting for review.",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Open approval form": {
+      "main": [
+        [
+          {
+            "node": "Items in review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Items in review": {
+      "main": [
+        [
+          {
+            "node": "Build review page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build review page": {
+      "main": [
+        [
+          {
+            "node": "Anything to review?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything to review?": {
+      "main": [
+        [
+          {
+            "node": "Review page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review page": {
+      "main": [
+        [
+          {
+            "node": "Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decisions": {
+      "main": [
+        [
+          {
+            "node": "Calendar ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar ops": {
+      "main": [
+        [
+          {
+            "node": "Stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 1": {
+      "main": [
+        [
+          {
+            "node": "Run stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 1": {
+      "main": [
+        [
+          {
+            "node": "Stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 2": {
+      "main": [
+        [
+          {
+            "node": "Run stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 2": {
+      "main": [
+        [
+          {
+            "node": "Learning events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Learning events": {
+      "main": [
+        [
+          {
+            "node": "Log decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log decisions": {
+      "main": [
+        [
+          {
+            "node": "Rewrites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rewrites": {
+      "main": [
+        [
+          {
+            "node": "Start rewrites",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start rewrites": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

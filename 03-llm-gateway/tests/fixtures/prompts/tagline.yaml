@@ -1,0 +1,7 @@
+name: tagline
+description: test prompt returning short text
+output: text
+max_chars: 40
+vars:
+  product: required
+template: "One tagline for {{ product }}."

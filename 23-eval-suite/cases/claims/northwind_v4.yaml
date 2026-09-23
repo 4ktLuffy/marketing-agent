@@ -1,0 +1,15 @@
+# Held-out set for the version that splits lists into separate details. Written before
+# that version was run. Several claims mix a true item with an invented one in one list,
+# the pattern seen in real output ("notes of chocolate and caramel").
+- {claim: "Desk Blend brings chocolate and hazelnut notes to your morning.", label: supported}
+- {claim: "Choose deliveries every 1, 2 or 4 weeks, and skip or pause any time.", label: supported}
+- {claim: "Team Box: two blends, 1.5 kg, shipped to each teammate.", label: supported}
+- {claim: "Our decaf is Swiss Water processed and roasted in small batches on Tuesdays.", label: supported}
+- {claim: "Free US shipping on subscriptions, roasted within 48 hours of shipping.", label: supported}
+- {claim: "Single-Origin Rotation: a light roast and a new origin every shipment.", label: supported}
+- {claim: "Desk Blend brings chocolate, hazelnut and cherry notes.", label: unsupported}
+- {claim: "Choose deliveries every 1, 2, 4 or 6 weeks.", label: unsupported}
+- {claim: "Team Box: three blends shipped to each teammate.", label: unsupported}
+- {claim: "Our decaf is organic and roasted on Tuesdays.", label: unsupported}
+- {claim: "Free shipping in the US and Canada.", label: unsupported}
+- {claim: "Single-Origin Rotation: a light roast, sourced only from Kenya.", label: unsupported}

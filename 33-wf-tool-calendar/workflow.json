@@ -1,0 +1,153 @@
+{
+  "id": "mktWf33Calendar0",
+  "name": "33 · Tool · Content calendar",
+  "nodes": [
+    {
+      "id": "d6642274-6f2d-555d-8ae8-4bd7b30fa964",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            },
+            {
+              "name": "scheduled_at",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "52c20ea8-9922-5cba-a45b-9509a7e973c1",
+      "name": "Build request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst base = $env.CALENDAR_URL;\nconst action = String(s.action || 'list').trim().toLowerCase();\nconst id = String(s.id || '').replace(/[^0-9]/g, '');\nconst need = (v, what) => { if (!v) throw new Error(`${action} needs ${what}`); return v; };\nlet req;\nif (action === 'list') {\n  // (URLSearchParams is not available in the Code node sandbox)\n  const q = [['status', s.status], ['channel', s.channel]]\n    .filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(String(v).trim())}`).join('&');\n  req = { method: 'GET', url: `${base}/items${q ? '?' + q : ''}` };\n} else if (action === 'get') {\n  req = { method: 'GET', url: `${base}/items/${need(id, 'an id')}` };\n} else if (action === 'create') {\n  req = { method: 'POST', url: `${base}/items`, body: { title: need(s.title, 'a title'),\n    channel: need(s.channel, 'a channel'), body: s.body || '', status: 'draft', scheduled_at: s.scheduled_at || null } };\n} else if (action === 'set_status') {\n  // Enforced here, not in the tool description: the model must never approve or publish.\n  const target = String(s.status || '').trim().toLowerCase();\n  if (['approved', 'published'].includes(target)) {\n    return [{ json: { action, method: 'GET', url: `${base}/health`, body: '{}', blocked: `Only a person can approve or publish, in the approval form (${$env.N8N_PUBLIC_URL || ''}form/mkt-content-approval). I can move items to draft, in_review or rejected.` } }];\n  }\n  req = { method: 'POST', url: `${base}/items/${need(id, 'an id')}/status`, body: { status: need(s.status, 'a status'), note: 'via chat agent' } };\n} else if (action === 'schedule') {\n  req = { method: 'PATCH', url: `${base}/items/${need(id, 'an id')}`, body: { scheduled_at: need(s.scheduled_at, 'scheduled_at (ISO, UTC)') } };\n} else {\n  throw new Error(`Unknown action \"${action}\". Use list, get, create, set_status or schedule.`);\n}\nreturn [{ json: { action, method: req.method, url: req.url, body: JSON.stringify(req.body || {}), send: req.method !== 'GET' } }];\n"
+      }
+    },
+    {
+      "id": "a073108e-b07d-5019-b195-ef78058cc013",
+      "name": "Call calendar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "3e2b084c-6cf8-5cc5-8575-cb23cc2f0acd",
+      "name": "Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const built = $('Build request').first().json;\nif (built.blocked) return [{ json: { result: built.blocked } }];\nconst action = built.action;\nconst res = $input.first().json.body;          // full response: an empty list is still one item\nconst rows = Array.isArray(res) ? res : [res];\nconst one = rows[0] || {};\nif (one.detail) return [{ json: { result: `Calendar refused: ${typeof one.detail === 'string' ? one.detail : JSON.stringify(one.detail)}` } }];\nconst line = i => `#${i.id} [${i.status}] ${i.channel} · ${i.scheduled_at || 'unscheduled'} · ${i.title}`;\nif (action === 'list') {\n  const items = rows.filter(r => r && r.id);\n  return [{ json: { result: items.length ? items.slice(0, 30).map(line).join('\\n') : 'No matching calendar items.' } }];\n}\nreturn [{ json: { result: `${line(one)}\\n\\n${one.body || ''}`.trim() } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Build request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build request": {
+      "main": [
+        [
+          {
+            "node": "Call calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call calendar": {
+      "main": [
+        [
+          {
+            "node": "Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

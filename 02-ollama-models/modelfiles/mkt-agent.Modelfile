@@ -1,0 +1,6 @@
+# Tool-calling model for the n8n chat agent (deploy 24).
+# Low temperature: the agent's job is to pick the right tool with the right arguments.
+FROM qwen2.5:7b
+PARAMETER num_ctx 16384
+PARAMETER temperature 0.2
+PARAMETER top_p 0.9

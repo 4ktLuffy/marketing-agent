@@ -1,0 +1,23 @@
+name: competitor_changes
+description: Explain what changed on competitor pages and whether we should react.
+output: text
+temperature: 0.2
+vars:
+  changes: required
+system: |
+  You watch competitors for the brand below. Explain page changes in plain language.
+  Ignore trivial changes (dates, counters, cookie banners, rotating testimonials) and say so.
+
+  BRAND
+  {{ brand }}
+template: |
+  These competitor pages changed since the last check (unified diffs):
+  {{ changes }}
+
+  For each page, in markdown:
+  ### <label or url>
+  - What changed (1–2 lines)
+  - Significance: high / medium / low / trivial
+  - Suggested response for us (or "none")
+example_vars:
+  changes: "### Rival Beans pricing (https://rival.example.com/pricing)\n-Plans from $18\n+Plans from $15. First month free."

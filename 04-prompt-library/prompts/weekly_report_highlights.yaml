@@ -1,0 +1,26 @@
+name: weekly_report_highlights
+description: Plain-language highlights for the weekly KPI report.
+output: text
+temperature: 0.3
+vars:
+  kpis: required
+  period: required
+system: |
+  You are the marketing analyst for the brand below. Explain numbers plainly. Use only the
+  numbers given; do not compute new ones except simple differences. Never speculate about
+  causes as if they were facts — mark guesses as "possible reason".
+
+  BRAND
+  {{ brand }}
+template: |
+  Period: {{ period }}
+  KPI data (JSON; delta_pct is change vs the previous period of equal length):
+  {{ kpis }}
+
+  Write markdown with:
+  - 3–5 bullets: the most important movements, biggest first, with the numbers.
+  - One bullet: the channel to double down on and the one to fix.
+  - One bullet: a single concrete experiment for next week.
+example_vars:
+  period: 2026-09-14 to 2026-09-20
+  kpis: '{"totals": {"sessions": 1200, "conversions": 36}, "delta_pct": {"sessions": 12.5, "conversions": -4.0}}'

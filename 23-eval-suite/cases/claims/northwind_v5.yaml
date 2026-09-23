@@ -1,0 +1,14 @@
+# Held-out set for v5 (number-with-unit details decided in code; skipped details re-asked
+# one by one). Written before v5 ran. Mixes paraphrases, numbers with units and lists.
+- {claim: "Every Desk Blend bag weighs 340 g and costs $18.", label: supported}
+- {claim: "Your beans leave us no later than 48 hours after roasting.", label: supported}
+- {claim: "Changed your mind? Unopened bags have a 30-day refund window.", label: supported}
+- {claim: "Team Box sends 1.5 kg of coffee, split over two blends, to each person on your team.", label: supported}
+- {claim: "A light roast from a new origin arrives with every Single-Origin Rotation shipment.", label: supported}
+- {claim: "Skip a delivery whenever you like, at no charge.", label: supported}
+- {claim: "Every Desk Blend bag weighs 500 g.", label: unsupported}
+- {claim: "Your beans leave us no later than 12 hours after roasting.", label: unsupported}
+- {claim: "Unopened bags have a 14-day refund window.", label: unsupported}
+- {claim: "Team Box sends 1.5 kg of coffee and a mug to each person on your team.", label: unsupported}
+- {claim: "Single-Origin Rotation always comes from Latin America.", label: unsupported}
+- {claim: "Skip a delivery whenever you like, and get 10% off your next one.", label: unsupported}

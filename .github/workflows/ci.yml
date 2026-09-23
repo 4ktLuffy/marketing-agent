@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: tests (${{ matrix.deploy }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        deploy:
+          - 03-llm-gateway
+          - 04-prompt-library
+          - 05-brand-service
+          - 06-knowledge-base
+          - 07-page-extractor
+          - 08-rss-watcher
+          - 09-change-monitor
+          - 10-keyword-suggest
+          - 11-social-listening
+          - 12-seo-auditor
+          - 13-readability
+          - 14-platform-rules
+          - 15-utm-builder
+          - 16-link-shortener
+          - 17-image-cards
+          - 18-email-renderer
+          - 19-content-calendar
+          - 20-analytics-ingest
+          - 21-report-builder
+          - 22-status-page
+          - 23-eval-suite
+          - 44-claim-checker
+          - 45-campaign-service
+          - 46-learning-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+        working-directory: ${{ matrix.deploy }}
+      - run: python -m pytest -q
+        working-directory: ${{ matrix.deploy }}
+
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: every n8n workflow.json is valid
+        run: |
+          python3 - <<'PY'
+          import glob, json
+          files = sorted(glob.glob("*-wf-*/workflow.json"))
+          ids = set()
+          for f in files:
+              wf = json.load(open(f))
+              names = {n["name"] for n in wf["nodes"]}
+              assert len(wf["id"]) == 16 and wf["id"] not in ids, f
+              ids.add(wf["id"])
+              assert len(names) == len(wf["nodes"]), f"{f}: duplicate node names"
+              for src, outs in wf["connections"].items():
+                  assert src in names, f"{f}: unknown node {src}"
+                  for kind in outs.values():
+                      for branch in kind:
+                          for c in branch:
+                              assert c["node"] in names, f"{f}: unknown node {c['node']}"
+          print(f"{len(files)} workflows ok")
+          PY
+
+  stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: compose file is valid
+        working-directory: 01-marketing-stack
+        run: cp .env.example .env && docker compose config -q
+      - name: shell scripts
+        run: shellcheck -S warning 01-marketing-stack/scripts/*.sh 02-ollama-models/scripts/*.sh

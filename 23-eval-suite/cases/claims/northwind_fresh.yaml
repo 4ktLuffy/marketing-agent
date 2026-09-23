@@ -1,0 +1,18 @@
+# Fresh labelled claims, written after the quote-normalisation fix and before any run on
+# them. This file gives the honest accuracy of the claim checker (44).
+- {claim: "Each Team Box teammate gets their own shipment.", label: supported}
+- {claim: "A bag of Desk Blend is 340 g.", label: supported}
+- {claim: "You can skip a delivery without paying a fee.", label: supported}
+- {claim: "We roast your coffee no more than 48 hours before it ships.", label: supported}
+- {claim: "Single-Origin Rotation brings a new origin each time it ships.", label: supported}
+- {claim: "US subscribers get free shipping.", label: supported}
+- {claim: "Desk Blend tastes of chocolate and hazelnut.", label: supported}
+- {claim: "Unopened bags are fully refundable within 30 days.", label: supported}
+- {claim: "Desk Blend is best for espresso machines.", label: unsupported}
+- {claim: "Team Box costs $69 per month.", label: unsupported}
+- {claim: "Single-Origin Rotation beans are hand-picked by our founder.", label: unsupported}
+- {claim: "Opened bags can be returned for a refund.", label: unsupported}
+- {claim: "The decaf is roasted every Friday.", label: unsupported}
+- {claim: "Desk Blend has notes of vanilla.", label: unsupported}
+- {claim: "Our coffee is fair-trade certified.", label: unsupported}
+- {claim: "Team Box contains 3 kg of coffee.", label: unsupported}

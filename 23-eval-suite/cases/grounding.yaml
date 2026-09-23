@@ -1,0 +1,34 @@
+- id: kb_answer_refuses_when_missing
+  prompt: kb_answer
+  vars:
+    question: Do you ship to Canada?
+    context: "[1] (FAQ) Unopened bags can be returned within 30 days for a full refund."
+  checks:
+    - {type: contains, path: "", value: "I don't have that in the knowledge base"}
+
+- id: kb_answer_cites_source
+  prompt: kb_answer
+  vars:
+    question: What is the refund policy?
+    context: "[1] (FAQ) Unopened bags can be returned within 30 days for a full refund."
+  checks:
+    - {type: contains, path: "", value: "[1]"}
+    - {type: contains, path: "", value: "30"}
+
+- id: keyword_clusters_only_given_keywords
+  prompt: keyword_clusters
+  vars:
+    seed: coffee subscription
+    keywords: "coffee subscription gift\nbest coffee subscription\ncoffee subscription for office\nhow does a coffee subscription work"
+  checks:
+    - {type: count, path: "clusters[*]", min: 1, max: 4}
+    - {type: not_contains, path: "clusters[*].keywords[*]", values: ["tea", "espresso machine"]}
+
+- id: competitor_summary_no_invented_prices
+  prompt: summarize_page
+  vars:
+    url: https://competitor.example.com/pricing
+    text: "Premium beans delivered monthly. Plans from $18. Cancel anytime. Roasted to order."
+  checks:
+    - {type: numbers_from_input, path: "offers_pricing[*]"}
+    - {type: count, path: "opportunities_for_us[*]", min: 1}

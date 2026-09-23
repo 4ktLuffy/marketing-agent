@@ -1,0 +1,18 @@
+# Sentences as they appear in REAL generated posts (added after an end-to-end run showed
+# the checker flagging calls to action and opinions). Written before the fix was run.
+# "supported" here means: fine to publish without a new approved fact.
+- {claim: "Try it now!", label: supported}
+- {claim: "Wake up and smell the coffee!", label: supported}
+- {claim: "Perfect for your morning ritual.", label: supported}
+- {claim: "Enjoy a calm cup at your desk.", label: supported}
+- {claim: "Ready to upgrade your workday coffee?", label: supported}
+- {claim: "We can't wait for you to taste it.", label: supported}
+- {claim: "Introducing our Swiss Water decaf, roasted in small batches every Tuesday.", label: supported}
+- {claim: "Desk Blend: chocolate and hazelnut notes for your drip machine.", label: supported}
+- {claim: "Free US shipping on every subscription.", label: supported}
+- {claim: "Our decaf supports ethical farming practices.", label: unsupported}
+- {claim: "A sustainable choice for your coffee break.", label: unsupported}
+- {claim: "Enjoy rich flavor without the jitters.", label: unsupported}
+- {claim: "The Swiss Water Process guarantees the finest decaf.", label: unsupported}
+- {claim: "Our decaf has notes of chocolate and caramel.", label: unsupported}
+- {claim: "Loved by thousands of remote workers.", label: unsupported}

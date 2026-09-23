@@ -1,0 +1,32 @@
+name: trend_digest
+description: Morning digest of industry news and brand mentions, with suggested actions.
+output: text
+temperature: 0.4
+vars:
+  items: required
+  mentions: optional
+  date: optional
+system: |
+  You brief the marketing team of the brand below every morning. Be short and concrete.
+  Only mention items that appear in the input; keep their links.
+
+  BRAND
+  {{ brand }}
+template: |
+  Date: {{ date or "today" }}
+
+  New articles from the feeds we follow:
+  {{ items }}
+
+  {% if mentions %}Recent online mentions of our keywords:
+  {{ mentions }}
+  {% endif %}
+
+  Write a markdown digest:
+  ## Top 3 things worth knowing — one line each + link + why it matters to us
+  ## Conversations to join — mentions we could reply to (skip the section if none)
+  ## Content ideas — 3 post ideas we could publish this week based on the above
+example_vars:
+  date: "2026-09-23"
+  items: "- Cold brew sales up in autumn (Roast Magazine) https://example.com/a\n- New EU packaging rules (Packaging News) https://example.com/b"
+  mentions: "- [hackernews] Ask HN: coffee that doesn't wreck your afternoon? https://news.ycombinator.com/item?id=1"

@@ -1,0 +1,326 @@
+{
+  "id": "mktWf51RulesForm",
+  "name": "51 · Form · Review learned rules",
+  "nodes": [
+    {
+      "id": "10cd7e41-fabc-536d-a6ea-33052cb886e4",
+      "name": "Open rules form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "formTitle": "Rules learned from your reviews",
+        "formDescription": "The agent proposed these rules from how you edited and rejected drafts. Rules you keep are added to every writing prompt.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Reviewer",
+              "placeholder": "your name",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "mkt-rules-review"
+    },
+    {
+      "id": "08261d53-05bb-5c92-a53c-b65b4e8a4dac",
+      "name": "Pending rules",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.LEARNING_URL }}/rules",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "pending"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "252c3cd5-20a7-5ea2-b24b-b9024a219c70",
+      "name": "Build page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst rules = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(r => r && r.id).slice(0, 15);\nconst fields = [];\nfor (const r of rules) {\n  fields.push({ fieldType: 'html', html: `<p><b>${r.scope !== 'all' ? '[' + esc(r.scope) + '] ' : ''}${esc(r.text)}</b></p>` });\n  fields.push({ fieldLabel: `Rule #${r.id}`, fieldType: 'dropdown', requiredField: true,\n    fieldOptions: { values: [{ option: 'Decide later' }, { option: 'Keep' }, { option: 'Reject' }] } });\n}\nreturn [{ json: { count: rules.length, fields } }];\n"
+      }
+    },
+    {
+      "id": "5b604930-7171-5d3e-83ac-2020753c8166",
+      "name": "Any pending?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e8c52c79-a3ea-5892-9d21-f9ae08796e63",
+              "leftValue": "={{ $json.count > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "463484d3-7130-5851-9cc1-c0a1399d0226",
+      "name": "Rules page",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        200
+      ],
+      "parameters": {
+        "operation": "page",
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify($json.fields) }}",
+        "options": {
+          "formTitle": "Rules learned from your reviews",
+          "buttonLabel": "Save"
+        }
+      }
+    },
+    {
+      "id": "d2cf96ea-b4d0-584a-81a1-420fcefb86a3",
+      "name": "Decisions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst base = $env.LEARNING_URL;\nconst map = { 'Keep': 'active', 'Reject': 'rejected' };\nconst ops = Object.entries($input.first().json)\n  .map(([k, v]) => [k.match(/^Rule #(\\d+)$/), v])\n  .filter(([m, v]) => m && map[v])\n  .map(([m, v]) => ({ method: 'POST', url: `${base}/rules/${m[1]}/status`, body: { status: map[v] }, label: `#${m[1]} ${v.toLowerCase()}` }));\nreturn opsToItems(ops, base);\n"
+      }
+    },
+    {
+      "id": "8b0d3932-9126-594d-8e80-f8170d00356e",
+      "name": "Save decisions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "0671da82-2a4f-5ed8-a1d9-f845744265fa",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const res = $input.all();\nconst lines = res.filter(r => !r.json.noop).map((r, i) => {\n  const op = $('Decisions').all()[i].json;\n  return `${op.label}: ${r.json.statusCode < 300 ? 'saved' : 'failed'}`;\n});\nreturn [{ json: { message: lines.length ? lines.join('\\n') : 'Nothing decided.' } }];\n"
+      }
+    },
+    {
+      "id": "c89aabe2-07cf-596d-a24b-a8c7637390e3",
+      "name": "Done",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        200
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "Saved",
+        "completionMessage": "={{ $json.message }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "8f35be9c-8118-5547-ac7c-2c4f2c4a6fce",
+      "name": "Nothing pending",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        420
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "All clear",
+        "completionMessage": "No proposed rules waiting.",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Open rules form": {
+      "main": [
+        [
+          {
+            "node": "Pending rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pending rules": {
+      "main": [
+        [
+          {
+            "node": "Build page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build page": {
+      "main": [
+        [
+          {
+            "node": "Any pending?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any pending?": {
+      "main": [
+        [
+          {
+            "node": "Rules page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rules page": {
+      "main": [
+        [
+          {
+            "node": "Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decisions": {
+      "main": [
+        [
+          {
+            "node": "Save decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save decisions": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

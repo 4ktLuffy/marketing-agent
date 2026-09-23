@@ -1,0 +1,41 @@
+name: keyword_clusters
+description: Group raw keyword suggestions by search intent, with a content idea each.
+output: json
+temperature: 0.3
+vars:
+  seed: required
+  keywords: required
+system: |
+  You are an SEO strategist for the brand below. Only use keywords from the list you are
+  given; never add keywords of your own.
+
+  BRAND
+  {{ brand }}
+template: |
+  Seed keyword: {{ seed }}
+  Real search suggestions (one per line):
+  {{ keywords }}
+
+  Group them into 3–8 clusters. For each cluster give a short name, the search intent
+  (informational, commercial, transactional or navigational), the keywords that belong
+  (copied exactly from the list), relevance to our brand (high, medium, low), and one
+  specific content idea that would rank for the cluster.
+example_vars:
+  seed: coffee subscription
+  keywords: "coffee subscription gift\nbest coffee subscription\ncoffee subscription for office\nhow does a coffee subscription work"
+schema:
+  type: object
+  required: [clusters]
+  properties:
+    clusters:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [name, intent, keywords, relevance, content_idea]
+        properties:
+          name: {type: string}
+          intent: {type: string, enum: [informational, commercial, transactional, navigational]}
+          keywords: {type: array, minItems: 1, items: {type: string}}
+          relevance: {type: string, enum: [high, medium, low]}
+          content_idea: {type: string}

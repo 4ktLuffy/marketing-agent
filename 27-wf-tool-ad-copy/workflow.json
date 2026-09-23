@@ -1,0 +1,200 @@
+{
+  "id": "mktWf27AdCopy000",
+  "name": "27 · Tool · Ad copy",
+  "nodes": [
+    {
+      "id": "e634a4fa-cbe2-568b-8dc8-18a49d320e18",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "product",
+              "type": "string"
+            },
+            {
+              "name": "offer",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            },
+            {
+              "name": "keywords",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2ba79b58-c9a3-52de-a618-de0f6cbf71da",
+      "name": "Write ad copy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'ad_copy', vars: { product: $json.product, offer: $json.offer || null, audience: $json.audience || null, keywords: $json.keywords || null } }) }}"
+      }
+    },
+    {
+      "id": "327e9601-997d-55b6-a7e8-1d9a35f83fce",
+      "name": "Brand check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BRAND_URL }}/check",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: [...$json.output.headlines, ...$json.output.descriptions].join('\\n'), channel: 'paid_search' }) }}"
+      }
+    },
+    {
+      "id": "a038b71e-49da-5f5b-9bf4-20078f57be32",
+      "name": "Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ads = $('Write ad copy').first().json.output;\nconst brand = $input.first().json;\nconst errors = (brand.violations || []).filter(v => v.severity === 'error').map(v => v.detail);\nconst body = [\n  'Headlines (max 30):', ...ads.headlines.map(h => `- ${h} (${h.length})`),\n  '', 'Descriptions (max 90):', ...ads.descriptions.map(d => `- ${d} (${d.length})`),\n].join('\\n');\nreturn [{ json: { body, errors, product: $('Start').first().json.product } }];\n"
+      }
+    },
+    {
+      "id": "aa22958c-7237-5452-91ec-752d04475e0b",
+      "name": "Save draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: ('Search ads: ' + $json.product).slice(0, 120), channel: 'google_ads', body: $json.body, status: $json.errors.length ? 'draft' : 'in_review', notes: $json.errors.length ? 'Brand: ' + $json.errors.join('; ') : null }) }}"
+      }
+    },
+    {
+      "id": "a8c936b0-88a7-5acb-87e6-5f0bb62426e7",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const f = $('Format').first().json;\nconst s = $input.first().json;\nconst warn = f.errors.length ? `\\n\\nBrand problems to fix by hand: ${f.errors.join('; ')}` : '';\nreturn [{ json: { result: `Saved as calendar #${s.id} (${s.status}).\\n\\n${f.body}${warn}` } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Write ad copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write ad copy": {
+      "main": [
+        [
+          {
+            "node": "Brand check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand check": {
+      "main": [
+        [
+          {
+            "node": "Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format": {
+      "main": [
+        [
+          {
+            "node": "Save draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

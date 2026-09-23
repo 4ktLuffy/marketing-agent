@@ -1,0 +1,317 @@
+{
+  "id": "mktWf40ContentPl",
+  "name": "40 · Schedule · Weekly content planner",
+  "nodes": [
+    {
+      "id": "c2f8cf0b-ad2b-5b4f-bcf3-446bbac8a000",
+      "name": "Mondays 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ba0ec1c1-ef95-5411-be95-a292d8ca6387",
+      "name": "What performed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/insights",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "60"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "377b06d4-6a75-59ed-b75e-527aaa7f0d42",
+      "name": "Recent posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "published"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "54988b61-091c-5dde-b4da-5641d1d71acb",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst recent = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.title).slice(-20);\nconst d = new Date(); d.setUTCHours(0, 0, 0, 0);\nd.setUTCDate(d.getUTCDate() + ((8 - d.getUTCDay()) % 7 || 7));   // next Monday\nconst channels = ($env.PLAN_CHANNELS || 'linkedin, instagram, x').split(',').map(c => c.trim().toLowerCase()).filter(Boolean);\nconst ins = $('What performed').first().json;\nconst perf = [\n  ...(ins.by_channel || []).map(c => `- ${c.channel}: ${c.avg_clicks} clicks per post (${c.posts} posts)`),\n  ...(ins.top_posts || []).slice(0, 5).map(p => `- top: ${p.channel} \"${p.title}\" (${p.clicks} clicks)`),\n].join('\\n');\nreturn [{ json: { week_start: d.toISOString().slice(0, 10), channels, performance: perf || null,\n  recent_titles: recent.map(i => `- ${i.title}`).join('\\n') || null } }];\n"
+      }
+    },
+    {
+      "id": "3265a793-eff2-5c4b-9ba0-e321b550cfde",
+      "name": "Plan week",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'content_plan', vars: { week_start: $json.week_start, channels: $json.channels.join(', '), posts_per_channel: $env.PLAN_POSTS_PER_CHANNEL || 3, recent_titles: $json.recent_titles, themes: $env.PLAN_THEMES || null, performance: $json.performance } }) }}"
+      }
+    },
+    {
+      "id": "9e252bc3-d3ab-554e-a7a6-c2831f685df6",
+      "name": "To calendar items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst days = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };\nreturn $input.first().json.output.items\n  .filter(i => p.channels.includes(String(i.channel).trim().toLowerCase()))\n  .map(i => {\n    const d = new Date(p.week_start + 'T00:00:00Z');\n    d.setUTCDate(d.getUTCDate() + days[i.day]);\n    const [h, m] = i.time.split(':').map(Number);\n    d.setUTCHours(Math.min(h, 23), m, 0, 0);\n    return { json: { title: i.title, channel: i.channel.trim().toLowerCase(), status: 'idea',\n      body: `[${i.angle}] ${i.brief}`, scheduled_at: d.toISOString(), campaign: `week-${p.week_start}` } };\n  });\n"
+      }
+    },
+    {
+      "id": "84d8dfd5-f895-5501-a170-3e374d80e97b",
+      "name": "Add ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    },
+    {
+      "id": "8875e3c8-9876-5015-866b-fcddaa6256a2",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const lines = $input.all().map(i => `- ${i.json.scheduled_at.slice(0, 16).replace('T', ' ')} ${i.json.channel}: ${i.json.title} (#${i.json.id})`);\nreturn [{ json: { text: `*Content plan for week of ${$('Prepare').first().json.week_start}* — ${lines.length} ideas in the calendar\\n${lines.join('\\n')}` } }];\n"
+      }
+    },
+    {
+      "id": "ad803716-6b21-5c31-8e88-622e7d28a505",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no webhook is configured.\nreturn $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "0b3f67fb-cf1c-50a6-baf9-e5d3c84ce92e",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Mondays 07:00": {
+      "main": [
+        [
+          {
+            "node": "What performed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "What performed": {
+      "main": [
+        [
+          {
+            "node": "Recent posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recent posts": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Plan week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan week": {
+      "main": [
+        [
+          {
+            "node": "To calendar items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To calendar items": {
+      "main": [
+        [
+          {
+            "node": "Add ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add ideas": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

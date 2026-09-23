@@ -1,0 +1,477 @@
+{
+  "id": "mktWf35QualityGa",
+  "name": "35 · Tool · Quality gate",
+  "nodes": [
+    {
+      "id": "5cd2002a-cdf2-5d3c-8710-b471694e1137",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "text",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "context",
+              "type": "string"
+            },
+            {
+              "name": "ref",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "85cc5668-b5e9-5157-9557-cfec334c716a",
+      "name": "Brand check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BRAND_URL }}/check",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, channel: $json.channel }) }}"
+      }
+    },
+    {
+      "id": "dbef4a32-6ab8-5d4f-b5ff-1fdcaa2bb622",
+      "name": "Platform rules",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.RULES_URL }}/validate",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $('Start').item.json.channel, text: $('Start').item.json.text }) }}"
+      }
+    },
+    {
+      "id": "06bc85fa-5ead-5baa-a632-2bf77fd2d19c",
+      "name": "Readability",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.READABILITY_URL }}/score",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Start').item.json.text }) }}"
+      }
+    },
+    {
+      "id": "9c2ce6ac-83bd-5e05-a681-370679c09b0f",
+      "name": "Claim check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLAIMS_URL }}/verify",
+        "options": {
+          "timeout": 900000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Start').item.json.text, context: $('Start').item.json.context || null }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "0b011769-fce5-5a8a-bf95-eecd871185f7",
+      "name": "Collect problems",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const start = $('Start').item.json;\nconst brand = $('Brand check').item.json;\nconst rules = $('Platform rules').item.json;   // 422 for channels without limits (blog, email body)\nconst read = $('Readability').item.json;\nconst claims = $('Claim check').item.json;     // no \"ok\" field = checker down or failed\nconst sev = s => v => (v || []).filter(x => (x.severity || 'error') === s);\n// A 7B model fixes copy when told what to DO; diagnostic wording (\"contains banned\n// phrase 'x'\") made it return the draft unchanged (0/6 vs 6/6 in local tests).\nfunction instruction(v) {\n  switch (v.rule) {\n    case 'banned_phrase': return `Remove the banned claim \"${v.match || v.detail}\" (reword it without those words)`;\n    case 'unsupported_claim': return `Remove the claim \"${v.detail}\" or reword it to match our approved facts (it is not in them)`;\n    case 'missing_disclaimer': return `Add a disclosure: ${v.detail}`;\n    case 'too_long': return `Shorten to at most ${rules.limit} characters (it is ${rules.length})`;\n    case 'too_many_hashtags': return `Use fewer hashtags (${v.detail})`;\n    case 'exclamation_marks': return 'Use at most one exclamation mark';\n    case 'all_caps': return 'Write words in normal case, not ALL CAPS';\n    case 'too_many_emojis': return `Use fewer emojis (${v.detail})`;\n    case 'above_recommended': return `Make it shorter (${v.detail})`;\n    default: return `Fix: ${v.detail}`;\n  }\n}\nconst claimErrors = (claims.unsupported || []).map(u => ({ rule: 'unsupported_claim', detail: u, severity: 'error' }));\nconst errors = [...sev('error')(brand.violations), ...sev('error')(rules.violations), ...claimErrors];\nconst warns = [...sev('warn')(brand.violations), ...sev('warn')(rules.violations)];\nconst warnings = warns.map(v => v.detail);\nif (typeof claims.ok !== 'boolean') warnings.push('claims NOT fact-checked (claim checker unavailable)');\nreturn { json: {\n  ref: start.ref || null,\n  text: start.text, channel: start.channel, context: start.context || null, limit: rules.limit ?? null,\n  problems: errors.map(v => v.rule === 'unsupported_claim' ? `unsupported claim: ${v.detail}` : v.detail),\n  warnings, instructions: [...errors, ...warns].map(instruction),\n  readability: read.verdict ?? null, needs_fix: errors.length > 0,\n} };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "234425f3-aa3b-5001-9273-8c782bf59429",
+      "name": "Needs fix?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "43db5ce2-a552-5f5a-8f75-02b286e00e24",
+              "leftValue": "={{ $json.needs_fix }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6dd67f5f-814f-5560-958e-762534789206",
+      "name": "Rewrite",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'rewrite_to_fix', vars: { text: $json.text, problems: $json.instructions.map(p => '- ' + p).join('\\n'), channel: $json.channel, limit: $json.limit } }) }}"
+      }
+    },
+    {
+      "id": "12c5837e-e709-50be-9976-d5d29d9b55fa",
+      "name": "Recheck brand",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BRAND_URL }}/check",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.output.text, channel: $('Collect problems').item.json.channel }) }}"
+      }
+    },
+    {
+      "id": "fb32ef64-117f-5be7-b555-3d844dc68b03",
+      "name": "Recheck rules",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.RULES_URL }}/validate",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $('Collect problems').item.json.channel, text: $('Rewrite').item.json.output.text }) }}"
+      }
+    },
+    {
+      "id": "0ea9ee9a-a0a9-59e7-b55e-29f47fcb4ba5",
+      "name": "Recheck claims",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLAIMS_URL }}/verify",
+        "options": {
+          "timeout": 900000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Rewrite').item.json.output.text, context: $('Start').item.json.context || null }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "324e585c-c22d-51dc-aaaf-4e6d67575ba9",
+      "name": "Fixed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Collect problems').item.json;\nconst text = $('Rewrite').item.json.output.text;\nconst b = $('Recheck brand').item.json;\nconst r = $('Recheck rules').item.json;\nconst cl = $('Recheck claims').item.json;\nconst errors = v => (v || []).filter(x => (x.severity || 'error') === 'error');\nconst remaining = [\n  ...errors(b.violations).map(v => `brand: ${v.detail}`),\n  ...errors(r.violations).map(v => `${prev.channel}: ${v.detail}`),\n  ...(cl.unsupported || []).map(u => `unsupported claim: ${u}`),\n];\nconst warns = v => (v || []).filter(x => x.severity === 'warn').map(x => x.detail);\nconst warnings = [...warns(b.violations), ...warns(r.violations)];\nif (typeof cl.ok !== 'boolean') warnings.push('claims NOT fact-checked (claim checker unavailable)');\nreturn { json: { ref: prev.ref, ok: remaining.length === 0, text, channel: prev.channel, rewritten: true,\n  fixed: prev.problems, problems: remaining, warnings, readability: prev.readability } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "eed5138e-7124-5935-be9a-edcd783cce71",
+      "name": "Passed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const p = $json;\nreturn { json: { ref: p.ref, ok: true, text: p.text, channel: p.channel, rewritten: false, fixed: [],\n  problems: [], warnings: p.warnings, readability: p.readability } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "1636e964-4525-56fa-bbb1-f25d6b9ff1e6",
+      "name": "Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Brand check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand check": {
+      "main": [
+        [
+          {
+            "node": "Platform rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Platform rules": {
+      "main": [
+        [
+          {
+            "node": "Readability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readability": {
+      "main": [
+        [
+          {
+            "node": "Claim check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim check": {
+      "main": [
+        [
+          {
+            "node": "Collect problems",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect problems": {
+      "main": [
+        [
+          {
+            "node": "Needs fix?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs fix?": {
+      "main": [
+        [
+          {
+            "node": "Rewrite",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Passed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rewrite": {
+      "main": [
+        [
+          {
+            "node": "Recheck brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck brand": {
+      "main": [
+        [
+          {
+            "node": "Recheck rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck rules": {
+      "main": [
+        [
+          {
+            "node": "Recheck claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck claims": {
+      "main": [
+        [
+          {
+            "node": "Fixed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fixed": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

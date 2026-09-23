@@ -1,0 +1,18 @@
+# Held-out labelled claims, written AFTER the checker was tuned on northwind.yaml and
+# never used for tuning. Report accuracy on this file as the honest number.
+- {claim: "Team Box ships to every member of the team.", label: supported}
+- {claim: "Single-Origin Rotation costs $22 per 250 g bag.", label: supported}
+- {claim: "Desk Blend is roasted to a medium level.", label: supported}
+- {claim: "Refunds are available on unopened bags for 30 days.", label: supported}
+- {claim: "Deliveries can be scheduled every 1, 2 or 4 weeks.", label: supported}
+- {claim: "Pausing a delivery costs nothing.", label: supported}
+- {claim: "Desk Blend suits drip brewing.", label: supported}
+- {claim: "The decaf uses the Swiss Water process and is roasted weekly on Tuesdays.", label: supported}
+- {claim: "Team Box contains three blends.", label: unsupported}
+- {claim: "Single-Origin Rotation is roasted dark.", label: unsupported}
+- {claim: "Desk Blend has notes of cherry and hazelnut.", label: unsupported}
+- {claim: "Shipping is free on one-off orders.", label: unsupported}
+- {claim: "Deliveries can be scheduled daily.", label: unsupported}
+- {claim: "Our decaf is 99.9% caffeine free.", label: unsupported}
+- {claim: "Baristas at top cafes recommend Desk Blend.", label: unsupported}
+- {claim: "Team Box includes a brewing guide.", label: unsupported}

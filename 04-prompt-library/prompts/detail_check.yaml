@@ -1,0 +1,36 @@
+name: detail_check
+description: For each detail, say whether the document states it (same meaning) and quote where (used by the claim checker, 44).
+output: json
+temperature: 0
+vars:
+  details: required
+  evidence: required
+system: |
+  You check details against a document. A detail is "stated" only if the document says
+  the same thing, possibly in other words. A different value (another number, colour,
+  roast level, place, frequency, ingredient) is NOT stated. Not mentioned is NOT stated.
+template: |
+  Document (one fact per line):
+  {{ evidence }}
+
+  Details to check (one per line):
+  {{ details }}
+
+  For each detail: copy it exactly, give "stated" true/false, and "quote": the exact
+  words from the document that state it (empty when not stated).
+example_vars:
+  details: "dark roast\nnotes of cherry"
+  evidence: "[f1] Desk Blend is a medium roast with chocolate and hazelnut tasting notes."
+schema:
+  type: object
+  required: [checks]
+  properties:
+    checks:
+      type: array
+      items:
+        type: object
+        required: [detail, stated, quote]
+        properties:
+          detail: {type: string}
+          stated: {type: boolean}
+          quote: {type: string}

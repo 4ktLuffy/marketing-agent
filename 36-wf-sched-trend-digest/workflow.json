@@ -1,0 +1,243 @@
+{
+  "id": "mktWf36TrendDige",
+  "name": "36 · Schedule · Morning trend digest",
+  "nodes": [
+    {
+      "id": "7431ba03-4472-5a1d-ab8a-b47664f539ef",
+      "name": "Every day 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "16335fd4-ca22-5fa4-9400-757c63446ef6",
+      "name": "Poll feeds",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.RSS_URL }}/poll",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ max_items_per_feed: 10 }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "fcaaedbd-58cd-5192-bb4c-d8dacd079d81",
+      "name": "Search mentions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LISTENING_URL }}/search",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $env.LISTENING_QUERY || 'marketing', days: 1, limit: 10 }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d8db8ab2-a27b-5635-9526-6763be832b6e",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const feeds = $('Poll feeds').first().json.new_items || [];\nconst mentions = $input.first().json.mentions || [];\nif (!feeds.length && !mentions.length) return [];   // nothing new: stay quiet\nconst date = new Date().toISOString().slice(0, 10);\nreturn [{ json: {\n  date,\n  items: feeds.slice(0, 25).map(i => `- ${i.title} (${i.feed}) ${i.link}`).join('\\n') || '(no new articles)',\n  mentions: mentions.slice(0, 10).map(m => `- [${m.source}] ${m.title} ${m.url}`).join('\\n') || null,\n} }];\n"
+      }
+    },
+    {
+      "id": "da745c50-b6d2-5ded-aba8-22b75d538008",
+      "name": "Write digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'trend_digest', vars: { items: $json.items, mentions: $json.mentions, date: $json.date } }) }}"
+      }
+    },
+    {
+      "id": "7a895d65-5f64-52d2-ae0c-f1fe5c827f9f",
+      "name": "Save to knowledge base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/docs",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ doc_id: 'digest-' + $('Prepare').first().json.date, title: 'Trend digest ' + $('Prepare').first().json.date, text: $json.output, source: 'trend-digest' }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "15376b55-b5ad-5f0f-ab06-6ad0a1ae263a",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no webhook is configured.\nreturn $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "4d10337f-1a1c-51c3-9708-d72af00561d7",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: '*Morning digest*\\n' + $('Write digest').first().json.output, content: '*Morning digest*\\n' + $('Write digest').first().json.output }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Every day 08:00": {
+      "main": [
+        [
+          {
+            "node": "Poll feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll feeds": {
+      "main": [
+        [
+          {
+            "node": "Search mentions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search mentions": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Write digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write digest": {
+      "main": [
+        [
+          {
+            "node": "Save to knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

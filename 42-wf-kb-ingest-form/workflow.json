@@ -1,0 +1,179 @@
+{
+  "id": "mktWf42KbIngest0",
+  "name": "42 · Form · Add to knowledge base",
+  "nodes": [
+    {
+      "id": "2ffffc86-793b-5a65-a2d4-24f659b4a0de",
+      "name": "Knowledge form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "formTitle": "Teach the marketing agent",
+        "formDescription": "Add product facts, FAQs, policies or a web page. The agent uses these when writing and answering.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Title",
+              "requiredField": true,
+              "placeholder": "e.g. Shipping FAQ"
+            },
+            {
+              "fieldLabel": "Page URL",
+              "placeholder": "https://… (optional: fetch this page)"
+            },
+            {
+              "fieldLabel": "Text",
+              "fieldType": "textarea",
+              "placeholder": "or paste the content here"
+            },
+            {
+              "fieldLabel": "Source",
+              "placeholder": "optional label, e.g. website, sales deck"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "mkt-knowledge-add"
+    },
+    {
+      "id": "c7f47e95-c546-51a8-87ed-921de97d87b4",
+      "name": "Fetch page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EXTRACTOR_URL }}/extract",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json['Page URL'] || 'none' }) }}"
+      }
+    },
+    {
+      "id": "8faabfe7-ff1c-50e6-b760-23ce7610c782",
+      "name": "Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const f = $('Knowledge form').first().json;\nconst page = $input.first().json;\nconst text = String(f['Text'] || '').trim() || String(page.text || '').trim();\nif (!text) throw new Error(f['Page URL'] ? `Could not read ${f['Page URL']}` : 'Paste text or give a page URL');\nconst id = String(f['Title']).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);\nreturn [{ json: { doc_id: id, title: f['Title'], text, source: f['Source'] || f['Page URL'] || 'form' } }];\n"
+      }
+    },
+    {
+      "id": "f32b124f-8b1a-55d4-887d-c223267bc9b5",
+      "name": "Add document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/docs",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    },
+    {
+      "id": "7be1000d-ce70-5504-a0d1-b5191caf4c94",
+      "name": "Done",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "Added",
+        "completionMessage": "=Saved “{{ $('Document').first().json.title }}” as {{ $json.chunks }} searchable chunks. Adding the same title again replaces it.",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Knowledge form": {
+      "main": [
+        [
+          {
+            "node": "Fetch page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch page": {
+      "main": [
+        [
+          {
+            "node": "Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document": {
+      "main": [
+        [
+          {
+            "node": "Add document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add document": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

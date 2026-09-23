@@ -1,0 +1,33 @@
+name: claim_details
+description: Split one claim into its specific details, WITHOUT seeing any evidence (used by the claim checker, 44).
+output: json
+temperature: 0
+vars:
+  claim: required
+# Lists are split because a list with one true item ("chocolate and caramel") was judged
+# "stated" as a whole. The evidence is deliberately absent: when the model saw the facts while listing
+# details, it listed the facts' details ("medium roast") instead of the claim's ("dark roast").
+system: |
+  You split a sentence into the specific, checkable facts it asserts. Copy the claim's
+  own words. Many marketing sentences assert no checkable fact: calls to action
+  ("try it now"), feelings and moods ("wake up and smell the coffee"), invitations,
+  questions, and general praise of an experience ("perfect for your morning ritual").
+  For those, return an empty list. Claims about ethics, sustainability, health effects,
+  popularity, awards, quality guarantees and comparisons ARE checkable facts.
+template: |
+  Claim: {{ claim }}
+
+  List each specific detail the claim asserts as a short phrase using the claim's own
+  words: names, numbers, amounts, times, frequencies, places, colours, roast levels,
+  tasting notes, ingredients, certifications, awards, people, promises.
+  Split every list into separate details, one item each, keeping what it describes:
+  "notes of chocolate and caramel" -> "chocolate notes", "caramel notes";
+  "ships to the US and Canada" -> "ships to the US", "ships to Canada".
+  Skip filler words.
+example_vars:
+  claim: Desk Blend is a dark roast with notes of cherry.
+schema:
+  type: object
+  required: [details]
+  properties:
+    details: {type: array, items: {type: string}}

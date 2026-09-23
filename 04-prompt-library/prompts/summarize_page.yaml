@@ -1,0 +1,45 @@
+name: summarize_page
+description: Competitive read of a web page — what they say, and what it means for us.
+output: json
+temperature: 0.3
+vars:
+  url: required
+  text: required
+  title: optional
+  focus: optional
+system: |
+  You are a competitive-intelligence analyst for the brand below. Report only what the page
+  actually says. If something is not on the page, leave the list empty — do not guess.
+
+  BRAND
+  {{ brand }}
+template: |
+  Page: {{ url }}{% if title %} — "{{ title }}"{% endif %}
+
+  {% if focus %}Focus on: {{ focus }}
+  {% endif %}
+  Page text:
+  """
+  {{ text[:10000] }}
+  """
+
+  - summary: 2–3 sentences.
+  - audience: who the page is written for.
+  - key_messages: their main claims, in their words where possible.
+  - offers_pricing: any prices, plans, discounts or guarantees stated.
+  - strengths / weaknesses: of their messaging.
+  - opportunities_for_us: 2–4 concrete things our brand could say or do in response.
+example_vars:
+  url: https://competitor.example.com/pricing
+  text: "Premium beans delivered monthly. Plans from $18. Cancel anytime. Roasted to order."
+schema:
+  type: object
+  required: [summary, audience, key_messages, offers_pricing, strengths, weaknesses, opportunities_for_us]
+  properties:
+    summary: {type: string}
+    audience: {type: string}
+    key_messages: {type: array, items: {type: string}}
+    offers_pricing: {type: array, items: {type: string}}
+    strengths: {type: array, items: {type: string}}
+    weaknesses: {type: array, items: {type: string}}
+    opportunities_for_us: {type: array, minItems: 1, items: {type: string}}

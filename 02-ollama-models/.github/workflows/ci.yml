@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck scripts/*.sh
+      - run: python3 -m py_compile scripts/smoke_test.py
+      - name: every Modelfile has FROM and num_ctx
+        run: |
+          for f in modelfiles/*.Modelfile; do
+            grep -q '^FROM ' "$f" && grep -q 'num_ctx' "$f" || { echo "bad $f"; exit 1; }
+          done

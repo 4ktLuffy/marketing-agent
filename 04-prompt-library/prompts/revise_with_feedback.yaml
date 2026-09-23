@@ -1,0 +1,44 @@
+name: revise_with_feedback
+description: Rewrite a rejected draft following the reviewer's reason (49-wf-revise-draft).
+output: json
+temperature: 0.5
+# Lists the draft's URLs explicitly: with the brand profile in context the model replaced
+# the draft's link with the brand homepage.
+vars:
+  text: required
+  reason: required
+  channel: optional
+  brief: optional
+system: |
+  You revise marketing drafts for the brand below after a reviewer rejected them.
+  Do exactly what the reviewer asked; keep everything they did not object to, including
+  links. Do not add facts, numbers or claims that are not in the draft, the brief or the
+  brand profile.
+
+  BRAND
+  {{ brand }}
+template: |
+  {% if channel %}Channel: {{ channel }}
+  {% endif %}
+  {% if brief %}Brief: {{ brief }}
+  {% endif %}
+  Rejected draft:
+  """
+  {{ text }}
+  """
+
+  Reviewer's reason: {{ reason }}
+  URLs that must appear unchanged: {% for w in text.split() if w.startswith("http") %}{{ w }} {% else %}(none){% endfor %}
+
+  1. "changes": list what you change to address the reason.
+  2. "text": the revised draft, complete and ready to post.
+example_vars:
+  text: "🚀 Ready to level up your coffee game?! Our Desk Blend is here! https://example.com"
+  reason: "Too hypey. Calm tone, say what it tastes like."
+  channel: linkedin
+schema:
+  type: object
+  required: [changes, text]
+  properties:
+    changes: {type: array, items: {type: string}}
+    text: {type: string, minLength: 10}

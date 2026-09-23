@@ -1,0 +1,266 @@
+{
+  "id": "mktWf25BlogWrite",
+  "name": "25 · Tool · Blog writer",
+  "nodes": [
+    {
+      "id": "43c5d00e-123a-5b98-827f-1d404c335804",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "topic",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            },
+            {
+              "name": "keywords",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e4d9b63d-31ad-5da1-8de8-a66cd2215735",
+      "name": "Search knowledge base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/search",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.topic, k: 4 }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "575cf35c-d882-5b39-9754-74fa9c7df76c",
+      "name": "Build context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const start = $('Start').first().json;\nconst results = ($input.first().json.results || []).filter(r => r.score >= 0.35);\nconst context = results.map((r, i) => `[${i + 1}] (${r.title}) ${r.chunk}`).join('\\n');\nreturn [{ json: { ...start, context } }];\n"
+      }
+    },
+    {
+      "id": "aafa48d1-5a06-540f-b76f-6840ee97e789",
+      "name": "Write blog post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'blog_post', vars: { topic: $json.topic, audience: $json.audience || null, keywords: $json.keywords || null, context: $json.context || null } }) }}"
+      }
+    },
+    {
+      "id": "4e1298fb-a5de-5baa-818a-916e73e4d3e7",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.output }}",
+            "channel": "blog",
+            "context": "={{ [$('Start').first().json.topic, $('Build context').first().json.context].filter(Boolean).join('\\n') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "58238cf2-abaf-50e8-a749-7f3d16718466",
+      "name": "Save draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: (($json.text.match(/^#\\s+(.+)$/m) || [])[1] || $('Start').first().json.topic).slice(0, 120), channel: $json.channel, body: $json.text, status: $json.ok ? 'in_review' : 'draft', campaign: null, link: null, notes: $json.problems.length ? 'Quality gate: ' + $json.problems.join('; ') : null }) }}"
+      }
+    },
+    {
+      "id": "fa440b55-8ce1-5be9-9d1c-67409939d845",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const g = $('Quality gate').first().json;\nconst s = $input.first().json;\nconst notes = [`Saved to the content calendar as #${s.id} (${s.status}). Readability: ${g.readability}.`];\nif (g.rewritten) notes.push(`Auto-fixed: ${g.fixed.join('; ')}`);\nif (g.problems.length) notes.push(`Needs a human: ${g.problems.join('; ')}`);\nif (g.warnings.length) notes.push(`Warnings: ${g.warnings.join('; ')}`);\nreturn [{ json: { result: notes.join('\\n') + '\\n\\n' + g.text } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Search knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Build context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build context": {
+      "main": [
+        [
+          {
+            "node": "Write blog post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write blog post": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Save draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

@@ -1,0 +1,340 @@
+{
+  "id": "mktWf52CampMeasu",
+  "name": "52 · Schedule · Measure campaigns",
+  "nodes": [
+    {
+      "id": "be976ade-6719-5058-9220-3f693850e6c0",
+      "name": "Every day 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "73610b2b-7c96-5bd6-89b4-f32d25fb30e4",
+      "name": "Campaigns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/campaigns",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "2b5f4594-0333-5d3e-9116-fc27bccebd30",
+      "name": "Measure ops",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function rawOps(ops) { return ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }]; }\n\nconst base = $env.CAMPAIGNS_URL;\nconst today = new Date().toISOString().slice(0, 10);\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst all = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(c => c && c.id);\nconst ops = [];\nfor (const c of all.filter(c => ['active', 'paused'].includes(c.status))) {\n  ops.push({ stage: 1, method: 'POST', url: `${base}/campaigns/${c.id}/measure`, body: {}, campaign: c.name });\n  // A campaign past its end date is completed after its final measurement.\n  if (c.end_date < today) ops.push({ stage: 2, method: 'POST', url: `${base}/campaigns/${c.id}/status`, body: { status: 'completed' }, campaign: c.name });\n}\nreturn rawOps(ops);\n"
+      }
+    },
+    {
+      "id": "c5087c57-52d8-5817-8bde-77bf29a6ff0c",
+      "name": "Stage 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Measure ops').all().map(i => i.json).filter(o => o.stage === 1);\nreturn opsToItems(ops, $env.CAMPAIGNS_URL);\n"
+      }
+    },
+    {
+      "id": "a4c93b7d-e76e-51f0-b5bc-8478940bb6c6",
+      "name": "Run stage 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "3408c0fb-217a-5a57-a5c5-eb14a3327c0a",
+      "name": "Stage 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Measure ops').all().map(i => i.json).filter(o => o.stage === 2);\nreturn opsToItems(ops, $env.CAMPAIGNS_URL);\n"
+      }
+    },
+    {
+      "id": "6de81d87-e125-54cc-9b07-97039d61b881",
+      "name": "Run stage 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "4c812e4f-fd46-5ac6-a4b3-31f6efe3cf06",
+      "name": "Never measured",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/report/unmeasured",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "66a99d02-c18e-51b6-8fd0-f34128085341",
+      "name": "Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const lines = [];\n$('Run stage 1').all().forEach((r, i) => {\n  const op = $('Stage 1').all()[i].json;\n  if (op.noop) return;\n  const b = r.json.body || {};\n  const k = (b.kpis || []).map(x => `${x.metric} ${x.actual_value ?? '?'}/${x.target_value} (${x.state})`).join(', ');\n  lines.push(`• ${op.campaign}: ${k || 'no KPIs'}${(b.errors || []).length ? ' ⚠ some sources unavailable' : ''}`);\n});\n$('Run stage 2').all().forEach((r, i) => {\n  const op = $('Stage 2').all()[i].json;\n  if (!op.noop && r.json.statusCode < 300) lines.push(`✔ \"${op.campaign}\" ended and is now completed.`);\n});\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst unmeasured = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(c => c && c.id);\nif (unmeasured.length) lines.push('', '*Shipped but never measured:*', ...unmeasured.map(c => `- ${c.name}: ${(c.unmeasured || []).join(', ')}`));\nif (!lines.length) return [];\nreturn [{ json: { text: `*Campaign scorecards*\\n${lines.join('\\n')}` } }];\n"
+      }
+    },
+    {
+      "id": "71039d00-ef93-5f40-bb91-f81cffdfe123",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "e00c65fe-56bc-5940-b0c3-2bbebe460bf8",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Every day 06:00": {
+      "main": [
+        [
+          {
+            "node": "Campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Measure ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure ops": {
+      "main": [
+        [
+          {
+            "node": "Stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 1": {
+      "main": [
+        [
+          {
+            "node": "Run stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 1": {
+      "main": [
+        [
+          {
+            "node": "Stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 2": {
+      "main": [
+        [
+          {
+            "node": "Run stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 2": {
+      "main": [
+        [
+          {
+            "node": "Never measured",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Never measured": {
+      "main": [
+        [
+          {
+            "node": "Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

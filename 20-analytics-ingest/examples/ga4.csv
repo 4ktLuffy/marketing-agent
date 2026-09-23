@@ -1,0 +1,21 @@
+# ----------------------------------------
+# Traffic acquisition: Session default channel group
+# Account: Example
+# Property: Example shop
+# ----------------------------------------
+#
+# Start date: 20260914
+# End date: 20260916
+Date,Session default channel group,Sessions,Engaged sessions,Key events
+20260914,Organic Search,"812",406,3
+20260914,Direct,"430",215,3
+20260914,Paid Social,"1,204",602,3
+20260914,Email,"96",48,3
+20260915,Organic Search,"812",406,4
+20260915,Direct,"430",215,4
+20260915,Paid Social,"1,204",602,4
+20260915,Email,"96",48,4
+20260916,Organic Search,"812",406,5
+20260916,Direct,"430",215,5
+20260916,Paid Social,"1,204",602,5
+20260916,Email,"96",48,5

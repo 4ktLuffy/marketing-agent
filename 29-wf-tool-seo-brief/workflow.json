@@ -1,0 +1,195 @@
+{
+  "id": "mktWf29SeoBrief0",
+  "name": "29 · Tool · SEO brief",
+  "nodes": [
+    {
+      "id": "7df033b1-6872-5407-8591-adf164cac408",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "keyword",
+              "type": "string"
+            },
+            {
+              "name": "competitor_url",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bb7b9a5f-f79c-5f9e-83df-556a57a46812",
+      "name": "Related searches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KEYWORDS_URL }}/suggest",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ seed: $json.keyword, expand: false }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "240da2fd-cb45-5957-a22b-53647411edb3",
+      "name": "Audit competitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SEO_URL }}/audit",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $('Start').first().json.competitor_url || 'none', keyword: $('Start').first().json.keyword }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a9042555-62e9-5528-baba-471a99bae623",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Start').first().json;\nconst kw = ($('Related searches').first().json.keywords || []).map(k => k.keyword).slice(0, 25);\nconst audit = $input.first().json;\nlet notes = null;\nif (s.competitor_url && Array.isArray(audit.checks)) {\n  const issues = audit.checks.filter(c => c.status !== 'pass').map(c => `- ${c.status}: ${c.message}`);\n  notes = `${s.competitor_url} scored ${audit.score}/100.\\n${issues.join('\\n')}`;\n}\nreturn [{ json: { keyword: s.keyword, audience: s.audience || null, related: kw.join('\\n') || null, notes } }];\n"
+      }
+    },
+    {
+      "id": "1d16b1ae-19b5-5357-97c7-079850acdb7e",
+      "name": "Write brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'seo_brief', vars: { keyword: $json.keyword, related_keywords: $json.related, competitor_notes: $json.notes, audience: $json.audience } }) }}"
+      }
+    },
+    {
+      "id": "e88b06cd-7f3f-58fd-b748-400dfda1584e",
+      "name": "Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.output;\nconst lines = [\n  `# SEO brief: ${$('Prepare').first().json.keyword}`,\n  `**Intent:** ${b.search_intent} · **Target length:** ~${b.target_word_count} words`,\n  '', '**Title options**', ...b.title_options.map(t => `- ${t} (${t.length})`),\n  '', `**Meta description** (${b.meta_description.length}): ${b.meta_description}`,\n  '', '**Outline**', ...b.outline.flatMap(o => [`## ${o.h2}`, ...o.points.map(p => `- ${p}`)]),\n  '', '**FAQs**', ...b.faqs.map(f => `- **${f.q}** ${f.a}`),\n];\nreturn [{ json: { result: lines.join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Related searches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Related searches": {
+      "main": [
+        [
+          {
+            "node": "Audit competitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit competitor": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Write brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write brief": {
+      "main": [
+        [
+          {
+            "node": "Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

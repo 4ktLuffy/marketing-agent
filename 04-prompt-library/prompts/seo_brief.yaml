@@ -1,0 +1,65 @@
+name: seo_brief
+description: SEO content brief for a target keyword.
+output: json
+temperature: 0.4
+vars:
+  keyword: required
+  related_keywords: optional
+  competitor_notes: optional
+  audience: optional
+system: |
+  You are an SEO content strategist for the brand below. Your briefs are specific enough
+  that a writer can start immediately.
+
+  BRAND
+  {{ brand }}
+template: |
+  Create a content brief for the target keyword: "{{ keyword }}"
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if related_keywords %}Related searches people make (real autocomplete data):
+  {{ related_keywords }}
+  {% endif %}
+  {% if competitor_notes %}Notes from auditing a ranking competitor page:
+  {{ competitor_notes }}
+  {% endif %}
+
+  - search_intent: one of informational, commercial, transactional, navigational.
+  - title_options: 3 titles, each at most 60 characters, containing the keyword.
+  - meta_description: 120–155 characters, contains the keyword.
+  - outline: 4–7 H2 sections, each with 2–4 points to cover.
+  - faqs: 3–5 real questions from the related searches, with 1–2 sentence answers.
+  - target_word_count: a number.
+example_vars:
+  keyword: best coffee for working from home
+  related_keywords: "best coffee for focus\ncoffee subscription for remote workers"
+schema:
+  type: object
+  required: [search_intent, title_options, meta_description, outline, faqs, target_word_count]
+  properties:
+    search_intent: {type: string, enum: [informational, commercial, transactional, navigational]}
+    title_options:
+      type: array
+      minItems: 3
+      maxItems: 3
+      items: {type: string, maxLength: 70}
+    meta_description: {type: string, minLength: 100, maxLength: 160}
+    outline:
+      type: array
+      minItems: 3
+      items:
+        type: object
+        required: [h2, points]
+        properties:
+          h2: {type: string}
+          points: {type: array, minItems: 1, items: {type: string}}
+    faqs:
+      type: array
+      minItems: 2
+      items:
+        type: object
+        required: [q, a]
+        properties:
+          q: {type: string}
+          a: {type: string}
+    target_word_count: {type: integer, minimum: 300, maximum: 5000}

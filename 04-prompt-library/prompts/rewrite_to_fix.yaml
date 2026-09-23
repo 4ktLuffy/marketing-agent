@@ -1,0 +1,52 @@
+name: rewrite_to_fix
+description: Minimal rewrite of a draft so it passes the quality gate. Returns the edits and the corrected text.
+output: json
+temperature: 0.2
+vars:
+  text: required
+  problems: required
+  channel: optional
+  limit: optional
+# No {{ brand }} here on purpose: with the brand profile in context, qwen2.5:7b rewrote
+# the whole draft and replaced the user's link with the brand homepage.
+# Listing the edits first (before "text") made a 7B model actually apply them; asked for
+# the text alone it often returned the draft unchanged.
+system: |
+  You are a careful copy editor. You edit the draft you are given; you never write a new
+  one. Keep the meaning, the product and every URL exactly as written. Change only what
+  the problems require.
+template: |
+  {% if channel %}Channel: {{ channel }}{% if limit %} (hard limit {{ limit }} characters){% endif %}
+  {% endif %}
+  Problems to fix:
+  {{ problems }}
+
+  Draft:
+  """
+  {{ text }}
+  """
+
+  1. In "edits", list each problem and exactly how you fix it. A banned phrase must be
+     removed or replaced with modest, factual wording — no variant of it may remain
+     (e.g. "best ... in the world", "guaranteed", "guarantee" in any capitalisation).
+     Shouting (ALL CAPS) becomes normal case. Extra exclamation marks become full stops.
+  2. In "text", give the corrected draft with every edit applied.
+  URLs that must appear unchanged in "text": {% for w in text.split() if w.startswith("http") %}{{ w }} {% else %}(none){% endfor %}
+example_vars:
+  text: "The BEST coffee in the world!!! Guaranteed to make you productive."
+  problems: "- Remove the banned claim \"BEST coffee in the world\" (reword it without those words)\n- Remove the banned claim \"Guaranteed\" (reword it without those words)\n- Use at most one exclamation mark"
+  channel: x
+  limit: 280
+schema:
+  type: object
+  required: [edits, text]
+  properties:
+    edits:
+      type: array
+      items:
+        type: object
+        required: [problem, fix]
+        properties:
+          problem: {type: string}
+          fix: {type: string}
+    text: {type: string, minLength: 1}
