@@ -1,6 +1,6 @@
 # 38 · Content approval
 
-Deploy **38 of 53** of the local-LLM marketing agent. This deploy is an n8n form workflow.
+Deploy **38 of 60** of the local-LLM marketing agent. This deploy is an n8n form workflow.
 
 A web form where a person reviews drafts that are `in_review`. For each one: approve, edit the text and approve, reject with a reason (it is rewritten automatically by 49, up to 3 times), reject and drop, or send it back to draft, plus when it should publish. Every decision and edit is logged in the learning service (46), which is how the agent learns your preferences. It's the only way content reaches `approved`, and the publisher (39) only publishes approved items.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/38-wf-approval-form/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf38Approval0
 ```

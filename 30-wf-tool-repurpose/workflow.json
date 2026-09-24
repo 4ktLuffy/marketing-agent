@@ -30,6 +30,10 @@
             {
               "name": "link",
               "type": "string"
+            },
+            {
+              "name": "note",
+              "type": "string"
             }
           ]
         }
@@ -87,6 +91,15 @@
         "options": {
           "timeout": 300000
         },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ prompt: 'repurpose', vars: { source_text: $json.source, source_title: $json.title, channels: $json.channels.join(', '), link: $json.link || null } }) }}"
@@ -125,7 +138,8 @@
           "value": {
             "text": "={{ $json.text }}",
             "channel": "={{ $json.channel }}",
-            "context": "={{ $('Prepare').first().json.source }}"
+            "context": "",
+            "links": "={{ [$('Start').first().json.url, $('Start').first().json.link].filter(Boolean).join(' ') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -152,6 +166,16 @@
             {
               "id": "context",
               "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "links",
+              "displayName": "links",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -193,7 +217,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: ('Repurposed: ' + ($('Prepare').first().json.title || 'content') + ' (' + $json.channel + ')').slice(0, 120), channel: $json.channel, body: $json.text, status: $json.ok ? 'in_review' : 'draft', campaign: 'repurpose', link: $('Prepare').first().json.link || null, notes: $json.problems.length ? 'Quality gate: ' + $json.problems.join('; ') : null }) }}"
+        "jsonBody": "={{ JSON.stringify({ title: ('Repurposed: ' + ($('Prepare').first().json.title || 'content') + ' (' + $json.channel + ')').slice(0, 120), channel: $json.channel, body: $json.text, status: $json.ok ? 'in_review' : 'draft', campaign: 'repurpose', link: $('Prepare').first().json.link || null, notes: [String($('Start').first().json.note || '').trim(), $json.problems.length ? 'Quality gate: ' + $json.problems.join('; ') : ''].filter(Boolean).join('\\n') || null }) }}"
       }
     },
     {

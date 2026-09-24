@@ -1,6 +1,6 @@
 # page-extractor
 
-Deploy **07 of 53** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
+Deploy **07 of 60** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
 into clean fields the LLM can work with: title, meta description, headings, main text, link
 counts and Open Graph tags. Navigation, headers, footers, sidebars, forms and scripts are
 dropped, so a 7B model reads the content and not the chrome. It uses no LLM.

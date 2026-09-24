@@ -1,6 +1,6 @@
 # knowledge-base
 
-Deploy **06 of 53** of the local-LLM marketing agent. It is the agent's memory of your
+Deploy **06 of 60** of the local-LLM marketing agent. It is the agent's memory of your
 business: you add documents (FAQ, product pages, past posts), it splits them into chunks,
 embeds them with a local Ollama embedding model and stores everything in SQLite. The blog
 writer and the KB-answer tool search it so the LLM writes from your facts, not its guesses.

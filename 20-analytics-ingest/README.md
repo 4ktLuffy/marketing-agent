@@ -1,6 +1,6 @@
 # analytics-ingest
 
-Deploy **20 of 53** of the local-LLM marketing agent. It stores daily metrics per channel
+Deploy **20 of 60** of the local-LLM marketing agent. It stores daily metrics per channel
 from CSV exports (your own sheet, or a GA4 export) and computes KPIs for any period,
 compared with the period before it. The weekly report (deploy 41) reads `/kpis` and
 passes the result to `21-report-builder`. It uses no LLM.
@@ -34,7 +34,7 @@ INTERNAL_API_KEY=change-me DB_PATH=./analytics.sqlite uvicorn app.main:app --por
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
-| POST | `/upload?source=generic\|ga4` 🔑 | raw CSV (`text/csv`) | `{"rows_imported"}` |
+| POST | `/upload?source=generic\|ga4&label=` 🔑 | raw CSV (`text/csv`) | `{"rows_imported"}` |
 | GET | `/kpis` | `?from=YYYY-MM-DD&to=YYYY-MM-DD&compare=true&source=&campaign=` | KPIs, see below |
 
 ```bash
@@ -92,6 +92,27 @@ Lines starting with `#` are skipped.
 - If any row is bad, nothing is imported. You get a 422 error with
   `detail.rows = [{"row": <line number in the file>, "error": "..."}]`.
 - A `Total` or `Grand total` row is skipped.
+
+### Labels: keeping synced data apart from manual uploads
+
+`POST /upload?source=generic&label=umami` parses the CSV with the preset chosen by
+`source` (`generic` or `ga4`) but stores the rows with source **`umami`**. Because the
+key is `(date, channel, campaign, source)`, labelled rows never replace rows you uploaded
+by hand, and re-syncing a day replaces only the earlier labelled rows. `55-umami-sync`
+uses `label=umami`.
+
+- `label` must match `^[a-z0-9_-]{1,32}$` (lowercase letters, digits, `_`, `-`), else `422`.
+- Without `label` nothing changes: rows are stored under `source` as before.
+- `GET /kpis?source=umami` reports only the labelled rows. `source` on `/kpis` accepts any
+  value matching the same pattern; one that was never uploaded gives zero totals.
+- Totals without `source` add up every source, so the same visits uploaded by hand
+  (`generic`/`ga4`) and synced (`umami`) are counted twice. Pass `source=` to pick one.
+
+```bash
+curl -s 'localhost:8120/upload?source=generic&label=umami' -H 'X-API-Key: change-me' \
+  -H 'content-type: text/csv' --data-binary $'date,channel,campaign,sessions,conversions\n2026-09-01,linkedin,spring-launch,42,3\n'
+curl -s 'localhost:8120/kpis?from=2026-09-01&to=2026-09-01&source=umami'
+```
 
 ### KPI definitions
 

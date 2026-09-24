@@ -1,6 +1,6 @@
 # image-cards
 
-Deploy **17 of 53** of the local-LLM marketing agent. It renders a clean title card as a PNG
+Deploy **17 of 60** of the local-LLM marketing agent. It renders a clean title card as a PNG
 (Open Graph, square post or story size, light or dark) so every blog post and social post can
 have an image without a designer. The title is word-wrapped and the font shrinks until it fits.
 It uses no LLM.

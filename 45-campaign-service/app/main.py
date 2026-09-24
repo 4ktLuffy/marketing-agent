@@ -2,6 +2,7 @@
 import hmac
 import json
 import os
+import random
 import re
 import sqlite3
 from contextlib import contextmanager
@@ -724,18 +725,26 @@ def unmeasured():
     return out
 
 
-@app.get("/insights")
-def insights(days: int = 90):
-    if days < 1:
-        raise HTTPException(422, "days must be at least 1")
+class UpstreamDown(Exception):
+    """The shortener could not be read, so there are no posts to report on."""
+
+
+def tracked_posts(days: int, errors: list[dict]) -> dict[int, dict]:
+    """Posts with tracked short links created in the last `days` days, keyed by item id.
+
+    A short link belongs to a calendar item when its target URL has utm_content=<item id>
+    (the publisher, 39, builds it that way). Clicks of every link of an item are summed.
+    Each post is joined with its calendar item for title, channel and hook_style; a
+    missing item is recorded in `errors` and the post keeps what the link told us.
+    Raises UpstreamDown (with the reason) when the shortener cannot be read.
+    """
     since = (today() - timedelta(days=days)).isoformat()  # links created on/after this day
-    errors: list[dict] = []
     posts: dict[int, dict] = {}
     with http_client() as client:
         try:
             links = as_list(get_json(client, f"{shortener_url()}/links", {"limit": LINK_LIMIT}), "links")
         except RuntimeError as e:
-            return {"by_channel": [], "top_posts": [], "errors": [{"source": "shortener", "error": str(e)}]}
+            raise UpstreamDown(str(e)) from None
         for link in links:
             created = str(link.get("created_at") or "")
             if created and created[:10] < since:
@@ -746,22 +755,32 @@ def insights(days: int = 90):
                 continue
             item_id = int(content)
             p = posts.setdefault(item_id, {"item_id": item_id, "title": None,
-                                           "channel": q.get("utm_source") or None, "clicks": 0})
+                                           "channel": q.get("utm_source") or None, "clicks": 0,
+                                           "hook_style": None})
             p["clicks"] += int(number(link.get("clicks")) or 0)
 
-        cache: dict[int, dict | None] = {}
-        for item_id, p in posts.items():
-            if item_id not in cache:
-                try:
-                    item = get_json(client, f"{calendar_url()}/items/{item_id}")
-                    cache[item_id] = item if isinstance(item, dict) else None
-                except RuntimeError as e:
-                    cache[item_id] = None
-                    errors.append({"source": "calendar", "item_id": item_id, "error": str(e)})
-            item = cache[item_id]
-            if item:
+        for item_id, p in posts.items():  # one calendar lookup per item
+            try:
+                item = get_json(client, f"{calendar_url()}/items/{item_id}")
+            except RuntimeError as e:
+                errors.append({"source": "calendar", "item_id": item_id, "error": str(e)})
+                continue
+            if isinstance(item, dict):
                 p["title"] = item.get("title")
                 p["channel"] = item.get("channel") or p["channel"]
+                p["hook_style"] = item.get("hook_style") or None
+    return posts
+
+
+@app.get("/insights")
+def insights(days: int = 90):
+    if days < 1:
+        raise HTTPException(422, "days must be at least 1")
+    errors: list[dict] = []
+    try:
+        posts = tracked_posts(days, errors)
+    except UpstreamDown as e:
+        return {"by_channel": [], "top_posts": [], "errors": [{"source": "shortener", "error": str(e)}]}
 
     channels: dict[str, dict] = {}
     for p in posts.values():
@@ -772,4 +791,87 @@ def insights(days: int = 90):
     by_channel = [{**a, "avg_clicks": round(a["clicks"] / a["posts"], 1)} for a in channels.values()]
     by_channel.sort(key=lambda a: (-a["clicks"], a["channel"]))
     top = sorted(posts.values(), key=lambda p: (-p["clicks"], p["item_id"]))[:10]
+    top = [{k: p[k] for k in ("item_id", "title", "channel", "clicks")} for p in top]
     return {"by_channel": by_channel, "top_posts": top, "errors": errors}
+
+
+# ---------- hook styles: which opening earns clicks (Thompson sampling)
+
+# The enum of 04-prompt-library prompts/social_posts.yaml (`hook_style` of each post).
+HOOK_STYLES = ("question", "fact_led", "story", "how_to", "benefit", "contrarian")
+PRIOR_ALPHA = 1.0  # Gamma(alpha0, beta0) prior on clicks per post: mean 1, weak
+PRIOR_BETA = 1.0
+
+
+def posterior_samples(stats: dict[str, dict], rng: random.Random) -> dict[str, float]:
+    """One draw of clicks-per-post per style from its Gamma-Poisson posterior.
+
+    Clicks of a post ~ Poisson(rate); rate ~ Gamma(alpha0, beta0) (shape, rate). After
+    `posts` posts with `clicks` clicks in total: Gamma(alpha0 + clicks, beta0 + posts).
+    Ranking by one draw each is Thompson sampling: a style is tried in proportion to the
+    chance it is the best, so a style with little data still gets picked sometimes.
+    """
+    return {
+        s: rng.gammavariate(PRIOR_ALPHA + st["clicks"], 1.0 / (PRIOR_BETA + st["posts"]))
+        for s, st in stats.items()
+    }
+
+
+def recommend_hooks(stats: dict[str, dict], explore: float, rng: random.Random) -> dict:
+    samples = posterior_samples(stats, rng)
+    ranked = sorted(stats, key=lambda s: (-samples[s], HOOK_STYLES.index(s)))
+    recommended = ranked[:2]
+    explored = None
+    if rng.random() < explore:
+        rest = [s for s in HOOK_STYLES if s != recommended[0]]
+        fewest = min(stats[s]["posts"] for s in rest)
+        explored = rng.choice([s for s in rest if stats[s]["posts"] == fewest])
+        recommended = [recommended[0], explored]
+    return {"recommended": recommended, "ranked": ranked, "explored": explored, "samples": samples}
+
+
+@app.get("/insights/hooks")
+def insights_hooks(days: int = 90, explore: float = 0.2, seed: int | None = None):
+    """Clicks per post by hook style, and the two styles the social writer should prefer."""
+    if days < 1:
+        raise HTTPException(422, "days must be at least 1")
+    if not 0 <= explore <= 1:
+        raise HTTPException(422, "explore must be between 0 and 1")
+    errors: list[dict] = []
+    try:
+        posts = tracked_posts(days, errors)
+    except UpstreamDown as e:
+        posts = {}
+        errors.append({"source": "shortener", "error": str(e)})
+
+    stats = {s: {"posts": 0, "clicks": 0} for s in HOOK_STYLES}
+    unlabeled = 0
+    for p in posts.values():
+        style = str(p["hook_style"] or "").strip().lower()
+        if style in stats:
+            stats[style]["posts"] += 1
+            stats[style]["clicks"] += p["clicks"]
+        else:
+            unlabeled += 1  # older items, or a style outside the enum
+
+    rng = random.Random(seed)  # seed=None: fresh randomness on every call
+    rec = recommend_hooks(stats, explore, rng)
+    styles = []
+    for s in rec["ranked"]:
+        st = stats[s]
+        alpha, beta = PRIOR_ALPHA + st["clicks"], PRIOR_BETA + st["posts"]
+        styles.append({
+            "hook_style": s, "posts": st["posts"], "clicks": st["clicks"],
+            "clicks_per_post": round(st["clicks"] / st["posts"], 2) if st["posts"] else None,
+            "posterior_mean": round(alpha / beta, 2),
+            "sample": round(rec["samples"][s], 3),
+            "recommended": s in rec["recommended"],
+        })
+    return {
+        "recommended": rec["recommended"],
+        "explored": rec["explored"],
+        "styles": styles,
+        "unlabeled_posts": unlabeled,
+        "method": "thompson sampling, Gamma(1,1) prior on clicks per post",
+        "errors": errors,
+    }

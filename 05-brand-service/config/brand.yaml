@@ -3,6 +3,11 @@
 name: Northwind Roasters
 one_liner: Specialty coffee, roasted to order and delivered on your workweek schedule.
 website: https://northwind-roasters.example.com
+# Other domains copy may mention or link to (shop, partner sites). Any other domain in a draft is
+# flagged (`unknown_domain`): models invent plausible ones ("NorthwindRoasters.com"). Links the
+# user gives a writer are allowed automatically. Severity: error (default) or warn.
+allowed_domains: []
+unknown_domain_severity: error
 audience:
   primary: Remote workers who drink 2+ cups a day at a home desk.
   secondary: Small distributed teams that want a shared coffee perk.
@@ -33,6 +38,11 @@ products:
   - name: Team Box
     price: "$79 / month"
     one_line: 1.5 kg across two blends, shipped to each teammate.
+  # No price: sold as an option on any plan. `aliases` are other words copy uses for the product;
+  # the claim checker (44) uses names and aliases to keep each product's facts to that product.
+  - name: Swiss Water decaf
+    aliases: [decaf]
+    one_line: Roasted in small batches every Tuesday.
 
 # Approved facts: the ONLY product/company claims copy may make. The claim checker (44)
 # rejects numbers and statements that are not backed by these, the products above,

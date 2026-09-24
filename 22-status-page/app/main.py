@@ -17,7 +17,7 @@ DEFAULT_SERVICES = [
     "change-monitor", "keyword-suggest", "social-listening", "seo-auditor", "readability",
     "platform-rules", "utm-builder", "link-shortener", "image-cards", "email-renderer",
     "content-calendar", "analytics-ingest", "report-builder", "claim-checker",
-    "campaign-service", "learning-service",
+    "campaign-service", "learning-service", "llm-gateway-verifier", "review-hub",
 ]
 
 

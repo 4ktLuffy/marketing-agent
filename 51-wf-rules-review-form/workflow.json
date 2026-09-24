@@ -12,6 +12,7 @@
         300
       ],
       "parameters": {
+        "authentication": "basicAuth",
         "formTitle": "Rules learned from your reviews",
         "formDescription": "The agent proposed these rules from how you edited and rejected drafts. Rules you keep are added to every writing prompt.",
         "formFields": {
@@ -26,7 +27,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "mkt-rules-review"
+      "webhookId": "mkt-rules-review",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mktFormsLogin001",
+          "name": "Forms login"
+        }
+      }
     },
     {
       "id": "08261d53-05bb-5c92-a53c-b65b4e8a4dac",

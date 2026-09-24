@@ -128,6 +128,15 @@
         "options": {
           "timeout": 300000
         },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ prompt: 'revise_with_feedback', vars: { text: $json.text, reason: $json.reason, channel: $json.channel } }) }}"
@@ -143,7 +152,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "const d = $('Within limit').item.json;\nlet text = $json.output.text.trim();\n// The model has swapped links before; put back any URL from the rejected draft.\nfor (const url of (d.text.match(/https?:\\/\\/\\S+/g) || [])) if (!text.includes(url)) text += `\\n\\n${url}`;\nreturn { json: { ref: String(d.id), channel: d.channel, text, context: null } };\n",
+        "jsCode": "const d = $('Within limit').item.json;\nlet text = $json.output.text.trim();\n// The model has swapped links before; put back any URL from the rejected draft.\nfor (const url of (d.text.match(/https?:\\/\\/\\S+/g) || [])) if (!text.includes(url)) text += `\\n\\n${url}`;\n// The revision keeps the original's links, so their domains are allowed.\nreturn { json: { ref: String(d.id), channel: d.channel, text, context: null,\n  links: (d.text.match(/https?:\\/\\/\\S+/g) || []).join(' ') } };\n",
         "mode": "runOnceForEachItem"
       }
     },
@@ -168,7 +177,8 @@
             "text": "={{ $json.text }}",
             "channel": "={{ $json.channel }}",
             "context": "",
-            "ref": "={{ $json.ref }}"
+            "ref": "={{ $json.ref }}",
+            "links": "={{ $json.links }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -205,6 +215,16 @@
             {
               "id": "ref",
               "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "links",
+              "displayName": "links",
               "required": false,
               "defaultMatch": false,
               "display": true,

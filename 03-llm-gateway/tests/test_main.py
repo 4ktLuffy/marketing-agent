@@ -232,3 +232,226 @@ def test_brand_is_fetched_right_after_boot(monkeypatch):
     route = respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply('{"headlines": ["A", "B"]}'))
     client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}})
     assert json.loads(route.calls[0].request.content)["messages"][0]["content"] == "Brand: Northwind Roasters"
+
+
+# ---------------------------------------------------------------- OpenAI-compatible provider
+
+API = "http://llm-api.test/v1"
+SECRET = "gsk_test_secret_value_1234567890"
+
+
+@pytest.fixture
+def openai_provider(monkeypatch):
+    monkeypatch.setattr(main, "LLM_PROVIDER", "openai")
+    monkeypatch.setattr(main, "OPENAI_BASE_URL", API)
+    monkeypatch.setattr(main, "OPENAI_API_KEY", SECRET)
+    monkeypatch.setattr(main.time, "sleep", lambda s: None)
+
+
+def completion(content, prompt_tokens=10, completion_tokens=5):
+    return httpx.Response(200, json={"choices": [{"message": {"role": "assistant", "content": content}}],
+                                     "usage": {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}})
+
+
+@respx.mock
+def test_openai_json_schema_request_and_usage(openai_provider):
+    route = respx.post(f"{API}/chat/completions").mock(return_value=completion('{"headlines": ["A", "B"]}'))
+    r = client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}})
+    assert r.status_code == 200 and r.json()["output"] == {"headlines": ["A", "B"]}
+    assert r.json()["usage"] == {"prompt_tokens": 10, "completion_tokens": 5}
+    sent = route.calls[0].request
+    assert sent.headers["authorization"] == f"Bearer {SECRET}"
+    body = json.loads(sent.content)
+    assert body["response_format"]["type"] == "json_schema"
+    assert body["response_format"]["json_schema"]["schema"]["required"] == ["headlines"]
+
+
+@respx.mock
+def test_openai_falls_back_to_json_object_when_schema_unsupported(openai_provider):
+    route = respx.post(f"{API}/chat/completions").mock(side_effect=[
+        httpx.Response(400, json={"error": {"message": "response_format json_schema is not supported"}}),
+        completion('{"headlines": ["A", "B"]}')])
+    r = client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}})
+    assert r.status_code == 200
+    second = json.loads(route.calls[1].request.content)
+    assert second["response_format"] == {"type": "json_object"}
+    assert "JSON Schema" in second["messages"][0]["content"]
+
+
+@respx.mock
+def test_openai_waits_out_rate_limit(openai_provider, monkeypatch):
+    waited = []
+    monkeypatch.setattr(main.time, "sleep", lambda s: waited.append(s))
+    respx.post(f"{API}/chat/completions").mock(side_effect=[
+        httpx.Response(429, headers={"x-ratelimit-reset-tokens": "1m2.5s"}, json={"error": {"message": "tokens per minute"}}),
+        completion("Wake up.")])
+    r = client.post("/v1/run", json={"prompt": "tagline", "vars": {"product": "beans"}})
+    assert r.status_code == 200 and r.json()["output"] == "Wake up."
+    assert waited == [60.0]            # 62.5 s asked, capped at 60
+
+
+@respx.mock
+def test_openai_daily_limit_stops_with_clear_error(openai_provider):
+    respx.post(f"{API}/chat/completions").mock(return_value=httpx.Response(
+        429, json={"error": {"message": "Rate limit reached on tokens per day (TPD): Limit 200000"}}))
+    r = client.post("/v1/run", json={"prompt": "tagline", "vars": {"product": "beans"}})
+    assert r.status_code == 502 and "daily limit" in r.json()["detail"]
+
+
+@respx.mock
+def test_openai_errors_never_contain_the_key(openai_provider):
+    respx.post(f"{API}/chat/completions").mock(side_effect=httpx.ConnectError(f"boom {SECRET}"))
+    r = client.post("/v1/run", json={"prompt": "tagline", "vars": {"product": "beans"}})
+    assert r.status_code == 502 and SECRET not in r.text
+
+
+def test_openai_health_does_not_expose_the_key(openai_provider):
+    body = client.get("/health").json()
+    assert body["provider"] == "openai" and body["key_set"] is True and SECRET not in json.dumps(body)
+
+
+def test_wait_seconds_parses_reset_headers():
+    assert main.wait_seconds(httpx.Response(429, headers={"retry-after": "3"})) == 3.0
+    assert main.wait_seconds(httpx.Response(429, headers={"x-ratelimit-reset-requests": "250ms"})) == 0.25
+    assert main.wait_seconds(httpx.Response(429)) == 5.0
+
+
+@respx.mock
+def test_openai_server_side_schema_failure_is_retried_with_feedback(openai_provider):
+    # Groq returns 400 json_validate_failed with the model's attempt in failed_generation
+    route = respx.post(f"{API}/chat/completions").mock(side_effect=[
+        httpx.Response(400, json={"error": {"message": "Failed to validate JSON.", "code": "json_validate_failed",
+                                            "failed_generation": '{"headlines": ["only one"]}'}}),
+        completion('{"headlines": ["A", "B"]}')])
+    r = client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}})
+    assert r.status_code == 200 and r.json()["attempts"] == 2
+    retry = json.loads(route.calls[1].request.content)["messages"]
+    assert "rejected" in retry[-1]["content"] and retry[-2]["content"] == '{"headlines": ["only one"]}'
+
+
+@respx.mock
+def test_reasoning_effort_is_sent_only_when_set(openai_provider, monkeypatch):
+    route = respx.post(f"{API}/chat/completions").mock(return_value=completion("Wake up."))
+    client.post("/v1/run", json={"prompt": "tagline", "vars": {"product": "beans"}})
+    assert "reasoning_effort" not in json.loads(route.calls[0].request.content)
+    monkeypatch.setattr(main, "REASONING_EFFORT", "low")
+    client.post("/v1/run", json={"prompt": "tagline", "vars": {"product": "beans"}})
+    assert json.loads(route.calls[1].request.content)["reasoning_effort"] == "low"
+
+
+# ---------------------------------------------------------------- approved facts (05 /facts)
+
+FACTS = {"facts": [{"id": "f1", "text": "Desk Blend is a medium roast."},
+                   {"id": "f2", "text": "Unopened bags can be returned within 30 days."}]}
+
+
+def facts_service(monkeypatch, **response):
+    monkeypatch.setattr(main, "BRAND_URL", "http://brand.test")
+    main._brand_cache.update(at=None, summary="")
+    main._facts_cache.update(at=None, text="")
+    respx.get("http://brand.test/profile/summary").mock(
+        return_value=httpx.Response(200, json={"summary": "Northwind Roasters"}))
+    facts = respx.get("http://brand.test/facts").mock(**response)
+    chat = respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply("A post."))
+    return facts, chat
+
+
+def user_of(route, n=0):
+    return json.loads(route.calls[n].request.content)["messages"][-1]["content"]
+
+
+@respx.mock
+def test_facts_injected_as_numbered_lines(monkeypatch):
+    _, chat = facts_service(monkeypatch, return_value=httpx.Response(200, json=FACTS))
+    r = client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf"}})
+    assert r.status_code == 200
+    assert "Facts:\n[f1] Desk Blend is a medium roast.\n[f2] Unopened bags can be returned within 30 days." \
+        in user_of(chat)
+
+
+@respx.mock
+def test_facts_are_cached(monkeypatch):
+    facts, chat = facts_service(monkeypatch, return_value=httpx.Response(200, json=FACTS))
+    client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf"}})
+    client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf"}})
+    assert facts.call_count == 1
+    assert "[f1]" in user_of(chat, 1)
+
+
+@respx.mock
+def test_facts_fetched_right_after_boot(monkeypatch):
+    # same regression as the brand cache: "at" must start as None, not 0.0
+    import time
+    monkeypatch.setattr(time, "monotonic", lambda: 5.0)
+    _, chat = facts_service(monkeypatch, return_value=httpx.Response(200, json=FACTS))
+    client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf"}})
+    assert "[f1]" in user_of(chat)
+
+
+@respx.mock
+def test_facts_service_down_renders_without_facts(monkeypatch):
+    _, chat = facts_service(monkeypatch, side_effect=httpx.ConnectError("refused"))
+    r = client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf"}})
+    assert r.status_code == 200
+    assert "Facts:" not in user_of(chat)
+
+
+@respx.mock
+def test_facts_bad_payload_renders_without_facts(monkeypatch):
+    _, chat = facts_service(monkeypatch, return_value=httpx.Response(200, json={"facts": "oops"}))
+    r = client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf"}})
+    assert r.status_code == 200
+    assert "Facts:" not in user_of(chat)
+
+
+@respx.mock
+def test_caller_facts_override_the_service(monkeypatch):
+    facts, chat = facts_service(monkeypatch, return_value=httpx.Response(200, json=FACTS))
+    client.post("/v1/run", json={"prompt": "fact_post", "vars": {"topic": "decaf", "facts": "[x] Mine."}})
+    assert "Facts:\n[x] Mine." in user_of(chat)
+    assert facts.call_count == 0
+
+
+@respx.mock
+def test_facts_not_fetched_for_prompts_without_the_var(monkeypatch):
+    facts, _ = facts_service(monkeypatch, return_value=httpx.Response(200, json=FACTS))
+    respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply('{"headlines": ["A", "B"]}'))
+    assert client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "coffee"}}).status_code == 200
+    assert facts.call_count == 0
+
+
+# ---------- access and limits (security audit: /v1/run was open to anything on the network)
+
+
+def test_key_required_when_configured(monkeypatch):
+    monkeypatch.setenv("INTERNAL_API_KEY", "k1")
+    body = {"prompt": "headline", "vars": {"topic": "coffee"}}
+    assert client.post("/v1/run", json=body).status_code == 401
+    assert client.post("/v1/run", json=body, headers={"X-API-Key": "nope"}).status_code == 401
+    # right key gets past auth (then fails on the unknown prompt, without calling any model)
+    assert client.post("/v1/run", json={"prompt": "nope"}, headers={"X-API-Key": "k1"}).status_code == 404
+
+
+def test_unlisted_model_refused_before_any_llm_call(monkeypatch):
+    monkeypatch.delenv("INTERNAL_API_KEY", raising=False)
+    monkeypatch.setattr(main, "ALLOWED_MODELS", set())
+    r = client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "c"}, "model": "gpt-5-pro"})
+    assert r.status_code == 403
+
+
+@respx.mock
+def test_allowed_and_default_models_accepted(monkeypatch):
+    monkeypatch.delenv("INTERNAL_API_KEY", raising=False)
+    monkeypatch.setattr(main, "ALLOWED_MODELS", {"mkt-verifier"})
+    respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply('{"headlines": ["A", "B"]}'))
+    for model in ("mkt-verifier", main.MODEL):
+        r = client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "c"}, "model": model})
+        assert r.status_code == 200, model
+
+
+def test_oversized_vars_and_bad_temperature_rejected(monkeypatch):
+    monkeypatch.delenv("INTERNAL_API_KEY", raising=False)
+    big = {"prompt": "headline", "vars": {"topic": "x" * (main.MAX_VARS_CHARS + 1)}}
+    assert client.post("/v1/run", json=big).status_code == 413
+    hot = {"prompt": "headline", "vars": {"topic": "c"}, "temperature": 9}
+    assert client.post("/v1/run", json=hot).status_code == 422

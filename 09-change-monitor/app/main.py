@@ -114,7 +114,7 @@ def delete_watch(watch_id: int):
     return Response(status_code=204)
 
 
-@app.post("/check")
+@app.post("/check", dependencies=[Depends(require_key)])  # it overwrites stored snapshots
 def check():
     changed, unchanged, errors = [], 0, []
     with closing(db()) as conn:

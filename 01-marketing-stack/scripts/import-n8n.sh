@@ -21,6 +21,13 @@ load_env
 OLLAMA_URL="${OLLAMA_URL:-http://host.docker.internal:11434}"
 dc() { docker compose exec -T n8n "$@"; }
 
+if [ -z "${FORMS_USER:-}" ] || [ -z "${FORMS_PASSWORD:-}" ] || [[ "${FORMS_PASSWORD}" == change-me* ]]; then
+  echo "set FORMS_USER and FORMS_PASSWORD in .env first (login for the approval/knowledge/rules forms)"; exit 1
+fi
+echo "==> forms login credential (user: $FORMS_USER)"
+python3 -c 'import json,os; print(json.dumps([{"id":"mktFormsLogin001","name":"Forms login","type":"httpBasicAuth","data":{"user":os.environ["FORMS_USER"],"password":os.environ["FORMS_PASSWORD"]}}]))' \
+  | dc sh -c 'cat > /tmp/forms-cred.json && n8n import:credentials --input=/tmp/forms-cred.json && rm /tmp/forms-cred.json'
+
 echo "==> Ollama credential -> $OLLAMA_URL"
 sed "s|http://host.docker.internal:11434|$OLLAMA_URL|" n8n/credentials/ollama.json \
   | dc sh -c 'cat > /tmp/ollama-cred.json && n8n import:credentials --input=/tmp/ollama-cred.json && rm /tmp/ollama-cred.json'
@@ -33,8 +40,23 @@ workflows=(../[0-9][0-9]-wf-*/workflow.json)
 for f in "${workflows[@]}"; do
   name="$(basename "$(dirname "$f")")"
   echo "==> import $name"
-  dc n8n import:workflow --input="/deploys/$name/workflow.json" >/dev/null
+  dc sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json >/dev/null && rm /tmp/wf.json' < "$f"
 done
+
+# Optional: chat agent on a hosted OpenAI-compatible model (Groq by default).
+if [ "${CHAT_PROVIDER:-local}" = "hosted" ]; then
+  [ -n "${CHAT_API_KEY:-}" ] || { echo "CHAT_PROVIDER=hosted needs CHAT_API_KEY in .env"; exit 1; }
+  export CHAT_BASE_URL="${CHAT_BASE_URL:-https://api.groq.com/openai/v1}" CHAT_MODEL="${CHAT_MODEL:-openai/gpt-oss-120b}"
+  echo "==> hosted chat model: $CHAT_MODEL at $CHAT_BASE_URL (key not shown)"
+  # The key goes through stdin, never argv.
+  python3 -c 'import json,os; print(json.dumps([{"id":"mktHostedChat001","name":"Hosted chat model","type":"openAiApi","data":{"apiKey":os.environ["CHAT_API_KEY"],"url":os.environ["CHAT_BASE_URL"]}}]))' \
+    | dc sh -c 'cat > /tmp/chat-cred.json && n8n import:credentials --input=/tmp/chat-cred.json && rm /tmp/chat-cred.json'
+  python3 -c 'import json,os,sys; d=json.load(sys.stdin)
+for n in d["nodes"]:
+    if n["type"].endswith("lmChatOpenAi"): n["parameters"]["model"]["value"]=os.environ["CHAT_MODEL"]
+print(json.dumps(d))' < ../24-wf-chat-agent/variants/hosted.json \
+    | dc sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json >/dev/null && rm /tmp/wf.json'
+fi
 
 echo "==> publish"
 for f in "${workflows[@]}"; do

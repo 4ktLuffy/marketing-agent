@@ -76,28 +76,42 @@ services:
       CLAIMS_URL: http://claim-checker:8000
       CAMPAIGNS_URL: http://campaign-service:8000
       LEARNING_URL: http://learning-service:8000
+      UMAMI_SYNC_URL: ${UMAMI_SYNC_URL:-}
+      REVIEWS_URL: http://review-hub:8000
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      APPROVER_KEY: ${APPROVER_KEY:?set APPROVER_KEY in .env}
       N8N_PUBLIC_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
       LISTENING_QUERY: ${LISTENING_QUERY:-coffee subscription}
       PUBLISH_WEBHOOK_URL: ${PUBLISH_WEBHOOK_URL:-}
+      PUBLISH_WEBHOOK_KEY: ${PUBLISH_WEBHOOK_KEY:-}
       NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
       REPORT_EMAIL_TO: ${REPORT_EMAIL_TO:-}
       REPORT_EMAIL_FROM: ${REPORT_EMAIL_FROM:-}
-      PLAN_CHANNELS: ${PLAN_CHANNELS:-linkedin, instagram, x}
+      PLAN_CHANNELS: ${PLAN_CHANNELS:-linkedin, x}
       PLAN_POSTS_PER_CHANNEL: ${PLAN_POSTS_PER_CHANNEL:-3}
       PLAN_THEMES: ${PLAN_THEMES:-}
+      RECYCLE_MIN_CLICKS: ${RECYCLE_MIN_CLICKS:-5}
+      RECYCLE_MIN_AGE_DAYS: ${RECYCLE_MIN_AGE_DAYS:-30}
+      RECYCLE_PER_WEEK: ${RECYCLE_PER_WEEK:-2}
+      REVIEW_REPLIES_PER_RUN: ${REVIEW_REPLIES_PER_RUN:-10}
     volumes:
       - n8n_data:/home/node/.n8n
-      - ./n8n:/import:ro
-      - ..:/deploys:ro
+      # (no repo mount: import-n8n.sh streams each workflow in, so .env never enters n8n)
 
   llm-gateway:
     <<: *service
     build: ../03-llm-gateway
     ports: ["127.0.0.1:8103:8000"]
     environment:
+      <<: *keyed
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       MODEL: ${WRITER_MODEL:-mkt-writer}
+      ALLOWED_MODELS: ${GATEWAY_ALLOWED_MODELS:-}
+      # Optional hosted model instead of Ollama for all writing/checking prompts.
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      REASONING_EFFORT: ${REASONING_EFFORT:-}
       PROMPTS_DIR: /prompts
       BRAND_URL: http://brand-service:8000
       LEARNING_URL: http://learning-service:8000
@@ -128,6 +142,7 @@ services:
     <<: *service
     build: ../08-rss-watcher
     ports: ["127.0.0.1:8108:8000"]
+    environment: *keyed
     volumes: ["rss_data:/data", "../08-rss-watcher/config:/config:ro"]
 
   change-monitor:
@@ -191,7 +206,10 @@ services:
     <<: *service
     build: ../19-content-calendar
     ports: ["127.0.0.1:8119:8000"]
-    environment: *keyed
+    environment:
+      <<: *keyed
+      # Second key for approve/publish: only n8n (approval form, publisher) has it.
+      APPROVER_KEY: ${APPROVER_KEY:?set APPROVER_KEY in .env}
     volumes: [calendar_data:/data]
 
   analytics-ingest:
@@ -213,16 +231,35 @@ services:
     environment:
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
 
+  # Separate gateway for fact checking, so checking can run on a stronger model than
+  # writing. Measured on a fresh held-out set: local qwen2.5:7b caught 5/6 invented claims
+  # and flagged 3/6 true ones; Groq gpt-oss-120b caught 6/6 and flagged 1/6.
+  # Default: same provider/model as writing. Hybrid: VERIFIER_PROVIDER=openai in .env.
+  llm-gateway-verifier:
+    <<: *service
+    build: ../03-llm-gateway
+    ports: ["127.0.0.1:8147:8000"]
+    environment:
+      <<: *keyed
+      LLM_PROVIDER: ${VERIFIER_PROVIDER:-ollama}
+      MODEL: ${VERIFIER_MODEL:-mkt-writer}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      REASONING_EFFORT: ${REASONING_EFFORT:-}
+      PROMPTS_DIR: /prompts
+    volumes: ["../04-prompt-library/prompts:/prompts:ro"]
+
   claim-checker:
     <<: *service
     build: ../44-claim-checker
     ports: ["127.0.0.1:8144:8000"]
     environment:
-      GATEWAY_URL: http://llm-gateway:8000
+      <<: *keyed
+      GATEWAY_URL: http://llm-gateway-verifier:8000
       BRAND_URL: http://brand-service:8000
       KB_URL: http://knowledge-base:8000
-      CHECK_MODE: ${CLAIM_CHECK_MODE:-blind}
-      VERIFIER_MODEL: ${VERIFIER_MODEL:-}
+      CHECK_MODE: ${CLAIM_CHECK_MODE:-lenient}
 
   campaign-service:
     <<: *service
@@ -243,6 +280,44 @@ services:
       <<: *keyed
       GATEWAY_URL: http://llm-gateway:8000
     volumes: [learning_data:/data]
+
+  # Real publishing: point PUBLISH_WEBHOOK_URL at http://postiz-bridge:8000/publish.
+  # DRY_RUN=true until you have checked CHANNEL_MAP against GET /integrations.
+  postiz-bridge:
+    <<: *service
+    build: ../54-postiz-bridge
+    ports: ["127.0.0.1:8154:8000"]
+    environment:
+      <<: *keyed
+      POSTIZ_URL: ${POSTIZ_URL:-}
+      POSTIZ_API_KEY: ${POSTIZ_API_KEY:-}
+      CHANNEL_MAP: ${POSTIZ_CHANNEL_MAP:-{}}
+      DRY_RUN: ${POSTIZ_DRY_RUN:-true}
+
+  # Real analytics: set UMAMI_SYNC_URL=http://umami-sync:8000 to enable the daily sync (56).
+  umami-sync:
+    <<: *service
+    build: ../55-umami-sync
+    ports: ["127.0.0.1:8155:8000"]
+    environment:
+      <<: *keyed
+      UMAMI_URL: ${UMAMI_URL:-}
+      UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
+      UMAMI_USERNAME: ${UMAMI_USERNAME:-}
+      UMAMI_PASSWORD: ${UMAMI_PASSWORD:-}
+      UMAMI_API_KEY: ${UMAMI_API_KEY:-}
+      CONVERSION_EVENT: ${UMAMI_CONVERSION_EVENT:-signup}
+      ANALYTICS_URL: http://analytics-ingest:8000
+
+  # Reviews inbox, proof bank (verbatim, consented testimonials) and reply context.
+  # Never posts anywhere: a person posts every reply.
+  review-hub:
+    <<: *service
+    build: ../58-review-hub
+    ports: ["127.0.0.1:8158:8000"]
+    environment:
+      <<: *keyed
+    volumes: [review_data:/data]
 
   ollama:
     <<: *service
@@ -266,4 +341,5 @@ volumes:
   analytics_data:
   campaigns_data:
   learning_data:
+  review_data:
   ollama_data:

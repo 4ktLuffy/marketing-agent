@@ -2,6 +2,7 @@
 
   python -m evalsuite.run                         # all cases, 3 repeats
   python -m evalsuite.run --only ad_copy --repeats 5
+  python -m evalsuite.run --cases formats         # only cases/formats.yaml
   python -m evalsuite.run --min-pass-rate 0.8     # exit 1 below this (for CI / cron)
 
 A case passes a run only if the gateway answered AND every check passed. Repeats matter:
@@ -21,11 +22,15 @@ import yaml
 from evalsuite.checks import run_check
 
 CASES_DIR = Path(__file__).parent.parent / "cases"
+TOKENS = {"prompt": 0, "completion": 0}
 
 
-def load_cases(only: str | None) -> list[dict]:
+def load_cases(only: str | None, files: str | None = None) -> list[dict]:
+    """All cases/*.yaml, or only the comma-separated files named in `files` (without .yaml)."""
     cases = []
-    for f in sorted(CASES_DIR.glob("*.yaml")):
+    paths = ([CASES_DIR / f"{n.strip()}.yaml" for n in files.split(",") if n.strip()] if files
+             else sorted(CASES_DIR.glob("*.yaml")))
+    for f in paths:
         for case in yaml.safe_load(f.read_text()):
             if only and only not in (case["id"], case["prompt"]):
                 continue
@@ -36,7 +41,9 @@ def load_cases(only: str | None) -> list[dict]:
 def run_case(case: dict, gateway: str, services: dict) -> dict:
     started = time.monotonic()
     try:
-        r = httpx.post(f"{gateway}/v1/run", json={"prompt": case["prompt"], "vars": case["vars"]}, timeout=600)
+        headers = {"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {}
+        r = httpx.post(f"{gateway}/v1/run", json={"prompt": case["prompt"], "vars": case["vars"]},
+                       headers=headers, timeout=600)
     except httpx.HTTPError as exc:
         return {"ok": False, "seconds": 0, "error": f"gateway unreachable: {exc}", "checks": []}
     took = round(time.monotonic() - started, 1)
@@ -50,6 +57,9 @@ def run_case(case: dict, gateway: str, services: dict) -> dict:
         except httpx.HTTPError as exc:
             passed, detail = False, f"service error: {exc}"
         results.append({"check": check["type"], "path": check.get("path"), "passed": passed, "detail": detail})
+    u = body.get("usage") or {}
+    TOKENS["prompt"] += u.get("prompt_tokens", 0)
+    TOKENS["completion"] += u.get("completion_tokens", 0)
     return {
         "ok": all(c["passed"] for c in results),
         "seconds": took,
@@ -66,6 +76,7 @@ def main(argv=None) -> int:
     ap.add_argument("--rules", default=os.getenv("RULES_URL", "http://localhost:8114"))
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--only")
+    ap.add_argument("--cases", help="case files in cases/ without .yaml, comma-separated (default: all)")
     ap.add_argument("--min-pass-rate", type=float, default=0.0)
     ap.add_argument("--out", default="results")
     a = ap.parse_args(argv)
@@ -75,7 +86,7 @@ def main(argv=None) -> int:
         services["brand_summary"] = httpx.get(f"{services['brand']}/profile/summary", timeout=10).json()["summary"]
     except (httpx.HTTPError, KeyError, ValueError):
         print("warning: brand summary unavailable; numbers_from_input will only see case vars")
-    cases = load_cases(a.only)
+    cases = load_cases(a.only, a.cases)
     if not cases:
         print("no cases matched")
         return 2
@@ -97,6 +108,8 @@ def main(argv=None) -> int:
 
     rate = total_ok / total_runs
     print(f"\npass rate {total_ok}/{total_runs} = {rate:.0%}")
+    if TOKENS["prompt"]:
+        print(f"tokens used: {TOKENS['prompt']} prompt + {TOKENS['completion']} completion")
     out = Path(a.out)
     out.mkdir(exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

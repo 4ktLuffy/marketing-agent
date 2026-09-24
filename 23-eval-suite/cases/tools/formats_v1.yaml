@@ -1,0 +1,11 @@
+# Tool-choice set for write_content_format (57), written 2026-09-24 together with the tool,
+# BEFORE any run. Four requests that need the new tool and four near-misses that must still
+# go to the social, email and blog writers. Run: python -m evalsuite.tools --cases formats_v1
+- {say: "Write a 45-second TikTok script about how we roast the decaf", expect: write_content_format}
+- {say: "I need copy for a landing page for the Team Box", expect: write_content_format}
+- {say: "Draft a 4-email nurture sequence that turns free-sample requests into subscribers", expect: write_content_format}
+- {say: "Script for an Instagram Reel showing our Tuesday roast day", expect: write_content_format}
+- {say: "Write an Instagram caption about our Tuesday roast day", expect: write_social_posts}
+- {say: "Write one email announcing the new single origin to subscribers", expect: write_email}
+- {say: "Write an article about how decaf is made", expect: write_blog_post}
+- {say: "Post about the Team Box on LinkedIn", expect: write_social_posts}

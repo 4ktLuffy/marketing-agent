@@ -212,3 +212,101 @@ def test_word_shortcut_does_not_accept_an_invented_item():
           "detail_check": checks(("caramel notes", False, ""))})
     body = client.post("/verify", json={"text": "Notes of chocolate and caramel."}).json()
     assert body["ok"] is False and body["claims"][0]["reasons"] == ["not in the facts: caramel notes"]
+
+
+def test_numbers_split_lists_but_keep_thousands():
+    assert main.numbers("every 1,2 or 4 weeks") == {"1", "2", "4"}
+    assert main.numbers("10,000 fans and 1.5 kg") == {"10000", "1.5"}
+
+
+@respx.mock
+def test_untrusted_kb_sources_are_not_evidence(monkeypatch):
+    # security audit H1: an LLM-written digest in the KB must not approve its own claims
+    monkeypatch.setattr(main, "KB_URL", "http://kb.test")
+    respx.post("http://kb.test/search").mock(return_value=httpx.Response(200, json={"results": [
+        {"doc_id": "digest-1", "title": "Trend digest", "source": "trend-digest", "chunk": "Our coffee is certified organic.", "score": 0.9},
+        {"doc_id": "faq", "title": "FAQ", "source": "website", "chunk": "Returns within 30 days.", "score": 0.9}]}))
+    mock({"claim_details": details(), "detail_check": checks()})
+    lines = main.gather_evidence(main.VerifyRequest(text="anything"))
+    assert any("Returns within 30 days" in l for l in lines)
+    assert not any("certified organic" in l for l in lines)
+
+
+def test_key_enforced_when_configured(monkeypatch):
+    monkeypatch.setenv("INTERNAL_API_KEY", "k1")
+    assert client.post("/verify", json={"text": "Hi."}).status_code == 401
+    assert client.post("/verify", json={"text": "Hi."}, headers={"X-API-Key": "wrong"}).status_code == 401
+
+
+def test_oversized_input_rejected_before_any_llm_call(monkeypatch):
+    monkeypatch.delenv("INTERNAL_API_KEY", raising=False)
+    # No respx routes: any gateway/brand call would raise, so these must fail on validation.
+    assert client.post("/verify", json={"text": "x" * (main.MAX_TEXT_CHARS + 1)}).status_code == 422
+    many = " ".join(f"Sentence number {i} is here." for i in range(main.MAX_SENTENCES + 1))
+    assert client.post("/verify", json={"text": many}).status_code == 413
+    assert client.post("/verify", json={"text": "Hi.", "extra_facts": ["f"] * 51}).status_code == 422
+    assert client.post("/verify", json={"text": "Hi.", "extra_facts": ["f" * 1001]}).status_code == 422
+
+
+# ---------- product scoping: a product's facts only support claims about that product
+
+PRODUCTS = {"products": [{"name": "Desk Blend", "price": "$18 / 340 g"},
+                         {"name": "Swiss Water decaf", "aliases": ["decaf"]},
+                         {"name": "Team Box"}]}
+
+
+def evidence_sent(route):
+    return [json.loads(c.request.content)["vars"].get("evidence", "") for c in route.calls
+            if json.loads(c.request.content)["prompt"] == "detail_check"]
+
+
+@respx.mock
+def test_other_products_facts_are_not_evidence():
+    respx.get(f"{BRAND}/facts").mock(return_value=httpx.Response(200, json={"facts": FACTS}))
+    respx.get(f"{BRAND}/profile").mock(return_value=httpx.Response(200, json=PRODUCTS))
+    gw = respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({
+        "claim_details": details("chocolate and hazelnut notes"),
+        "detail_check": checks(("chocolate and hazelnut notes", False, "")),
+    }))
+    r = client.post("/verify", json={"text": "Our decaf has chocolate and hazelnut notes."}).json()
+    assert r["ok"] is False
+    sent = evidence_sent(gw)[0]
+    assert "decaf" in sent and "Desk Blend" not in sent      # only decaf + general facts
+    assert "48 hours" in sent
+
+
+@respx.mock
+def test_number_from_another_product_is_flagged():
+    respx.get(f"{BRAND}/facts").mock(return_value=httpx.Response(200, json={"facts": FACTS}))
+    respx.get(f"{BRAND}/profile").mock(return_value=httpx.Response(200, json=PRODUCTS))
+    respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({"claim_details": details()}))
+    r = client.post("/verify", json={"text": "The Team Box costs $18."}).json()
+    assert r["ok"] is False
+    assert "numbers not in the facts: 18" in r["claims"][0]["reasons"]
+    r = client.post("/verify", json={"text": "Desk Blend costs $18."}).json()   # own price: fine
+    assert r["ok"] is True
+
+
+@respx.mock
+def test_sentence_without_product_and_profile_down_keep_all_evidence():
+    respx.get(f"{BRAND}/facts").mock(return_value=httpx.Response(200, json={"facts": FACTS}))
+    respx.get(f"{BRAND}/profile").mock(side_effect=httpx.ConnectError("down"))
+    respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({"claim_details": details()}))
+    assert client.post("/verify", json={"text": "The Team Box costs $18."}).json()["ok"] is True
+
+
+def test_scoped_evidence_rules():
+    subjects = [("desk blend", __import__("re").compile(r"\bdesk blend\b", 2)),
+                ("decaf", __import__("re").compile(r"\bdecaf\b", 2))]
+    lines = ["[f1] Desk Blend is medium.", "[f2] Our decaf is roasted Tuesdays.", "[f3] Ships in 48 hours.",
+             "[f4] Desk Blend and decaf ship together."]
+    assert main.scoped_evidence("Try our decaf.", lines, subjects) == [lines[1], lines[2], lines[3]]
+    assert main.scoped_evidence("Coffee for your desk.", lines, subjects) == lines
+
+
+def test_layout_labels_are_not_claims_but_product_names_stay():
+    text = "Hook: Wake up to fresh coffee.\nOn screen: Fresh every week\nSubject: Your box ships today\nTeam Box: two blends."
+    got = main.sentences(text)
+    assert "Wake up to fresh coffee." in got and "Fresh every week" in got
+    assert not any(s.lower().startswith(("hook", "on screen", "subject")) for s in got)
+    assert any(s.startswith("Team Box: two blends") for s in got)

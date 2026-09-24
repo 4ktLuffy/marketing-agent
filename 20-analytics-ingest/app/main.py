@@ -14,6 +14,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 app = FastAPI(title="analytics-ingest")
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+# A label names where rows came from (e.g. "umami"); rows are stored under it as `source`.
+LABEL_PATTERN = r"^[a-z0-9_-]{1,32}$"
 COUNTS = ("impressions", "clicks", "sessions", "conversions", "spend")
 RATIOS = ("ctr", "cvr", "cpa")
 
@@ -199,7 +201,12 @@ def health():
 
 
 @app.post("/upload", dependencies=[Depends(require_key)])
-async def upload(request: Request, source: Literal["generic", "ga4"] = "generic"):
+async def upload(
+    request: Request,
+    source: Literal["generic", "ga4"] = "generic",
+    label: str | None = Query(None, pattern=LABEL_PATTERN,
+                              description="store rows under this source name instead of `source`"),
+):
     body = await request.body()
     if len(body) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, f"upload larger than {MAX_UPLOAD_BYTES} bytes")
@@ -217,7 +224,8 @@ async def upload(request: Request, source: Literal["generic", "ga4"] = "generic"
         conn.executemany(
             "INSERT OR REPLACE INTO metrics (date, channel, campaign, source, impressions,"
             " clicks, sessions, conversions, spend) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [(d, ch, camp, source, *(v[f] for f in COUNTS)) for (d, ch, camp), v in rows.items()],
+            [(d, ch, camp, label or source, *(v[f] for f in COUNTS))
+             for (d, ch, camp), v in rows.items()],
         )
     return {"rows_imported": len(rows)}
 
@@ -286,7 +294,8 @@ def kpis(
     from_: str | None = Query(None, alias="from"),
     to: str | None = None,
     compare: bool = True,
-    source: Literal["generic", "ga4"] | None = None,
+    source: str | None = Query(None, pattern=LABEL_PATTERN,
+                               description="generic, ga4, or a label used on upload"),
     campaign: str | None = Query(None, description="exact campaign (utm_campaign) to report on"),
 ):
     campaign = (campaign or "").strip() or None

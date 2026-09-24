@@ -1,6 +1,6 @@
 # 36 · Morning trend digest
 
-Deploy **36 of 53** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **36 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every morning it polls your RSS feeds (08) and Hacker News/Reddit mentions (11), writes a short digest with post ideas, saves it to the knowledge base so the chat agent can answer "what was in today's digest?", and posts it to your webhook.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/36-wf-sched-trend-digest/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf36TrendDige
 ```

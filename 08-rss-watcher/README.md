@@ -1,6 +1,6 @@
 # rss-watcher
 
-Deploy **08 of 53** of the local-LLM marketing agent. It polls RSS and Atom feeds and returns
+Deploy **08 of 60** of the local-LLM marketing agent. It polls RSS and Atom feeds and returns
 only the items it has not returned before, as plain text, so the morning trend digest (36)
 never summarises the same article twice. It uses no LLM.
 

@@ -1,6 +1,6 @@
 # 42 · Add to knowledge base
 
-Deploy **42 of 53** of the local-LLM marketing agent. This deploy is an n8n form workflow.
+Deploy **42 of 60** of the local-LLM marketing agent. This deploy is an n8n form workflow.
 
 A web form to add facts to the knowledge base (06): paste text or give a URL (fetched with 07). The blog, email and Q&A tools then ground their answers in these facts.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/42-wf-kb-ingest-form/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf42KbIngest0
 ```

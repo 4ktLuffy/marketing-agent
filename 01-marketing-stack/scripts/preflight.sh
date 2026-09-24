@@ -34,7 +34,7 @@ if [ ! -f .env ]; then
   fail ".env missing: cp .env.example .env and fill it in"
 else
   load_env
-  for v in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY; do
+  for v in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD; do
     val="${!v:-}"
     if [ -z "$val" ] || [[ "$val" == change-me* ]]; then
       fail "$v is empty or still a placeholder (openssl rand -hex 24)"
@@ -44,6 +44,9 @@ else
       pass "$v set"
     fi
   done
+  if [ -n "${APPROVER_KEY:-}" ] && [ "${APPROVER_KEY:-}" = "${INTERNAL_API_KEY:-}" ]; then
+    fail "APPROVER_KEY must differ from INTERNAL_API_KEY (it is what stops services approving copy)"
+  fi
 fi
 
 echo "== Repositories next to this one"
@@ -60,7 +63,9 @@ url="${OLLAMA_URL:-http://host.docker.internal:11434}"
 host_url="${url/host.docker.internal/localhost}"
 if tags=$(curl -fsS -m 5 "$host_url/api/tags" 2>/dev/null); then
   pass "Ollama reachable at $host_url"
-  for m in "${AGENT_MODEL:-mkt-agent}" "${WRITER_MODEL:-mkt-writer}" "${EMBED_MODEL:-qwen3-embedding:0.6b}"; do
+  models=("${AGENT_MODEL:-mkt-agent}" "${EMBED_MODEL:-qwen3-embedding:0.6b}")
+  [ "${LLM_PROVIDER:-ollama}" = "ollama" ] && models+=("${WRITER_MODEL:-mkt-writer}")
+  for m in "${models[@]}"; do
     echo "$tags" | grep -q "\"name\":\"$m" && pass "model $m installed" \
       || fail "model $m missing (run ../02-ollama-models/scripts/setup.sh)"
   done
@@ -71,12 +76,24 @@ else
   fail "Ollama not reachable at $host_url (is it running?)"
 fi
 
+if [ "${LLM_PROVIDER:-ollama}" = "openai" ] || [ "${VERIFIER_PROVIDER:-ollama}" = "openai" ]; then
+  echo "== Hosted model (LLM_PROVIDER or VERIFIER_PROVIDER = openai)"
+  if [ -z "${OPENAI_BASE_URL:-}" ] || [ -z "${OPENAI_API_KEY:-}" ]; then
+    fail "LLM_PROVIDER=openai needs OPENAI_BASE_URL and OPENAI_API_KEY"
+  # key via stdin config, not argv, so other processes can't read it from `ps`
+  elif printf 'header = "Authorization: Bearer %s"\n' "$OPENAI_API_KEY" | curl -fsS -m 10 -K - "$OPENAI_BASE_URL/models" >/dev/null 2>&1; then
+    pass "hosted API reachable and the key is accepted (key not shown)"
+  else
+    fail "hosted API rejected the key or is unreachable ($OPENAI_BASE_URL)"
+  fi
+fi
+
 echo "== Compose file"
 if docker compose config -q >/dev/null 2>&1; then pass "docker-compose.yml valid"; else fail "docker compose config reports an error"; fi
 
 echo "== Ports (bound to 127.0.0.1)"
 busy=""
-for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146; do
+for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146 8147 8154 8155 8158; do
   if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then busy="$busy $p"; fi
 done
 [ -z "$busy" ] && pass "all ports free" || warn "already in use:$busy (fine if it's this stack already running)"

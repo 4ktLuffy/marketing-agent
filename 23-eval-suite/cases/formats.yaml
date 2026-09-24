@@ -1,0 +1,124 @@
+# Content formats written by 57 (write_content_format): video script, landing page, email
+# sequence. Run alone with:  python -m evalsuite.run --cases formats
+# `facts` is passed explicitly (the gateway then uses it instead of fetching 05 /facts), so
+# numbers_from_input sees the same approved numbers the model saw. Numeric fields the
+# schema asks for (estimated_seconds, day) are left out of the number checks.
+
+- id: video_script_structure_and_hook
+  prompt: video_script
+  vars:
+    topic: How our decaf is made, from green bean to cup
+    platform: Instagram Reels
+    audience: people who want coffee in the afternoon without the caffeine
+    facts: &facts |
+      [f1] Desk Blend is a medium roast with chocolate and hazelnut tasting notes.
+      [f2] Desk Blend is made for drip and French press brewing.
+      [f3] Single-Origin Rotation is a light roast, with a different origin in every shipment.
+      [f4] Team Box contains 1.5 kg of coffee across two blends and ships to each teammate.
+      [f5] Our Swiss Water decaf is roasted in small batches every Tuesday.
+      [f6] Unopened bags can be returned within 30 days for a full refund.
+      [f7] Subscribers can skip or pause a delivery from their account page at any time, with no fee.
+      [f8] Specialty coffee, roasted to order and delivered on your workweek schedule.
+      [f9] Desk Blend costs $18 / 340 g.
+      [f11] Single-Origin Rotation costs $22 / 250 g.
+      [f13] Team Box costs $79 / month.
+      [f15] Roasted within 48 hours of shipping.
+      [f16] Ships every 1, 2 or 4 weeks, skip or pause any time.
+      [f17] Free shipping on subscriptions in the US.
+  checks:
+    # "at most 12 words" in the prompt; 80 characters is a generous proxy for 2 seconds
+    - {type: max_chars, path: hook.spoken, value: 80}
+    - {type: max_chars, path: hook.on_screen, value: 40}
+    - {type: max_chars, path: "beats[*].on_screen", value: 40}
+    - {type: count, path: "beats[*]", min: 3, max: 5}
+    - {type: count, path: "hashtags[*]", min: 3, max: 5}
+    - {type: numbers_from_input, path: hook}
+    - {type: numbers_from_input, path: "beats[*]"}
+    - {type: numbers_from_input, path: cta}
+    - {type: numbers_from_input, path: caption}
+    # the decaf fact is the whole point of the video
+    - {type: contains, path: "", value: "Swiss Water"}
+    - {type: brand_ok, path: caption}
+
+- id: video_script_no_invented_caffeine_numbers
+  prompt: video_script
+  vars:
+    topic: How much caffeine is left in our decaf
+    platform: TikTok
+    facts: *facts
+  checks:
+    - {type: numbers_from_input, path: hook}
+    - {type: numbers_from_input, path: "beats[*]"}
+    - {type: numbers_from_input, path: cta}
+    - {type: numbers_from_input, path: caption}
+    - {type: not_contains, path: "", values: ["99", "%", "percent", " mg"]}
+    - {type: count, path: "beats[*]", min: 3, max: 5}
+
+- id: landing_page_team_box
+  prompt: landing_page
+  vars:
+    product: Team Box, a coffee subscription for remote teams
+    audience: people-ops leads at remote companies
+    offer: First box ships free
+    facts: *facts
+  checks:
+    - {type: max_chars, path: headline, value: 60}
+    - {type: count, path: "benefits[*]", min: 3, max: 4}
+    - {type: max_chars, path: "benefits[*].title", value: 40}
+    - {type: count, path: "faq[*]", min: 3, max: 5}
+    - {type: numbers_from_input, path: ""}
+    # the product's own fact must be on its landing page
+    - {type: contains, path: "", value: "1.5 kg"}
+    # social proof: an approved fact or the placeholder, never an invented testimonial
+    - {type: not_contains, path: social_proof, values: ["\"", "“", "stars", "rated", "reviews", "customers say"]}
+    - {type: brand_ok, path: headline}
+    - {type: brand_ok, path: "benefits[*].text"}
+
+- id: landing_page_rotation_no_invented_proof
+  prompt: landing_page
+  vars:
+    product: Single-Origin Rotation, a new light-roast origin every shipment
+    audience: home brewers who like trying new coffees
+    facts: *facts
+  checks:
+    - {type: max_chars, path: headline, value: 60}
+    - {type: count, path: "faq[*]", min: 3, max: 5}
+    - {type: numbers_from_input, path: ""}
+    - {type: not_contains, path: social_proof, values: ["\"", "“", "stars", "rated", "reviews", "customers say"]}
+    - {type: not_contains, path: "", values: ["award", "best in the world", "world's best", "guaranteed"]}
+    # "light roast" or "light-roast": the fact that sets this product apart
+    - {type: contains, path: "", value: "light"}
+
+- id: email_sequence_sample_to_paid
+  prompt: email_sequence
+  vars:
+    goal: Turn people who requested a free sample into paying subscribers
+    audience: people who requested a free sample bag
+    emails: 4
+    facts: *facts
+  checks:
+    - {type: count, path: "emails[*]", min: 4, max: 4}
+    - {type: max_chars, path: "emails[*].subject", value: 60}
+    - {type: max_chars, path: "emails[*].preview", value: 90}
+    - {type: max_chars, path: "emails[*].cta_text", value: 30}
+    - {type: numbers_from_input, path: "emails[*].subject"}
+    - {type: numbers_from_input, path: "emails[*].preview"}
+    - {type: numbers_from_input, path: "emails[*].body"}
+    # the objection answer ("can I stop?") is an approved fact
+    - {type: contains, path: "", value: "pause"}
+    - {type: brand_ok, path: "emails[*].body"}
+
+- id: email_sequence_three_winback
+  prompt: email_sequence
+  vars:
+    goal: Win back subscribers who paused their deliveries
+    emails: 3
+    facts: *facts
+  checks:
+    - {type: count, path: "emails[*]", min: 3, max: 3}
+    - {type: max_chars, path: "emails[*].subject", value: 60}
+    - {type: max_chars, path: "emails[*].preview", value: 90}
+    - {type: numbers_from_input, path: "emails[*].subject"}
+    - {type: numbers_from_input, path: "emails[*].preview"}
+    - {type: numbers_from_input, path: "emails[*].body"}
+    - {type: not_contains, path: "", values: ["% off", "discount", "coupon"]}

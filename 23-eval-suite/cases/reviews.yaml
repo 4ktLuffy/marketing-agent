@@ -1,0 +1,148 @@
+# Review reply drafts (prompt review_reply, vars from 58 GET /reviews/{id}/reply-context).
+# Run alone with:  python -m evalsuite.run --cases reviews --repeats 3
+#
+# A 200 from the gateway means the output passed the prompt's JSON schema (the gateway
+# validates and retries), so "schema valid" is part of every case passing.
+# `facts` is passed explicitly in every case. Without it the gateway injects all of 05's
+# facts, including the 30-day return policy, and the "no refund promise" checks would test
+# nothing. Most cases get the facts WITHOUT the return policy; one case gets it.
+# The refund/compensation word list is strict on purpose: the prompt says not to mention
+# those words at all unless a fact states the policy.
+# Negative replies carry no emoji (the prompt says so; the first run had 📦 in 7 of 12).
+# Negative reviews that are only about delivery or product problems must NOT be escalated
+# (needs_human false): escalating everything would pass the legal case trivially.
+
+- id: review_reply_positive_desk_blend
+  prompt: review_reply
+  vars:
+    review: The Desk Blend is the best part of my workday. Smells great when the bag opens and it works perfectly in my French press.
+    rating: 5
+    author_first_name: Maya
+    negative: false
+    facts: &facts_no_refund |
+      [f1] Desk Blend is a medium roast with chocolate and hazelnut tasting notes.
+      [f2] Desk Blend is made for drip and French press brewing.
+      [f3] Single-Origin Rotation is a light roast, with a different origin in every shipment.
+      [f4] Team Box contains 1.5 kg of coffee across two blends and ships to each teammate.
+      [f5] Our Swiss Water decaf is roasted in small batches every Tuesday.
+      [f7] Subscribers can skip or pause a delivery from their account page at any time, with no fee.
+  checks:
+    - {type: max_chars, path: reply, value: 600}
+    - {type: contains, path: reply, value: "Maya"}
+    - {type: equals, path: needs_human, value: false}
+    - {type: numbers_from_input, path: reply}
+    # positive replies don't sell and never talk about ratings
+    - {type: not_contains, path: reply, values: ["http", "www.", "order again", "subscribe", "discount", "% off", "stars", "rating"]}
+    - {type: brand_ok, path: reply}
+
+- id: review_reply_positive_team_box
+  prompt: review_reply
+  vars:
+    review: Our remote team got the Team Box last month and it has become our Monday video-call ritual. Everyone compares notes on the two blends.
+    rating: 4
+    author_first_name: Priya
+    negative: false
+    facts: *facts_no_refund
+  checks:
+    - {type: max_chars, path: reply, value: 600}
+    - {type: contains, path: reply, value: "Priya"}
+    - {type: equals, path: needs_human, value: false}
+    - {type: numbers_from_input, path: reply}
+    - {type: not_contains, path: reply, values: ["http", "www.", "order again", "subscribe", "discount", "% off", "stars", "rating"]}
+    - {type: brand_ok, path: reply}
+
+- id: review_reply_negative_late_and_broken
+  prompt: review_reply
+  vars:
+    review: My order arrived four days late and one bag was split open, coffee all over the box. Really disappointing for the price.
+    rating: 1
+    author_first_name: Tom
+    negative: true
+    facts: *facts_no_refund
+  checks:
+    - {type: max_chars, path: reply, value: 600}
+    - {type: contains, path: reply, value: "Tom"}
+    - {type: numbers_from_input, path: reply}
+    # no compensation is in the facts, so none may be offered
+    - &no_compensation {type: not_contains, path: reply, values: ["refund", "replacement", "replace", "discount", "voucher", "coupon", "credit", "compensat", "free bag", "free of charge", "for free", "money back", "reimburse"]}
+    - &no_liability {type: not_contains, path: reply, values: ["our fault", "caused", "we are liable", "we're liable", "liability", "negligen"]}
+    - {type: not_contains, path: reply, values: ["stars", "rating", "update your review"]}
+    - &no_emoji {type: not_contains, path: reply, values: ["☕", "🌱", "🍂", "📦", "🫘", "✨", "🙌", "👋", "😊", "🙏"]}
+    - {type: equals, path: needs_human, value: false}
+    - {type: brand_ok, path: reply}
+
+- id: review_reply_negative_wrong_item
+  prompt: review_reply
+  vars:
+    review: Ordered the decaf for my evenings and got the regular Desk Blend instead. Second time something was wrong with my order.
+    rating: 2
+    author_first_name: Lena
+    negative: true
+    facts: *facts_no_refund
+  checks:
+    - {type: max_chars, path: reply, value: 600}
+    - {type: contains, path: reply, value: "Lena"}
+    - {type: numbers_from_input, path: reply}
+    - *no_compensation
+    - *no_liability
+    - {type: not_contains, path: reply, values: ["stars", "rating", "update your review"]}
+    - *no_emoji
+    - {type: equals, path: needs_human, value: false}
+    - {type: brand_ok, path: reply}
+
+- id: review_reply_legal_threat_needs_human
+  prompt: review_reply
+  vars:
+    review: You charged my card twice and ignored my emails. I've spoken to my lawyer and will be filing a claim in small claims court if this isn't fixed.
+    rating: 1
+    author_first_name: Marcus
+    negative: true
+    facts: *facts_no_refund
+  checks:
+    - {type: equals, path: needs_human, value: true}
+    - {type: max_chars, path: reply, value: 600}
+    - {type: numbers_from_input, path: reply}
+    - *no_compensation
+    - *no_liability
+    - *no_emoji
+    # a holding reply must not confirm the allegation
+    - {type: not_contains, path: reply, values: ["we charged", "we ignored", "charged your card twice", "charged twice"]}
+
+- id: review_reply_health_needs_human
+  prompt: review_reply
+  vars:
+    review: The decaf gave me heart palpitations all night, I don't think it is really decaf. Felt awful.
+    rating: 1
+    author_first_name: Joan
+    negative: true
+    facts: *facts_no_refund
+  checks:
+    - {type: equals, path: needs_human, value: true}
+    - {type: max_chars, path: reply, value: 600}
+    - {type: numbers_from_input, path: reply}
+    - *no_compensation
+    - *no_liability
+    - *no_emoji
+
+- id: review_reply_refund_request_with_policy
+  prompt: review_reply
+  vars:
+    review: Bought two bags of the Single-Origin, one is still sealed. Not for me, too sour. I want a refund.
+    rating: 2
+    author_first_name: Sam
+    negative: true
+    facts: |
+      [f3] Single-Origin Rotation is a light roast, with a different origin in every shipment.
+      [f6] Unopened bags can be returned within 30 days for a full refund.
+      [f7] Subscribers can skip or pause a delivery from their account page at any time, with no fee.
+  checks:
+    - {type: max_chars, path: reply, value: 600}
+    - {type: contains, path: reply, value: "Sam"}
+    # "30" is in the facts, so it may appear; anything else is invented
+    - {type: numbers_from_input, path: reply}
+    # the policy allows a refund on unopened bags, nothing more
+    - {type: not_contains, path: reply, values: ["discount", "voucher", "coupon", "credit", "compensat", "free bag", "for free", "reimburse", "both bags"]}
+    - *no_liability
+    - *no_emoji
+    - {type: equals, path: needs_human, value: false}
+    - {type: brand_ok, path: reply}

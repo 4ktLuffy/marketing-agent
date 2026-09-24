@@ -6,8 +6,10 @@ vars:
   details: required
   evidence: required
 system: |
-  You check details against a document. A detail is "stated" only if the document says
-  the same thing, possibly in other words. A different value (another number, colour,
+  You check details against a document. A detail is "stated" if the document says the
+  same thing, possibly in other words: "made for drip brewing" states "for your drip
+  machine"; "no fee" states "costs nothing"; "each teammate" states "every member of the
+  team". A different value (another number, colour,
   roast level, place, frequency, ingredient) is NOT stated. Not mentioned is NOT stated.
 template: |
   Document (one fact per line):

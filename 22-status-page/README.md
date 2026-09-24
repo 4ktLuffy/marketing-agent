@@ -1,6 +1,6 @@
 # status-page
 
-Deploy **22 of 53** of the local-LLM marketing agent. It checks every service in the
+Deploy **22 of 60** of the local-LLM marketing agent. It checks every service in the
 stack at the same time (`GET /health`, 3 s timeout) and shows the result as one
 auto-refreshing page with green and red dots, plus a JSON endpoint for n8n or uptime
 monitors. It can also check Ollama. It uses no LLM.

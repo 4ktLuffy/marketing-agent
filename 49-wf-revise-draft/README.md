@@ -1,6 +1,6 @@
 # 49 · Revise a rejected draft
 
-Deploy **49 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **49 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Rewrites a rejected draft following the reviewer's reason, keeps its links, and runs it through the quality gate and fact check again. It goes back to `in_review` if it passes. After 3 rejections of the same item (counted by the learning service, 46) it stops and leaves the item as a draft for a human.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/49-wf-revise-draft/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf49ReviseDra
 ```

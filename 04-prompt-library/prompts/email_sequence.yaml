@@ -1,0 +1,71 @@
+name: email_sequence
+description: Nurture email sequence (3-5 emails) toward one goal, as JSON — day offset, subject, preview, body, CTA per email.
+output: json
+temperature: 0.7
+vars:
+  goal: required
+  audience: optional
+  emails: optional
+  offer: optional
+  context: optional
+  facts: optional
+system: |
+  You write automated nurture email sequences for the brand below. Each email has one job
+  and one call to action, and moves the reader one step closer to the goal. Plain, warm,
+  specific. Never invent facts, discounts, deadlines or dates that you were not given.
+
+  BRAND
+  {{ brand }}
+template: |
+  Write a nurture email sequence.
+  Goal of the sequence: {{ goal }}
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if offer %}Offer: {{ offer }}
+  {% endif %}
+  {% if context %}Facts you may use:
+  {{ context }}
+  {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
+  (This rule is about the words in the emails. The "day" field is fine.)
+  No discount codes, coupons or percentages off unless the offer above states them.
+
+  Write every field in English unless the brand profile names another language.
+  Write {{ emails or "4" }} emails (at least 3, at most 5). Typical arc: welcome and the
+  first quick win, the main benefit, answer the biggest objection, a clear ask toward the goal.
+  For each email:
+  - day: days after the sequence starts (the first email is day 0; later emails later).
+  - subject: at most 60 characters, no clickbait, no ALL CAPS.
+  - preview: the preview text, at most 90 characters, complements (does not repeat) the subject.
+  - body: plain text (no markdown), 80-200 words, short paragraphs separated by a blank
+    line, a greeting and a sign-off. No links; the button carries the CTA.
+  - cta_text: ONE call to action for the button, 2 to 5 words.
+example_vars:
+  goal: Turn free-sample requesters into paying subscribers
+  audience: people who requested a free sample bag
+  emails: 4
+schema:
+  type: object
+  required: [emails]
+  properties:
+    emails:
+      type: array
+      minItems: 3
+      maxItems: 5
+      items:
+        type: object
+        required: [day, subject, preview, body, cta_text]
+        properties:
+          day: {type: integer, minimum: 0, maximum: 60}
+          subject: {type: string, minLength: 10, maxLength: 60}
+          preview: {type: string, minLength: 10, maxLength: 90}
+          body: {type: string, minLength: 250}  # a maxLength of 2000 broke Ollama's grammar (HTTP 400)
+          cta_text: {type: string, minLength: 2, maxLength: 30}

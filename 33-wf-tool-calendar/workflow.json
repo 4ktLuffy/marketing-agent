@@ -48,16 +48,47 @@
       }
     },
     {
-      "id": "52c20ea8-9922-5cba-a45b-9509a7e973c1",
-      "name": "Build request",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "35500a22-bfdb-577f-81e0-e91b0cec7b2a",
+      "name": "Current item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         240,
         300
       ],
       "parameters": {
-        "jsCode": "const s = $input.first().json;\nconst base = $env.CALENDAR_URL;\nconst action = String(s.action || 'list').trim().toLowerCase();\nconst id = String(s.id || '').replace(/[^0-9]/g, '');\nconst need = (v, what) => { if (!v) throw new Error(`${action} needs ${what}`); return v; };\nlet req;\nif (action === 'list') {\n  // (URLSearchParams is not available in the Code node sandbox)\n  const q = [['status', s.status], ['channel', s.channel]]\n    .filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(String(v).trim())}`).join('&');\n  req = { method: 'GET', url: `${base}/items${q ? '?' + q : ''}` };\n} else if (action === 'get') {\n  req = { method: 'GET', url: `${base}/items/${need(id, 'an id')}` };\n} else if (action === 'create') {\n  req = { method: 'POST', url: `${base}/items`, body: { title: need(s.title, 'a title'),\n    channel: need(s.channel, 'a channel'), body: s.body || '', status: 'draft', scheduled_at: s.scheduled_at || null } };\n} else if (action === 'set_status') {\n  // Enforced here, not in the tool description: the model must never approve or publish.\n  const target = String(s.status || '').trim().toLowerCase();\n  if (['approved', 'published'].includes(target)) {\n    return [{ json: { action, method: 'GET', url: `${base}/health`, body: '{}', blocked: `Only a person can approve or publish, in the approval form (${$env.N8N_PUBLIC_URL || ''}form/mkt-content-approval). I can move items to draft, in_review or rejected.` } }];\n  }\n  req = { method: 'POST', url: `${base}/items/${need(id, 'an id')}/status`, body: { status: need(s.status, 'a status'), note: 'via chat agent' } };\n} else if (action === 'schedule') {\n  req = { method: 'PATCH', url: `${base}/items/${need(id, 'an id')}`, body: { scheduled_at: need(s.scheduled_at, 'scheduled_at (ISO, UTC)') } };\n} else {\n  throw new Error(`Unknown action \"${action}\". Use list, get, create, set_status or schedule.`);\n}\nreturn [{ json: { action, method: req.method, url: req.url, body: JSON.stringify(req.body || {}), send: req.method !== 'GET' } }];\n"
+        "method": "GET",
+        "url": "={{ /^(#|item\\s*)?\\d{1,9}$/i.test(String($json.id || '').trim()) ? $env.CALENDAR_URL + '/items/' + String($json.id).replace(/[^0-9]/g, '') : $env.CALENDAR_URL + '/health' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "52c20ea8-9922-5cba-a45b-9509a7e973c1",
+      "name": "Build request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Start').first().json;\n// Approved and published posts are only changed through the approval form. A prompt\n// injection read by another tool must not reschedule or pull them (audit M1).\nconst current = ($input.first().json.body || {}).status;\nconst base = $env.CALENDAR_URL;\nconst action = String(s.action || 'list').trim().toLowerCase();\n// Only a calendar item number (\"53\", \"#53\", \"item 53\"). Hosted models have sent their own\n// tool-call id (\"fc_76a7...\") here; stripping letters from it made a bogus id (night 5).\nconst idMatch = String(s.id || '').trim().match(/^(?:#|item\\s*)?(\\d{1,9})$/i);\nconst id = idMatch ? idMatch[1] : '';\nconst idHelp = 'an item number like 53 (use action list to find it)';\nconst refuse = msg => [{ json: { action, method: 'GET', url: `${base}/health`, body: '{}', blocked: msg } }];\nif (['get', 'set_status', 'schedule'].includes(action) && !id) {\n  return refuse(`${action} needs ${idHelp}; got \"${String(s.id || '').slice(0, 40)}\".`);\n}\nconst need = (v, what) => { if (!v) throw new Error(`${action} needs ${what}`); return v; };\nlet req;\nif (action === 'list') {\n  // (URLSearchParams is not available in the Code node sandbox)\n  const q = [['status', s.status], ['channel', s.channel]]\n    .filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(String(v).trim())}`).join('&');\n  req = { method: 'GET', url: `${base}/items${q ? '?' + q : ''}` };\n} else if (action === 'get') {\n  req = { method: 'GET', url: `${base}/items/${need(id, 'an id')}` };\n} else if (action === 'create') {\n  req = { method: 'POST', url: `${base}/items`, body: { title: need(s.title, 'a title'),\n    channel: need(s.channel, 'a channel'), body: s.body || '', status: 'draft', scheduled_at: s.scheduled_at || null } };\n} else if (['set_status', 'schedule'].includes(action) && ['approved', 'published'].includes(current)) {\n  return refuse(`Item #${id} is ${current}; only a person can change it, in the approval form.`);\n} else if (['set_status', 'schedule'].includes(action) && current === 'rejected') {\n  // A reviewer's rejection stands: the agent revived a rejected post to schedule it (night 5).\n  return refuse(`Item #${id} was rejected by a reviewer; only a person can reopen it. Suggest writing a new draft instead.`);\n} else if (action === 'set_status') {\n  // Enforced here, not in the tool description: the model must never approve or publish.\n  const target = String(s.status || '').trim().toLowerCase();\n  if (['approved', 'published'].includes(target)) {\n    return refuse(`Only a person can approve or publish, in the approval form (${$env.N8N_PUBLIC_URL || ''}form/mkt-content-approval). I can move items to draft, in_review or rejected.`);\n  }\n  req = { method: 'POST', url: `${base}/items/${need(id, 'an id')}/status`, body: { status: need(s.status, 'a status'), note: 'via chat agent' } };\n} else if (action === 'schedule') {\n  req = { method: 'PATCH', url: `${base}/items/${need(id, 'an id')}`, body: { scheduled_at: need(s.scheduled_at, 'scheduled_at (ISO, UTC)') } };\n} else {\n  throw new Error(`Unknown action \"${action}\". Use list, get, create, set_status or schedule.`);\n}\nreturn [{ json: { action, method: req.method, url: req.url, body: JSON.stringify(req.body || {}), send: req.method !== 'GET' } }];\n"
       }
     },
     {
@@ -66,7 +97,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        480,
+        720,
         300
       ],
       "parameters": {
@@ -100,16 +131,27 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
+        960,
         300
       ],
       "parameters": {
-        "jsCode": "const built = $('Build request').first().json;\nif (built.blocked) return [{ json: { result: built.blocked } }];\nconst action = built.action;\nconst res = $input.first().json.body;          // full response: an empty list is still one item\nconst rows = Array.isArray(res) ? res : [res];\nconst one = rows[0] || {};\nif (one.detail) return [{ json: { result: `Calendar refused: ${typeof one.detail === 'string' ? one.detail : JSON.stringify(one.detail)}` } }];\nconst line = i => `#${i.id} [${i.status}] ${i.channel} · ${i.scheduled_at || 'unscheduled'} · ${i.title}`;\nif (action === 'list') {\n  const items = rows.filter(r => r && r.id);\n  return [{ json: { result: items.length ? items.slice(0, 30).map(line).join('\\n') : 'No matching calendar items.' } }];\n}\nreturn [{ json: { result: `${line(one)}\\n\\n${one.body || ''}`.trim() } }];\n"
+        "jsCode": "const built = $('Build request').first().json;\nif (built.blocked) return [{ json: { result: built.blocked } }];\nconst action = built.action;\nconst full = $input.first().json;               // full response: an empty list is still one item\nconst res = full.body;\nif (full.statusCode >= 400 && !(res && res.detail)) return [{ json: { result: `Calendar error (HTTP ${full.statusCode}).` } }];\nconst rows = Array.isArray(res) ? res : [res];\nconst one = rows[0] || {};\nif (one.detail) return [{ json: { result: `Calendar refused: ${typeof one.detail === 'string' ? one.detail : JSON.stringify(one.detail)}` } }];\nconst line = i => `#${i.id} [${i.status}] ${i.channel} · ${i.scheduled_at || 'unscheduled'} · ${i.title}`;\nif (action === 'list') {\n  const items = rows.filter(r => r && r.id);\n  return [{ json: { result: items.length ? items.slice(0, 30).map(line).join('\\n') : 'No matching calendar items.' } }];\n}\nreturn [{ json: { result: `${line(one)}\\n\\n${one.body || ''}`.trim() } }];\n"
       }
     }
   ],
   "connections": {
     "Start": {
+      "main": [
+        [
+          {
+            "node": "Current item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Current item": {
       "main": [
         [
           {

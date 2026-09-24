@@ -1,6 +1,6 @@
 # campaign-service
 
-Deploy **45 of 53** of the local-LLM marketing agent. It holds each campaign: the goal,
+Deploy **45 of 60** of the local-LLM marketing agent. It holds each campaign: the goal,
 audience, channels, dates and the KPI targets, set before anything ships. It builds UTM
 links for the campaign, pulls actual results from the link shortener (16) and analytics (20),
 and returns a scorecard that says which targets are met, on track or behind. It uses no LLM.
@@ -51,6 +51,7 @@ INTERNAL_API_KEY=change-me DB_PATH=./campaigns.sqlite uvicorn app.main:app --por
 | GET | `/campaigns/{id}/scorecard` | — | scorecard |
 | GET | `/report/unmeasured` | — | `[campaign + "unmeasured": [metric]]` |
 | GET | `/insights` | `?days=90` | `{"by_channel","top_posts","errors"}` |
+| GET | `/insights/hooks` | `?days=90&explore=0.2&seed=` | `{"recommended","explored","styles","unlabeled_posts","method","errors"}` |
 
 A campaign is:
 
@@ -177,6 +178,27 @@ and the error is listed.
   `top_posts` is the 10 posts with the most clicks, `[{"item_id","title","channel","clicks"}]`.
   If an item cannot be fetched, its `title` is `null`, its channel falls back to
   `utm_source`, and the failure is listed in `errors`.
+- `/insights/hooks?days=90&explore=0.2&seed=` learns which hook style (how a post opens)
+  earns clicks. It reuses the `/insights` join (same links, same calendar lookups) and
+  groups posts by the calendar item's `hook_style`, one of `question`, `fact_led`,
+  `story`, `how_to`, `benefit`, `contrarian` (the enum of `04` `social_posts`). Posts
+  without a style, or with another one, are counted in `unlabeled_posts`.
+  - Model: clicks of a post ~ Poisson(rate), rate ~ Gamma(1, 1) per style, so after
+    `posts` posts with `clicks` clicks the posterior is Gamma(1 + clicks, 1 + posts).
+    Clicks **per post** are compared, so a style is not rewarded just for being used more.
+  - Thompson sampling: one draw per style, ranked; `recommended` is the top two. With
+    probability `explore` (0–1) the second is replaced by a random style among those
+    with the fewest posts (never the first), so new styles keep getting tried; `explored`
+    names it, else `null`. `seed` (integer) makes the draw repeatable; without it every
+    call draws afresh.
+  - `styles` lists all six, in ranked order: `{"hook_style","posts","clicks",
+    "clicks_per_post" (null with no posts),"posterior_mean","sample","recommended"}`.
+    Styles with no data still appear (prior only), so they can be recommended.
+  - Shortener down: all styles fall back to the prior and the error is in `errors`.
+  - The social writer (workflow 26) calls it before writing and passes `recommended` as
+    the prompt's `prefer_hooks`; it saves each post's `hook_style` on the calendar item.
+    Tests include a simulation (32 posts at 2 clicks/post vs 8 at 6): the better style
+    is first in ≥ 90% of seeds (96 of 100); ranking by raw click totals gets 2 of 100.
 
 ## Configuration
 

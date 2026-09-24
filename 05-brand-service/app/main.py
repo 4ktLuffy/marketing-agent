@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 app = FastAPI(title="brand-service")
 
-SUMMARY_MAX = 1200
+SUMMARY_MAX = 1600  # was 1200: the example brand's product list (last line) got cut off (night 5)
 MAX_EXCLAMATIONS = 2
 MAX_CAPS_WORDS = 3
 
@@ -105,7 +105,8 @@ def build_summary(b: dict) -> str:
     prods = b.get("products") or []
     if prods:
         lines.append("Products: " + _join(
-            f"{p.get('name')} ({p.get('price')}): {p.get('one_line', '')}" for p in prods
+            f"{p.get('name')}{' (' + str(p['price']) + ')' if p.get('price') else ''}: {p.get('one_line', '')}"
+            for p in prods
         ))
     text = "\n".join(lines)
     if len(text) > SUMMARY_MAX:
@@ -116,6 +117,28 @@ def build_summary(b: dict) -> str:
 class CheckRequest(BaseModel):
     text: str
     channel: str | None = None
+    # Links the writer was given (the user's link, a CTA URL): their domains are allowed too.
+    allowed_domains: list[str] = []
+
+
+# Domains in copy: full URLs, or bare names like "NorthwindRoasters.com" (a model invented
+# that one in a video script on night 5; readers would type it and land somewhere else).
+URL_HOST_RE = re.compile(r"https?://([^/\s?#:]+)", re.I)
+BARE_DOMAIN_RE = re.compile(
+    r"(?<![@\w.-])((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"(?:com|net|org|io|co|ai|app|dev|shop|store|coffee|info|biz|me|tv|xyz|eu|us|uk|de|fr|es|it|nl|ca|au))"
+    r"(?![\w-])", re.I)
+
+
+def host_of(value: str) -> str:
+    """'https://www.Example.com/x' or 'example.com' -> 'example.com'."""
+    m = URL_HOST_RE.search(value)
+    host = (m.group(1) if m else value).strip().strip("/").lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def domain_allowed(host: str, allowed: set[str]) -> bool:
+    return any(host == a or host.endswith("." + a) for a in allowed)
 
 
 @app.get("/health")
@@ -194,6 +217,15 @@ def check(req: CheckRequest):
     if len(caps) > MAX_CAPS_WORDS:
         add("all_caps", f"{len(caps)} all-caps words ({', '.join(caps[:5])}), max {MAX_CAPS_WORDS}",
             "warn")
+
+    allowed_hosts = {host_of(d) for d in [b.get("website") or "", *(b.get("allowed_domains") or []),
+                                           *req.allowed_domains] if d and d.strip()}
+    hosts = [host_of(h) for h in URL_HOST_RE.findall(text)]
+    hosts += [host_of(h) for h in BARE_DOMAIN_RE.findall(URL_HOST_RE.sub(" ", text))]
+    for host in dict.fromkeys(hosts):
+        if not domain_allowed(host, allowed_hosts):
+            add("unknown_domain", f"link or domain '{host}' is not the brand's website or a link you gave",
+                b.get("unknown_domain_severity", "error"), match=host)
 
     bangs = text.count("!")
     if bangs > MAX_EXCLAMATIONS:

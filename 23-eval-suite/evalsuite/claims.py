@@ -25,7 +25,8 @@ CLAIMS_DIR = Path(__file__).parent.parent / "cases" / "claims"
 def measure(path: Path, checker: str) -> tuple[int, int, int, int]:
     caught = missed = alarms = passed = 0
     for case in yaml.safe_load(path.read_text()):
-        r = httpx.post(f"{checker}/verify", json={"text": case["claim"]}, timeout=600)
+        headers = {"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {}
+        r = httpx.post(f"{checker}/verify", json={"text": case["claim"]}, headers=headers, timeout=600)
         r.raise_for_status()
         flagged = not r.json()["ok"]
         if case["label"] == "unsupported":

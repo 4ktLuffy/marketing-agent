@@ -69,3 +69,28 @@
     - {type: brand_ok, path: text}
     - {type: contains, path: text, value: "https://example.com"}
     - {type: max_chars, path: text, value: 280}
+
+# Bait cases: topics where a small model reaches for invented specifics (decaf
+# percentages, tasting notes, roast-to-cup days). The only approved numbers are in the
+# case vars and the brand profile.
+- id: social_decaf_flavour_no_invention
+  prompt: social_posts
+  vars:
+    topic: What our decaf tastes like
+    channels: instagram, x
+  checks:
+    - {type: numbers_from_input, path: "posts[*].text"}
+    # The approved facts give the decaf no tasting notes; before facts were injected the
+    # model gave it the Desk Blend's (and invented a "Desk Blend Decaf").
+    - {type: not_contains, path: "posts[*].text", values: ["chocolate", "hazelnut", "caramel", "Desk Blend Decaf", "Decaf Desk Blend"]}
+    - {type: brand_ok, path: "posts[*].text"}
+
+- id: blog_freshness_no_invention
+  prompt: blog_post
+  vars:
+    topic: How fresh our coffee is when it reaches your desk, and why that matters
+    audience: remote workers
+    length_words: 400
+  checks:
+    - {type: numbers_from_input, path: "", allow: [1, 2, 3, 4, 5]}
+    - {type: brand_ok, path: ""}

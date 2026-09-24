@@ -1,0 +1,12 @@
+name: fact_post
+description: test prompt that declares the optional facts var
+output: text
+vars:
+  topic: required
+  facts: optional
+template: |
+  Post about {{ topic }}.
+  {% if facts %}
+  Facts:
+  {{ facts }}
+  {% endif %}

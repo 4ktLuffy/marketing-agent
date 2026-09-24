@@ -66,14 +66,14 @@ def test_check_baseline_then_change():
     route = respx.get("https://example.com/pricing").mock(return_value=httpx.Response(200, html=V1))
     wid = add().json()["id"]
 
-    first = client.post("/check").json()
+    first = client.post("/check", headers={"X-API-Key": "test-key"}).json()
     assert first == {"changed": [], "unchanged": 1, "errors": []}
     assert client.get("/watches").json()[0]["last_checked_at"] is not None
 
-    assert client.post("/check").json()["unchanged"] == 1  # same content again
+    assert client.post("/check", headers={"X-API-Key": "test-key"}).json()["unchanged"] == 1  # same content again
 
     route.mock(return_value=httpx.Response(200, html=V2))
-    third = client.post("/check").json()
+    third = client.post("/check", headers={"X-API-Key": "test-key"}).json()
     assert third["unchanged"] == 0
     [change] = third["changed"]
     assert change["id"] == wid and change["label"] == "Acme pricing"
@@ -81,7 +81,7 @@ def test_check_baseline_then_change():
     assert "2027" not in change["diff"]  # footer is ignored
     assert change["added_words"] == 1 and change["removed_words"] == 1
 
-    assert client.post("/check").json()["changed"] == []  # new snapshot stored
+    assert client.post("/check", headers={"X-API-Key": "test-key"}).json()["changed"] == []  # new snapshot stored
 
 
 @respx.mock
@@ -90,7 +90,7 @@ def test_check_one_bad_watch_does_not_fail_others():
     respx.get("https://down.example.com/").mock(side_effect=httpx.ConnectError("refused"))
     add()
     bad = add("https://down.example.com/", None).json()
-    r = client.post("/check").json()
+    r = client.post("/check", headers={"X-API-Key": "test-key"}).json()
     assert r["unchanged"] == 1
     assert r["errors"] == [{"id": bad["id"], "url": "https://down.example.com/", "error": "ConnectError: refused"}]
 
@@ -101,7 +101,7 @@ def test_check_blocks_redirect_to_private():
         return_value=httpx.Response(302, headers={"location": "http://169.254.169.254/"})
     )
     add()
-    [err] = client.post("/check").json()["errors"]
+    [err] = client.post("/check", headers={"X-API-Key": "test-key"}).json()["errors"]
     assert "non-public" in err["error"]
 
 
@@ -111,8 +111,19 @@ def test_diff_is_capped():
         return_value=httpx.Response(200, html="".join(f"<p>line {i}</p>" for i in range(2000)))
     )
     add()
-    client.post("/check")
+    client.post("/check", headers={"X-API-Key": "test-key"})
     route.mock(return_value=httpx.Response(200, html="".join(f"<p>row {i}</p>" for i in range(2000))))
-    [change] = client.post("/check").json()["changed"]
+    [change] = client.post("/check", headers={"X-API-Key": "test-key"}).json()["changed"]
     assert len(change["diff"]) < 4100
     assert change["diff"].endswith("(diff truncated)")
+
+
+def test_ipv6_forms_embedding_private_ipv4_are_blocked():
+    from app.net import _is_public
+    for addr in ("64:ff9b::7f00:1", "2002:7f00:1::", "::127.0.0.1", "::ffff:10.0.0.1", "64:ff9b::a9fe:a9fe"):
+        assert not _is_public(addr), addr
+    assert _is_public("64:ff9b::808:808")      # NAT64 of a public address (8.8.8.8) is fine
+
+
+def test_check_requires_key():
+    assert client.post("/check").status_code == 401

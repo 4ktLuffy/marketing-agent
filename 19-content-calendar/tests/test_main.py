@@ -56,7 +56,7 @@ def test_create_defaults_to_draft_with_all_fields():
     assert set(item) == {
         "id", "title", "channel", "body", "status", "scheduled_at", "published_at",
         "campaign", "link", "external_url", "notes", "created_at", "updated_at",
-        "campaign_id", "short_url",
+        "campaign_id", "short_url", "hook_style",
     }
     assert item["campaign_id"] is None and item["short_url"] is None
     assert isinstance(item["id"], int)
@@ -465,7 +465,8 @@ def test_migrates_old_schema_db(tmp_path, monkeypatch):
     assert [i["id"] for i in client.get("/items?campaign_id=5").json()] == [1, new["id"]]
 
     cols = {r[1] for r in sqlite3.connect(path).execute("PRAGMA table_info(items)")}
-    assert {"campaign_id", "short_url"} <= cols
+    assert {"campaign_id", "short_url", "hook_style"} <= cols
+    assert old["hook_style"] is None
 
 
 def test_migration_is_idempotent(tmp_path, monkeypatch):
@@ -494,3 +495,83 @@ def test_migration_is_safe_under_parallel_requests(tmp_path, monkeypatch):
             return c.execute("SELECT 1").fetchone()[0]
     with ThreadPoolExecutor(8) as pool:
         assert list(pool.map(hit, range(16))) == [1] * 16
+
+
+def test_huge_or_negative_id_is_404_not_500():
+    # A hosted model once sent its tool-call id; the digits made an id beyond SQLite's 64 bits.
+    for bad in ("76706164840234535352", "-1", "0"):
+        assert client.get(f"/items/{bad}").status_code == 404
+        assert client.post(f"/items/{bad}/status", json={"status": "draft"}, headers=AUTH).status_code == 404
+
+
+# ---------- hook_style (which opening a post uses; 45 /insights/hooks learns from it)
+
+
+def test_create_with_hook_style_and_filter():
+    a = create(hook_style="question", channel="x")
+    b = create(hook_style=" Fact_Led ", channel="linkedin")
+    c = create()
+    assert a["hook_style"] == "question" and b["hook_style"] == "fact_led"
+    assert c["hook_style"] is None
+    assert client.get(f"/items/{a['id']}").json()["hook_style"] == "question"
+    ids = lambda r: [i["id"] for i in r.json()]
+    assert ids(client.get("/items?hook_style=question")) == [a["id"]]
+    assert ids(client.get("/items?hook_style=fact_led&channel=linkedin")) == [b["id"]]
+    assert ids(client.get("/items?hook_style=fact_led&channel=x")) == []
+    assert ids(client.get("/items?hook_style=story")) == []
+    assert len(client.get("/items").json()) == 3
+
+
+def test_blank_hook_style_is_null():
+    assert create(hook_style="  ")["hook_style"] is None
+
+
+def test_hook_style_too_long_422():
+    r = client.post("/items", headers=AUTH,
+                    json={"title": "t", "channel": "x", "body": "b", "hook_style": "q" * 41})
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize("status", ["idea", "draft", "in_review"])
+def test_patch_hook_style_before_approval(status):
+    item = item_in(status)
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"hook_style": "story"})
+    assert r.status_code == 200 and r.json()["hook_style"] == "story"
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"hook_style": None})
+    assert r.status_code == 200 and r.json()["hook_style"] is None
+
+
+@pytest.mark.parametrize("status", ["approved", "published"])
+def test_patch_hook_style_frozen_after_approval(status):
+    item = item_in(status, hook_style="benefit")
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"hook_style": "story"})
+    assert r.status_code == 409
+    assert client.get(f"/items/{item['id']}").json()["hook_style"] == "benefit"
+
+
+def test_migration_adds_hook_style_to_db_that_already_has_campaign_id(tmp_path, monkeypatch):
+    # a database from the phase-2 release has campaign_id/short_url but no hook_style
+    path = tmp_path / "phase2.sqlite"
+    conn = sqlite3.connect(path)
+    conn.executescript(OLD_SCHEMA)
+    conn.execute("ALTER TABLE items ADD COLUMN campaign_id INTEGER")
+    conn.execute("ALTER TABLE items ADD COLUMN short_url TEXT")
+    conn.close()
+    monkeypatch.setenv("DB_PATH", str(path))
+    item = create(hook_style="how_to", campaign_id=2)
+    assert client.get(f"/items/{item['id']}").json()["hook_style"] == "how_to"
+    assert [i["id"] for i in client.get("/items?hook_style=how_to").json()] == [item["id"]]
+
+
+def test_approving_and_publishing_need_the_approver_key(monkeypatch):
+    monkeypatch.setenv("APPROVER_KEY", "boss")
+    item = create(status="in_review")
+    assert move(item["id"], "approved").status_code == 403                      # internal key only
+    ok = client.post(f"/items/{item['id']}/status", json={"status": "approved"},
+                     headers={**AUTH, "X-Approver-Key": "boss"})
+    assert ok.status_code == 200
+    assert client.post(f"/items/{item['id']}/published", json={}, headers=AUTH).status_code == 403
+    assert client.post(f"/items/{item['id']}/published", json={},
+                       headers={**AUTH, "X-Approver-Key": "boss"}).status_code == 200
+    other = create(status="in_review")
+    assert move(other["id"], "rejected").status_code == 200                     # other moves: no approver key

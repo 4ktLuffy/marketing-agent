@@ -40,14 +40,22 @@ expected=$(ls -d ../[0-9][0-9]-wf-* 2>/dev/null | wc -l | tr -d ' ')
 [ "$count" = "$expected" ] && pass "$count/$expected workflows imported" \
   || fail "$count/$expected workflows imported (run scripts/import-n8n.sh)"
 
+# The gateway and the claim checker need the internal key. It goes to curl on stdin (-K -),
+# never on the command line where other users could read it.
+keyed() { printf 'header = "X-API-Key: %s"\n' "${INTERNAL_API_KEY:-}" | curl -K - "$@"; }
+
+echo "== Access control"
+code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 http://127.0.0.1:8103/v1/run -H 'content-type: application/json' -d '{"prompt":"kb_answer"}')
+[ "$code" = "401" ] && pass "gateway refuses calls without the key" || fail "gateway answered $code without the key (expected 401)"
+
 echo "== LLM path (gateway -> Ollama)"
-out=$(curl -fsS -m 300 http://127.0.0.1:8103/v1/run -H 'content-type: application/json' \
+out=$(keyed -fsS -m 300 http://127.0.0.1:8103/v1/run -H 'content-type: application/json' \
   -d '{"prompt":"kb_answer","vars":{"question":"How long do refunds take?","context":"[1] Refunds are processed within 5 days."}}' 2>/dev/null)
 answer=$(echo "$out" | json "d['output']")
 [ -n "$answer" ] && pass "model answered: ${answer:0:80}" || fail "gateway/Ollama call failed: ${out:0:200}"
 
 echo "== Fact check (claim checker)"
-out=$(curl -fsS -m 300 http://127.0.0.1:8144/verify -H 'content-type: application/json' \
+out=$(keyed -fsS -m 300 http://127.0.0.1:8144/verify -H 'content-type: application/json' \
   -d '{"text":"Every order ships within 3 minutes and includes a free espresso machine."}' 2>/dev/null)
 ok=$(echo "$out" | json "d['ok']")
 [ "$ok" = "False" ] && pass "invented claim was flagged" || fail "claim checker did not flag an invented claim: ${out:0:200}"

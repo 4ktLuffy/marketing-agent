@@ -1,6 +1,6 @@
 # seo-auditor
 
-Deploy **12 of 53** of the local-LLM marketing agent. It runs deterministic on-page SEO checks
+Deploy **12 of 60** of the local-LLM marketing agent. It runs deterministic on-page SEO checks
 on a URL or raw HTML (title and description length, headings, alt text, canonical, Open Graph,
 indexability, word count, and keyword placement) and returns each as pass / warn / fail with
 a 0–100 score. The SEO brief tool feeds the failed checks to the LLM. It uses no LLM.

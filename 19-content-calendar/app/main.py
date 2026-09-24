@@ -23,12 +23,12 @@ TRANSITIONS = {
     "published": [],
 }
 # Once a human approved an item, its content is frozen: move it back to draft to edit.
-CONTENT_FIELDS = {"title", "channel", "body", "link"}
+CONTENT_FIELDS = {"title", "channel", "body", "link", "hook_style"}
 FROZEN_STATUSES = {"approved", "published"}
 COLUMNS = (
     "id", "title", "channel", "body", "status", "scheduled_at", "published_at",
     "campaign", "link", "external_url", "notes", "created_at", "updated_at",
-    "campaign_id", "short_url",
+    "campaign_id", "short_url", "hook_style",
 )
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS items (
@@ -46,13 +46,14 @@ CREATE TABLE IF NOT EXISTS items (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     campaign_id INTEGER,
-    short_url TEXT
+    short_url TEXT,
+    hook_style TEXT
 );
 CREATE INDEX IF NOT EXISTS items_status_scheduled ON items (status, scheduled_at);
 """
 # Columns added after the first release. A database created by an older version gets
 # them via ALTER TABLE ADD COLUMN on first use; existing rows read them as NULL.
-ADDED_COLUMNS = {"campaign_id": "INTEGER", "short_url": "TEXT"}
+ADDED_COLUMNS = {"campaign_id": "INTEGER", "short_url": "TEXT", "hook_style": "TEXT"}
 INDEXES = "CREATE INDEX IF NOT EXISTS items_campaign_id ON items (campaign_id);"
 _migrate_lock = threading.Lock()
 _migrated: set[str] = set()
@@ -142,6 +143,8 @@ def row_to_item(row: sqlite3.Row) -> dict:
 
 
 def get_or_404(conn: sqlite3.Connection, item_id: int) -> dict:
+    if not 0 < item_id < 2**63:  # SQLite integers are 64-bit; a larger id raised OverflowError (500)
+        raise HTTPException(404, f"item {item_id} not found")
     row = conn.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
     if row is None:
         raise HTTPException(404, f"item {item_id} not found")
@@ -170,11 +173,32 @@ def require_key(x_api_key: str | None = Header(default=None)):
         raise HTTPException(401, "missing or wrong X-API-Key")
 
 
+def require_approver(x_approver_key: str | None) -> None:
+    """Approving and publishing need APPROVER_KEY too, when it is set (the stack sets it).
+
+    Only n8n's approval form and publisher hold it. Every service that can write drafts holds
+    INTERNAL_API_KEY; without this, any of them could approve its own copy.
+    """
+    expected = os.environ.get("APPROVER_KEY")
+    if expected and not (x_approver_key and hmac.compare_digest(x_approver_key, expected)):
+        raise HTTPException(403, "approving or publishing needs the approver key (X-Approver-Key)")
+
+
 # ---------- models
 
 
 def _utc_or_none(v):
     return None if v is None or v == "" else to_utc_iso(v)
+
+
+def _hook_or_none(v):
+    """Hook style label (e.g. "question"): trimmed, lower-case; blank means none."""
+    if v is None:
+        return None
+    v = v.strip().lower()
+    if len(v) > 40:
+        raise ValueError("hook_style is at most 40 characters")
+    return v or None
 
 
 class NewItem(BaseModel):
@@ -187,6 +211,12 @@ class NewItem(BaseModel):
     campaign_id: StrictInt | None = Field(default=None, ge=1)
     link: str | None = None
     notes: str | None = None
+    hook_style: str | None = None
+
+    @field_validator("hook_style")
+    @classmethod
+    def hook(cls, v):
+        return _hook_or_none(v)
 
     @field_validator("title", "channel", "body")
     @classmethod
@@ -219,11 +249,17 @@ class ItemPatch(BaseModel):
     campaign_id: StrictInt | None = Field(default=None, ge=1)
     link: str | None = None
     notes: str | None = None
+    hook_style: str | None = None
 
     @field_validator("scheduled_at")
     @classmethod
     def sched(cls, v):
         return _utc_or_none(v)
+
+    @field_validator("hook_style")
+    @classmethod
+    def hook(cls, v):
+        return _hook_or_none(v)
 
 
 class StatusChange(BaseModel):
@@ -250,10 +286,10 @@ def create_item(req: NewItem):
     with db() as conn:
         cur = conn.execute(
             "INSERT INTO items (title, channel, body, status, scheduled_at, campaign,"
-            " campaign_id, link, notes, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " campaign_id, link, notes, hook_style, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (req.title, req.channel, req.body, req.status, req.scheduled_at, req.campaign,
-             req.campaign_id, req.link, req.notes, ts, ts),
+             req.campaign_id, req.link, req.notes, req.hook_style, ts, ts),
         )
         return get_or_404(conn, cur.lastrowid)
 
@@ -263,6 +299,7 @@ def list_items(
     status: str | None = Query(None, description="one status or a comma list"),
     channel: str | None = None,
     campaign_id: int | None = Query(None, description="only items of this campaign"),
+    hook_style: str | None = Query(None, description="only items with this hook style"),
     from_: str | None = Query(None, alias="from"),
     to: str | None = None,
 ):
@@ -280,6 +317,9 @@ def list_items(
     if campaign_id is not None:
         where.append("campaign_id = ?")
         args.append(campaign_id)
+    if hook_style and hook_style.strip():
+        where.append("hook_style = ?")
+        args.append(hook_style.strip().lower())
     if from_:
         where.append("scheduled_at >= ?")
         args.append(parse_query_time(from_, "from"))
@@ -321,9 +361,11 @@ def patch_item(item_id: int, req: ItemPatch):
 
 
 @app.post("/items/{item_id}/status", dependencies=[Depends(require_key)])
-def change_status(item_id: int, req: StatusChange):
+def change_status(item_id: int, req: StatusChange, x_approver_key: str | None = Header(default=None)):
     if req.status not in STATUSES:
         raise HTTPException(422, f"unknown status {req.status!r}; use {list(STATUSES)}")
+    if req.status in ("approved", "published"):
+        require_approver(x_approver_key)
     with db() as conn:
         item = get_or_404(conn, item_id)
         current, allowed = item["status"], TRANSITIONS[item["status"]]
@@ -344,7 +386,8 @@ def change_status(item_id: int, req: StatusChange):
 
 
 @app.post("/items/{item_id}/published", dependencies=[Depends(require_key)])
-def mark_published(item_id: int, req: Published | None = None):
+def mark_published(item_id: int, req: Published | None = None, x_approver_key: str | None = Header(default=None)):
+    require_approver(x_approver_key)
     with db() as conn:
         item = get_or_404(conn, item_id)
         if item["status"] != "approved":

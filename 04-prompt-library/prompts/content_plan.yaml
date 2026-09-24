@@ -9,6 +9,7 @@ vars:
   posts_per_channel: optional
   recent_titles: optional
   performance: optional
+  facts: optional
 system: |
   You plan the weekly content calendar for the brand below. Mix formats: education,
   behind-the-scenes, product, community, and at most one promotional post per channel.
@@ -27,6 +28,15 @@ template: |
   {% if recent_titles %}Already published recently (do not repeat these angles):
   {{ recent_titles }}
   {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  In titles and briefs: no numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the themes above.
 
   For each post: title (internal, under 70 chars), channel (exactly as given), day
   (Mon, Tue, Wed, Thu, Fri, Sat or Sun), time (HH:MM, 24h), angle (one of education,

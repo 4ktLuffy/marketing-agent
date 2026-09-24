@@ -1,6 +1,6 @@
 # 32 · Keyword research
 
-Deploy **32 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **32 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Gets real Google and DuckDuckGo autocomplete suggestions for a seed (10), then has the LLM group them by search intent with a content idea for each group.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/32-wf-tool-keyword-research/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf32KeywordRe
 ```

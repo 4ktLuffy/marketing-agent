@@ -1,6 +1,6 @@
 # utm-builder
 
-Deploy **15 of 53** of the local-LLM marketing agent. It builds campaign links with one naming
+Deploy **15 of 60** of the local-LLM marketing agent. It builds campaign links with one naming
 scheme, so every post, email and ad shows up grouped correctly in analytics.
 It uses no LLM.
 

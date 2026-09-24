@@ -1,6 +1,6 @@
 # 51 · Review learned rules
 
-Deploy **51 of 53** of the local-LLM marketing agent. This deploy is an n8n form workflow.
+Deploy **51 of 60** of the local-LLM marketing agent. This deploy is an n8n form workflow.
 
 A web form listing the writing rules the learning service proposed. Keep a rule and it is added to every writing prompt from then on (via the gateway, 03); reject it and it is never proposed again.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/51-wf-rules-review-form/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf51RulesForm
 ```

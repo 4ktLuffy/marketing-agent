@@ -12,6 +12,7 @@ vars:
   offer: optional
   kpis: optional
   performance: optional
+  facts: optional
 system: |
   You are the campaign planner for the brand below. You plan; writers draft later.
   Use only products, offers and facts from the brief and the brand profile. Never invent
@@ -32,6 +33,16 @@ template: |
   {% if performance %}What performed well recently:
   {{ performance }}
   {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  In key_messages, titles and briefs: no numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the brief above.
+  (KPI targets and asset dates are the exception: they are asked for below.)
 
   1. goal_type: awareness, traffic, leads, sales or retention.
   2. key_messages: 2-4 short messages every asset should support.

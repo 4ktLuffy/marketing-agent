@@ -1,8 +1,8 @@
 # 39 · Publisher
 
-Deploy **39 of 53** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **39 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
-Every 15 minutes it takes the approved calendar items that are due, swaps each link for a tracked short link (16), sends the post to your publish endpoint, and marks it published only if the endpoint accepted it.
+Every 15 minutes it takes the approved calendar items that are due, swaps each link for a tracked short link (16), sends the post to your publish endpoint, and marks it published only if the endpoint accepted it. Review replies (channel `review_reply`, from 60) are never sent: a person posts those by hand.
 
 ## Where to deploy
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/39-wf-sched-publisher/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf39Publisher
 ```

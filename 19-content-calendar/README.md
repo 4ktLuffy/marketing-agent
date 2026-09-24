@@ -1,6 +1,6 @@
 # content-calendar
 
-Deploy **19 of 53** of the local-LLM marketing agent. It is the central store for every
+Deploy **19 of 60** of the local-LLM marketing agent. It is the central store for every
 piece of content: the chat agent saves drafts here, a human approves them here, and the
 publisher picks up approved, due items from here. It enforces the review workflow, so
 nothing reaches `approved` without passing `in_review`. It uses no LLM.
@@ -35,10 +35,10 @@ INTERNAL_API_KEY=change-me DB_PATH=./calendar.sqlite uvicorn app.main:app --port
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
-| POST | `/items` 🔑 | `{"title","channel","body","status"?,"scheduled_at"?,"campaign"?,"campaign_id"?,"link"?,"notes"?}` | item, `201` |
-| GET | `/items` | `?status=&channel=&campaign_id=&from=&to=` | `[item]` |
+| POST | `/items` 🔑 | `{"title","channel","body","status"?,"scheduled_at"?,"campaign"?,"campaign_id"?,"link"?,"notes"?,"hook_style"?}` | item, `201` |
+| GET | `/items` | `?status=&channel=&campaign_id=&hook_style=&from=&to=` | `[item]` |
 | GET | `/items/{id}` | — | item |
-| PATCH | `/items/{id}` 🔑 | any of `title, channel, body, scheduled_at, campaign, campaign_id, link, notes` | item |
+| PATCH | `/items/{id}` 🔑 | any of `title, channel, body, scheduled_at, campaign, campaign_id, link, notes, hook_style` | item |
 | POST | `/items/{id}/status` 🔑 | `{"status","note"?}` | item |
 | POST | `/items/{id}/published` 🔑 | `{"external_url"?,"short_url"?}` (body optional) | item |
 | GET | `/due` | `?now=ISO` (default: now, UTC) | `[item]` approved, `scheduled_at <= now` |
@@ -50,7 +50,7 @@ An item is:
  "scheduled_at":"2026-10-01T09:00:00Z","published_at":null,"campaign":"launch",
  "link":"https://example.com","external_url":null,"notes":null,
  "created_at":"2026-09-23T10:00:00Z","updated_at":"2026-09-23T10:00:00Z",
- "campaign_id":3,"short_url":null}
+ "campaign_id":3,"short_url":null,"hook_style":"question"}
 ```
 
 - `campaign_id` (integer ≥ 1 or `null`) links the item to a campaign in
@@ -60,7 +60,13 @@ An item is:
 - `campaign` (free text) is the older label field; it is unchanged and separate from `campaign_id`.
 - `short_url` is set only by `POST /items/{id}/published` (the shortened link that was
   posted). `PATCH` does not accept it.
-- A database created by an older version gets the `campaign_id` and `short_url` columns
+- `hook_style` (text or `null`) records how the post opens, e.g. `question`, `fact_led`,
+  `story`, `how_to`, `benefit`, `contrarian` (the social writer, workflow 26, sets it from
+  the prompt output). It is trimmed and lower-cased; blank means `null`; at most 40
+  characters. It is content, so like `body` it is frozen once the item is `approved`.
+  `GET /items?hook_style=question` filters on it. `45-campaign-service`
+  `GET /insights/hooks` joins clicks to it to learn which hook style earns clicks.
+- A database created by an older version gets the `campaign_id`, `short_url` and `hook_style` columns
   added on first use (`ALTER TABLE ... ADD COLUMN`). Existing rows read them as `null`.
 
 ```bash
@@ -90,8 +96,8 @@ curl -s localhost:8119/items/1/status -H 'content-type: application/json' -H 'X-
 - With a `note`, `/status` appends a line such as
   `[2026-09-23T10:00:00Z] in_review -> draft: tone too salesy` to `notes`.
 - `PATCH` cannot change `status`; sending it is a 422 error. For an `approved` or
-  `published` item, `PATCH` also refuses to change `title`, `channel`, `body` or
-  `link` (409 error), because a human approved that exact text. Move the item back to
+  `published` item, `PATCH` also refuses to change `title`, `channel`, `body`,
+  `link` or `hook_style` (409 error), because a human approved that exact text. Move the item back to
   `draft` to edit it. You can still change `scheduled_at`, `campaign`, `campaign_id` and
   `notes`. In `idea`, `draft` and `in_review` all fields can be edited, including `body`.
 - Moving to `published` (via `/status` or `/published`) sets `published_at`.
@@ -114,6 +120,7 @@ curl -s localhost:8119/items/1/status -H 'content-type: application/json' -H 'X-
 | Env var | Default | Meaning |
 |---|---|---|
 | `INTERNAL_API_KEY` | — | Required for write endpoints. If it is not set, writes return `503`. |
+| `APPROVER_KEY` | — | When set (the stack sets it), moving an item to `approved` or `published` and `POST /items/{id}/published` also need header `X-Approver-Key`; otherwise `403`. Only n8n holds it (approval form 38, publisher 39), so a service with `INTERNAL_API_KEY` can write drafts but never approve them. |
 | `DB_PATH` | `/data/calendar.sqlite` | SQLite file |
 
 ## CI

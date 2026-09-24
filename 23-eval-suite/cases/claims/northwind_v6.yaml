@@ -1,0 +1,15 @@
+# Held-out set for the prompt version that skips "cannot-be-false" words and accepts
+# paraphrases with examples. Written before that version ran, on either model. Mixes
+# everyday wording (must pass) with plausible inventions (must be caught).
+- {claim: "Pour your Desk Blend through a drip brewer for chocolate and hazelnut notes.", label: supported}
+- {claim: "Your team gets two blends, 1.5 kg in total, delivered to each person.", label: supported}
+- {claim: "Take a break at your desk with coffee that was roasted at most 48 hours before it shipped.", label: supported}
+- {claim: "Pause your plan whenever you want, free of charge.", label: supported}
+- {claim: "US subscribers never pay for shipping.", label: supported}
+- {claim: "Every Rotation box brings a light roast from somewhere new.", label: supported}
+- {claim: "Pour your Desk Blend through a drip brewer for notes of dark chocolate and orange.", label: unsupported}
+- {claim: "Your team gets three blends, 2 kg in total, delivered to each person.", label: unsupported}
+- {claim: "Pause your plan whenever you want, and we will send a free sample while you are away.", label: unsupported}
+- {claim: "Subscribers in the US and the UK never pay for shipping.", label: unsupported}
+- {claim: "Every Rotation box includes tasting cards written by the farmers.", label: unsupported}
+- {claim: "Our decaf keeps 99% of the original flavour.", label: unsupported}

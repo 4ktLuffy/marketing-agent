@@ -1,0 +1,14 @@
+# Held-out attribute-transfer set v2. Written 2026-09-23 AFTER product scoping was built from v1's
+# failures, BEFORE the scoped checker ran on any of these. Different wording and pairs than v1.
+- {claim: "Every Team Box shipment brings a new light-roast origin.", label: unsupported}
+- {claim: "Single-Origin Rotation ships 1.5 kg to each teammate.", label: unsupported}
+- {claim: "Desk Blend is roasted in small batches every Tuesday.", label: unsupported}
+- {claim: "Swiss Water decaf costs $22 for 250 g.", label: unsupported}
+- {claim: "The Team Box is a medium roast made for drip brewing.", label: unsupported}
+- {claim: "Pour our decaf through a drip brewer to bring out its hazelnut notes.", label: unsupported}
+- {claim: "Single-Origin Rotation costs $22 for a 250 g bag.", label: supported}
+- {claim: "Desk Blend works well in drip brewers and French presses.", label: supported}
+- {claim: "Each Team Box ships 1.5 kg of coffee, across two blends, to every teammate.", label: supported}
+- {claim: "Our decaf is roasted every Tuesday in small batches.", label: supported}
+- {claim: "Unopened bags of any blend can be returned within 30 days.", label: supported}
+- {claim: "Pause your Team Box deliveries any time from your account page.", label: supported}

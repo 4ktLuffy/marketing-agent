@@ -1,0 +1,798 @@
+{
+  "id": "mktWf60RevReply0",
+  "name": "60 · Schedule · Review replies",
+  "nodes": [
+    {
+      "id": "73aa3615-144b-5804-beef-c60769a6b88e",
+      "name": "Daily 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ac589dd9-8439-5931-a9df-d49e039a2648",
+      "name": "Hub set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $env.REVIEWS_URL ? $input.all() : [];   // no review hub: finish, nothing to do\n"
+      }
+    },
+    {
+      "id": "852ac5b6-3ed7-5a6c-9ea4-e0d7872ae265",
+      "name": "New reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.REVIEWS_URL }}/reviews",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "new"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "44a787f6-0738-5549-b69c-a07d67ba7967",
+      "name": "Reply drafts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "review_reply"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "9d4ecb93-d5a1-52d6-a936-978147f1fc29",
+      "name": "Pick reviews",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// New reviews from the review hub (58); full response, so an empty list is still one item.\nconst raw = [].concat($('New reviews').first().json.body ?? []);\nconst reviews = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(r => r && r.id);\nconst cal = [].concat($input.first().json.body ?? []);\nconst items = (cal.length === 1 && Array.isArray(cal[0]) ? cal[0] : cal).filter(i => i && i.id);\nconst num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\nconst CAP = Math.floor(num($env.REVIEW_REPLIES_PER_RUN, 10));\n// A review that already has a reply draft (notes \"review #<id> (\") is not drafted twice, e.g.\n// when a run saved the draft but stopped before marking the review drafted.\nconst drafted = new Map();\nfor (const i of items) for (const m of String(i.notes || '').matchAll(/review #(\\d+) \\(/g)) drafted.set(Number(m[1]), i.id);\nconst already = reviews.filter(r => drafted.has(r.id)).map(r => `review #${r.id} already has draft #${drafted.get(r.id)}: set the review's status by hand`);\n// Oldest first, so a backlog is answered in the order it came in.\nconst todo = reviews.filter(r => !drafted.has(r.id)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)) || a.id - b.id);\nconst picked = todo.slice(0, CAP);\nconst later = todo.length - picked.length;\nconst notes = [...already, ...(later > 0 ? [`${later} more new review${later === 1 ? '' : 's'} left for the next run (REVIEW_REPLIES_PER_RUN=${CAP})`] : [])];\nif (picked.length) return picked.map(r => ({ json: { pick: true, id: r.id, source: r.source, rating: r.rating, notes } }));\nreturn [{ json: { pick: false, text: [`*Review replies*: no new reviews to draft.`, ...notes.map(n => `- ${n}`)].join('\\n'), notes } }];\n"
+      }
+    },
+    {
+      "id": "c2ebcb1e-326b-56db-beeb-6e967047d2b5",
+      "name": "Any reviews?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "100787b0-62e2-5fa9-98e6-143cfe538d63",
+              "leftValue": "={{ $json.pick }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fad9cfe5-af8c-54a3-883e-e9d6bb1a3a61",
+      "name": "Loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "8852863b-43c5-5f86-8d59-86cc914f343c",
+      "name": "Reply context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.REVIEWS_URL }}/reviews/{{ $json.id }}/reply-context",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3e846292-a2d9-5a1b-b658-fe020a19cb9c",
+      "name": "Draft reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'review_reply', vars: $json.vars }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "425c5f06-88df-5370-9a09-fc561af0923f",
+      "name": "Decide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const r = $('Reply context').first().json;   // one review per loop round\nconst out = ($input.first().json || {}).output || {};\nconst id = $('Loop').first(1).json.id ?? r.review_id;  // (output 1 = the current review)\nconst errText = j => { const e = j.error ?? j.detail; return e == null ? '' : String(typeof e === 'object' ? e.message || JSON.stringify(e) : e).slice(0, 200); };\nif (!r.review_id) return [{ json: { save: false, review_id: id, error: `no reply context (${errText(r) || 'review hub error'})` } }];\nconst reply = String(out.reply || '').trim();\nif (!reply) return [{ json: { save: false, review_id: r.review_id, source: r.source, rating: r.rating,\n  error: `no reply from the model (${errText($input.first().json) || 'gateway error'})` } }];\n// The code's flag wins: health, safety and legal words go to a person whatever the model says.\nconst escalate = out.needs_human === true || r.needs_human === true;\nconst why = (r.escalate_words || []).length ? r.escalate_words.join(', ') : String(out.reason || 'the model asked for a person');\nconst quoted = String(r.review).split('\\n').map(l => `> ${l}`).join('\\n');\nreturn [{ json: {\n  save: true, gate: !escalate, review_id: r.review_id, source: r.source, rating: r.rating, escalated: escalate,\n  title: `Reply to ${r.source} review #${r.review_id} (${r.rating}★)`.slice(0, 120),\n  channel: 'review_reply', reply, body: `${reply}\\n\\n---\\n${quoted}`, context: r.review,\n  status: 'draft',\n  notes: [`review #${r.review_id} (${r.source})`, escalate ? `needs a person: ${why}` : ''].filter(Boolean).join(' | '),\n} }];\n"
+      }
+    },
+    {
+      "id": "c003c194-ec50-53f4-ac16-2451253ce1c0",
+      "name": "Has reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a0ba310f-b252-5ef9-9136-29e26a555591",
+              "leftValue": "={{ $json.save }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "455dfe95-6fb4-5a27-a0e1-74a67d7e15c4",
+      "name": "Gate it?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "70b49a3a-fe28-5f2b-8bf1-b2372d59b7ce",
+              "leftValue": "={{ $json.gate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "41c7f0c6-881f-529b-81a9-f1471e9dc71e",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2880,
+        200
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.reply }}",
+            "channel": "review_reply",
+            "context": "={{ $json.context }}",
+            "ref": "={{ $json.review_id }}",
+            "rewrite": "no"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rewrite",
+              "displayName": "rewrite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "b7aec129-f656-518f-a0c0-0a866b19c6b2",
+      "name": "After gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Has reply?').first().json;\nconst g = $input.first().json;\nconst problems = Array.isArray(g.problems) ? g.problems : ['quality gate gave no result'];\nreturn [{ json: { ...d, status: problems.length ? 'draft' : 'in_review',\n  notes: [d.notes, problems.length ? `Quality gate: ${problems.join('; ')}` : ''].filter(Boolean).join(' | ') } }];\n"
+      }
+    },
+    {
+      "id": "ef39d62b-9653-5721-8899-7ee366f616fd",
+      "name": "Save item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, channel: $json.channel, body: $json.body, status: $json.status, notes: $json.notes }) }}"
+      }
+    },
+    {
+      "id": "4d36ce9b-2886-58ba-95e3-240907a607f4",
+      "name": "Mark drafted",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REVIEWS_URL }}/reviews/{{ $('Has reply?').first().json.review_id }}/status",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'drafted' }) }}"
+      }
+    },
+    {
+      "id": "31256bca-eae3-55b7-b86a-9da3b5276902",
+      "name": "Record saved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Save item').first().json;\nconst r = $('Mark drafted').first().json;\nconst x = $('Has reply?').first().json;\nreturn [{ json: { review_id: x.review_id, source: x.source, rating: x.rating, item_id: d.id, status: d.status,\n  escalated: x.escalated, marked: r.status === 'drafted', notes: d.notes } }];\n"
+      }
+    },
+    {
+      "id": "c36ffae2-aea1-5e32-bf76-aa4fa4d1a351",
+      "name": "Record skipped",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json }];   // stays new: retried next run\n"
+      }
+    },
+    {
+      "id": "f46b2992-c67d-578f-8464-4f6328f96497",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst saved = rows.filter(r => r.item_id);\nconst failed = rows.filter(r => !r.item_id);\nconst notes = ($('Pick reviews').first().json.notes) || [];\nconst line = r => `- ${r.source} review #${r.review_id} (${r.rating}★) → calendar #${r.item_id} (${r.status})` +\n  (r.escalated ? ' · needs a person' : '') + (r.marked ? '' : ' · review NOT marked drafted');\nreturn [{ json: { text: [\n  `*Review replies*: ${saved.length} reply draft${saved.length === 1 ? '' : 's'} saved to the calendar. ` +\n  'Nothing is posted: after approval, a person copies each reply to Google or Trustpilot.',\n  ...saved.map(line),\n  ...failed.map(r => `- review #${r.review_id}: not drafted, ${r.error} (it stays new and is retried next run)`),\n  ...notes.map(n => `- ${n}`),\n].join('\\n'), saved: saved.length, failed: failed.length, items: rows } }];\n"
+      }
+    },
+    {
+      "id": "0a79ae3f-3f2d-55b9-ad95-bfe95724170c",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "86c352dd-d075-5ac3-9af2-11211675af6f",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "baad414b-b6bc-535f-af5e-48deac8b664f",
+      "name": "Nothing new",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();   // no notification for a quiet day\n"
+      }
+    }
+  ],
+  "connections": {
+    "Daily 09:00": {
+      "main": [
+        [
+          {
+            "node": "Hub set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hub set?": {
+      "main": [
+        [
+          {
+            "node": "New reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New reviews": {
+      "main": [
+        [
+          {
+            "node": "Reply drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply drafts": {
+      "main": [
+        [
+          {
+            "node": "Pick reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick reviews": {
+      "main": [
+        [
+          {
+            "node": "Any reviews?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any reviews?": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing new",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply context": {
+      "main": [
+        [
+          {
+            "node": "Draft reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft reply": {
+      "main": [
+        [
+          {
+            "node": "Decide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide": {
+      "main": [
+        [
+          {
+            "node": "Has reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has reply?": {
+      "main": [
+        [
+          {
+            "node": "Gate it?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gate it?": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "After gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "After gate": {
+      "main": [
+        [
+          {
+            "node": "Save item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save item": {
+      "main": [
+        [
+          {
+            "node": "Mark drafted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark drafted": {
+      "main": [
+        [
+          {
+            "node": "Record saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record saved": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record skipped": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

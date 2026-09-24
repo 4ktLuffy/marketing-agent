@@ -394,3 +394,63 @@ def test_migration_is_safe_under_parallel_requests(tmp_path, monkeypatch):
             return c.execute("SELECT 1").fetchone()[0]
     with ThreadPoolExecutor(8) as pool:
         assert list(pool.map(hit, range(16))) == [1] * 16
+
+
+# ---------- label: store rows under another source name (e.g. synced from Umami)
+
+
+def test_label_stores_rows_under_label_and_keeps_manual_rows():
+    csv = "date,channel,campaign,sessions\n2026-09-01,email,spring,10\n"
+    assert upload(csv).json() == {"rows_imported": 1}
+    r = client.post("/upload?source=generic&label=umami",
+                    content="date,channel,campaign,sessions\n2026-09-01,email,spring,7\n".encode(),
+                    headers=AUTH)
+    assert r.status_code == 200 and r.json() == {"rows_imported": 1}
+    # same (date, channel, campaign) but a different source: the manual row is not replaced
+    assert kpis("from=2026-09-01&to=2026-09-01")["totals"]["sessions"] == 17
+    assert kpis("from=2026-09-01&to=2026-09-01&source=generic")["totals"]["sessions"] == 10
+    k = kpis("from=2026-09-01&to=2026-09-01&source=umami")
+    assert k["totals"]["sessions"] == 7
+    assert k["by_campaign"] == [{"campaign": "spring", "sessions": 7, "clicks": 0, "conversions": 0, "spend": 0}]
+    assert kpis("from=2026-09-01&to=2026-09-01&source=umami&campaign=spring")["totals"]["sessions"] == 7
+
+
+def test_label_reupload_replaces_only_labelled_rows():
+    post = lambda q, body: client.post(f"/upload?{q}", content=body.encode(), headers=AUTH)
+    post("source=generic&label=umami", "date,channel,sessions\n2026-09-01,email,7\n")
+    post("source=generic&label=umami", "date,channel,sessions\n2026-09-01,email,9\n")
+    post("source=generic", "date,channel,sessions\n2026-09-01,email,3\n")
+    assert kpis("from=2026-09-01&to=2026-09-01&source=umami")["totals"]["sessions"] == 9
+    assert kpis("from=2026-09-01&to=2026-09-01")["totals"]["sessions"] == 12
+
+
+def test_label_keeps_preset_chosen_by_source():
+    csv = "Date,Default channel group,Sessions\n20260901,Email,5\n"  # GA4 headers
+    r = client.post("/upload?source=ga4&label=ga4-shop", content=csv.encode(), headers=AUTH)
+    assert r.status_code == 200
+    assert kpis("from=2026-09-01&to=2026-09-01&source=ga4-shop")["totals"]["sessions"] == 5
+    assert kpis("from=2026-09-01&to=2026-09-01&source=ga4")["totals"]["sessions"] == 0
+
+
+@pytest.mark.parametrize("label", ["", "Umami", "um ami", "a" * 33, "um.ami", "umami%2F.."])
+def test_bad_label_422_and_nothing_stored(label):
+    r = client.post(f"/upload?source=generic&label={label}",
+                    content=b"date,channel,sessions\n2026-09-01,email,5\n", headers=AUTH)
+    assert r.status_code == 422
+    assert kpis("from=2026-09-01&to=2026-09-01")["totals"]["sessions"] == 0
+
+
+def test_label_upload_still_needs_api_key():
+    r = client.post("/upload?source=generic&label=umami",
+                    content=b"date,channel\n2026-09-01,x\n", headers={"content-type": "text/csv"})
+    assert r.status_code == 401
+
+
+@pytest.mark.parametrize("source", ["Umami", "a b", "x" * 33])
+def test_kpis_bad_source_422(source):
+    assert client.get(f"/kpis?from=2026-09-01&to=2026-09-01&source={source}").status_code == 422
+
+
+def test_kpis_unknown_label_is_empty():
+    upload("date,channel,sessions\n2026-09-01,email,5\n")
+    assert kpis("from=2026-09-01&to=2026-09-01&source=nothing-here")["totals"]["sessions"] == 0

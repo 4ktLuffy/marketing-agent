@@ -1,0 +1,183 @@
+{
+  "id": "mktWf56AnalySync",
+  "name": "56 · Schedule · Analytics sync (Umami)",
+  "nodes": [
+    {
+      "id": "5a905b58-1c93-56ce-9f43-f91fa3418c6a",
+      "name": "Every day 05:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 5 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "eae3b788-c1e1-5e86-bdb2-eb48e7b70066",
+      "name": "Yesterday",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Skip quietly when Umami isn't set up (UMAMI_SYNC_URL empty): CSV uploads still work.\nif (!$env.UMAMI_SYNC_URL) return [];\nconst d = new Date(); d.setUTCDate(d.getUTCDate() - 1);\nconst day = d.toISOString().slice(0, 10);\nreturn [{ json: { from: day, to: day } }];\n"
+      }
+    },
+    {
+      "id": "c4680f0d-a55d-51b3-a73d-fbab165969a5",
+      "name": "Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.UMAMI_SYNC_URL }}/sync",
+        "options": {
+          "timeout": 600000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ from: $json.from, to: $json.to }) }}"
+      }
+    },
+    {
+      "id": "40943ebb-81ee-5739-ba5a-58f79ef8c8c3",
+      "name": "Problems?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst b = res.body || {};\nif (res.statusCode < 300 && !(b.errors || []).length) return [];   // all good: stay quiet\nconst why = res.statusCode >= 300 ? JSON.stringify(b.detail || b) : (b.errors || []).map(e => JSON.stringify(e)).join('; ');\nreturn [{ json: { text: `⚠ Umami analytics sync for ${$('Yesterday').first().json.from} had problems: ${why}` } }];\n"
+      }
+    },
+    {
+      "id": "da82ecf0-1809-5809-963d-352ddcd90a0e",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "22a25029-cb20-550f-a47b-bb8f4b355347",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Every day 05:30": {
+      "main": [
+        [
+          {
+            "node": "Yesterday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yesterday": {
+      "main": [
+        [
+          {
+            "node": "Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync": {
+      "main": [
+        [
+          {
+            "node": "Problems?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Problems?": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

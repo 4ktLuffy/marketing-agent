@@ -30,6 +30,14 @@
             {
               "name": "ref",
               "type": "string"
+            },
+            {
+              "name": "rewrite",
+              "type": "string"
+            },
+            {
+              "name": "links",
+              "type": "string"
             }
           ]
         }
@@ -56,7 +64,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $json.text, channel: $json.channel }) }}"
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, channel: $json.channel, allowed_domains: String($json.links || '').split(/[\\s,]+/).filter(Boolean) }) }}"
       }
     },
     {
@@ -127,9 +135,44 @@
             }
           }
         },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ text: $('Start').item.json.text, context: $('Start').item.json.context || null }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "234692b1-7606-5e3e-ab8b-3e0a910198ca",
+      "name": "Testimonial check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $env.REVIEWS_URL ? 'POST' : 'GET' }}",
+        "url": "={{ $env.REVIEWS_URL ? $env.REVIEWS_URL + '/testimonials/check' : $env.BRAND_URL + '/health' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Start').item.json.text }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -139,11 +182,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        1440,
         300
       ],
       "parameters": {
-        "jsCode": "const start = $('Start').item.json;\nconst brand = $('Brand check').item.json;\nconst rules = $('Platform rules').item.json;   // 422 for channels without limits (blog, email body)\nconst read = $('Readability').item.json;\nconst claims = $('Claim check').item.json;     // no \"ok\" field = checker down or failed\nconst sev = s => v => (v || []).filter(x => (x.severity || 'error') === s);\n// A 7B model fixes copy when told what to DO; diagnostic wording (\"contains banned\n// phrase 'x'\") made it return the draft unchanged (0/6 vs 6/6 in local tests).\nfunction instruction(v) {\n  switch (v.rule) {\n    case 'banned_phrase': return `Remove the banned claim \"${v.match || v.detail}\" (reword it without those words)`;\n    case 'unsupported_claim': return `Remove the claim \"${v.detail}\" or reword it to match our approved facts (it is not in them)`;\n    case 'missing_disclaimer': return `Add a disclosure: ${v.detail}`;\n    case 'too_long': return `Shorten to at most ${rules.limit} characters (it is ${rules.length})`;\n    case 'too_many_hashtags': return `Use fewer hashtags (${v.detail})`;\n    case 'exclamation_marks': return 'Use at most one exclamation mark';\n    case 'all_caps': return 'Write words in normal case, not ALL CAPS';\n    case 'too_many_emojis': return `Use fewer emojis (${v.detail})`;\n    case 'emoji_not_allowed': return `Remove the emoji ${v.match || ''} (it is not one of the brand's emojis)`;\n    case 'above_recommended': return `Make it shorter (${v.detail})`;\n    default: return `Fix: ${v.detail}`;\n  }\n}\nconst claimErrors = (claims.unsupported || []).map(u => ({ rule: 'unsupported_claim', detail: u, severity: 'error' }));\nconst errors = [...sev('error')(brand.violations), ...sev('error')(rules.violations), ...claimErrors];\nconst warns = [...sev('warn')(brand.violations), ...sev('warn')(rules.violations)];\nconst warnings = warns.map(v => v.detail);\nif (typeof claims.ok !== 'boolean') warnings.push('claims NOT fact-checked (claim checker unavailable)');\nreturn { json: {\n  ref: start.ref || null,\n  text: start.text, channel: start.channel, context: start.context || null, limit: rules.limit ?? null,\n  problems: errors.map(v => v.rule === 'unsupported_claim' ? `unsupported claim: ${v.detail}` : v.detail),\n  warnings, instructions: [...errors, ...warns].map(instruction),\n  readability: read.verdict ?? null, needs_fix: errors.length > 0,\n} };\n",
+        "jsCode": "const start = $('Start').item.json;\nconst brand = $('Brand check').item.json;\nconst rules = $('Platform rules').item.json;   // 422 for channels without limits (blog, email body)\nconst read = $('Readability').item.json;\nconst claims = $('Claim check').item.json;     // no \"ok\" field = checker down or failed\nconst quotes = $('Testimonial check').item.json;\nconst sev = s => v => (v || []).filter(x => (x.severity || 'error') === s);\n// A 7B model fixes copy when told what to DO; diagnostic wording (\"contains banned\n// phrase 'x'\") made it return the draft unchanged (0/6 vs 6/6 in local tests).\nfunction instruction(v) {\n  switch (v.rule) {\n    case 'banned_phrase': return `Remove the banned claim \"${v.match || v.detail}\" (reword it without those words)`;\n    case 'unsupported_claim': return `Remove the claim \"${v.detail}\" or reword it to match our approved facts (it is not in them)`;\n    case 'missing_disclaimer': return `Add a disclosure: ${v.detail}`;\n    case 'too_long': return `Shorten to at most ${rules.limit} characters (it is ${rules.length})`;\n    case 'too_many_hashtags': return `Use fewer hashtags (${v.detail})`;\n    case 'exclamation_marks': return 'Use at most one exclamation mark';\n    case 'all_caps': return 'Write words in normal case, not ALL CAPS';\n    case 'too_many_emojis': return `Use fewer emojis (${v.detail})`;\n    case 'emoji_not_allowed': return `Remove the emoji ${v.match || ''} (it is not one of the brand's emojis)`;\n    case 'above_recommended': return `Make it shorter (${v.detail})`;\n    case 'fake_testimonial': return `Remove the quotation \"${v.match}\" and its quotation marks: it is not a real customer quote with consent (never invent or paraphrase a customer quote)`;\n    default: return `Fix: ${v.detail}`;\n  }\n}\nconst claimErrors = (claims.unsupported || []).map(u => ({ rule: 'unsupported_claim', detail: u, severity: 'error' }));\n// Every quotation must be a real, consented testimonial, word for word (58; FTC rule on fake\n// reviews and testimonials). Skipped when REVIEWS_URL is empty (the node then hit /health).\nconst quoteErrors = $env.REVIEWS_URL ? (quotes.violations || []).map(q => ({ rule: 'fake_testimonial',\n  match: q.text, detail: `quote is not a real testimonial with consent: \"${q.text}\"`, severity: 'error' })) : [];\nconst errors = [...sev('error')(brand.violations), ...sev('error')(rules.violations), ...claimErrors, ...quoteErrors];\nconst warns = [...sev('warn')(brand.violations), ...sev('warn')(rules.violations)];\nconst warnings = warns.map(v => v.detail);\nif (typeof claims.ok !== 'boolean') warnings.push('claims NOT fact-checked (claim checker unavailable)');\nif ($env.REVIEWS_URL && typeof quotes.ok !== 'boolean') warnings.push('quotes NOT checked against the testimonials (review hub unavailable)');\nreturn { json: {\n  ref: start.ref || null,\n  text: start.text, channel: start.channel, context: start.context || null, limit: rules.limit ?? null,\n  problems: errors.map(v => v.rule === 'unsupported_claim' ? `unsupported claim: ${v.detail}` : v.detail),\n  warnings, instructions: [...errors, ...warns].map(instruction),\n  readability: read.verdict ?? null, needs_fix: errors.length > 0,\n} };\n",
         "mode": "runOnceForEachItem"
       }
     },
@@ -153,7 +196,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1440,
+        1680,
         300
       ],
       "parameters": {
@@ -167,7 +210,7 @@
           "conditions": [
             {
               "id": "43db5ce2-a552-5f5a-8f75-02b286e00e24",
-              "leftValue": "={{ $json.needs_fix }}",
+              "leftValue": "={{ $json.needs_fix && $('Start').item.json.rewrite !== 'no' }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -187,7 +230,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1680,
+        1920,
         200
       ],
       "parameters": {
@@ -195,6 +238,15 @@
         "url": "={{ $env.GATEWAY_URL }}/v1/run",
         "options": {
           "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
         },
         "sendBody": true,
         "specifyBody": "json",
@@ -207,7 +259,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1920,
+        2160,
         200
       ],
       "parameters": {
@@ -222,7 +274,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $json.output.text, channel: $('Collect problems').item.json.channel }) }}"
+        "jsonBody": "={{ JSON.stringify({ text: $json.output.text, channel: $('Collect problems').item.json.channel, allowed_domains: String($('Start').item.json.links || '').split(/[\\s,]+/).filter(Boolean) }) }}"
       }
     },
     {
@@ -231,7 +283,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2160,
+        2400,
         200
       ],
       "parameters": {
@@ -255,7 +307,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
+        2640,
         200
       ],
       "parameters": {
@@ -269,9 +321,44 @@
             }
           }
         },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ text: $('Rewrite').item.json.output.text, context: $('Start').item.json.context || null }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "784bed8e-4f75-561e-95dc-d20fef0e9282",
+      "name": "Recheck quotes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        200
+      ],
+      "parameters": {
+        "method": "={{ $env.REVIEWS_URL ? 'POST' : 'GET' }}",
+        "url": "={{ $env.REVIEWS_URL ? $env.REVIEWS_URL + '/testimonials/check' : $env.BRAND_URL + '/health' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Rewrite').item.json.output.text }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -281,11 +368,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
+        3120,
         200
       ],
       "parameters": {
-        "jsCode": "const prev = $('Collect problems').item.json;\nconst text = $('Rewrite').item.json.output.text;\nconst b = $('Recheck brand').item.json;\nconst r = $('Recheck rules').item.json;\nconst cl = $('Recheck claims').item.json;\nconst errors = v => (v || []).filter(x => (x.severity || 'error') === 'error');\nconst remaining = [\n  ...errors(b.violations).map(v => `brand: ${v.detail}`),\n  ...errors(r.violations).map(v => `${prev.channel}: ${v.detail}`),\n  ...(cl.unsupported || []).map(u => `unsupported claim: ${u}`),\n];\nconst warns = v => (v || []).filter(x => x.severity === 'warn').map(x => x.detail);\nconst warnings = [...warns(b.violations), ...warns(r.violations)];\nif (typeof cl.ok !== 'boolean') warnings.push('claims NOT fact-checked (claim checker unavailable)');\nreturn { json: { ref: prev.ref, ok: remaining.length === 0, text, channel: prev.channel, rewritten: true,\n  fixed: prev.problems, problems: remaining, warnings, readability: prev.readability } };\n",
+        "jsCode": "const prev = $('Collect problems').item.json;\nconst text = $('Rewrite').item.json.output.text;\nconst b = $('Recheck brand').item.json;\nconst r = $('Recheck rules').item.json;\nconst cl = $('Recheck claims').item.json;\nconst q = $('Recheck quotes').item.json;\nconst errors = v => (v || []).filter(x => (x.severity || 'error') === 'error');\nconst remaining = [\n  ...errors(b.violations).map(v => `brand: ${v.detail}`),\n  ...errors(r.violations).map(v => `${prev.channel}: ${v.detail}`),\n  ...(cl.unsupported || []).map(u => `unsupported claim: ${u}`),\n  ...($env.REVIEWS_URL ? (q.violations || []).map(v => `quote is not a real testimonial with consent: \"${v.text}\"`) : []),\n];\nconst warns = v => (v || []).filter(x => x.severity === 'warn').map(x => x.detail);\nconst warnings = [...warns(b.violations), ...warns(r.violations)];\nif (typeof cl.ok !== 'boolean') warnings.push('claims NOT fact-checked (claim checker unavailable)');\nif ($env.REVIEWS_URL && typeof q.ok !== 'boolean') warnings.push('quotes NOT checked against the testimonials (review hub unavailable)');\nreturn { json: { ref: prev.ref, ok: remaining.length === 0, text, channel: prev.channel, rewritten: true,\n  fixed: prev.problems, problems: remaining, warnings, readability: prev.readability } };\n",
         "mode": "runOnceForEachItem"
       }
     },
@@ -295,11 +382,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
+        1920,
         420
       ],
       "parameters": {
-        "jsCode": "const p = $json;\nreturn { json: { ref: p.ref, ok: true, text: p.text, channel: p.channel, rewritten: false, fixed: [],\n  problems: [], warnings: p.warnings, readability: p.readability } };\n",
+        "jsCode": "const p = $json;\n// Also reached with problems when the caller asked for rewrite \"no\": report them, never \"ok\".\n// (Night 5: a video script with a banned emoji and an unsupported claim went to review as ok.)\nreturn { json: { ref: p.ref, ok: p.problems.length === 0, text: p.text, channel: p.channel, rewritten: false,\n  fixed: [], problems: p.problems, warnings: p.warnings, readability: p.readability } };\n",
         "mode": "runOnceForEachItem"
       }
     },
@@ -309,7 +396,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        2880,
+        3360,
         300
       ],
       "parameters": {}
@@ -361,6 +448,17 @@
       ]
     },
     "Claim check": {
+      "main": [
+        [
+          {
+            "node": "Testimonial check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Testimonial check": {
       "main": [
         [
           {
@@ -434,6 +532,17 @@
       ]
     },
     "Recheck claims": {
+      "main": [
+        [
+          {
+            "node": "Recheck quotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck quotes": {
       "main": [
         [
           {

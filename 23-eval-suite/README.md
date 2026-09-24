@@ -1,6 +1,6 @@
 # eval-suite
 
-Deploy **23 of 53** of the local-LLM marketing agent. It tests the agent's writing against
+Deploy **23 of 60** of the local-LLM marketing agent. It tests the agent's writing against
 fixed cases and measures how often the local model produces copy you could actually
 publish: within platform limits, free of banned phrases, on the requested channels,
 and with no invented statistics.

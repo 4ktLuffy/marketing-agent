@@ -39,6 +39,16 @@ def _is_public(addr: str) -> bool:
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
         ip = ip.ipv4_mapped
     # is_global is False for loopback, private, link-local, reserved, unspecified, CGNAT.
+    # IPv6 forms that embed an IPv4 address (NAT64, 6to4, IPv4-compatible/mapped) are judged
+    # by that IPv4 address: is_global alone can call them global (security audit, low).
+    if ip.version == 6:
+        embedded = ip.ipv4_mapped or ip.sixtofour
+        if embedded is None and ip in ipaddress.ip_network("64:ff9b::/96"):
+            embedded = ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)
+        if embedded is None and ip in ipaddress.ip_network("::/96"):
+            embedded = ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)
+        if embedded is not None:
+            return embedded.is_global and not embedded.is_multicast
     return ip.is_global and not ip.is_multicast
 
 
@@ -75,7 +85,7 @@ def _acceptable(content_type: str, html_only: bool) -> bool:
 def fetch(url: str, html_only: bool = True) -> Page:
     """GET a URL, following up to MAX_REDIRECTS redirects and guarding each hop."""
     try:
-        with httpx.Client(timeout=TIMEOUT, headers={"User-Agent": USER_AGENT}) as client:
+        with httpx.Client(timeout=TIMEOUT, headers={"User-Agent": USER_AGENT}, trust_env=False) as client:
             for _ in range(MAX_REDIRECTS + 1):
                 check_url(url)
                 with client.stream("GET", url) as resp:

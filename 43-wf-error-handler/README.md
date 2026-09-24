@@ -1,6 +1,6 @@
 # 43 · Error handler
 
-Deploy **43 of 53** of the local-LLM marketing agent. This deploy is an n8n workflow.
+Deploy **43 of 60** of the local-LLM marketing agent. This deploy is an n8n workflow.
 
 Every other workflow reports failures here (`settings.errorWorkflow`). It posts the workflow name, the failing node, the error and a link to the execution to your webhook.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/43-wf-error-handler/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf43ErrorHand
 ```

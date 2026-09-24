@@ -1,6 +1,6 @@
 # ollama-models
 
-Deploy **2 of 53** of the local-LLM marketing agent. This repo sets up the local models
+Deploy **2 of 60** of the local-LLM marketing agent. This repo sets up the local models
 everything else uses:
 
 | Model | Built from | Used by | Why this configuration |

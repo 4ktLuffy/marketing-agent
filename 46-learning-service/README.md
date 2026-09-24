@@ -1,6 +1,6 @@
 # learning-service
 
-Deploy **46 of 53** of the local-LLM marketing agent. It learns from the reviewer. Every
+Deploy **46 of 60** of the local-LLM marketing agent. It learns from the reviewer. Every
 approval, edit and rejection is recorded as an event. The service turns those events into
 two things the writers use:
 

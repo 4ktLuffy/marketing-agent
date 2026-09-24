@@ -1,6 +1,6 @@
 # 50 · Learn from reviews
 
-Deploy **50 of 53** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **50 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Friday it asks the learning service (46) to look at the week's edits and rejections and propose general writing rules (for example "no rhetorical questions in openers"). New proposals are posted to your webhook with a link to the rules form (51). Nothing is used until you keep it.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/50-wf-sched-learning-review/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf50LearnRevi
 ```

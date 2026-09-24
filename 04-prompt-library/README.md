@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 53** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 60** of the local-LLM marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.
@@ -23,6 +23,10 @@ change is reviewed and versioned.
 | `weekly_report_highlights` | markdown | 41 weekly report |
 | `claim_details` | JSON details of one sentence (listed without seeing any facts) | 44 claim checker |
 | `detail_check` | JSON: is each detail stated in the facts, and where (quote) | 44 claim checker |
+| `video_script` | JSON hook, beats (spoken / on-screen / shot), CTA, caption | 57 content formats |
+| `landing_page` | JSON hero, benefits, social proof (facts only), answer-first FAQ, CTA | 57 content formats |
+| `email_sequence` | JSON 3–5 emails: day, subject, preview, body, CTA | 57 content formats |
+| `review_reply` | JSON `needs_human`, `reason`, reply ≤ 600 chars (no invented offers, never asks for a better rating) | no workflow yet; vars come from 58 `GET /reviews/{id}/reply-context` |
 
 ## Where to deploy
 
@@ -45,7 +49,8 @@ max_chars: 280                # optional, text only: longer output is retried
 vars:
   product: required
   offer: optional
-system: |                     # Jinja; {{ brand }} is injected by the gateway
+system: |                     # Jinja; {{ brand }} is injected by the gateway;
+                              # so is {{ facts }} (numbered approved facts) if declared in vars
   ...
 template: |                   # Jinja
   ...
@@ -67,6 +72,17 @@ example_vars: {...}           # used by tests and scripts/try_prompt.py
   details and quote the evidence, and code makes the decision.
 - **List details before showing the facts.** With the facts in view, the model listed the
   facts' details ("medium roast") instead of the claim's ("dark roast").
+- **Give the writer the approved facts, and ban numbers that aren't in them.** With only
+  the brand summary, writing prompts invented tasting notes ("citrus and honey",
+  "chocolate and caramel" for an Ethiopian light roast) and stray numbers. The gateway now
+  injects `{{ facts }}` into the writing prompts, which state that no numbers, dates or
+  statistics may appear unless they are in the facts or the input. Measured on qwen2.5:7b
+  (3 runs per case): the blog case went from 0/3 to 3/3 on invented numbers, and invented
+  flavour words across the writing cases fell from 23 to 6. It did not fix a question the
+  facts can't answer: asked what the decaf tastes like, the model still gave it the Desk
+  Blend's chocolate-hazelnut notes in most runs (clean in 2/8 runs before, 1/8 after), and
+  adding "never move a detail from one product to another" changed nothing (0/5), so that
+  line was not kept. That gap needs a fact in the brand file or a code check, not more prompt.
 - **Give instructions, not diagnoses.** "Remove the banned claim "X"" worked 6/6 times;
   "contains banned phrase 'X'" worked 0/6. The quality gate (35) phrases its requests
   as instructions.

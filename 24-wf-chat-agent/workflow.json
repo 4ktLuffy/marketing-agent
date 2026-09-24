@@ -36,7 +36,7 @@
       "parameters": {
         "promptType": "auto",
         "options": {
-          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - analyse a competitor or any web page → research_url\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
+          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - video script (Reels/TikTok/Shorts), landing page copy, or a multi-email nurture sequence → write_content_format\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - analyse a competitor or any web page → research_url\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
           "maxIterations": 6
         }
       }
@@ -149,7 +149,7 @@
         560
       ],
       "parameters": {
-        "description": "Write social media posts, one per channel, and save them as drafts.",
+        "description": "Write NEW social media posts about a topic, one per channel, and save them as drafts. If the user gives text or a link to turn into posts, use repurpose_content instead.",
         "workflowId": {
           "__rl": true,
           "mode": "id",
@@ -345,12 +345,95 @@
       }
     },
     {
+      "id": "0063526a-407e-55e7-aea1-9a222d6c85ce",
+      "name": "write_content_format",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        560
+      ],
+      "parameters": {
+        "description": "Write a short-form VIDEO SCRIPT (Reels/TikTok/Shorts), a LANDING PAGE, or a multi-email NURTURE SEQUENCE, and save it as a draft. Not for social posts, a single newsletter or a blog article.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf57ContentFm"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "format": "={{ $fromAI('format', `video_script, landing_page or email_sequence`, 'string') }}",
+            "topic": "={{ $fromAI('topic', `what the video is about, the product the page sells, or the goal of the sequence`, 'string') }}",
+            "audience": "={{ $fromAI('audience', `who it is for, or empty`, 'string', '') }}",
+            "offer": "={{ $fromAI('offer', `the offer, or empty`, 'string', '') }}",
+            "details": "={{ $fromAI('details', `facts the user gave for this piece, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "format",
+              "displayName": "format",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "offer",
+              "displayName": "offer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
       "id": "f31234d8-324d-5132-a006-e71374dc0dc2",
       "name": "seo_brief",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1320,
         560
       ],
       "parameters": {
@@ -411,11 +494,11 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1320,
-        560
+        420,
+        760
       ],
       "parameters": {
-        "description": "Turn an existing article, web page or pasted text into social posts.",
+        "description": "Turn text the user pasted, an article or a web page into social posts (e.g. 'turn this into tweets: ...').",
         "workflowId": {
           "__rl": true,
           "mode": "id",
@@ -483,7 +566,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        420,
+        600,
         760
       ],
       "parameters": {
@@ -533,7 +616,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        780,
         760
       ],
       "parameters": {
@@ -572,7 +655,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        960,
         760
       ],
       "parameters": {
@@ -677,7 +760,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1140,
         760
       ],
       "parameters": {
@@ -716,7 +799,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1320,
         760
       ],
       "parameters": {
@@ -843,8 +926,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1320,
-        760
+        420,
+        960
       ],
       "parameters": {
         "description": "List campaigns, show a campaign's scorecard (results vs targets), activate/pause/complete/cancel one, or set a target.",
@@ -915,7 +998,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        420,
+        600,
         960
       ],
       "parameters": {
@@ -1039,6 +1122,17 @@
       ]
     },
     "write_email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_content_format": {
       "ai_tool": [
         [
           {

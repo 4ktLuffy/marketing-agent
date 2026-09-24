@@ -1,8 +1,8 @@
 # 35 · Quality gate
 
-Deploy **35 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **35 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
-Checks a piece of copy against the brand rules (05), the platform limits (14), readability (13) and the approved facts (claim checker, 44). If there are errors (including claims the facts don't support), it asks the LLM for a minimal rewrite and checks everything again. What still fails goes back as `problems` for a human.
+Checks a piece of copy against the brand rules (05), the platform limits (14), readability (13), the approved facts (claim checker, 44) and, when `REVIEWS_URL` is set, the proof bank (58): every quotation in double quotes must be a real testimonial with consent, word for word, or it is an error (the FTC rule on fake reviews and testimonials, 16 CFR Part 465). If there are errors (including claims the facts don't support), it asks the LLM for a minimal rewrite and checks everything again. What still fails goes back as `problems` for a human.
 
 ## Where to deploy
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/35-wf-tool-quality-gate/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf35QualityGa
 ```
@@ -27,6 +27,8 @@ Its workflow id is fixed (`mktWf35QualityGa`), because other workflows call it b
 
 | Input | Meaning |
 |---|---|
+| `links` | URLs the writer was given (comma/space separated); their domains may appear in the copy. Any other domain except the brand's is flagged |
+| `rewrite` | `no` = only report problems, don't rewrite (structured formats); empty = rewrite |
 | `text` | copy to check |
 | `channel` | x, linkedin, instagram, facebook, threads, mastodon, blog, email, google_ads … |
 | `context` | optional: the brief or source the copy was written from; facts in it count as evidence |
@@ -43,6 +45,7 @@ Its workflow id is fixed (`mktWf35QualityGa`), because other workflows call it b
 - `14-platform-rules`
 - `44-claim-checker`
 - `03-llm-gateway`
+- `58-review-hub (optional: skipped when `REVIEWS_URL` is empty)`
 
 Service URLs come from env vars on the n8n container (`GATEWAY_URL`, `CALENDAR_URL`, …),
 which `01-marketing-stack` sets. `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set so

@@ -67,3 +67,8 @@ def test_numbers_from_brand_summary_are_allowed():
 def test_equals():
     assert run_check({"type": "equals", "path": "generalizable", "value": False}, {"generalizable": False}, {}, SERVICES)[0]
     assert not run_check({"type": "equals", "path": "generalizable", "value": False}, {"generalizable": True}, {}, SERVICES)[0]
+
+
+def test_numbers_from_input_reads_lists_and_thousands():
+    services = SERVICES | {"brand_summary": "Ships every 1, 2 or 4 weeks. 10,000 subscribers."}
+    assert run_check({"type": "numbers_from_input", "path": ""}, "every 1,2 or 4 weeks, 10,000 fans", {}, services)[0]

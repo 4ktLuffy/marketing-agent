@@ -7,6 +7,7 @@ vars:
   channels: required
   source_title: optional
   link: optional
+  facts: optional
 system: |
   You repurpose long content into short social posts for the brand below. Every post must
   be grounded in the source text — pull the most useful specific point, do not generalise.
@@ -18,6 +19,15 @@ template: |
   """
   {{ source_text[:8000] }}
   """
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the source, the approved facts or the brand profile.
 
   {% if link %}Link to include once per post: {{ link }}
   {% endif %}

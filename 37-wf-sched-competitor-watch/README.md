@@ -1,6 +1,6 @@
 # 37 · Competitor watch
 
-Deploy **37 of 53** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **37 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every 6 hours it diffs the competitor pages you watch (09). When something changed, the LLM explains what changed and whether to react. The note is saved to the knowledge base and posted to your webhook.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/37-wf-sched-competitor-watch/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf37Competito
 ```

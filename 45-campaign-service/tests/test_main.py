@@ -523,6 +523,135 @@ def test_insights_shortener_down(mock):
     assert body["errors"][0]["source"] == "shortener"
 
 
+# ---------- insights/hooks (Thompson sampling over hook styles)
+
+import random  # noqa: E402
+
+RECENT = "2026-09-20T10:00:00Z"
+
+
+def mock_posts(mock, posts):
+    """posts: [(item_id, hook_style, clicks)] -> shortener links + calendar items."""
+    mock.get(f"{SHORT}/links").mock(return_value=httpx.Response(200, json=[
+        {"slug": f"s{i}", "url": f"https://ex.com/?utm_source=x&utm_content={i}",
+         "clicks": clicks, "created_at": RECENT} for i, _, clicks in posts
+    ]))
+    by_id = {i: style for i, style, _ in posts}
+
+    def item(request, item_id):
+        return httpx.Response(200, json={"id": int(item_id), "title": f"post {item_id}",
+                                         "channel": "x", "hook_style": by_id[int(item_id)]})
+    mock.get(url__regex=rf"{CAL}/items/(?P<item_id>\d+)$").mock(side_effect=item)
+
+
+def poisson(rng, rate):
+    # Knuth: fine for small rates
+    limit, k, p = pow(2.718281828459045, -rate), 0, 1.0
+    while True:
+        p *= rng.random()
+        if p <= limit:
+            return k
+        k += 1
+
+
+def test_hooks_counts_and_recommends_best(mock):
+    mock_posts(mock, [(1, "question", 10), (2, "question", 12), (3, "story", 0),
+                      (4, None, 50), (5, "made_up", 40), (6, "fact_led", 1)])
+    r = client.get("/insights/hooks?explore=0&seed=1")
+    assert r.status_code == 200
+    body = r.json()
+    by = {s["hook_style"]: s for s in body["styles"]}
+    assert set(by) == set(main.HOOK_STYLES)  # styles without data still listed (prior only)
+    assert by["question"] == {**by["question"], "posts": 2, "clicks": 22, "clicks_per_post": 11.0,
+                              "posterior_mean": round(23 / 3, 2), "recommended": True}
+    assert by["story"]["posts"] == 1 and by["story"]["clicks_per_post"] == 0.0
+    assert by["how_to"]["posts"] == 0 and by["how_to"]["clicks_per_post"] is None
+    assert by["how_to"]["posterior_mean"] == 1.0
+    assert body["unlabeled_posts"] == 2  # no hook_style, or one outside the enum
+    assert body["recommended"][0] == "question" and len(body["recommended"]) == 2
+    assert body["explored"] is None
+    assert [s["hook_style"] for s in body["styles"]][:2] == body["recommended"]
+    assert body["errors"] == []
+
+
+def test_hooks_seed_is_deterministic(mock):
+    mock_posts(mock, [(1, "question", 3), (2, "story", 4)])
+    a = client.get("/insights/hooks?seed=42").json()
+    b = client.get("/insights/hooks?seed=42").json()
+    assert a == b
+
+
+def test_hooks_explore_one_always_picks_least_tested(mock):
+    # every style but benefit has posts, so exploring must put benefit second
+    data = [(i + 1, s, 5) for i, s in enumerate(main.HOOK_STYLES) if s != "benefit"]
+    mock_posts(mock, data + [(99, "question", 30)])
+    for seed in range(20):
+        body = client.get(f"/insights/hooks?explore=1&seed={seed}").json()
+        assert body["recommended"][1] == "benefit" and body["explored"] == "benefit"
+        assert body["recommended"][0] != "benefit"
+
+
+def test_hooks_explore_rate_is_respected():
+    stats = {s: {"posts": 10, "clicks": 10} for s in main.HOOK_STYLES}
+    stats["question"] = {"posts": 0, "clicks": 0}
+    hits = sum(main.recommend_hooks(stats, 0.2, random.Random(seed))["explored"] is not None
+               for seed in range(2000))
+    assert 0.17 < hits / 2000 < 0.23
+
+
+def test_hooks_shortener_down_still_answers_from_prior(mock):
+    mock.get(f"{SHORT}/links").mock(side_effect=httpx.ConnectError("refused"))
+    body = client.get("/insights/hooks?seed=3").json()
+    assert len(body["recommended"]) == 2 and len(body["styles"]) == 6
+    assert all(s["posts"] == 0 for s in body["styles"])
+    assert body["errors"][0]["source"] == "shortener"
+
+
+def test_hooks_calendar_item_missing_is_unlabeled(mock):
+    mock.get(f"{SHORT}/links").mock(return_value=httpx.Response(200, json=[
+        {"slug": "a", "url": "https://ex.com/?utm_content=7", "clicks": 3, "created_at": RECENT}]))
+    mock.get(f"{CAL}/items/7").mock(return_value=httpx.Response(404))
+    body = client.get("/insights/hooks").json()
+    assert body["unlabeled_posts"] == 1
+    assert body["errors"] == [{"source": "calendar", "item_id": 7, "error": "HTTP 404"}]
+
+
+@pytest.mark.parametrize("q", ["days=0", "explore=-0.1", "explore=1.5"])
+def test_hooks_bad_params_422(q):
+    assert client.get(f"/insights/hooks?{q}").status_code == 422
+
+
+def simulate(mock, seeds):
+    """40 posts: `question` (true 2 clicks/post) got 32 posts, `fact_led` (true 6) got 8.
+
+    The better style has fewer posts and FEWER total clicks (~64 vs ~48), so ranking by
+    raw clicks would pick the wrong one; only a per-post model gets it right.
+    Returns how often `fact_led` is recommended first, over fresh data per seed.
+    """
+    wins = 0
+    for seed in seeds:
+        rng = random.Random(10_000 + seed)
+        data = [(i, "question", poisson(rng, 2)) for i in range(1, 33)]
+        data += [(i, "fact_led", poisson(rng, 6)) for i in range(33, 41)]
+        mock.routes.clear()
+        mock_posts(mock, data)
+        body = client.get(f"/insights/hooks?seed={seed}").json()  # default explore=0.2
+        wins += body["recommended"][0] == "fact_led"
+    return wins / len(seeds)
+
+
+def test_hooks_simulation_better_style_first_in_90pct_of_seeds(mock):
+    assert simulate(mock, range(100)) >= 0.90
+
+
+def test_hooks_simulation_negative_control_raw_clicks_fails(mock, monkeypatch):
+    # Rank by raw total clicks instead of the posterior: the same simulation must fail,
+    # which shows the test data can tell a per-post model from a naive one.
+    monkeypatch.setattr(main, "posterior_samples",
+                        lambda stats, rng: {s: float(st["clicks"]) for s, st in stats.items()})
+    assert simulate(mock, range(100)) < 0.90
+
+
 # ---------- helpers
 
 

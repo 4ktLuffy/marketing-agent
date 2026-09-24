@@ -1,6 +1,6 @@
 # report-builder
 
-Deploy **21 of 53** of the local-LLM marketing agent. It turns the KPIs from
+Deploy **21 of 60** of the local-LLM marketing agent. It turns the KPIs from
 `20-analytics-ingest` (plus optional LLM-written highlights) into a one-page HTML report
 and a markdown version of the same report. The HTML has KPI tiles with change arrows, a
 bar chart of sessions by channel, and a table by channel. The weekly report workflow

@@ -1,6 +1,6 @@
 # marketing-stack
 
-Deploy **1 of 53** of the local-LLM marketing agent. This repo holds the one
+Deploy **1 of 60** of the local-LLM marketing agent. This repo holds the one
 `docker compose` file that runs n8n, Postgres and all 20 services on one private network,
 plus the scripts that load the n8n workflows. Ollama runs next to it on the host.
 
@@ -101,6 +101,8 @@ two ports only.
 | `NOTIFY_WEBHOOK_URL` | | Slack/Discord/Teams incoming webhook: morning digest (36), competitor changes (37), content plan (40), weekly report (41), errors (43) |
 | `REPORT_EMAIL_TO` / `REPORT_EMAIL_FROM` | | 41 emails the weekly report here (needs an SMTP credential in n8n) |
 | `PLAN_CHANNELS` / `PLAN_POSTS_PER_CHANNEL` / `PLAN_THEMES` | | what the weekly planner (40) plans |
+| `LLM_PROVIDER` / `OPENAI_BASE_URL` / `OPENAI_API_KEY` / `REASONING_EFFORT` | | run writing on a hosted OpenAI-compatible model (e.g. Groq) instead of Ollama. For `gpt-oss`, use `REASONING_EFFORT=low` |
+| `VERIFIER_PROVIDER` / `VERIFIER_MODEL` | | **hybrid:** fact checking on a stronger model while writing stays local. Measured on a fresh set: local 7B caught 5/6 invented claims and flagged 3/6 true ones; Groq gpt-oss-120b caught 6/6 and flagged 1/6 |
 
 **Linux with Ollama on the host:** Ollama listens on 127.0.0.1 by default, which containers
 can't reach. Start it with `OLLAMA_HOST=0.0.0.0` (for example in its systemd unit).

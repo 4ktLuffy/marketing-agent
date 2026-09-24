@@ -7,6 +7,7 @@ vars:
   offer: optional
   audience: optional
   keywords: optional
+  facts: optional
 system: |
   You write performance ad copy for the brand below. Concrete benefits, no superlatives
   you cannot prove, no ALL CAPS, at most one exclamation mark per line.
@@ -22,6 +23,16 @@ template: |
   {% endif %}
   {% if keywords %}Keywords to echo: {{ keywords }}
   {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
+  "Proof" means a fact from the list above, never an invented number, rating or award.
 
   - 8 headlines, EACH AT MOST 30 CHARACTERS (count them). Vary angle: benefit, offer, proof, urgency, question.
   - 4 descriptions, EACH AT MOST 90 CHARACTERS.

@@ -134,3 +134,10 @@ def test_allow_private_urls(monkeypatch):
 def test_ipv4_mapped_ipv6_is_blocked():
     with pytest.raises(net.BlockedURL):
         net.check_url("http://[::ffff:127.0.0.1]/")
+
+
+def test_ipv6_forms_embedding_private_ipv4_are_blocked():
+    from app.net import _is_public
+    for addr in ("64:ff9b::7f00:1", "2002:7f00:1::", "::127.0.0.1", "::ffff:10.0.0.1", "64:ff9b::a9fe:a9fe"):
+        assert not _is_public(addr), addr
+    assert _is_public("64:ff9b::808:808")      # NAT64 of a public address (8.8.8.8) is fine

@@ -1,6 +1,6 @@
 # change-monitor
 
-Deploy **09 of 53** of the local-LLM marketing agent. It watches competitor pages (pricing,
+Deploy **09 of 60** of the local-LLM marketing agent. It watches competitor pages (pricing,
 features, landing pages) and, on each check, reports which ones changed with a line diff of
 their visible text. The competitor-watch schedule (37) runs `/check` every 6 hours and has the
 LLM summarise the diffs. It uses no LLM.

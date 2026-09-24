@@ -4,7 +4,8 @@ import re
 
 import httpx
 
-NUMBER_RE = re.compile(r"\d+(?:[.,]\d+)?")
+# Thousands separators only before exactly 3 digits ("1,2 or 4 weeks" is three numbers).
+NUMBER_RE = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?")
 
 
 def select(output, path: str | None) -> list:
@@ -65,8 +66,9 @@ def run_check(check: dict, output, variables: dict, services: dict) -> tuple[boo
         # appear somewhere in the input variables.
         # The brand profile is part of the model's input too (the gateway injects it).
         source = " ".join(as_text(v) for v in variables.values()) + " " + services.get("brand_summary", "")
-        allowed = set(NUMBER_RE.findall(source)) | set(map(str, check.get("allow", [])))
-        invented = sorted({n for t in targets for n in NUMBER_RE.findall(as_text(t))} - allowed)
+        norm = lambda s: {n.replace(",", "") for n in NUMBER_RE.findall(s)}
+        allowed = norm(source) | set(map(str, check.get("allow", [])))
+        invented = sorted({n for t in targets for n in norm(as_text(t))} - allowed)
         return not invented, f"numbers not in input: {invented}" if invented else "ok"
 
     if kind == "brand_ok":

@@ -23,7 +23,7 @@ approve its own work; that rule is enforced in the workflow, not just stated in 
 The example brand is a made-up coffee subscription, *Northwind Roasters*. Replace it with
 yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 
-## The 53 deploys: each folder is one GitHub repo
+## The 60 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -33,11 +33,13 @@ yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 | **Content tools** | 13 readability · 14 platform rules · 15 UTM builder · 16 link shortener · 17 image cards · 18 email renderer | containers (16 needs a public URL) |
 | **Operations** | 19 content calendar · 20 analytics ingest · 21 report builder · 22 status page | containers |
 | **Quality** | 23 eval suite · 44 claim checker | 23 → your laptop or a cron job · 44 → container |
-| **The agent** | 24 chat agent | n8n |
-| **Agent tools** | 25 blog · 26 social · 27 ads · 28 email · 29 SEO brief · 30 repurpose · 31 research URL · 32 keywords · 33 calendar · 34 knowledge answer · 35 quality gate | n8n (sub-workflows) |
-| **Autonomous** | 36 trend digest · 37 competitor watch · 39 publisher · 40 content planner · 41 weekly report | n8n (schedules) |
+| **The agent** | 24 chat agent (local model, or `CHAT_PROVIDER=hosted` with local fallback) | n8n |
+| **Agent tools** | 25 blog · 26 social · 27 ads · 28 email · 29 SEO brief · 30 repurpose · 31 research URL · 32 keywords · 33 calendar · 34 knowledge answer · 35 quality gate · 57 content formats (video script, landing page, email sequence) | n8n (sub-workflows) |
+| **Autonomous** | 36 trend digest · 37 competitor watch · 39 publisher · 40 content planner · 41 weekly report · 59 winner recycler (weekly: re-drafts the most-clicked posts, capped) | n8n (schedules) |
 | **People** | 38 approval form · 42 knowledge-base form · 51 rules review form | n8n (forms) |
 | **Campaigns** | 45 campaign service · 47 plan-campaign tool · 48 campaign drafter · 52 daily measurement · 53 campaigns tool | 45 → container · rest → n8n |
+| **Publishing & analytics** | 54 Postiz bridge (dry run by default) · 55 Umami sync · 56 daily analytics sync | 54, 55 → containers · 56 → n8n |
+| **Reviews & proof** | 58 review hub: reviews inbox, reply context (health/legal → a person), testimonials kept verbatim with consent · 60 review replies (daily: reply drafts for new reviews; a person posts them, nothing is posted automatically) | 58 → container · 60 → n8n (schedule) |
 | **Learning** | 46 learning service · 49 revise rejected drafts · 50 weekly rule proposals | 46 → container · rest → n8n |
 | **Safety net** | 43 error handler | n8n |
 

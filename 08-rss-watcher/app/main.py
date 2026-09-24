@@ -1,4 +1,5 @@
 """RSS watcher: poll feeds and return only the items not seen before."""
+import hmac
 import io
 import os
 import sqlite3
@@ -8,7 +9,7 @@ from pathlib import Path
 
 import feedparser
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.net import BlockedURL, FetchError, fetch
@@ -93,7 +94,17 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/poll")
+def require_key(x_api_key: str | None = Header(default=None)):
+    expected = os.getenv("INTERNAL_API_KEY")
+    if not expected:
+        raise HTTPException(503, "INTERNAL_API_KEY is not set on the server; write endpoints are disabled")
+    if not x_api_key or not hmac.compare_digest(x_api_key, expected):
+        raise HTTPException(401, "missing or wrong X-API-Key")
+
+
+# Polling marks items as seen, so an unauthenticated caller could consume "new" items
+# before the morning digest runs (security audit, low).
+@app.post("/poll", dependencies=[Depends(require_key)])
 def poll(req: PollRequest):
     feeds = list(dict.fromkeys(f.strip() for f in (req.feeds or default_feeds()) if f.strip()))
     if not feeds:

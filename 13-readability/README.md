@@ -1,6 +1,6 @@
 # readability
 
-Deploy **13 of 53** of the local-LLM marketing agent. It scores how easy a draft is to
+Deploy **13 of 60** of the local-LLM marketing agent. It scores how easy a draft is to
 read (Flesch reading ease, Flesch-Kincaid grade) and flags long sentences, passive voice
 and adverbs, so the blog writer and quality gate can ask the LLM to simplify with
 specific feedback. It uses no LLM and no network.

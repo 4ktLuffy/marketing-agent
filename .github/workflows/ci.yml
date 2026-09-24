@@ -40,6 +40,9 @@ jobs:
           - 44-claim-checker
           - 45-campaign-service
           - 46-learning-service
+          - 54-postiz-bridge
+          - 55-umami-sync
+          - 58-review-hub
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

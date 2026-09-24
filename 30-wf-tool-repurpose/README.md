@@ -1,6 +1,6 @@
 # 30 · Repurpose content
 
-Deploy **30 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **30 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Turns an article, a web page (fetched with 07) or pasted text into one grounded post per channel. Each post goes through the quality gate and is saved to the calendar.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/30-wf-tool-repurpose/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf30Repurpose
 ```
@@ -31,10 +31,11 @@ Its workflow id is fixed (`mktWf30Repurpose`), because other workflows call it b
 | `text` | optional pasted content |
 | `channels` | e.g. `x, linkedin` |
 | `link` | optional link to include (defaults to url) |
+| `note` | optional; written as the first line of each saved draft's notes (the winner recycler, 59, records `recycled from #<id>` here) |
 
 **Returns:** `{result}`: posts with calendar ids
 
-**Called by:** the chat agent (24), tool `repurpose_content`
+**Called by:** the chat agent (24), tool `repurpose_content`; the winner recycler (59)
 
 ## Depends on
 
@@ -56,7 +57,8 @@ In n8n, open the workflow, click **Execute workflow** and paste this as the inpu
   "url": "",
   "text": "Remote workers lose focus after lunch. A lighter roast feels less heavy after a meal. We tested three brew ratios and 1:16 was the favourite.",
   "channels": "x, linkedin",
-  "link": "https://example.com/afternoon"
+  "link": "https://example.com/afternoon",
+  "note": ""
 }
 ```
 

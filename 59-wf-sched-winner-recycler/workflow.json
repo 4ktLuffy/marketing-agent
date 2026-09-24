@@ -1,0 +1,369 @@
+{
+  "id": "mktWf59Recycler0",
+  "name": "59 · Schedule · Winner recycler",
+  "nodes": [
+    {
+      "id": "a71987c9-5695-5806-b94d-d7585b8c5d00",
+      "name": "Mondays 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "43f78458-0e2f-5266-afdf-7ce4ce97fd5a",
+      "name": "Top posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/insights",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "90"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a46182a1-a560-5fd6-8c02-d720b78bfce8",
+      "name": "Calendar items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "afac99a2-7978-50d4-8ffe-58db8e3a8e2b",
+      "name": "Pick winners",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Winners = published posts whose tracked short links earned the most clicks (45 insights).\nconst res = $('Top posts').first().json;   // full response: the insights object is in body\nconst ins = (res.body && typeof res.body === 'object') ? res.body : {};\nconst top = Array.isArray(ins.top_posts) ? ins.top_posts : [];\nconst raw = [].concat($input.first().json.body ?? []);\nconst items = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.id);\nconst byId = new Map(items.map(i => [Number(i.id), i]));\n\nconst num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\nconst MIN_CLICKS = num($env.RECYCLE_MIN_CLICKS, 5);\nconst MIN_AGE_DAYS = num($env.RECYCLE_MIN_AGE_DAYS, 30);\nconst PER_WEEK = Math.floor(num($env.RECYCLE_PER_WEEK, 2));\nconst DAY = 864e5, now = Date.now();\nconst SOCIAL = ['x', 'linkedin', 'instagram', 'facebook', 'threads', 'mastodon'];  // what 30 can write\n\n// Drafts made by this workflow carry \"recycled from #<id>\" in their notes (30 writes it).\nconst recycled90 = new Set(), recycled7 = new Set();\nfor (const i of items) {\n  const age = now - Date.parse(i.created_at || '');\n  for (const m of String(i.notes || '').matchAll(/recycled from #(\\d+)\\b/g)) {\n    if (age <= 90 * DAY) recycled90.add(Number(m[1]));\n    if (age <= 7 * DAY) recycled7.add(Number(m[1]));\n  }\n}\n// The cap counts posts recycled in the last 7 days, so firing it twice in a week can't double it.\nconst room = Math.max(0, PER_WEEK - recycled7.size);\n\nconst skipped = [], winners = [];\nconst sorted = [...top].sort((a, b) => (Number(b.clicks) || 0) - (Number(a.clicks) || 0) || a.item_id - b.item_id);\nfor (const t of sorted) {\n  const id = Number(t.item_id), clicks = Number(t.clicks) || 0, item = byId.get(id);\n  const why =\n    clicks < MIN_CLICKS ? null :   // below the bar: not worth listing\n    !item ? 'not in the calendar' :\n    item.status !== 'published' ? `status is ${item.status}` :\n    !item.published_at || now - Date.parse(item.published_at) < MIN_AGE_DAYS * DAY ? `published less than ${MIN_AGE_DAYS} days ago` :\n    recycled90.has(id) ? 'already recycled in the last 90 days' :\n    !SOCIAL.includes(String(item.channel).toLowerCase()) ? `channel ${item.channel} is not a social channel` : '';\n  if (why === null) continue;\n  if (why) { skipped.push(`#${id} (${clicks} clicks): ${why}`); continue; }\n  // The post keeps its words, not its old tracked link: a URL carrying utm_content=<old id>\n  // would credit the new post's clicks to the old one. Pass the clean target as `link`.\n  const stripUtm = u => {\n    const [base, q = ''] = String(u).split('?');\n    const kept = q.split('&').filter(p => p && !/^utm_/i.test(p));\n    return kept.length ? `${base}?${kept.join('&')}` : base;\n  };\n  const shortBase = item.short_url ? String(item.short_url).replace(/\\/[^/]*$/, '/') : null;\n  const urls = (String(item.body).match(/https?:\\/\\/\\S+/g) || []).map(u => u.replace(/[).,!?]+$/, ''));\n  const target = item.link || urls.find(u => !shortBase || !u.startsWith(shortBase)) || '';\n  const text = String(item.body).replace(/https?:\\/\\/\\S+/g, '').replace(/[ \\t]+\\n/g, '\\n').replace(/\\n{3,}/g, '\\n\\n').trim();\n  if (!text) { skipped.push(`#${id} (${clicks} clicks): the post has no text besides its link`); continue; }\n  if (winners.length >= room) { skipped.push(`#${id} (${clicks} clicks): over the weekly cap of ${PER_WEEK}`); continue; }\n  winners.push({ winner: true, item_id: id, title: item.title, channel: String(item.channel).toLowerCase(), clicks,\n    text, link: target ? stripUtm(target) : '', note: `recycled from #${id} (${clicks} clicks)` });\n}\nif (winners.length) return winners.map(w => ({ json: { ...w, skipped } }));\nconst errs = (ins.errors || []).map(e => e.source + ': ' + (e.error || '')).join('; ');\nreturn [{ json: { winner: false, text: [\n  `*Winner recycler*: nothing to recycle this week (posts with at least ${MIN_CLICKS} clicks, published ${MIN_AGE_DAYS}+ days ago, not recycled in 90 days; cap ${PER_WEEK} a week, ${recycled7.size} used).`,\n  ...skipped.map(x => `- ${x}`), errs ? `⚠ insights had errors: ${errs}` : '',\n].filter(Boolean).join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "99539d11-b289-52a9-bf5f-1a3a2785081a",
+      "name": "Any winners?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2eaf907d-bcab-5e56-ad75-dd3ae170ef7b",
+              "leftValue": "={{ $json.winner }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8005d2c8-3512-5530-8fcb-de15dc7478da",
+      "name": "Recycle",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf30Repurpose"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "",
+            "text": "={{ $json.text }}",
+            "channels": "={{ $json.channel }}",
+            "link": "={{ $json.link }}",
+            "note": "={{ $json.note }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channels",
+              "displayName": "channels",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "19dbc333-7d9e-56bf-95ee-8c56dc51b0cb",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const winners = $('Pick winners').all().map(i => i.json);\nconst lines = $input.all().map((r, i) => {\n  const w = winners[i] || {};\n  const saved = [...String(r.json.result || '').matchAll(/calendar #(\\d+) \\((\\w+)\\)/g)].map(m => `#${m[1]} (${m[2]})`);\n  return `- #${w.item_id} ${w.channel}, ${w.clicks} clicks, \"${w.title}\" → ${saved.join(', ') || 'no draft saved'}`;\n});\nconst skipped = (winners[0] || {}).skipped || [];\nreturn [{ json: { text: [\n  `*Winner recycler*: ${winners.length} top post${winners.length === 1 ? '' : 's'} rewritten as ${winners.length === 1 ? 'a new draft' : 'new drafts'}. Review in the approval form.`,\n  ...lines, ...(skipped.length ? ['Skipped:', ...skipped.map(x => `- ${x}`)] : []),\n].join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "435108e9-dade-5e82-8a24-50276ac4b57d",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "e6e16b96-b32a-5b03-90b0-1a1fa2436912",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Mondays 08:00": {
+      "main": [
+        [
+          {
+            "node": "Top posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top posts": {
+      "main": [
+        [
+          {
+            "node": "Calendar items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar items": {
+      "main": [
+        [
+          {
+            "node": "Pick winners",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick winners": {
+      "main": [
+        [
+          {
+            "node": "Any winners?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any winners?": {
+      "main": [
+        [
+          {
+            "node": "Recycle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recycle": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

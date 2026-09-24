@@ -109,6 +109,15 @@
         "options": {
           "timeout": 300000
         },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ prompt: 'seo_brief', vars: { keyword: $json.keyword, related_keywords: $json.related, competitor_notes: $json.notes, audience: $json.audience } }) }}"

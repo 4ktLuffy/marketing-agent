@@ -78,6 +78,15 @@
         "options": {
           "timeout": 300000
         },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ prompt: 'email_newsletter', vars: { topic: $json.topic, audience: $json.audience || null, context: $json.context || null } }) }}"
@@ -103,7 +112,8 @@
           "value": {
             "text": "={{ $json.output.body_markdown }}",
             "channel": "email",
-            "context": "={{ [$('Start').first().json.topic, $('Build context').first().json.context].filter(Boolean).join('\\n') }}"
+            "context": "={{ [$('Start').first().json.topic, $('Build context').first().json.context].filter(Boolean).join('\\n') }}",
+            "links": "={{ $('Start').first().json.cta_url || '' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -130,6 +140,16 @@
             {
               "id": "context",
               "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "links",
+              "displayName": "links",
               "required": false,
               "defaultMatch": false,
               "display": true,

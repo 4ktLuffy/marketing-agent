@@ -12,6 +12,7 @@
         300
       ],
       "parameters": {
+        "authentication": "basicAuth",
         "formTitle": "Teach the marketing agent",
         "formDescription": "Add product facts, FAQs, policies or a web page. The agent uses these when writing and answering.",
         "formFields": {
@@ -39,7 +40,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "mkt-knowledge-add"
+      "webhookId": "mkt-knowledge-add",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "mktFormsLogin001",
+          "name": "Forms login"
+        }
+      }
     },
     {
       "id": "c7f47e95-c546-51a8-87ed-921de97d87b4",

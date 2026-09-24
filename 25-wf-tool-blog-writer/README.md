@@ -1,6 +1,6 @@
 # 25 · Blog writer
 
-Deploy **25 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **25 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Writes a markdown blog post. It pulls brand facts from the knowledge base (06), writes through the gateway (03), runs the quality gate (35) and saves the post to the calendar (19).
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/25-wf-tool-blog-writer/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf25BlogWrite
 ```

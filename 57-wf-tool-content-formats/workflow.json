@@ -1,0 +1,477 @@
+{
+  "id": "mktWf57ContentFm",
+  "name": "57 · Tool · Content formats",
+  "nodes": [
+    {
+      "id": "29d8453c-8390-56ea-b23c-097d93829e12",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "format",
+              "type": "string"
+            },
+            {
+              "name": "topic",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            },
+            {
+              "name": "offer",
+              "type": "string"
+            },
+            {
+              "name": "details",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "3e1ad1c3-c0ec-5fcd-93ba-0a8a70724720",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst FORMATS = ['video_script', 'landing_page', 'email_sequence'];\n// The chat model paraphrases the format; map what it means, refuse what we can't write.\nconst ALIAS = {\n  video: 'video_script', script: 'video_script', reel: 'video_script', reels: 'video_script',\n  tiktok: 'video_script', short: 'video_script', shorts: 'video_script', 'video script': 'video_script',\n  landing: 'landing_page', 'landing page': 'landing_page', lp: 'landing_page', page: 'landing_page',\n  sequence: 'email_sequence', nurture: 'email_sequence', drip: 'email_sequence',\n  'email sequence': 'email_sequence', 'nurture sequence': 'email_sequence', 'drip sequence': 'email_sequence',\n};\nconst raw = String(s.format || '').trim().toLowerCase().replace(/[-\\s]+/g, ' ');\nconst format = FORMATS.includes(raw.replace(/ /g, '_')) ? raw.replace(/ /g, '_') : ALIAS[raw] || null;\nconst topic = String(s.topic || '').trim();\nif (!format) return [{ json: { ok: false, result:\n  `Unknown format \"${s.format || ''}\". write_content_format writes one of: video_script, landing_page, email_sequence. ` +\n  'For social posts use write_social_posts, for a single newsletter write_email, for an article write_blog_post.' } }];\nif (!topic) return [{ json: { ok: false, result:\n  `What should the ${format.replace('_', ' ')} be about? Give a topic, product or goal.` } }];\nreturn [{ json: { ok: true, format, topic, audience: String(s.audience || '').trim(),\n  offer: String(s.offer || '').trim(), details: String(s.details || '').trim() } }];\n"
+      }
+    },
+    {
+      "id": "b6ad8a01-0290-53a6-a8d0-cb0e67958437",
+      "name": "Known format?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d10da532-ea5d-54cd-a38f-a6bf3ff23dda",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bd91f366-e656-515e-af73-9dea3bd43d3e",
+      "name": "Explain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: $input.first().json.result } }];\n"
+      }
+    },
+    {
+      "id": "9169b1ad-2fad-51e5-8054-9fbcbf7e8484",
+      "name": "Search knowledge base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/search",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $('Prepare').first().json.topic, k: 4 }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "4243cf60-909f-5960-be0e-1b028c78b26d",
+      "name": "Testimonials",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.REVIEWS_URL && $('Prepare').first().json.format === 'landing_page' ? $env.REVIEWS_URL + '/testimonials?usable=true' : $env.KB_URL + '/health' }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a9a8bfaf-69fb-5e08-a058-dd8785e10b66",
+      "name": "Build vars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst kb = ($('Search knowledge base').first().json.results || []).filter(r => r.score >= 0.35)\n  .map((r, i) => `[${i + 1}] (${r.title}) ${r.chunk}`).join('\\n');\n// Details the user typed count as facts for the writer and as evidence for the claim checker.\nconst context = [p.details, kb].filter(Boolean).join('\\n') || null;\nconst common = { audience: p.audience || null, context };\n// Real, consented customer quotes from the proof bank (58), up to 3, for the landing page's\n// social proof. The model may only copy one exactly; the gate checks every quotation.\nconst res = $input.first().json;   // full response; an error or /health when not a landing page\nconst bank = Array.isArray(res.body) ? res.body : [];\nconst quotes = bank.filter(t => t && t.consent === true && t.quote && t.author_display)\n  .map(t => `\"${t.quote}\" — ${t.author_display}`).filter(l => l.length <= 240).slice(0, 3);\nconst testimonials = quotes.length ? quotes.map(q => `- ${q}`).join('\\n') : null;\nconst vars = {\n  video_script: { topic: p.topic + (p.offer ? ` (offer: ${p.offer})` : ''), ...common },\n  landing_page: { product: p.topic, offer: p.offer || null, testimonials, ...common },\n  email_sequence: { goal: p.topic, offer: p.offer || null, ...common },\n}[p.format];\nreturn [{ json: { prompt: p.format, vars, context, testimonials: p.format === 'landing_page' ? quotes : [] } }];\n"
+      }
+    },
+    {
+      "id": "2457df3f-4b12-59d1-a5d2-487c49515574",
+      "name": "Write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: $json.prompt, vars: $json.vars }) }}"
+      }
+    },
+    {
+      "id": "bbd9b4a0-30b5-5c11-a3d8-c7c1aab91b40",
+      "name": "For the gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst out = $input.first().json.output;\nconst bv = $('Build vars').first().json;\n// The testimonials are real customer words: evidence for the claim checker, like the context.\nconst gateCtx = [p.topic, p.offer, bv.context, ...(bv.testimonials || [])].filter(Boolean).join('\\n');\nconst tag = h => '#' + String(h).replace(/^#/, '').replace(/\\s+/g, '');\nconst item = (ref, channel, text) => ({ json: { ref: String(ref), channel, text, context: gateCtx } });\nif (p.format === 'video_script') {\n  const lines = [`Hook: ${out.hook.spoken}`, `On screen: ${out.hook.on_screen}`, ''];\n  for (const b of out.beats) lines.push(`Say: ${b.spoken}`, `On screen: ${b.on_screen}`, '');\n  lines.push(`Close: ${out.cta}`, '', `Caption: ${out.caption}`, out.hashtags.map(tag).join(' '));\n  return [item(0, 'video', lines.join('\\n'))];\n}\nif (p.format === 'landing_page') {\n  const lines = [`# ${out.headline}`, out.subheadline, ''];\n  for (const b of out.benefits) lines.push(`## ${b.title}`, b.text, '');\n  // The model paraphrases the placeholder (\"[Add a customer quote if needed]\"): one spelling.\n  const sp = /^\\s*\\[/.test(out.social_proof) ? '[add a customer quote]' : out.social_proof;\n  lines.push(`Social proof: ${sp}`, '', '## Questions');\n  for (const f of out.faq) lines.push(`Q: ${f.question}`, `A: ${f.answer}`, '');\n  lines.push(`Button: ${out.cta_text}`);\n  return [item(0, 'landing_page', lines.join('\\n'))];\n}\nreturn out.emails.map((e, i) => item(i, 'email',\n  [`Subject: ${e.subject}`, `Preview: ${e.preview}`, '', e.body, '', `Button: ${e.cta_text}`].join('\\n')));\n"
+      }
+    },
+    {
+      "id": "ecd7b035-c54b-549c-9c5a-4a57d53690b4",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.text }}",
+            "channel": "={{ $json.channel }}",
+            "context": "={{ $json.context }}",
+            "ref": "={{ $json.ref }}",
+            "rewrite": "no"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rewrite",
+              "displayName": "rewrite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "8dbd819a-a30f-57ac-9baf-fff81163976f",
+      "name": "Assemble",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst out = $('Write').first().json.output;\nconst gate = $input.all().map(i => i.json);\n// The gate returns items out of order (fixed ones first): match them by ref.\nconst byRef = Object.fromEntries(gate.map(g => [String(g.ref), g]));\nconst refs = Object.keys(byRef).sort((a, b) => a - b);\nconst problems = [], fixed = [], warnings = [];\nfor (const r of refs) {\n  const g = byRef[r];\n  const where = p.format === 'email_sequence' ? `email ${Number(r) + 1}: ` : '';\n  problems.push(...(g.problems || []).map(x => where + x));\n  if (g.rewritten) fixed.push(...(g.fixed || []).map(x => where + x));\n  warnings.push(...(g.warnings || []).map(x => where + x));\n}\nlet title, body, channel;\nif (p.format === 'video_script') {\n  channel = 'video';\n  title = `Video script: ${p.topic}`;\n  body = [byRef['0'].text, '', `Estimated length: ${out.estimated_seconds} s`, 'Shot list:',\n    `- hook: (film what the hook says)`, ...out.beats.map((b, i) => `- beat ${i + 1}: ${b.shot}`)].join('\\n');\n} else if (p.format === 'landing_page') {\n  channel = 'landing_page';\n  title = `Landing page: ${out.headline}`;\n  body = byRef['0'].text;\n  const sp = /^\\s*\\[/.test(out.social_proof) ? '[add a customer quote]' : String(out.social_proof);\n  // With no testimonials given, a quote in quotation marks means the model wrote one nobody\n  // gave us. With testimonials, the gate (35) checked every quotation against the proof bank.\n  const given = ($('Build vars').first().json.testimonials || []).length > 0;\n  if (!given && !sp.includes('[add a customer quote]') && /[\"“”]/.test(sp))\n    problems.push('social proof looks like a customer quote: use a real one or \"[add a customer quote]\"');\n} else {\n  channel = 'email_sequence';\n  title = `Email sequence: ${p.topic}`;\n  body = out.emails.map((e, i) => `--- Email ${i + 1} of ${out.emails.length} · day ${e.day} ---\\n${byRef[String(i)].text}`).join('\\n\\n');\n}\nconst notes = [];\nif (fixed.length) notes.push('Auto-fixed: ' + fixed.join('; '));\nif (problems.length) notes.push('Quality gate: ' + problems.join('; '));\nreturn [{ json: { title: title.slice(0, 120), channel, body, status: problems.length ? 'draft' : 'in_review',\n  notes: notes.join(' | ') || null, fixed, problems, warnings } }];\n"
+      }
+    },
+    {
+      "id": "95e91c67-0e3e-50a5-a057-e63ad11075b0",
+      "name": "Save draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, channel: $json.channel, body: $json.body, status: $json.status, notes: $json.notes }) }}"
+      }
+    },
+    {
+      "id": "9e43d63d-6a17-5403-aa25-eb4061eb636e",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const a = $('Assemble').first().json;\nconst s = $input.first().json;\nconst label = { video: 'Video script', landing_page: 'Landing page', email_sequence: 'Email sequence' }[a.channel];\nconst notes = [];\nif (a.fixed.length) notes.push(`auto-fixed: ${a.fixed.join('; ')}`);\nif (a.problems.length) notes.push(`needs a human: ${a.problems.join('; ')}`);\nif (a.warnings.length) notes.push(`warnings: ${[...new Set(a.warnings)].join('; ')}`);\nreturn [{ json: { result: [\n  `${label} saved to the content calendar as #${s.id} (${s.status}).`,\n  notes.length ? `_${notes.join(' · ')}_` : '', '', a.body, '',\n  s.status === 'in_review' ? 'It is waiting in the approval form; nothing is published until approved.'\n    : 'Saved as a draft because the quality gate found problems a person should fix.',\n].filter((x, i) => i !== 1 || x).join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Known format?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Known format?": {
+      "main": [
+        [
+          {
+            "node": "Search knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Testimonials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Testimonials": {
+      "main": [
+        [
+          {
+            "node": "Build vars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build vars": {
+      "main": [
+        [
+          {
+            "node": "Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write": {
+      "main": [
+        [
+          {
+            "node": "For the gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "For the gate": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Assemble",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble": {
+      "main": [
+        [
+          {
+            "node": "Save draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save draft": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

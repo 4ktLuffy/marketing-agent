@@ -1,6 +1,6 @@
 # 41 · Weekly KPI report
 
-Deploy **41 of 53** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **41 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Monday it pulls last week's KPIs against the week before (20), has the LLM write plain-language highlights, renders an HTML report (21), and sends it to your webhook and/or email.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/41-wf-sched-weekly-report/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf41WeeklyRep
 ```

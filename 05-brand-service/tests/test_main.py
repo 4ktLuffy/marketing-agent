@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import SUMMARY_MAX, app
+from app.main import SUMMARY_MAX, app, build_summary
 
 EXAMPLE = Path(__file__).resolve().parent.parent / "config" / "brand.yaml"
 client = TestClient(app)
@@ -154,3 +154,24 @@ def test_emoji_whitelist_flags_odd_emoji_and_accepts_variation_selector():
 
 def test_summary_lists_allowed_emojis():
     assert "only these: ☕" in client.get("/profile/summary").json()["summary"]
+
+
+def test_summary_omits_missing_price():
+    text = build_summary({"name": "X", "products": [{"name": "Decaf", "one_line": "Roasted Tuesdays."}]})
+    assert "Decaf: Roasted Tuesdays" in text and "None" not in text
+
+
+def test_unknown_domains_flagged_brand_and_given_links_allowed(brand):
+    def rules(text, allowed=()):
+        r = client.post("/check", json={"text": text, "allowed_domains": list(allowed)}).json()
+        return [v["match"] for v in r["violations"] if v["rule"] == "unknown_domain"]
+    site = main_brand_website()
+    assert rules(f"Order at {site}/decaf today.") == []
+    assert rules("Visit NorthwindRoasters.com for more.") == ["northwindroasters.com"]
+    assert rules("Details: https://evil.example.net/x") == ["evil.example.net"]
+    assert rules("See https://shop.partner.io/p", ["https://partner.io/landing"]) == []   # subdomain of a given link
+    assert rules("Node.js fans, 1.5 kg, e.g. this, hello@nowhere.com") == []           # not domains / emails
+
+
+def main_brand_website():
+    return client.get("/profile").json().get("website") or "https://northwind.example.com"

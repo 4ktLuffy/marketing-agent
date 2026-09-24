@@ -1,6 +1,6 @@
 # 29 · SEO brief
 
-Deploy **29 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **29 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Builds an SEO content brief from real autocomplete searches (10) and, if you give one, an audit of a competitor page (12).
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/29-wf-tool-seo-brief/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf29SeoBrief0
 ```

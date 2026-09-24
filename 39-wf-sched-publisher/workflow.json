@@ -62,7 +62,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "if (!$env.PUBLISH_WEBHOOK_URL) return [];   // not configured: publish nothing, mark nothing\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst items = raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw.filter(i => i && i.id);\n// The stored link is the base URL; the text usually carries it with UTM parameters.\n// Shorten the full URL as it appears in the text so tracking survives.\nreturn items.map(i => {\n  // Campaign drafts carry their tracked URL only in the text (link field empty): use the\n  // first URL then, or campaign clicks could never be counted through the short link.\n  const urls = (String(i.body).match(/https?:\\/\\/\\S+/g) || []).map(u => u.replace(/[).,!?]+$/, ''));\n  const inText = i.link ? urls.find(u => u.startsWith(i.link)) : urls[0];\n  const full = inText || i.link || null;\n  // Fill in missing UTM tags (a reviewer may paste a plain link): utm_content = calendar item\n  // id so clicks map back to this exact post; campaign posts also get their campaign tags,\n  // or the campaign's click count would miss them.\n  const MEDIUM = { email: 'email', blog: 'referral', google_ads: 'cpc' };\n  const add = (u, k, v) => !u || !v || new RegExp(`[?&]${k}=`).test(u) ? u : `${u}${u.includes('?') ? '&' : '?'}${k}=${encodeURIComponent(v)}`;\n  let tracked = full;\n  if (i.campaign) {\n    tracked = add(tracked, 'utm_source', String(i.channel).toLowerCase());\n    tracked = add(tracked, 'utm_medium', MEDIUM[i.channel] || 'social');\n    tracked = add(tracked, 'utm_campaign', i.campaign);\n  }\n  tracked = add(tracked, 'utm_content', String(i.id));\n  return { json: { ...i, full_link: full, tracked_link: tracked } };\n});\n"
+        "jsCode": "if (!$env.PUBLISH_WEBHOOK_URL) return [];   // not configured: publish nothing, mark nothing\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst all = raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw.filter(i => i && i.id);\n// Review replies (60) are never sent anywhere: a person copies the approved reply to\n// Google or Trustpilot by hand.\nconst items = all.filter(i => String(i.channel).toLowerCase() !== 'review_reply');\n// The stored link is the base URL; the text usually carries it with UTM parameters.\n// Shorten the full URL as it appears in the text so tracking survives.\nreturn items.map(i => {\n  // Campaign drafts carry their tracked URL only in the text (link field empty): use the\n  // first URL then, or campaign clicks could never be counted through the short link.\n  const urls = (String(i.body).match(/https?:\\/\\/\\S+/g) || []).map(u => u.replace(/[).,!?]+$/, ''));\n  const inText = i.link ? urls.find(u => u.startsWith(i.link)) : urls[0];\n  const full = inText || i.link || null;\n  // Fill in missing UTM tags (a reviewer may paste a plain link): utm_content = calendar item\n  // id so clicks map back to this exact post; campaign posts also get their campaign tags,\n  // or the campaign's click count would miss them.\n  const MEDIUM = { email: 'email', blog: 'referral', google_ads: 'cpc' };\n  const add = (u, k, v) => !u || !v || new RegExp(`[?&]${k}=`).test(u) ? u : `${u}${u.includes('?') ? '&' : '?'}${k}=${encodeURIComponent(v)}`;\n  let tracked = full;\n  if (i.campaign) {\n    tracked = add(tracked, 'utm_source', String(i.channel).toLowerCase());\n    tracked = add(tracked, 'utm_medium', MEDIUM[i.channel] || 'social');\n    tracked = add(tracked, 'utm_campaign', i.campaign);\n  }\n  tracked = add(tracked, 'utm_content', String(i.id));\n  return { json: { ...i, full_link: full, tracked_link: tracked } };\n});\n"
       }
     },
     {
@@ -124,6 +124,15 @@
       "parameters": {
         "method": "POST",
         "url": "={{ $env.PUBLISH_WEBHOOK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.PUBLISH_WEBHOOK_KEY || '' }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
@@ -148,7 +157,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Only items the publish endpoint accepted are marked published; failures stay approved\n// and are retried on the next run.\nconst out = [];\n$input.all().forEach((r, i) => {\n  const item = $('Payload').all()[i].json;\n  if (r.json.statusCode >= 200 && r.json.statusCode < 300) {\n    const body = r.json.body || {};\n    out.push({ json: { id: item.id, external_url: (typeof body === 'object' && body.url) || null, short_url: item.short_url } });\n  }\n});\nreturn out;\n"
+        "jsCode": "// Only items the publish endpoint accepted are marked published; failures stay approved\n// and are retried on the next run.\nconst out = [];\n$input.all().forEach((r, i) => {\n  const item = $('Payload').all()[i].json;\n  // A dry run (54-postiz-bridge with DRY_RUN=true) answers 200 but published nothing.\n  const dry = r.json.body && typeof r.json.body === 'object' && r.json.body.status === 'dry_run';\n  if (r.json.statusCode >= 200 && r.json.statusCode < 300 && !dry) {\n    const body = r.json.body || {};\n    out.push({ json: { id: item.id, external_url: (typeof body === 'object' && body.url) || null, short_url: item.short_url } });\n  }\n});\nreturn out;\n"
       }
     },
     {
@@ -170,6 +179,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Approver-Key",
+              "value": "={{ $env.APPROVER_KEY }}"
             }
           ]
         },

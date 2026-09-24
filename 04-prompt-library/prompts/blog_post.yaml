@@ -9,6 +9,7 @@ vars:
   context: optional
   length_words: optional
   cta: optional
+  facts: optional
 system: |
   You are the senior content marketer for the brand below. You write clear, specific,
   useful articles in the brand voice. You never invent statistics, customer names,
@@ -30,6 +31,15 @@ template: |
   Facts you may use (from our knowledge base — prefer these over general claims):
   {{ context }}
   {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
 
   Format (markdown):
   - First line: "# " + a specific title under 60 characters.

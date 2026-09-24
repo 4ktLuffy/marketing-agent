@@ -1,0 +1,44 @@
+# Hook styles: social_posts tags every post with hook_style, and the social writer (26)
+# passes the two styles 45 /insights/hooks recommends as prefer_hooks.
+# Run: python -m evalsuite.run --cases hooks
+#
+# - schema valid + every hook_style in the enum: the gateway (03) validates the output
+#   against the prompt's JSON schema (hook_style is a required enum) and answers non-200
+#   otherwise, which fails the case. `count` makes sure each post carries a hook_style.
+# - at least one post uses a preferred style: there is no "any of" check, so each case
+#   prefers ONE style and looks for it anywhere in the output (`"hook_style": "<style>"`,
+#   the JSON text of the whole output).
+
+- id: hooks_prefer_question_x
+  prompt: social_posts
+  vars:
+    topic: Our new decaf, roasted in small batches
+    channels: x
+    prefer_hooks: question
+  checks:
+    - {type: channels_match, path: "posts[*].channel", var: channels}
+    - {type: count, path: "posts[*].hook_style", min: 1, max: 1}
+    - {type: contains, path: "", value: '"hook_style": "question"'}
+
+- id: hooks_prefer_how_to_linkedin
+  prompt: social_posts
+  vars:
+    topic: How to brew a better cup of coffee at home
+    channels: linkedin
+    prefer_hooks: how_to
+  checks:
+    - {type: channels_match, path: "posts[*].channel", var: channels}
+    - {type: count, path: "posts[*].hook_style", min: 1, max: 1}
+    - {type: contains, path: "", value: '"hook_style": "how_to"'}
+
+- id: hooks_prefer_story_two_channels
+  prompt: social_posts
+  vars:
+    topic: The farmers behind our autumn single-origin roast
+    channels: x, linkedin
+    link: https://example.com/autumn
+    prefer_hooks: story
+  checks:
+    - {type: channels_match, path: "posts[*].channel", var: channels}
+    - {type: count, path: "posts[*].hook_style", min: 2, max: 2}
+    - {type: contains, path: "", value: '"hook_style": "story"'}

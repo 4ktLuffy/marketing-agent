@@ -22,6 +22,10 @@ repos=(
   45-campaign-service 46-learning-service 47-wf-tool-plan-campaign 48-wf-campaign-drafter
   49-wf-revise-draft 50-wf-sched-learning-review 51-wf-rules-review-form
   52-wf-sched-campaign-measure 53-wf-tool-campaigns
+  54-postiz-bridge 55-umami-sync 56-wf-sched-analytics-sync 57-wf-tool-content-formats
+  58-review-hub
+  59-wf-sched-winner-recycler
+  60-wf-sched-review-replies
 )
 for r in "${repos[@]}"; do
   if [ -d "$r" ]; then echo "skip $r (exists)"; continue; fi

@@ -1,6 +1,6 @@
 # 28 · Email newsletter
 
-Deploy **28 of 53** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **28 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Writes a newsletter: subject, preheader, body and CTA. It uses brand facts from the knowledge base, runs the quality gate on the body, checks the subject length, renders email-safe HTML (18) and saves a draft to the calendar.
 
@@ -12,11 +12,11 @@ Import it into the **n8n** of `01-marketing-stack`. The stack's import script do
 cd ../01-marketing-stack && ./scripts/import-n8n.sh
 ```
 
-Or by hand:
+Or by hand, from this folder:
 
 ```bash
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
-  n8n import:workflow --input=/deploys/28-wf-tool-email-writer/workflow.json
+  sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json' < workflow.json
 docker compose -f ../01-marketing-stack/docker-compose.yml exec -T n8n \
   n8n publish:workflow --id=mktWf28EmailWrit
 ```

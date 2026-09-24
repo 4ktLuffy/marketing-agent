@@ -4,6 +4,8 @@ output: json
 temperature: 0
 vars:
   claim: required
+# "Only details that could be false" was added after gpt-oss-120b (Groq) listed words like
+# "calm cup" and "your beans" and flagged true sentences; qwen2.5:7b rarely did.
 # Lists are split because a list with one true item ("chocolate and caramel") was judged
 # "stated" as a whole. The evidence is deliberately absent: when the model saw the facts while listing
 # details, it listed the facts' details ("medium roast") instead of the claim's ("dark roast").
@@ -14,6 +16,9 @@ system: |
   questions, and general praise of an experience ("perfect for your morning ritual").
   For those, return an empty list. Claims about ethics, sustainability, health effects,
   popularity, awards, quality guarantees and comparisons ARE checkable facts.
+  Only list details that could be FALSE. Do not list words that merely name the product,
+  the customer or an everyday situation ("your beans", "a calm cup", "your desk",
+  "your order"): they cannot be wrong.
 template: |
   Claim: {{ claim }}
 

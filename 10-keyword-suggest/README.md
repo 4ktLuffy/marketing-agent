@@ -1,6 +1,6 @@
 # keyword-suggest
 
-Deploy **10 of 53** of the local-LLM marketing agent. It turns a seed phrase into a list of
+Deploy **10 of 60** of the local-LLM marketing agent. It turns a seed phrase into a list of
 real search queries by scraping Google and DuckDuckGo autocomplete (no API keys), expanded with
 question words and a–z suffixes. The keyword-research tool (32) hands the list to the LLM to
 cluster by intent. It uses no LLM.

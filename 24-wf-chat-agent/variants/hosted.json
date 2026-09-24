@@ -1,0 +1,1294 @@
+{
+  "id": "mktWf24ChatAgent",
+  "name": "24 · Marketing chat agent",
+  "nodes": [
+    {
+      "id": "068d37f8-460d-5296-a7a2-1d4ad6e8a7b6",
+      "name": "Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "public": true,
+        "mode": "hostedChat",
+        "authentication": "n8nUserAuth",
+        "initialMessages": "Hi! I'm your marketing agent, running on your local model.\nTry: \"Write an X and LinkedIn post about our new decaf, link https://example.com/decaf\" or \"What's in the content calendar?\"",
+        "options": {
+          "title": "Marketing agent",
+          "subtitle": "Hosted model, local fallback · drafts only, you approve",
+          "inputPlaceholder": "Ask for a post, a brief, research…"
+        }
+      },
+      "webhookId": "mkt-marketing-chat"
+    },
+    {
+      "id": "b9be25cc-c6c8-5e42-bd16-4e0f21d8c7c7",
+      "name": "Marketing agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        320,
+        300
+      ],
+      "parameters": {
+        "promptType": "auto",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - video script (Reels/TikTok/Shorts), landing page copy, or a multi-email nurture sequence → write_content_format\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - analyse a competitor or any web page → research_url\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
+          "maxIterations": 6
+        }
+      }
+    },
+    {
+      "id": "1cbb4bc9-11a0-5802-89c6-68896f97031f",
+      "name": "Hosted model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        560
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "openai/gpt-oss-120b"
+        },
+        "options": {
+          "temperature": 0.2,
+          "timeout": 60000,
+          "maxRetries": 2,
+          "extraBody": "{\"reasoning_effort\": \"low\"}"
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "mktHostedChat001",
+          "name": "Hosted chat model"
+        }
+      }
+    },
+    {
+      "id": "7ca6e9f7-e2fb-5c39-b8e3-1368b9226401",
+      "name": "Local model (Ollama)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        0,
+        760
+      ],
+      "parameters": {
+        "model": "mkt-agent:latest",
+        "options": {
+          "temperature": 0.2,
+          "numCtx": 16384,
+          "keepAlive": "30m"
+        }
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "mktOllamaCred001",
+          "name": "Ollama (local)"
+        }
+      }
+    },
+    {
+      "id": "3a814910-27ee-5989-9642-72eac8d494c2",
+      "name": "Chat memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        200,
+        560
+      ],
+      "parameters": {
+        "contextWindowLength": 8
+      }
+    },
+    {
+      "id": "7ae27b17-8ea8-577f-9f61-c54aadc6f2fd",
+      "name": "write_blog_post",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        560
+      ],
+      "parameters": {
+        "description": "Write a full blog article in the brand voice and save it as a draft.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf25BlogWrite"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "topic": "={{ $fromAI('topic', `what the article is about`, 'string') }}",
+            "audience": "={{ $fromAI('audience', `who it is for, or empty`, 'string', '') }}",
+            "keywords": "={{ $fromAI('keywords', `SEO keywords, comma-separated, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "keywords",
+              "displayName": "keywords",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "7262d5c2-7d79-5873-9a62-0c196449290a",
+      "name": "write_social_posts",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        560
+      ],
+      "parameters": {
+        "description": "Write NEW social media posts about a topic, one per channel, and save them as drafts. If the user gives text or a link to turn into posts, use repurpose_content instead.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf26SocialWri"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "topic": "={{ $fromAI('topic', `what to post about`, 'string') }}",
+            "channels": "={{ $fromAI('channels', `comma-separated: x, linkedin, instagram, facebook, threads, mastodon`, 'string') }}",
+            "link": "={{ $fromAI('link', `URL to include, or empty`, 'string', '') }}",
+            "campaign": "={{ $fromAI('campaign', `campaign name, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channels",
+              "displayName": "channels",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "campaign",
+              "displayName": "campaign",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "2025e262-cda4-5a29-82c0-caa73636ce5a",
+      "name": "write_ad_copy",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        560
+      ],
+      "parameters": {
+        "description": "Write Google search ad headlines (max 30 chars) and descriptions (max 90 chars).",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf27AdCopy000"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "product": "={{ $fromAI('product', `what is advertised`, 'string') }}",
+            "offer": "={{ $fromAI('offer', `the offer, or empty`, 'string', '') }}",
+            "audience": "={{ $fromAI('audience', `target audience, or empty`, 'string', '') }}",
+            "keywords": "={{ $fromAI('keywords', `keywords, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "product",
+              "displayName": "product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "offer",
+              "displayName": "offer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "keywords",
+              "displayName": "keywords",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "60268918-9cf9-5f40-af95-9971b5b93fbc",
+      "name": "write_email",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        560
+      ],
+      "parameters": {
+        "description": "Write an email newsletter (subject, preheader, body) and save it as a draft.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf28EmailWrit"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "topic": "={{ $fromAI('topic', `what the email is about`, 'string') }}",
+            "audience": "={{ $fromAI('audience', `who receives it, or empty`, 'string', '') }}",
+            "cta_url": "={{ $fromAI('cta_url', `button link, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cta_url",
+              "displayName": "cta_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "0063526a-407e-55e7-aea1-9a222d6c85ce",
+      "name": "write_content_format",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        560
+      ],
+      "parameters": {
+        "description": "Write a short-form VIDEO SCRIPT (Reels/TikTok/Shorts), a LANDING PAGE, or a multi-email NURTURE SEQUENCE, and save it as a draft. Not for social posts, a single newsletter or a blog article.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf57ContentFm"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "format": "={{ $fromAI('format', `video_script, landing_page or email_sequence`, 'string') }}",
+            "topic": "={{ $fromAI('topic', `what the video is about, the product the page sells, or the goal of the sequence`, 'string') }}",
+            "audience": "={{ $fromAI('audience', `who it is for, or empty`, 'string', '') }}",
+            "offer": "={{ $fromAI('offer', `the offer, or empty`, 'string', '') }}",
+            "details": "={{ $fromAI('details', `facts the user gave for this piece, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "format",
+              "displayName": "format",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "offer",
+              "displayName": "offer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "f31234d8-324d-5132-a006-e71374dc0dc2",
+      "name": "seo_brief",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        560
+      ],
+      "parameters": {
+        "description": "Create an SEO content brief (intent, titles, meta description, outline, FAQs) for a keyword.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf29SeoBrief0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "keyword": "={{ $fromAI('keyword', `target keyword`, 'string') }}",
+            "competitor_url": "={{ $fromAI('competitor_url', `a ranking competitor page, or empty`, 'string', '') }}",
+            "audience": "={{ $fromAI('audience', `audience, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "competitor_url",
+              "displayName": "competitor_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "9e16d999-c3e2-5f12-8d5b-e6c6fa83a15e",
+      "name": "repurpose_content",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        760
+      ],
+      "parameters": {
+        "description": "Turn text the user pasted, an article or a web page into social posts (e.g. 'turn this into tweets: ...').",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf30Repurpose"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $fromAI('url', `page to repurpose, or empty`, 'string', '') }}",
+            "text": "={{ $fromAI('text', `pasted content, or empty`, 'string', '') }}",
+            "channels": "={{ $fromAI('channels', `comma-separated channels`, 'string') }}",
+            "link": "={{ $fromAI('link', `link to include, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channels",
+              "displayName": "channels",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "c0f999c6-b578-5b4c-a961-8d559d557997",
+      "name": "research_url",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        760
+      ],
+      "parameters": {
+        "description": "Analyse any web page (e.g. a competitor): messages, pricing, strengths, weaknesses, opportunities.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf31ResearchU"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $fromAI('url', `the page URL`, 'string') }}",
+            "focus": "={{ $fromAI('focus', `what to focus on, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "focus",
+              "displayName": "focus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "facc693a-40b6-54a3-a210-3eedbc734209",
+      "name": "keyword_research",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        760
+      ],
+      "parameters": {
+        "description": "Find real search keyword ideas for a seed keyword, grouped by intent.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf32KeywordRe"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "seed": "={{ $fromAI('seed', `seed keyword`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "seed",
+              "displayName": "seed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "ed2f87a2-d51d-5e95-b532-9716cad88b6d",
+      "name": "content_calendar",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        760
+      ],
+      "parameters": {
+        "description": "Read or change the content calendar. action = list | get | create | set_status | schedule.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf33Calendar0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "={{ $fromAI('action', `list, get, create, set_status or schedule`, 'string') }}",
+            "id": "={{ $fromAI('id', `item id for get/set_status/schedule, or empty`, 'string', '') }}",
+            "status": "={{ $fromAI('status', `status filter for list, or new status for set_status (draft, in_review, rejected), or empty`, 'string', '') }}",
+            "channel": "={{ $fromAI('channel', `channel filter or channel for create, or empty`, 'string', '') }}",
+            "title": "={{ $fromAI('title', `title for create, or empty`, 'string', '') }}",
+            "body": "={{ $fromAI('body', `text for create, or empty`, 'string', '') }}",
+            "scheduled_at": "={{ $fromAI('scheduled_at', `ISO 8601 UTC date-time for schedule/create, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "scheduled_at",
+              "displayName": "scheduled_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "a3527d56-4a08-5c4f-972e-1743dba5797d",
+      "name": "ask_knowledge_base",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        760
+      ],
+      "parameters": {
+        "description": "Answer questions from the knowledge base: our brand, products and policies, the daily morning trend digest, competitor-change notes and uploaded documents.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf34KbAnswer0"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "question": "={{ $fromAI('question', `the question`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "0de30bc7-39ba-5951-8a2b-08284d12e6b0",
+      "name": "plan_campaign",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        760
+      ],
+      "parameters": {
+        "description": "Plan a new marketing campaign: creates the campaign with targets and a dated plan of posts, then drafts them for review.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf47PlanCampa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $fromAI('name', `short campaign name`, 'string') }}",
+            "goal": "={{ $fromAI('goal', `what the campaign should achieve`, 'string') }}",
+            "channels": "={{ $fromAI('channels', `comma-separated: linkedin, x, instagram, facebook, email, blog`, 'string') }}",
+            "start_date": "={{ $fromAI('start_date', `start date YYYY-MM-DD`, 'string') }}",
+            "end_date": "={{ $fromAI('end_date', `end date YYYY-MM-DD`, 'string') }}",
+            "audience": "={{ $fromAI('audience', `who it targets, or empty`, 'string', '') }}",
+            "offer": "={{ $fromAI('offer', `the offer, or empty`, 'string', '') }}",
+            "kpis": "={{ $fromAI('kpis', `targets the user gave, e.g. 20 signups, 500 clicks, or empty`, 'string', '') }}",
+            "landing_url": "={{ $fromAI('landing_url', `page the links should point to, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "goal",
+              "displayName": "goal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channels",
+              "displayName": "channels",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "start_date",
+              "displayName": "start_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "end_date",
+              "displayName": "end_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "offer",
+              "displayName": "offer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "landing_url",
+              "displayName": "landing_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "9ee4d9a7-b9c9-5e6e-b599-3466a33485af",
+      "name": "campaigns",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        960
+      ],
+      "parameters": {
+        "description": "List campaigns, show a campaign's scorecard (results vs targets), activate/pause/complete/cancel one, or set a target.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf53Campaigns"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "={{ $fromAI('action', `list, scorecard, activate, pause, complete, cancel or set_target`, 'string') }}",
+            "campaign": "={{ $fromAI('campaign', `campaign name, slug or id, or empty for list`, 'string', '') }}",
+            "metric": "={{ $fromAI('metric', `for set_target: clicks, sessions, conversions, signups, revenue, ctr, cvr or open_rate, or empty`, 'string', '') }}",
+            "target_value": "={{ $fromAI('target_value', `for set_target: the number, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "campaign",
+              "displayName": "campaign",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "metric",
+              "displayName": "metric",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "target_value",
+              "displayName": "target_value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "4bdc38fe-e360-50e0-b8cd-3e0d2b56b4fb",
+      "name": "check_copy",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        960
+      ],
+      "parameters": {
+        "description": "Check copy against brand rules, platform limits and our approved facts; returns problems and a fixed version.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $fromAI('text', `the copy to check`, 'string') }}",
+            "channel": "={{ $fromAI('channel', `x, linkedin, instagram, facebook, threads, mastodon, blog or email`, 'string') }}",
+            "context": "={{ $fromAI('context', `facts the user gave for this copy, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Local model (Ollama)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Chat": {
+      "main": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hosted model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_blog_post": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_social_posts": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_ad_copy": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_content_format": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "seo_brief": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "repurpose_content": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "research_url": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keyword_research": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "content_calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ask_knowledge_base": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plan_campaign": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "campaigns": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_copy": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

@@ -9,6 +9,7 @@ vars:
   reason: required
   channel: optional
   brief: optional
+  facts: optional
 system: |
   You revise marketing drafts for the brand below after a reviewer rejected them.
   Do exactly what the reviewer asked; keep everything they did not object to, including
@@ -22,6 +23,15 @@ template: |
   {% endif %}
   {% if brief %}Brief: {{ brief }}
   {% endif %}
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  Add no numbers, dates, percentages or statistics unless they appear in the draft, the brief, the approved facts or the brand profile.
+
   Rejected draft:
   """
   {{ text }}

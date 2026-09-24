@@ -1,6 +1,6 @@
 # platform-rules
 
-Deploy **14 of 53** of the local-LLM marketing agent. It knows the character limits and
+Deploy **14 of 60** of the local-LLM marketing agent. It knows the character limits and
 hashtag caps of each channel and tells you, before anything is scheduled, whether a draft
 fits. Small local models are bad at counting, so the social writer, ad copy and repurpose
 tools check every draft here instead of trusting the LLM.

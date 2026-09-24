@@ -1,6 +1,6 @@
 # social-listening
 
-Deploy **11 of 53** of the local-LLM marketing agent. It finds recent mentions of a brand,
+Deploy **11 of 60** of the local-LLM marketing agent. It finds recent mentions of a brand,
 product or topic on Hacker News (Algolia API) and Reddit (public search JSON) and returns them
 in one shape, newest first, for the morning trend digest (36). No API keys. It uses no LLM.
 

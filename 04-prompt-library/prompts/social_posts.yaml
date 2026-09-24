@@ -9,6 +9,8 @@ vars:
   context: optional
   campaign: optional
   examples: optional
+  facts: optional
+  prefer_hooks: optional
 system: |
   You are the social media manager for the brand below. Each channel gets a post written
   for that channel, not one post copied everywhere. No invented facts or statistics.
@@ -24,6 +26,15 @@ template: |
   {% if context %}Facts you may use:
   {{ context }}
   {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
 
   {% set limits = {
     "x": "under 260 characters, 0-2 hashtags, punchy",
@@ -44,6 +55,10 @@ template: |
 
   {% endif %}
   Put hashtags inside "text" where they belong AND list them (without #) in "hashtags".
+  Pick "hook_style" before writing each post, then open the post that way: "question", "fact_led" (opens with an approved fact), "story", "how_to", "benefit" or "contrarian".
+  {% if prefer_hooks %}
+  Use one of these hook styles where it fits the channel: {{ prefer_hooks }}
+  {% endif %}
 example_vars:
   topic: New single-origin Ethiopian roast, limited batch
   channels: x, linkedin, instagram
@@ -57,9 +72,12 @@ schema:
       minItems: 1
       items:
         type: object
-        required: [channel, text, hashtags]
+        required: [channel, text, hashtags, hook_style]
         properties:
           channel: {type: string}
+          hook_style:
+            type: string
+            enum: [question, fact_led, story, how_to, benefit, contrarian]
           text: {type: string, minLength: 20}
           hashtags:
             type: array

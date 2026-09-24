@@ -1,6 +1,6 @@
 # brand-service
 
-Deploy **05 of 53** of the local-LLM marketing agent. It holds one brand profile (voice,
+Deploy **05 of 60** of the local-LLM marketing agent. It holds one brand profile (voice,
 products, key messages, banned phrases, disclaimers) and serves it two ways: as JSON, and
 as a compact plain-text summary the LLM gateway (03) embeds in every prompt. `POST /check`
 lints any draft against the brand rules before it goes near the calendar.
@@ -39,7 +39,7 @@ shows every supported key.
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
 | GET | `/profile` | — | the brand yaml as JSON |
-| GET | `/profile/summary` | — | `{"summary": str}` (plain text, at most 1200 chars) |
+| GET | `/profile/summary` | — | `{"summary": str}` (plain text, at most 1600 chars) |
 | GET | `/facts` | — | `{"facts":[{"id","text"}]}`: the approved facts (explicit `facts:` list + products + key messages); the claim checker (44) only accepts claims these support |
 | POST | `/check` | `{"text","channel"?}` | `{"ok","violations":[{"rule","detail","severity":"error\|warn","match"?}]}`; `match` is the exact offending text (banned phrases) |
 
@@ -64,7 +64,7 @@ Checks run by `/check`. `ok` is `false` only when there is at least one `error`.
 Channel names are free-form and lowercased; the example defines `paid_social`,
 `influencer`, `giveaway` and `sms`. A channel with no entry has no disclaimer requirement.
 The summary lists hard rules (banned phrases, emoji limit) first, so if a large profile is
-cut at 1200 characters only the descriptive parts are lost.
+cut at 1600 characters only the descriptive parts are lost.
 
 ## Configuration
 

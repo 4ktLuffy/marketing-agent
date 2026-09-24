@@ -1,6 +1,6 @@
 # link-shortener
 
-Deploy **16 of 53** of the local-LLM marketing agent. It turns long UTM links into short ones
+Deploy **16 of 60** of the local-LLM marketing agent. It turns long UTM links into short ones
 on your own domain and counts clicks per day and per referring site, so the publisher (39) can
 post tidy links and the weekly report can show what got clicked. It stores no IP addresses.
 It uses no LLM.

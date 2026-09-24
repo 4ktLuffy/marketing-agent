@@ -1,0 +1,84 @@
+name: video_script
+description: Short-form vertical video script (Reels/TikTok/Shorts, 30-60 s) as JSON — hook, beats, CTA, caption.
+output: json
+temperature: 0.8
+vars:
+  topic: required
+  platform: optional
+  audience: optional
+  cta: optional
+  context: optional
+  facts: optional
+system: |
+  You write short-form vertical video scripts (Instagram Reels, TikTok, YouTube Shorts) for
+  the brand below. Spoken lines sound like a person talking, not like an ad. Every beat
+  shows something a phone camera can film. No invented facts, statistics or testimonials.
+
+  BRAND
+  {{ brand }}
+template: |
+  Write a {{ platform or "Reels/TikTok/Shorts" }} video script about: {{ topic }}
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if cta %}Call to action: {{ cta }}
+  {% endif %}
+  {% if context %}Facts you may use:
+  {{ context }}
+  {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
+  (This rule is about the words in the script. The "estimated_seconds" field is fine.)
+  If the facts do not answer the question in the topic, say what we do know instead of guessing a number.
+
+  Write every field in English unless the brand profile names another language.
+  - hook: what is said and shown in the FIRST 2 SECONDS. "spoken" at most 12 words (a
+    question, a surprising observation, or the viewer's problem); "on_screen" at most 40
+    characters of text overlay.
+  - beats: 3 to 5 beats. Each has "spoken" (1-2 short sentences), "on_screen" (text
+    overlay, at most 40 characters) and "shot" (what the camera films, e.g. "close-up of
+    beans pouring into the grinder").
+  - cta: one spoken closing line that asks for one action.
+  - caption: the post caption, at most 300 characters, without hashtags.
+  - hashtags: 3 to 5 hashtags, without the # sign.
+  - estimated_seconds: total length when read at a normal pace, between 30 and 60.
+example_vars:
+  topic: How our decaf is made, from green bean to cup
+  platform: Instagram Reels
+  audience: coffee lovers who drink decaf in the afternoon
+  cta: Follow for more coffee tips
+schema:
+  type: object
+  required: [hook, beats, cta, caption, hashtags, estimated_seconds]
+  properties:
+    hook:
+      type: object
+      required: [spoken, on_screen]
+      properties:
+        spoken: {type: string, minLength: 5, maxLength: 100}
+        on_screen: {type: string, minLength: 2, maxLength: 40}
+    beats:
+      type: array
+      minItems: 3
+      maxItems: 5
+      items:
+        type: object
+        required: [spoken, on_screen, shot]
+        properties:
+          spoken: {type: string, minLength: 10, maxLength: 250}
+          on_screen: {type: string, minLength: 2, maxLength: 40}
+          shot: {type: string, minLength: 5, maxLength: 150}
+    cta: {type: string, minLength: 5, maxLength: 150}
+    caption: {type: string, minLength: 20, maxLength: 300}
+    hashtags:
+      type: array
+      minItems: 3
+      maxItems: 5
+      items: {type: string, minLength: 2, maxLength: 40}
+    estimated_seconds: {type: integer, minimum: 30, maximum: 60}

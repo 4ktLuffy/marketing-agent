@@ -1,6 +1,6 @@
 # email-renderer
 
-Deploy **18 of 53** of the local-LLM marketing agent. It turns an email the LLM wrote in
+Deploy **18 of 60** of the local-LLM marketing agent. It turns an email the LLM wrote in
 markdown into HTML that survives Gmail and Outlook (table layout, 600 px wide, inline
 styles only, no external CSS, no JavaScript) plus a matching plain-text part.
 It uses no LLM.

@@ -1,0 +1,23 @@
+# Held-out tool-choice set v2, written 2026-09-23 BEFORE the tool-description change that
+# followed the 70/72 local run (Instagram caption -> no tool). Never tune descriptions to these
+# strings; after this set is used for a decision, write v3 for the next change.
+- {say: "Caption for a Threads post about our cold brew kit", expect: write_social_posts}
+- {say: "Give me something to post on Facebook about the October giveaway", expect: write_social_posts}
+- {say: "Draft three tweets announcing our new Ethiopia roast", expect: write_social_posts}
+- {say: "Mastodon post about roast day please", expect: write_social_posts}
+- {say: "Make a LinkedIn carousel text about brewing at the office", expect: write_social_posts}
+- {say: "Here's our press release, make social posts out of it: Northwind opens a second roastery in Leeds", expect: repurpose_content}
+- {say: "Can you cut this blog into an Instagram post? https://northwind-roasters.example.com/blog/decaf", expect: repurpose_content}
+- {say: "Long-form piece on how to pick a coffee grinder", expect: write_blog_post}
+- {say: "Headlines and descriptions for a Meta ad about the Team Box", expect: write_ad_copy}
+- {say: "Write a welcome email for new subscribers", expect: write_email}
+- {say: "Outline for a post that ranks for 'decaf coffee for pregnancy'", expect: seo_brief}
+- {say: "Check what https://rival-roasters.example.com/about says about their sourcing", expect: research_url}
+- {say: "Which search terms around 'office coffee' should we go after?", expect: keyword_research}
+- {say: "What's scheduled for next week?", expect: content_calendar}
+- {say: "Put item 31 back into review", expect: content_calendar}
+- {say: "Do we ship to Ireland?", expect: ask_knowledge_base}
+- {say: "Can I say 'the freshest coffee in the UK' on X?", expect: check_copy}
+- {say: "Plan a Black Friday campaign for the Team Box on email and LinkedIn, Nov 20 to 30", expect: plan_campaign}
+- {say: "Are we hitting our click targets on the decaf launch?", expect: campaigns}
+- {say: "Hello!", expect: "(no tool)"}

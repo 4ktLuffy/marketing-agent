@@ -10,12 +10,13 @@ How it decides (each step was measured on labelled claims, see README):
 - The LLM never gives a yes/no verdict on a whole claim: asked that way, qwen2.5:7b
   called 10 of 13 invented claims supported.
 """
+import hmac
 import os
 import re
 
 import httpx
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
 
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://llm-gateway:8000").rstrip("/")
 BRAND_URL = os.getenv("BRAND_URL", "http://brand-service:8000").rstrip("/")
@@ -23,20 +24,36 @@ KB_URL = os.getenv("KB_URL", "").rstrip("/")
 VERIFIER_MODEL = os.getenv("VERIFIER_MODEL") or None
 CHECK_MODE = os.getenv("CHECK_MODE", "lenient")       # lenient | strict (see README)
 KB_MIN_SCORE = float(os.getenv("KB_MIN_SCORE", "0.35"))
+# Knowledge-base documents written from untrusted input (RSS, Reddit, competitor pages,
+# summarised by an LLM) must never count as approved facts (security audit H1).
+KB_UNTRUSTED_SOURCES = {s.strip() for s in os.getenv(
+    "KB_UNTRUSTED_SOURCES", "trend-digest,competitor-watch").split(",") if s.strip()}
 TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "300"))
+# Every sentence costs LLM calls (possibly on a paid hosted verifier): cap the work per request.
+MAX_TEXT_CHARS = int(os.getenv("MAX_TEXT_CHARS", "20000"))
+MAX_SENTENCES = int(os.getenv("MAX_SENTENCES", "80"))
 
 app = FastAPI(title="claim-checker")
 
 URL_RE = re.compile(r"https?://\S+|www\.\S+")
 TAG_RE = re.compile(r"[#@]\w+")
 LIST_MARK_RE = re.compile(r"^\s*(?:\d+[.)]|[-*•])\s+", re.M)
-NUM_RE = re.compile(r"\d+(?:[.,]\d+)*")
+# A comma is a thousands separator only before exactly 3 digits: "10,000" is one number,
+# "every 1,2 or 4 weeks" is three (it used to be read as "12").
+NUM_RE = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?")
 
 
 class VerifyRequest(BaseModel):
-    text: str
-    context: str | None = None        # the brief / source text the copy was written from
-    extra_facts: list[str] = []
+    text: str = Field(max_length=MAX_TEXT_CHARS)
+    context: str | None = Field(default=None, max_length=MAX_TEXT_CHARS)  # brief / source text
+    extra_facts: list[str] = Field(default=[], max_length=50)
+
+
+def require_key(x_api_key: str | None = Header(default=None)):
+    """Enforced whenever INTERNAL_API_KEY is set (the stack sets it); open for local evals."""
+    expected = os.environ.get("INTERNAL_API_KEY")
+    if expected and not (x_api_key and hmac.compare_digest(x_api_key, expected)):
+        raise HTTPException(401, "missing or wrong X-API-Key")
 
 
 class CheckError(Exception):
@@ -54,7 +71,9 @@ def gateway(prompt: str, variables: dict) -> dict:
     if VERIFIER_MODEL:
         body["model"] = VERIFIER_MODEL
     try:
-        r = httpx.post(f"{GATEWAY_URL}/v1/run", json=body, timeout=TIMEOUT)
+        key = os.getenv("INTERNAL_API_KEY")
+        r = httpx.post(f"{GATEWAY_URL}/v1/run", json=body, headers={"X-API-Key": key} if key else {},
+                       timeout=TIMEOUT)
     except httpx.HTTPError as exc:
         raise CheckError(f"gateway unreachable: {exc}") from exc
     if r.status_code != 200:
@@ -76,11 +95,50 @@ def gather_evidence(req: VerifyRequest) -> list[str]:
     if KB_URL:
         try:
             r = httpx.post(f"{KB_URL}/search", json={"query": req.text[:500], "k": 4}, timeout=30)
-            hits = [h for h in r.json().get("results", []) if h.get("score", 0) >= KB_MIN_SCORE]
+            hits = [h for h in r.json().get("results", []) if h.get("score", 0) >= KB_MIN_SCORE
+                    and (h.get("source") or "") not in KB_UNTRUSTED_SOURCES]
             lines += [f"[k{i + 1}] {h['chunk']}" for i, h in enumerate(hits)]
         except (httpx.HTTPError, ValueError):
             pass  # the knowledge base only adds evidence; missing it makes the check stricter
     return lines
+
+
+def product_subjects() -> list[tuple[str, re.Pattern]]:
+    """Product names and aliases from the brand profile, each as a whole-word pattern.
+
+    Used to keep a product's facts to that product: without it, "Our decaf has chocolate and
+    hazelnut notes" passed because the Desk Blend's fact says "chocolate and hazelnut", and
+    "Team Box costs $18" passed on the Desk Blend's price (caught 1 of 7 such claims on Groq).
+    """
+    try:
+        r = httpx.get(f"{BRAND_URL}/profile", timeout=10)
+        r.raise_for_status()
+        prods = r.json().get("products") or []
+    except Exception:  # noqa: BLE001 - any failure only turns scoping off
+        return []  # no scoping: the check falls back to all evidence, as before
+    subjects = []
+    for p in prods:
+        names = [p.get("name") or ""] + list(p.get("aliases") or [])
+        names = sorted({n.strip().lower() for n in names if n and n.strip()}, key=len, reverse=True)
+        if names:
+            subjects.append((names[0], re.compile(r"\b(?:" + "|".join(map(re.escape, names)) + r")\b", re.I)))
+    return subjects
+
+
+def mentioned(text: str, subjects: list[tuple[str, re.Pattern]]) -> set[str]:
+    return {name for name, pattern in subjects if pattern.search(text)}
+
+
+def scoped_evidence(sentence: str, lines: list[str], subjects: list[tuple[str, re.Pattern]]) -> list[str]:
+    """Evidence for one sentence: lines about the products it names, plus lines about none.
+
+    A sentence naming no product keeps all evidence. A line naming several products is kept
+    if it names any product of the sentence.
+    """
+    named = mentioned(sentence, subjects)
+    if not named:
+        return lines
+    return [line for line in lines if not (m := mentioned(line, subjects)) or m & named]
 
 
 ID_RE = re.compile(r"\[[a-z]\d+\]\s*")
@@ -121,9 +179,16 @@ def words(s: str) -> set[str]:
     return out
 
 
+# Layout labels written by the format tools (57): "On screen: ...", "Subject: ...". They are not
+# claims; the checker flagged them as details. A fixed list, so product names ("Team Box: ...")
+# are never stripped (they decide which facts a sentence may use).
+LABEL_RE = re.compile(r"^[ \t]*(?:hook|say|on screen|close|caption|subject|preview|button|cta|"
+                      r"social proof|q|a|headline|subheadline)[ \t]*:[ \t]*", re.I | re.M)
+
+
 def sentences(text: str) -> list[str]:
     """Sentences that can assert something: questions ("Changed your mind?") are skipped."""
-    clean = TAG_RE.sub("", URL_RE.sub("", text))
+    clean = LABEL_RE.sub("", TAG_RE.sub("", URL_RE.sub("", text)))
     parts = [s.strip(" -*•#") for s in SENTENCE_RE.split(clean)]
     return [s for s in parts if re.search(r"[A-Za-z]{3}", s) and not s.endswith("?")]
 
@@ -177,10 +242,14 @@ def health():
     return {"status": "ok", "mode": CHECK_MODE}
 
 
-@app.post("/verify")
+@app.post("/verify", dependencies=[Depends(require_key)])
 def verify(req: VerifyRequest):
     if not req.text.strip():
         raise HTTPException(422, "text is empty")
+    if len(sentences(req.text)) > MAX_SENTENCES:
+        raise HTTPException(413, f"more than {MAX_SENTENCES} sentences; check the copy in parts")
+    if any(len(f) > 1000 for f in req.extra_facts):
+        raise HTTPException(422, "each extra fact must be at most 1000 characters")
     try:
         lines = gather_evidence(req)
         evidence = "\n".join(lines)
@@ -188,14 +257,16 @@ def verify(req: VerifyRequest):
         evidence_numbers = numbers(ID_RE.sub("", evidence))
         number_results = [{"value": n, "supported": n in evidence_numbers} for n in sorted(numbers(req.text))]
 
+        subjects = product_subjects()
         results, flagged_numbers = [], set()
         for sentence in sentences(req.text):
             reasons = []
-            bad = sorted(numbers(sentence) - evidence_numbers)
+            own = scoped_evidence(sentence, lines, subjects)
+            bad = sorted(numbers(sentence) - numbers(ID_RE.sub("", "\n".join(own))))
             if bad:
                 flagged_numbers.update(bad)
                 reasons.append("numbers not in the facts: " + ", ".join(bad))
-            reasons += check_sentence(sentence, evidence)
+            reasons += check_sentence(sentence, "\n".join(own))
             results.append({"claim": sentence, "supported": not reasons, "reasons": reasons})
     except CheckError as exc:
         raise HTTPException(502, str(exc)) from exc

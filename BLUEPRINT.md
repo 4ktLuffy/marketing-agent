@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 53 deploys (01–44 below, 45–53 in Phase 2).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 60 deploys (01–44 below, 45–53 in Phase 2, 54–60 in Phase 3).
 
 ## What the agent does
 
@@ -269,6 +269,8 @@ New env vars in n8n: `CAMPAIGNS_URL=http://campaign-service:8000`, `LEARNING_URL
 - `GET /items?campaign_id=N` filters by campaign (combinable with `status`, `channel`)
 - `POST /items/{id}/published` accepts `{"external_url"?, "short_url"?}`
 - `PATCH` of `body` stays allowed in `idea`, `draft`, `in_review` (locked once approved)
+- item gets `hook_style` (str|null); accepted by `POST /items` and `PATCH` (locked once approved,
+  like `body`); `GET /items?hook_style=` filters
 
 **16 link-shortener**
 - `GET /links?utm_campaign=&utm_content=&limit=100` (no key) →
@@ -315,6 +317,13 @@ target_value, baseline_value, source (shortener|analytics|manual), actual_value,
 - `GET /insights?days=90` → from shortener links with utm_content = calendar item id:
   `{"by_channel":[{"channel","posts","clicks","avg_clicks"}],"top_posts":[{"item_id","title","channel","clicks"}]}`
   (item details via `{CALENDAR_URL}/items/{id}`).
+- `GET /insights/hooks?days=90&explore=0.2&seed=` → same join as `/insights`, grouped by the
+  calendar item's `hook_style` (question|fact_led|story|how_to|benefit|contrarian):
+  `{"recommended":[2 styles],"explored":style|null,"styles":[{"hook_style","posts","clicks",
+  "clicks_per_post","posterior_mean","sample","recommended"}],"unlabeled_posts","method","errors"}`.
+  Thompson sampling on Gamma(1+clicks, 1+posts) per style; with probability `explore` the second
+  pick is a least-tested style. All six styles always listed. Workflow 26 passes `recommended` as
+  `prefer_hooks` to `social_posts`.
 
 ### 46 learning-service
 
@@ -329,3 +338,35 @@ target_value, baseline_value, source (shortener|analytics|manual), actual_value,
 - `GET /rules/summary` → `{"summary": "Rules learned from your edits:\n- ...", "count"}` (active only;
   channel-scoped rules prefixed `[linkedin]`); empty summary when none
 - rule: `{id, text, scope (all|<channel>), status, source_event_ids[], created_at}`
+
+## Phase 3: real publishing, real analytics, fewer invented facts
+
+| # | Folder | Kind | Where | Depends on |
+|---|---|---|---|---|
+| 54 | `54-postiz-bridge` | service | Docker host | Postiz (self-hosted or cloud) |
+| 55 | `55-umami-sync` | service | Docker host | Umami, 20 |
+| 56 | `56-wf-sched-analytics-sync` | n8n workflow (cron) | n8n | 55 |
+
+### 54 postiz-bridge
+The publisher (39) posts approved items to `PUBLISH_WEBHOOK_URL`; point that at this service.
+- `POST /publish` 🔑 `{"id","channel","title","text","link"?,"campaign"?}` → `{"url"?, "postiz_id", "status"}`
+  (39 stores `url` as the item's `external_url`). Channel → Postiz integration via `CHANNEL_MAP`.
+  Unmapped channel → 422 naming the channel. Postiz error → 502. `DRY_RUN=true` → validates and
+  returns `{"status":"dry_run"}` without calling Postiz.
+- `GET /integrations` → the Postiz integrations (id, name, provider) to fill `CHANNEL_MAP`.
+- Env: `POSTIZ_URL`, `POSTIZ_API_KEY`, `CHANNEL_MAP` (JSON `{"linkedin":"<integration id>",...}`),
+  `DRY_RUN`, `INTERNAL_API_KEY`.
+
+### 55 umami-sync
+- `POST /sync` 🔑 `{"from":"YYYY-MM-DD","to":"YYYY-MM-DD"}` → reads Umami per day × utm_campaign ×
+  utm_source (as channel): sessions (visits) and conversions (event `CONVERSION_EVENT`), then uploads
+  them to 20 as generic CSV with `?source=generic&label=umami` → `{"rows","days","errors":[]}`.
+- `GET /health`
+- Env: `UMAMI_URL`, `UMAMI_WEBSITE_ID`, `UMAMI_USERNAME`/`UMAMI_PASSWORD` (self-hosted login) or
+  `UMAMI_API_KEY` (cloud), `CONVERSION_EVENT`, `ANALYTICS_URL`, `INTERNAL_API_KEY`.
+
+**20 analytics-ingest (additive):** `POST /upload?...&label=<name>` stores rows under source `<name>`
+(preset still chosen by `source`), so synced rows never overwrite manual CSV uploads.
+
+**03 llm-gateway (additive):** injects `facts` (numbered lines from 05 `GET /facts`, cached 60 s)
+alongside `brand`, so writing prompts can list the only claims they may make.

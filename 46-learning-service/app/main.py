@@ -202,6 +202,7 @@ def reflect_one(event: dict) -> dict:
         r = httpx.post(
             f"{gateway_url()}/v1/run",
             json={"prompt": "reflect_rule", "vars": variables},
+            headers={"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {},
             timeout=gateway_timeout(),
         )
     except httpx.HTTPError as exc:
