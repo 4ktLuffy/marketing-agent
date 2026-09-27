@@ -1,6 +1,6 @@
 # listmonk-bridge
 
-Deploy **63 of 71** of the local-LLM marketing agent. It puts the week's newsletter into
+Deploy **63 of 81** of the local-LLM marketing agent. It puts the week's newsletter into
 [Listmonk](https://listmonk.app) (self-hosted, AGPL) as a **draft campaign**, so a person
 reviews it there and presses send. It uses no LLM.
 

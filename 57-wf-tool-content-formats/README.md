@@ -1,6 +1,6 @@
 # 57 · Content formats
 
-Deploy **57 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **57 of 81** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Writes three formats the other writers don't: a short-form vertical **video script** (Reels/TikTok/Shorts, 30–60 s: hook, beats with spoken line, on-screen text and shot, CTA, caption, hashtags), **landing page** copy (hero, benefit blocks, social proof, answer-first FAQ, CTA) and a 3–5 email **nurture sequence** (day, subject, preview, body, CTA per email). It pulls context from the knowledge base (06), writes through the gateway (03) with the approved facts, runs the copy through the quality gate (35) and saves one draft to the calendar (19) for approval. For a landing page it first asks the review hub (58, `REVIEWS_URL`) for up to 3 testimonials with consent; the social proof must be one of them copied exactly, with its author, or `[add a customer quote]`, and the gate checks every quotation against the proof bank. Without the review hub it uses an approved fact or the placeholder. A video script is also rendered as a preview MP4 by 71 (`POST $VIDEO_URL/render`: the script, the brand name from 05, the voice from `VIDEO_VOICE` or 71's default); the item gets it as `video_url`, the poster as `image_url` and the note `video preview: <url> (<n> s)`. A render that fails (422 too long, 429 busy, service down) only adds `video not rendered: <reason>`; the draft is saved either way. Without `VIDEO_URL` no video is made.
 

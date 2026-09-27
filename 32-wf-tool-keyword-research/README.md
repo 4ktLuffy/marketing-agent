@@ -1,6 +1,6 @@
 # 32 · Keyword research
 
-Deploy **32 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **32 of 81** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Gets real Google and DuckDuckGo autocomplete suggestions for a seed (10), then has the LLM group them by search intent with a content idea for each group.
 

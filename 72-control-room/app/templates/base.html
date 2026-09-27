@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d2733">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false, "selfRequestsOnly": true, "historyCacheSize": 0}'>
+  <title>{% block title %}Control room{% endblock %} · Marketing agent</title>
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body {% if csrf %}hx-headers='{{ {"X-CSRF-Token": csrf}|tojson }}' data-undo="{{ undo_seconds }}"{% endif %}>
+{% if csrf %}
+<header class="top">
+  <a class="brand" href="/">Control room</a>
+  <nav class="topnav" aria-label="Main">
+    <a href="/" {% if nav == 'queue' %}aria-current="page"{% endif %}>Queue</a>
+    <a href="/calendar" {% if nav == 'calendar' %}aria-current="page"{% endif %}>Calendar</a>
+    <a href="/performance" {% if nav == 'performance' %}aria-current="page"{% endif %}>Performance</a>
+    <a href="/engine">Engine</a>
+    <a href="/campaigns">Campaigns</a>
+    <a href="/chat">Chat</a>
+    <a href="/status">Health</a>
+  </nav>
+  <form method="post" action="/logout" class="logout">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit" class="link">Log out</button>
+  </form>
+</header>
+{% endif %}
+<main id="main">
+{% block main %}{% endblock %}
+</main>
+{% if csrf %}
+<div id="toasts" aria-live="polite"></div>
+<nav class="tabbar" aria-label="Tabs">
+  <a href="/" {% if nav == 'queue' %}aria-current="page"{% endif %}><span aria-hidden="true">✓</span>Queue</a>
+  <a href="/calendar" {% if nav == 'calendar' %}aria-current="page"{% endif %}><span aria-hidden="true">▦</span>Calendar</a>
+  <a href="/performance" {% if nav == 'performance' %}aria-current="page"{% endif %}><span aria-hidden="true">▲</span>Stats</a>
+  <a href="/more" {% if nav == 'more' %}aria-current="page"{% endif %}><span aria-hidden="true">…</span>More</a>
+</nav>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

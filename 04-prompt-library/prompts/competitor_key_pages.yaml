@@ -1,0 +1,43 @@
+name: competitor_key_pages
+description: Pick a competitor's key pages to watch (pricing, product, features, about) from the links found on their homepage, as JSON.
+output: json
+temperature: 0.1
+vars:
+  url: required
+  links: required
+  title: optional
+# Used by 81-wf-tool-track-competitor. The workflow keeps only URLs that are in `links`
+# (exactly), on the competitor's domain, and that 07 can read; anything else is dropped.
+system: |
+  You help a marketer watch a competitor's website. You choose pages only from the list you
+  are given and copy each URL exactly. You never invent or edit a URL.
+template: |
+  Competitor homepage: {{ url }}{% if title %} ("{{ title }}"){% endif %}
+
+  Links found on that homepage (one per line):
+  {{ links }}
+
+  Choose at most 5 pages worth watching for changes, most useful first:
+  - pricing: plans, prices, shop or subscription page
+  - product: a main product or collection page
+  - features: features, how it works, solutions
+  - about: about us, company, story
+  Skip blog posts, legal pages, login, cart, careers, contact and social media links.
+  If no link fits a type, leave that type out. An empty list is a valid answer.
+example_vars:
+  url: https://rival.example.com/
+  title: Rival Beans
+  links: "https://rival.example.com/pricing\nhttps://rival.example.com/blog/cold-brew\nhttps://rival.example.com/about-us\nhttps://rival.example.com/login"
+schema:
+  type: object
+  required: [pages]
+  properties:
+    pages:
+      type: array
+      maxItems: 5
+      items:
+        type: object
+        required: [url, type]
+        properties:
+          url: {type: string}
+          type: {type: string, enum: [pricing, product, features, about]}

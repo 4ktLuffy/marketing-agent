@@ -1,6 +1,6 @@
 # content-engine
 
-Deploy **61 of 71** of the local-LLM marketing agent. It turns **one substantial pillar**
+Deploy **61 of 81** of the local-LLM marketing agent. It turns **one substantial pillar**
 (an essay, a guide, a talk transcript) into **a month of varied posts** without drifting
 into spam. The design and the research behind every number are in
 `_dev/research/content-volume.md` (section 4, stages A, B, D2/D3 and E). The service does four things:
@@ -79,11 +79,13 @@ INTERNAL_API_KEY=change-me DB_PATH=./engine.sqlite OLLAMA_URL=http://127.0.0.1:1
 - atom: `{id, pillar_id, kind, text, verified, evidence, promo, created_at}`
 - slot: `{id, pillar_id, date: YYYY-MM-DD, time_utc: HH:MM, channel, format, atom_id,
   hook_style, status: planned|drafted|dropped, calendar_item_id, reason, created_at,
-  updated_at, atom: {kind, text, evidence, promo}}`
+  updated_at, experiment_id, arm, experiment: {id, variable, arm, value, brief} | null,
+  atom: {kind, text, evidence, promo}}`
 - plan: `{pillar_id, seed, start_date, end_date, weeks, cadence, requested: {channel: n},
   planned: {channel: n}, kept_drafted: {channel: n}, unfilled: {channel: n}, atoms_verified,
   removed_calendar_item_ids: [the idea items of the planned slots this re-plan deleted],
-  slots: [the planned slots]}`
+  experiments: [{id, variable, channels, arms: {A, B}, assigned: {A, B}, error}],
+  experiments_error, slots: [the planned slots]}`
 - novelty verdict: `{novel, reasons: [str], closest: {item_id, channel, score_ngram,
   score_embed} | null, compared, embedding_checked, embed_model, thresholds}`
 - health: `{pillar_id, since, decided, approved, edited, rejected, approved_clean_rate,
@@ -134,6 +136,30 @@ With the default cadence, the design's six channels (linkedin, x, instagram, blo
 video) give 17 slots a week, **68 in 4 weeks**. The design's "about 85" assumed LinkedIn at
 4 a week and X at about 10 a week. Pass those as `cadence` if you want that volume, and have
 at least 40 verified atoms.
+
+### Experiments (`CAMPAIGNS_URL`)
+
+With `CAMPAIGNS_URL` set (the stack sets it), a plan first reads
+`GET {CAMPAIGNS_URL}/experiments?status=approved,running` from the campaign service (45).
+Every slot on a channel of such an experiment gets one of its two arms:
+
+- At most 2 experiments per channel share its slots, round-robin, oldest first.
+- Arms are balanced by weekday first, then by hour bucket (before 12, 12–17, after 17 UTC),
+  then overall: each slot, in date order, takes the arm with fewer slots on that weekday,
+  in that bucket, in total; a tie is broken at random (seeded, so the plan stays
+  deterministic). Drafted slots that already have an arm count too. A `time` experiment
+  sets the hour, so only weekday and total are balanced.
+- The arm is forced on the slot: a `hook_style` arm sets `hook_style` (the atom is chosen so
+  the (atom, hook) pair still never repeats), `format` sets the format, `time` the
+  `time_utc`. `cta` and `length` arms are instructions: the drafter (65) adds them to the
+  prompt, and keeps a `hook_style` arm on its novelty retry.
+- After saving, the plan reports each experiment's slots to
+  `POST {CAMPAIGNS_URL}/experiments/{id}/assign` (with `remove_slot_ids`: the experiment
+  slots a re-plan deleted). The first report starts an approved experiment. If 45 refuses
+  (e.g. the experiment was stopped) or is down, those slots lose their experiment fields and
+  `experiments[].error` says why; a plan never fails because of an experiment.
+- Without `CAMPAIGNS_URL` nothing of this happens. If 45 cannot be read, the plan has no
+  experiments and `experiments_error` says why.
 
 ### Slot status
 
@@ -225,6 +251,7 @@ This is the contract a future n8n workflow (the design's stage A to E) builds ag
 | `DB_PATH` | `/data/engine.sqlite` | SQLite file (WAL mode; writes use `BEGIN IMMEDIATE`) |
 | `OLLAMA_URL` | `http://host.docker.internal:11434` | Ollama, for `/api/embed` |
 | `EMBED_MODEL` | `qwen3-embedding:0.6b` | embedding model |
+| `CAMPAIGNS_URL` | — (the stack: `http://campaign-service:8000`) | campaign service (45) for experiments; empty = none |
 | `EMBED_TIMEOUT` | `60` | seconds per embedding call |
 | `MIN_ATOMS` | `12` | verified atoms needed to plan |
 | `NOVELTY_DAYS` | `90` | how far back novelty looks |

@@ -1,0 +1,975 @@
+{
+  "id": "mktWf77ClipsTool",
+  "name": "77 · Tool · Clips from a video",
+  "nodes": [
+    {
+      "id": "912c8147-4ee9-5d8c-b1dc-f1f15e294fab",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "url",
+              "type": "string"
+            },
+            {
+              "name": "max_clips",
+              "type": "string"
+            },
+            {
+              "name": "channels",
+              "type": "string"
+            },
+            {
+              "name": "topic",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bee8fede-806e-542f-a38c-8b588ffc2417",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst url = String(s.url || '').trim();\nconst ALIAS = { reels: 'instagram', reel: 'instagram', ig: 'instagram', insta: 'instagram', 'instagram reels': 'instagram',\n  'tik tok': 'tiktok', shorts: 'youtube', 'youtube shorts': 'youtube', yt: 'youtube', fb: 'facebook', twitter: 'x' };\nconst KNOWN = ['instagram', 'tiktok', 'youtube', 'facebook', 'x', 'linkedin', 'threads'];\nconst RULES = ['x', 'linkedin', 'instagram', 'facebook', 'threads', 'mastodon'];\nconst asked = String(s.channels || '').toLowerCase().split(/\\s*(?:,|;|\\/|\\band\\b)\\s*/).map(c => c.trim()).filter(Boolean)\n  .map(c => ALIAS[c] || c);\nconst channels = [...new Set(asked.filter(c => KNOWN.includes(c)))];\nconst dropped = asked.filter(c => !KNOWN.includes(c));\nif (!channels.length) channels.push('instagram', 'tiktok');\nconst cap = Math.max(1, Math.min(10, Math.floor(Number($env.CLIPS_MAX_PER_VIDEO || 5)) || 5));\nconst n = parseInt(String(s.max_clips || '').replace(/[^\\d]/g, ''), 10);\nconst max_clips = Number.isFinite(n) && n > 0 ? Math.min(n, cap) : Math.min(3, cap);\nconst waitMin = Math.max(1, Number($env.CLIPS_MAX_WAIT_MIN || 30) || 30);\nif (!$env.CLIPS_URL) return [{ json: { ok: false, result:\n  'The clip finder (73-clip-finder) is not set up here: CLIPS_URL is empty on the n8n container.' } }];\nif (!/^https?:\\/\\/[^\\s/]+\\/\\S*$/i.test(url)) return [{ json: { ok: false, result:\n  'Send me a direct link to the video or audio file (http or https, e.g. https://cdn.example.com/webinar.mp4) and I will cut it into short clips.' } }];\nreturn [{ json: { ok: true, url, max_clips, channels, caption_channel: channels[0],\n  gate_channel: RULES.includes(channels[0]) ? channels[0] : 'instagram', dropped,\n  topic: String(s.topic || '').trim().slice(0, 1000), started: Date.now(), deadline: Date.now() + waitMin * 60000, wait_min: waitMin } }];\n"
+      }
+    },
+    {
+      "id": "cf51ecc5-22a5-559e-9463-1ccfadb9ea09",
+      "name": "Link ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "10c0379e-25f4-505e-8df9-de7e1ef56c4e",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "82a5728a-7a94-5636-90b0-a13fc7dcd176",
+      "name": "Explain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: $input.first().json.result } }];\n"
+      }
+    },
+    {
+      "id": "4459aecf-3744-5778-9bea-06b96f5cf74c",
+      "name": "Submit job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLIPS_URL }}/jobs",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $('Prepare').first().json.url, max_clips: $('Prepare').first().json.max_clips }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3c107ce5-fa42-5894-b7b9-d47ad4d5aac9",
+      "name": "Submitted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const detailOf = r => {\n  const b = r && r.body;\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const e = r && r.error;\n  const s = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d) : e ? (typeof e === 'string' ? e : e.message || JSON.stringify(e)) : 'no answer';\n  return String(s).replace(/\\s+/g, ' ').trim().slice(0, 400);\n};\n\nconst p = $('Prepare').first().json;\nconst r = $input.first().json || {};\nif (r.statusCode === 202 && r.body && r.body.id) return [{ json: { state: 'wait', id: String(r.body.id) } }];\nif (r.statusCode === 429 && Date.now() < p.deadline) return [{ json: { state: 'busy' } }];\nconst why = detailOf(r);\nlet result;\nif (r.statusCode === 422) {\n  // 73 refuses platform links (YouTube, TikTok, …): their terms forbid downloading.\n  result = `I can't cut clips from that link. The clip finder says: \"${why}\".\\n` +\n    'Download the video yourself (if you have the rights), put the file somewhere you control ' +\n    '(your storage bucket, CDN or podcast host) and send me the direct link to the file, e.g. https://…/webinar.mp4.';\n} else if (r.statusCode === 429) {\n  result = `The clip finder was busy with another video for ${p.wait_min} minutes; try again later.`;\n} else if (r.statusCode === 413) {\n  result = `That file is too large for the clip finder: ${why}.`;\n} else {\n  result = `The clip finder could not take the video (${r.statusCode ? 'HTTP ' + r.statusCode + ': ' : ''}${why}).`;\n}\nreturn [{ json: { state: 'error', result } }];\n"
+      }
+    },
+    {
+      "id": "008f0208-5a8b-5173-9410-7f686dbfff25",
+      "name": "Queued?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "24ef7ba4-0d1d-594d-9701-4a553f864794",
+              "leftValue": "={{ $json.state === 'wait' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b5533210-92cc-5efb-81f8-4dcb5c4e21ba",
+      "name": "Busy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        520
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3f985d63-66ba-554c-b56c-8400088dd70e",
+              "leftValue": "={{ $json.state === 'busy' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e1eb975d-4cf4-5d11-9aab-a53226f26201",
+      "name": "Busy, retry later",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        520
+      ],
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "webhookId": "3ad5ded9-0276-5579-9b92-0649eb98934f"
+    },
+    {
+      "id": "cd41b130-465b-5546-8f99-358d7a548974",
+      "name": "Refused",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        720
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: $input.first().json.result } }];\n"
+      }
+    },
+    {
+      "id": "71088f92-ef17-5af2-b7b0-6908ad473b46",
+      "name": "Wait for clips",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "amount": 20,
+        "unit": "seconds"
+      },
+      "webhookId": "01072457-95c1-5144-9bd7-a33ef8f0ca72"
+    },
+    {
+      "id": "57a89fc0-88e5-5f60-a915-4ba084beac0b",
+      "name": "Get job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CLIPS_URL }}/jobs/{{ $json.id }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "b477b8c6-c1f3-5896-8ca5-d04be311e312",
+      "name": "Job state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const detailOf = r => {\n  const b = r && r.body;\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const e = r && r.error;\n  const s = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d) : e ? (typeof e === 'string' ? e : e.message || JSON.stringify(e)) : 'no answer';\n  return String(s).replace(/\\s+/g, ' ').trim().slice(0, 400);\n};\n\nconst p = $('Prepare').first().json;\nconst id = $('Wait for clips').first().json.id;\nconst r = $input.first().json || {};\nconst b = r.body && typeof r.body === 'object' ? r.body : {};\nif (r.statusCode === 200 && b.status === 'done') {\n  const clips = (b.clips || []).filter(c => c && /^https?:\\/\\/\\S+$/.test(c.url || ''));\n  if (clips.length) return [{ json: { state: 'done', id, job: b, clips } }];\n  return [{ json: { state: 'failed', result: `The clip finder went through the video but found no clip worth posting` +\n    `${(b.notes || []).length ? ' (' + b.notes.join('; ').slice(0, 300) + ')' : ''}.` } }];\n}\nif (r.statusCode === 200 && b.status === 'failed')\n  return [{ json: { state: 'failed', result: `The clip finder could not cut clips from ${p.url}: ${String(b.error || 'no reason given').slice(0, 400)}` } }];\nif (r.statusCode === 404 || r.statusCode === 401)\n  return [{ json: { state: 'failed', result: `The clip finder lost job ${id} (HTTP ${r.statusCode}: ${detailOf(r)}).` } }];\nif (Date.now() > p.deadline)\n  return [{ json: { state: 'failed', result: `The clips are not ready after ${p.wait_min} minutes (job ${id}, stage ` +\n    `${b.stage || 'unknown'}). The clip finder keeps working on it, but nothing was saved to the calendar: ask again later with a shorter video, or raise CLIPS_MAX_WAIT_MIN.` } }];\nreturn [{ json: { state: 'wait', id, stage: b.stage || null, progress: b.progress ?? null, last: r.statusCode || detailOf(r) } }];\n"
+      }
+    },
+    {
+      "id": "2ca44146-b14f-55e1-9997-f46108148feb",
+      "name": "Still running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2d70943-0d62-5e81-9452-778488a2a944",
+              "leftValue": "={{ $json.state === 'wait' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f1d80df4-1fbc-5dd9-9bcd-72eab0c46933",
+      "name": "Clips ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8c685c36-c6da-55cb-b16a-992c2f8b6f2b",
+              "leftValue": "={{ $json.state === 'done' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "753fdafc-cc7b-53d5-84dd-45e3bf5d22ce",
+      "name": "Job failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: $input.first().json.result } }];\n"
+      }
+    },
+    {
+      "id": "761dff7b-3cda-5616-8ff4-8756e633b8b5",
+      "name": "One per clip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst source = String((d.job.source || {}).name || $('Prepare').first().json.url).slice(0, 300);\nreturn d.clips.map(c => ({ json: { job_id: d.id, source, index: c.index, title: String(c.title || '').trim(),\n  start_s: Number(c.start_s), end_s: Number(c.end_s), duration_s: Number(c.duration_s), score: c.score,\n  transcript: String(c.transcript || '').trim(), url: c.url, poster_url: /^https?:\\/\\/\\S+$/.test(c.poster_url || '') ? c.poster_url : null } }));\n"
+      }
+    },
+    {
+      "id": "632aaedb-2b7a-52ca-8a94-461d0e29bd4c",
+      "name": "Loop clips",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "058bb0b7-fac9-5eef-bc24-5652a25f2982",
+      "name": "Caption request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Loop clips').first(1).json;   // output 1 = the current clip\nconst p = $('Prepare').first().json;\nconst cut = (s, n) => s.length <= n ? s : s.slice(0, n).replace(/\\s+\\S*$/, '') + '…';\nconst topic = `${c.title || 'A clip from our video'}: ${cut(c.transcript, 400)}`;\nconst context = [`What the speaker says in this clip (our own video; state nothing it does not say):\\n${c.transcript}`,\n  p.topic ? `About the video: ${p.topic}` : ''].filter(Boolean).join('\\n\\n');\nreturn [{ json: { vars: { topic, channels: p.caption_channel, context } } }];\n"
+      }
+    },
+    {
+      "id": "ebb27207-19c7-560b-8f23-d8f00af2a748",
+      "name": "Write caption",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'social_posts', vars: $json.vars }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "13ffe8cd-8fda-53aa-9c3f-2983fc72871b",
+      "name": "For the gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const detailOf = r => {\n  const b = r && r.body;\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const e = r && r.error;\n  const s = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d) : e ? (typeof e === 'string' ? e : e.message || JSON.stringify(e)) : 'no answer';\n  return String(s).replace(/\\s+/g, ' ').trim().slice(0, 400);\n};\n\nconst c = $('Loop clips').first(1).json;\nconst p = $('Prepare').first().json;\nconst res = $input.first().json || {};\nconst posts = ((res.output || {}).posts) || [];\nconst post = posts.find(x => String(x.channel || '').trim().toLowerCase() === p.caption_channel) || posts[0];\nconst text = post ? String(post.text || '').trim() : '';\nconst context = [c.transcript, p.topic].filter(Boolean).join('\\n');\nif (!text) return [{ json: { ok: false, error: `no caption from the model (${res.output ? 'empty' : detailOf(res)})` } }];\nreturn [{ json: { ok: true, text, channel: p.gate_channel, context, ref: String(c.index),\n  hook_style: post.hook_style || null } }];\n"
+      }
+    },
+    {
+      "id": "d7fcdb24-c48a-5542-b78a-ece172e8f6dd",
+      "name": "Caption written?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3840,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "89a2e1e0-7c82-55ae-bdbe-9cc97d117bc6",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d4e7347c-f3d3-53a2-a062-e9aea8d4bf9c",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4080,
+        200
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.text }}",
+            "channel": "={{ $json.channel }}",
+            "context": "={{ $json.context }}",
+            "ref": "={{ $json.ref }}",
+            "rewrite": "no"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rewrite",
+              "displayName": "rewrite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "cb657385-bfae-5e10-b629-b71adc349962",
+      "name": "Assemble",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Loop clips').first(1).json;\nconst p = $('Prepare').first().json;\nconst f = $('For the gate').first().json;\nconst g = f.ok ? ($input.first().json || {}) : {};\nconst problems = !f.ok ? [f.error] : Array.isArray(g.problems) ? g.problems : ['the quality gate gave no result'];\nconst warnings = f.ok && Array.isArray(g.warnings) ? [...new Set(g.warnings)] : [];\nconst caption = f.ok ? String(g.text || f.text) : '[write a caption for this clip]';\nconst t = s => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };\nconst range = `${t(c.start_s)}–${t(c.end_s)}`;\nconst secs = Math.round(c.duration_s * 10) / 10;\n// The clip's range and source go in the notes: the body is what gets published.\nconst notes = [`clip ${range} from ${c.source} (score ${c.score})`, `video preview: ${c.url} (${secs} s)`,\n  `clip ${c.index} of job ${c.job_id}, caption for ${p.channels.join(', ')}`,\n  problems.length ? `Quality gate: ${problems.join('; ')}` : '', warnings.length ? `warnings: ${warnings.join('; ')}` : '']\n  .filter(Boolean).join(' | ');\nreturn [{ json: { title: (c.title || `Clip ${c.index}`).slice(0, 120), channel: 'video',\n  body: caption, status: problems.length ? 'draft' : 'in_review', notes,\n  video_url: c.url, image_url: c.poster_url, hook_style: f.hook_style || null,\n  range, secs, problems, index: c.index } }];\n"
+      }
+    },
+    {
+      "id": "67ae1916-5372-557d-aa05-fbb877f74768",
+      "name": "Save clip",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, channel: $json.channel, body: $json.body, status: $json.status, notes: $json.notes, video_url: $json.video_url, image_url: $json.image_url, hook_style: $json.hook_style }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "741d4cd4-4b63-527b-a0b0-90bede4450fc",
+      "name": "Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const detailOf = r => {\n  const b = r && r.body;\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const e = r && r.error;\n  const s = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d) : e ? (typeof e === 'string' ? e : e.message || JSON.stringify(e)) : 'no answer';\n  return String(s).replace(/\\s+/g, ' ').trim().slice(0, 400);\n};\n\nconst a = $('Assemble').first().json;\nconst r = $input.first().json || {};\nconst ok = r.statusCode === 201 && r.body && r.body.id;\nreturn [{ json: { index: a.index, title: a.title, range: a.range, secs: a.secs, video_url: a.video_url,\n  id: ok ? r.body.id : null, status: ok ? r.body.status : null, problems: a.problems,\n  error: ok ? null : `not saved (${r.statusCode ? 'HTTP ' + r.statusCode + ': ' : ''}${detailOf(r)})` } }];\n"
+      }
+    },
+    {
+      "id": "7b94ce6b-9dc8-5c2c-85dc-6013afbf57eb",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst rows = $input.all().map(i => i.json).sort((a, b) => a.index - b.index);\nconst saved = rows.filter(r => r.id);\nconst form = `${String($env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\nconst lines = [`Cut ${rows.length} clip${rows.length === 1 ? '' : 's'} from ${p.url} and saved ${saved.length} to the content calendar as video items (caption written for ${p.caption_channel}):`, ''];\nfor (const r of rows) {\n  if (!r.id) { lines.push(`- clip ${r.index} \"${r.title}\" (${r.range}): ${r.error}`); continue; }\n  lines.push(`- #${r.id} \"${r.title}\" (${r.range}, ${r.secs} s) → ${r.status}` +\n    (r.problems.length ? ` · needs a person: ${r.problems.join('; ').slice(0, 200)}` : ''));\n  lines.push(`  ${r.video_url}`);\n}\nif (p.dropped.length) lines.push('', `Ignored channels: ${p.dropped.join(', ')}.`);\nlines.push('', `Review and approve them here: ${form}`,\n  'Nothing is published until a person approves it. Check each clip before approving: you need the rights to everything in the video.');\nreturn [{ json: { result: lines.join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Link ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link ok?": {
+      "main": [
+        [
+          {
+            "node": "Submit job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit job": {
+      "main": [
+        [
+          {
+            "node": "Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submitted": {
+      "main": [
+        [
+          {
+            "node": "Queued?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queued?": {
+      "main": [
+        [
+          {
+            "node": "Wait for clips",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busy?": {
+      "main": [
+        [
+          {
+            "node": "Busy, retry later",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busy, retry later": {
+      "main": [
+        [
+          {
+            "node": "Submit job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for clips": {
+      "main": [
+        [
+          {
+            "node": "Get job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get job": {
+      "main": [
+        [
+          {
+            "node": "Job state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job state": {
+      "main": [
+        [
+          {
+            "node": "Still running?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still running?": {
+      "main": [
+        [
+          {
+            "node": "Wait for clips",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Clips ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clips ready?": {
+      "main": [
+        [
+          {
+            "node": "One per clip",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Job failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One per clip": {
+      "main": [
+        [
+          {
+            "node": "Loop clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop clips": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Caption request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Caption request": {
+      "main": [
+        [
+          {
+            "node": "Write caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write caption": {
+      "main": [
+        [
+          {
+            "node": "For the gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "For the gate": {
+      "main": [
+        [
+          {
+            "node": "Caption written?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Caption written?": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assemble",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Assemble",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble": {
+      "main": [
+        [
+          {
+            "node": "Save clip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save clip": {
+      "main": [
+        [
+          {
+            "node": "Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record": {
+      "main": [
+        [
+          {
+            "node": "Loop clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

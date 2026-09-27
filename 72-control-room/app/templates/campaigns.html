@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Campaigns{% endblock %}
+{% block main %}
+<h1>Campaigns</h1>
+{% if error %}<p class="alert danger">{{ error }}</p>{% endif %}
+{% if unmeasured %}<p class="alert warn">Ended without a result: {% for u in unmeasured %}<b>{{ u.name }}</b> ({{ (u.unmeasured or [])|join(', ') }}){% if not loop.last %}; {% endif %}{% endfor %}.</p>{% endif %}
+{% for r in rows %}
+<section class="panel">
+  <h2>{{ r.c.name }} <span class="chip">{{ r.c.status }}</span></h2>
+  <p class="small muted">{{ r.c.start_date }} → {{ r.c.end_date }} · {{ (r.c.channels or [])|join(', ') }} · {{ r.c.goal_text }}</p>
+  {% if r.s %}
+    {% for k in r.s.kpis %}
+    <div class="kpi state-{{ k.state }}">
+      <div class="kpi-row"><b>{{ k.metric }}</b> <span>{{ k.actual_value if k.actual_value is not none else '—' }} / {{ k.target_value }}</span> <span class="chip">{{ k.state|replace('_', ' ') }}</span></div>
+      <div class="meter"><span style="width: {{ [k.progress_pct or 0, 100]|min }}%"></span>{% if r.s.elapsed_pct is defined %}<i style="left: {{ r.s.elapsed_pct }}%" title="time elapsed"></i>{% endif %}</div>
+    </div>
+    {% else %}<p class="muted small">No KPIs.</p>{% endfor %}
+    {% if r.s.assets %}<p class="small">Content: {% for st, n in r.s.assets.items() %}{{ n }} {{ st|replace('_', ' ') }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  {% else %}<p class="muted small">Scorecard not available.</p>{% endif %}
+</section>
+{% else %}{% if not error %}<p class="muted">No planned, active or paused campaigns.</p>{% endif %}{% endfor %}
+{% endblock %}

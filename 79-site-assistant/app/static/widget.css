@@ -1,0 +1,79 @@
+/* Site assistant widget (79). Override the variables on .sa-root to match your site. */
+.sa-root {
+  --sa-accent: #1f4f46;
+  --sa-accent-text: #ffffff;
+  --sa-bg: #ffffff;
+  --sa-text: #1d1d1d;
+  --sa-muted: #555555;
+  --sa-border: #d0d0d0;
+  --sa-user: #e8f0ee;
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--sa-text);
+}
+.sa-root *, .sa-root *::before, .sa-root *::after { box-sizing: border-box; }
+.sa-root [hidden] { display: none !important; }
+.sa-launcher, .sa-button {
+  background: var(--sa-accent);
+  color: var(--sa-accent-text);
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.sa-button { border-radius: 8px; padding: 8px 14px; }
+.sa-launcher:focus-visible, .sa-button:focus-visible, .sa-person:focus-visible, .sa-close:focus-visible,
+.sa-root input:focus-visible, .sa-root textarea:focus-visible, .sa-log:focus-visible, .sa-book:focus-visible {
+  outline: 3px solid #f2a900;
+  outline-offset: 2px;
+}
+.sa-panel {
+  width: 360px;
+  max-height: min(620px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  background: var(--sa-bg);
+  border: 1px solid var(--sa-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.sa-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--sa-accent); color: var(--sa-accent-text); }
+.sa-title { margin: 0; font-size: 16px; }
+.sa-close { background: transparent; color: inherit; border: 0; font-size: 26px; line-height: 1; cursor: pointer; min-width: 44px; min-height: 44px; }
+.sa-disclosure { margin: 0; padding: 8px 12px; font-size: 13px; color: var(--sa-muted); border-bottom: 1px solid var(--sa-border); background: #f7f7f5; }
+.sa-log { flex: 1 1 auto; overflow-y: auto; padding: 12px; min-height: 72px; }
+.sa-header, .sa-disclosure, .sa-status, .sa-form, .sa-person { flex: none; }
+.sa-msg { margin: 0 0 10px; max-width: 88%; }
+.sa-msg .sa-text { margin: 0; padding: 8px 11px; border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sa-bot .sa-text { background: #f1f1ef; }
+.sa-user { margin-left: auto; }
+.sa-user .sa-text { background: var(--sa-user); }
+.sa-sources { margin: 4px 2px 0; font-size: 12px; color: var(--sa-muted); }
+.sa-book { display: inline-block; margin-top: 6px; color: var(--sa-accent); font-weight: 600; }
+.sa-status { margin: 0; padding: 0 12px; min-height: 1.2em; font-size: 13px; color: var(--sa-muted); }
+.sa-consent { flex: 0 1 auto; display: grid; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--sa-border); overflow-y: auto; max-height: 50%; }
+.sa-consent-intro { margin: 0; font-size: 14px; }
+.sa-consent label { font-size: 13px; }
+.sa-consent input[type="email"], .sa-consent input[type="text"] { font: inherit; padding: 8px; border: 1px solid var(--sa-border); border-radius: 6px; }
+.sa-agree { display: flex; gap: 8px; align-items: flex-start; }
+.sa-agree input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+.sa-form { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--sa-border); }
+.sa-form textarea { flex: 1; font: inherit; resize: none; padding: 8px; border: 1px solid var(--sa-border); border-radius: 6px; }
+.sa-person { margin: 0 12px 12px; background: transparent; color: var(--sa-accent); border: 2px solid var(--sa-accent); border-radius: 8px; padding: 8px; font: inherit; font-weight: 600; cursor: pointer; min-height: 44px; }
+.sa-button:disabled, .sa-person:disabled { opacity: 0.6; cursor: wait; }
+.sa-visually-hidden { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; white-space: nowrap; }
+@media (max-width: 480px) {
+  .sa-root { right: 0; bottom: 0; left: 0; }
+  .sa-launcher { position: fixed; right: 16px; bottom: 16px; }
+  .sa-panel { position: fixed; inset: 0; width: 100%; max-height: none; height: 100%; border-radius: 0; border: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sa-log { scroll-behavior: smooth; }
+}

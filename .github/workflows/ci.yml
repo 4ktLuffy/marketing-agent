@@ -49,6 +49,11 @@ jobs:
           - 67-gsc-sync
           - 70-customer-language
           - 71-video-assembly
+          - 72-control-room
+          - 73-clip-finder
+          - 78-ad-library-sync
+          - 79-site-assistant
+          - 80-lead-hub
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -67,7 +72,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import glob, json
-          files = sorted(glob.glob("*-wf-*/workflow.json"))
+          files = sorted(glob.glob("*-wf-*/workflow.json") + glob.glob("[0-9][0-9]-*/n8n/workflow.json"))
           ids = set()
           for f in files:
               wf = json.load(open(f))

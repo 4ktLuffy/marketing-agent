@@ -33,7 +33,8 @@ sed "s|http://host.docker.internal:11434|$OLLAMA_URL|" n8n/credentials/ollama.js
   | dc sh -c 'cat > /tmp/ollama-cred.json && n8n import:credentials --input=/tmp/ollama-cred.json && rm /tmp/ollama-cred.json'
 
 shopt -s nullglob
-workflows=(../[0-9][0-9]-wf-*/workflow.json)
+# NN-wf-* deploys, then workflows that ship inside a service repo (72-control-room/n8n).
+workflows=(../[0-9][0-9]-wf-*/workflow.json ../[0-9][0-9]-*/n8n/workflow.json)
 [ ${#workflows[@]} -gt 0 ] || { echo "no workflow repos found next to this one (run scripts/clone-all.sh)"; exit 1; }
 
 # Import sub-workflows before the workflows that call them.
@@ -68,4 +69,5 @@ echo "==> restart n8n"
 docker compose restart n8n >/dev/null
 echo "done. Chat: ${N8N_PUBLIC_URL:-http://localhost:5678/}webhook/mkt-marketing-chat/chat"
 echo "      Approval form: ${N8N_PUBLIC_URL:-http://localhost:5678/}form/mkt-content-approval"
+echo "      Control room (72): http://localhost:8172 (or your HTTPS address for it)"
 echo "      Knowledge form: ${N8N_PUBLIC_URL:-http://localhost:5678/}form/mkt-knowledge-add"

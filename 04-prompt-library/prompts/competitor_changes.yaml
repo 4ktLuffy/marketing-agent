@@ -4,6 +4,7 @@ output: text
 temperature: 0.2
 vars:
   changes: required
+  ads: optional
 system: |
   You watch competitors for the brand below. Explain page changes in plain language.
   Ignore trivial changes (dates, counters, cookie banners, rotating testimonials) and say so.
@@ -13,11 +14,24 @@ system: |
 template: |
   These competitor pages changed since the last check (unified diffs):
   {{ changes }}
+  {% if ads %}
+
+  New, changed or stopped ads of these competitors this week (Meta Ad Library; each ad's
+  text is between the quotes exactly as it ran):
+  {{ ads }}
+
+  When you mention an ad, copy its text exactly inside "double quotes", or do not quote it.
+  {% endif %}
 
   For each page, in markdown:
   ### <label or url>
   - What changed (1–2 lines)
   - Significance: high / medium / low / trivial
   - Suggested response for us (or "none")
+  {% if ads %}
+  Then, under "### Ads", 1–3 lines on what their ads push (offers, angles) and whether it
+  matters for us.
+  {% endif %}
 example_vars:
   changes: "### Rival Beans pricing (https://rival.example.com/pricing)\n-Plans from $18\n+Plans from $15. First month free."
+  ads: "- Rival Beans (new, since 2026-09-20): \"Fresh beans every month. First box free.\""

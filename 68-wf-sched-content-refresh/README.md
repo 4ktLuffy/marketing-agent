@@ -1,6 +1,6 @@
 # 68 · Content refresh
 
-Deploy **68 of 71** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **68 of 81** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Monday it finds the pages that are losing Google clicks and drafts a refresh plan for each (refreshing old posts is capability #1 in the night-5 research: HubSpot doubled leads that way). It syncs Search Console (67 `POST /sync`, 28 days vs the 28 before) and reads `GET /pages/declining` (at least `REFRESH_MIN_CLICKS` clicks before and a `REFRESH_MIN_DROP` fall). A page with a calendar item noted `refresh of <url> (` created in the last 60 days is skipped, and at most `REFRESH_PER_WEEK` pages are refreshed per 7 days, most clicks lost first. One page at a time: it reads the live page (07 `/extract`, text cut to 12,000 characters) and the queries it used to win (67 `/pages/{url}/queries`, previous window, with current numbers beside), and the LLM (prompt `content_refresh`, with the approved facts) writes a diagnosis, a new title (≤ 60) and meta description (≤ 155), 3–8 concrete changes (`add_section`, `rewrite`, `update_fact`, `remove`, `add_faq`, each with where, what and a why) and up to 4 answer-first FAQs.
 

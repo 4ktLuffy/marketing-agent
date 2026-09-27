@@ -1,0 +1,80 @@
+name: lead_enrich
+description: What an inbound lead's company does, from its own website pages only, as JSON with a verbatim quote for every statement.
+output: json
+temperature: 0.1
+vars:
+  domain: required
+  pages: required
+# Used by 80 lead-hub after a person filled in a form or talked to the site assistant.
+# The pages are the lead's OWN company homepage and about page (fetched by 07, robots.txt
+# respected). 80 drops every fact whose quote is not an exact part of the pages, then sends
+# the rest to the claim checker (44) with the page text as context and drops what it flags.
+# No brand here on purpose: this describes THEIR company, not ours.
+system: |
+  You read a company's own website and write down what it says about itself, for a sales
+  team that must not rely on guesses. You never invent, infer or estimate anything. If a
+  page does not say it, you leave it out. Every statement comes with a quote copied word
+  for word from the pages.
+template: |
+  Company website: {{ domain }}
+
+  Pages (each starts with SOURCE and its URL):
+  """
+  {{ pages }}
+  """
+
+  Write JSON:
+  - industry: the industry or market in a few words, only if the pages make it clear
+    (for example "accounting software" or "outdoor furniture retail"); otherwise "".
+  - sells: what they sell or offer, in one short phrase, only if the pages say it; otherwise "".
+  - facts: at most 6 short sentences about the company, each starting with "The company",
+    each stating ONE thing the pages say (what they sell, who their customers are, where
+    they are based, how they work). Each fact has a "quote": an exact sentence or phrase
+    copied from the pages that states it, character for character.
+  - size_hints: statements about the company's size ONLY if the pages state them in words
+    (number of employees, team size, offices, customers served). Each with the exact
+    "quote". Never estimate size from anything else. Usually this list is empty.
+  - source_url for each fact and size hint: the SOURCE URL of the page the quote is from.
+
+  Rules:
+  - Copy quotes exactly. Do not fix typos, shorten mid-sentence or join two sentences.
+  - No names of people, no email addresses, no phone numbers.
+  - No opinions ("leading", "innovative") unless you quote them as the company's own words
+    in a fact like "The company describes itself as ...".
+  - No revenue, funding, headcount or growth numbers unless a quote states them.
+  - If the pages are empty, a login page, a parked domain or an error page, return
+    industry "", sells "", facts [] and size_hints [].
+example_vars:
+  domain: acme-robotics.example
+  pages: |
+    SOURCE https://acme-robotics.example/
+    Acme Robotics builds warehouse picking robots for mid-sized distributors. Our robots work alongside your existing shelving.
+
+    SOURCE https://acme-robotics.example/about
+    Founded in Leeds in 2019. Today our team of 45 engineers and operators supports customers in 12 countries.
+schema:
+  type: object
+  required: [industry, sells, facts, size_hints]
+  properties:
+    industry: {type: string, maxLength: 120}
+    sells: {type: string, maxLength: 300}
+    facts:
+      type: array
+      maxItems: 6
+      items:
+        type: object
+        required: [text, quote, source_url]
+        properties:
+          text: {type: string, minLength: 5, maxLength: 250}
+          quote: {type: string, minLength: 3, maxLength: 400}
+          source_url: {type: string, maxLength: 500}
+    size_hints:
+      type: array
+      maxItems: 3
+      items:
+        type: object
+        required: [statement, quote, source_url]
+        properties:
+          statement: {type: string, minLength: 3, maxLength: 200}
+          quote: {type: string, minLength: 3, maxLength: 400}
+          source_url: {type: string, maxLength: 500}

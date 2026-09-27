@@ -1,6 +1,6 @@
 # 40 · Weekly content planner
 
-Deploy **40 of 71** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **40 of 81** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Monday it plans the following week, using which channels and posts got the most clicks recently (45 insights): a mix of formats for each channel, avoiding angles published recently. The plan goes into the calendar as `idea` items with dates. Ask the chat agent to write any of them. A channel and day that already has a content-engine item (64, note `engine pillar #P`) gets no planner idea, so the two don't stack.
 

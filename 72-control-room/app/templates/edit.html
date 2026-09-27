@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Edit #{{ c.id }}{% endblock %}
+{% block main %}
+<p><a href="/">← Queue</a></p>
+<h1>Edit &amp; approve #{{ c.id }}</h1>
+<div class="chips"><span class="chip net-chip net-{{ c.channel }}">{{ c.channel }}</span>{% if c.hook %}<span class="chip">hook: {{ c.hook }}</span>{% endif %}<span class="chip" style="background: {{ STATUS_COLORS.get(c.item.status, '#5b6b82') }}; color: #fff">{{ c.item.status }}</span></div>
+{% if c.item.status != 'in_review' %}
+  <p class="alert warn">Only items in review can be approved; #{{ c.id }} is <b>{{ c.item.status }}</b>. {% if pending %}A decision on it is being sent.{% endif %}</p>
+{% elif pending %}
+  <p class="alert warn">A decision on #{{ c.id }} is waiting to be sent. Undo it in the queue first.</p>
+{% else %}
+{% if c.flags %}<ul class="flags">{% for f in c.flags %}<li class="flag {{ f.level }}">{{ f.text }}</li>{% endfor %}</ul>{% endif %}
+{% if c.video or c.channel == 'video' %}
+<p class="alert info">This is a video script. When you change it, the video is rendered again (71) before the item is approved. If the script can't be read or rendered, the item goes back to draft with your edit saved, exactly like the approval form.</p>
+{% endif %}
+<form method="post" action="/decide" class="stack edit-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="id" value="{{ c.id }}">
+  <input type="hidden" name="decision" value="edit">
+  <label for="text">Text</label>
+  <textarea id="text" name="text" rows="14" data-counter data-channel="{{ c.channel }}"
+    {% if rule.limit %}data-limit="{{ rule.limit }}"{% endif %}
+    {% if rule.url_length %}data-url-length="{{ rule.url_length }}"{% endif %}
+    {% if rule.max_hashtags %}data-max-hashtags="{{ rule.max_hashtags }}"{% endif %}
+    {% if fold %}data-fold="{{ fold }}"{% endif %}>{{ c.item.body or '' }}</textarea>
+  <p class="counter small" aria-live="polite" id="counter">{% if rule.limit %}limit {{ rule.limit }} ({{ c.channel }}, from platform rules){% else %}no length limit known for {{ c.channel }}{% endif %}</p>
+  {% if fold %}<div class="fold-preview small"><span class="muted">What the feed shows before “…see more”:</span><div class="fold-text"></div></div>{% endif %}
+  <label>Publish at (UTC) <input type="datetime-local" name="publish_at" value="{{ (c.item.scheduled_at or '')[:16] }}"></label>
+  <p class="small muted">Blank: the item's current time, or the next full hour.</p>
+  <label>Why did you change it? (optional, teaches the agent) <input name="reason" maxlength="500"></label>
+  <div class="actions">
+    <button class="btn approve big" type="submit">Save &amp; approve</button>
+    <a class="btn ghost" href="/">Cancel</a>
+  </div>
+</form>
+{% endif %}
+<details><summary>Current preview</summary>{% include "_preview.html" %}</details>
+{% endblock %}

@@ -626,3 +626,110 @@ def test_replan_returns_the_calendar_items_of_removed_slots():
     again = plan(p["id"], start_date="2026-10-05").json()
     assert again["removed_calendar_item_ids"] == [501, 502]   # not the drafted one, not slots without an item
     assert plan(p["id"], start_date="2026-10-05").json()["removed_calendar_item_ids"] == []
+
+
+# ---------- experiments (45): arms on slots
+
+
+from app.main import assign_arms  # noqa: E402
+
+CAMPAIGNS = "http://campaigns.test"
+
+
+def hook_exp(eid=7, channels=("x",), variable="hook_style", values=("question", "fact_led")):
+    return {"id": eid, "variable": variable, "channels": list(channels), "status": "running",
+            "arms": [{"label": "A", "value": values[0], "brief": None},
+                     {"label": "B", "value": values[1], "brief": "open with a number"}]}
+
+
+def test_arms_balanced_by_weekday_hour_and_overall():
+    slots, _ = plan_slots(channels=["x", "linkedin"], cadence={"x": 7, "linkedin": 3}, start=date(2026, 10, 5),
+                          weeks=4, atoms=fake_atoms(40), kept=[], promo_max=0.2, seed=3, experiments=[hook_exp()])
+    xs = [s for s in slots if s["channel"] == "x"]
+    assert all(s["experiment"]["id"] == 7 for s in xs)
+    assert all("experiment" not in s for s in slots if s["channel"] == "linkedin")
+    total = Counter(s["experiment"]["arm"] for s in xs)
+    assert abs(total["A"] - total["B"]) <= 1
+    for wd in range(7):
+        c = Counter(s["experiment"]["arm"] for s in xs if date.fromisoformat(s["date"]).weekday() == wd)
+        assert abs(c["A"] - c["B"]) <= 1, (wd, c)
+    # the hook is forced by the arm, and an (atom, hook) pair still never repeats
+    assert all(s["hook_style"] == ("question" if s["experiment"]["arm"] == "A" else "fact_led") for s in xs)
+    assert len({(s["atom_id"], s["hook_style"]) for s in slots}) == len(slots)
+    # the order is random, not always A first
+    firsts = set()
+    for seed in range(8):
+        sl, _ = plan_slots(channels=["x"], cadence={"x": 7}, start=date(2026, 10, 5), weeks=1, atoms=fake_atoms(20),
+                           kept=[], promo_max=0.2, seed=seed, experiments=[hook_exp()])
+        firsts.add(sl[0]["experiment"]["arm"])
+    assert firsts == {"A", "B"}
+
+
+def test_arms_count_kept_slots_and_split_two_experiments():
+    kept = [{"channel": "x", "date": "2026-10-05", "time_utc": "09:00", "atom_id": 1, "hook_style": "question",
+             "promo": False, "experiment_id": 7, "arm": "A"}]
+    sl, _ = plan_slots(channels=["x"], cadence={"x": 1}, start=date(2026, 10, 5), weeks=1, atoms=fake_atoms(20),
+                       kept=kept, promo_max=0.2, seed=0, experiments=[hook_exp()])
+    assert sl == []   # the kept slot fills the week
+    slots = [{"date": f"2026-10-{5 + i:02d}", "time_utc": "09:00", "channel": "x", "format": "post"} for i in range(7)]
+    assign_arms(slots, [hook_exp(7), hook_exp(9, values=("story", "how_to")), hook_exp(11)], [], seed=1)
+    assert Counter(s["experiment"]["id"] for s in slots) == {7: 4, 9: 3}   # at most 2 per channel
+    fmt = [{"date": "2026-10-05", "time_utc": "09:00", "channel": "x", "format": "post"} for _ in range(4)]
+    assign_arms(fmt, [hook_exp(3, variable="format", values=("post", "thread"))], [], seed=1)
+    assert sorted(s["format"] for s in fmt) == ["post", "post", "thread", "thread"]
+    tm = [{"date": "2026-10-05", "time_utc": "09:00", "channel": "x", "format": "post"} for _ in range(2)]
+    assign_arms(tm, [hook_exp(4, variable="time", values=("08:00", "18:30"))], [], seed=1)
+    assert sorted(s["time_utc"] for s in tm) == ["08:00", "18:30"]
+
+
+def test_plan_assigns_arms_and_reports_them_to_45(monkeypatch, ollama):
+    monkeypatch.setenv("CAMPAIGNS_URL", CAMPAIGNS)
+    import respx as _respx
+    router = _respx.mock(assert_all_called=False)
+    with router:
+        router.post(f"{OLLAMA}/api/embed").side_effect = httpx.ConnectError("down")
+        router.get(f"{CAMPAIGNS}/experiments").mock(return_value=httpx.Response(200, json=[hook_exp()]))
+        assign = router.post(f"{CAMPAIGNS}/experiments/7/assign").mock(
+            return_value=httpx.Response(200, json={"experiment_id": 7, "status": "running"}))
+        p = make_pillar(channels=["linkedin", "x"])
+        add_atoms(p["id"], atoms(30))
+        r = plan(p["id"], start_date="2026-10-05", weeks=2)
+        assert r.status_code == 200, r.text
+        out = r.json()
+        xs = [s for s in out["slots"] if s["channel"] == "x"]
+        assert all(s["experiment_id"] == 7 and s["arm"] in ("A", "B") for s in xs)
+        assert xs[0]["experiment"]["variable"] == "hook_style"
+        assert out["experiments"][0]["assigned"] == {"A": 7, "B": 7} and out["experiments_error"] is None
+        sent = __import__("json").loads(assign.calls[0].request.content)
+        assert sorted(x["slot_id"] for x in sent["slots"]) == sorted(s["id"] for s in xs)
+        assert assign.calls[0].request.headers["X-API-Key"] == KEY
+        assert router.routes[1].calls[0].request.url.params["status"] == "approved,running"
+        # a re-plan tells 45 which slots went away
+        old_ids = sorted(s["id"] for s in xs)
+        again = plan(p["id"], start_date="2026-10-05", weeks=2).json()
+        assert sorted(__import__("json").loads(assign.calls[1].request.content)["remove_slot_ids"]) == old_ids
+        # the slot as the drafter reads it
+        new_x = next(s for s in again["slots"] if s["channel"] == "x")
+        got = client.get(f"/slots/{new_x['id']}").json()
+        assert got["experiment"] == {"id": 7, "variable": "hook_style", "arm": got["arm"],
+                                     "value": "question" if got["arm"] == "A" else "fact_led",
+                                     "brief": None if got["arm"] == "A" else "open with a number"}
+
+
+def test_plan_without_45_or_with_45_refusing(monkeypatch):
+    p = make_pillar(channels=["x"])
+    add_atoms(p["id"], atoms(20))
+    out = plan(p["id"], weeks=1).json()          # CAMPAIGNS_URL unset: no experiments at all
+    assert out["experiments"] == [] and all(s["experiment"] is None for s in out["slots"])
+    monkeypatch.setenv("CAMPAIGNS_URL", CAMPAIGNS)
+    import respx as _respx
+    with _respx.mock(assert_all_called=False) as router:
+        router.get(f"{CAMPAIGNS}/experiments").mock(return_value=httpx.Response(200, json=[hook_exp()]))
+        router.post(f"{CAMPAIGNS}/experiments/7/assign").mock(return_value=httpx.Response(409, json={"detail": "stopped"}))
+        out = plan(p["id"], weeks=1).json()
+        assert all(s["experiment_id"] is None for s in out["slots"])
+        assert "409" in out["experiments"][0]["error"]
+    with _respx.mock(assert_all_called=False) as router:
+        router.get(f"{CAMPAIGNS}/experiments").mock(side_effect=httpx.ConnectError("down"))
+        out = plan(p["id"], weeks=1).json()
+        assert out["experiments"] == [] and "ConnectError" in out["experiments_error"]

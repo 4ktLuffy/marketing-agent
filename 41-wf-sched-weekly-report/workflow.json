@@ -371,12 +371,95 @@
       }
     },
     {
+      "id": "69e5ba7c-cd96-5788-bfcf-d269972d71bb",
+      "name": "Experiments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/experiments",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00ef2cf9-cbe7-51e6-aa78-fe75686142d1",
+      "name": "Experiments section",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const listOf = n => { try { const raw = [].concat($(n).first().json.body ?? []);\n  return (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(x => x && x.id); } catch (e) { return []; } };\n\n// Appended to the next-actions markdown: running, decided and no-difference experiments.\nconst md = $('Check actions').first().json.markdown || '';\nconst exps = listOf('Experiments');\nif (!exps.length) return [{ json: { ...$('Check actions').first().json, markdown: md } }];\nconst arms = e => (e.arms || []).map(a => `${a.label} ${a.value}`).join(' vs ');\nconst run = exps.filter(e => e.status === 'running');\nconst dec = exps.filter(e => e.status === 'decided').sort((a, b) => String(b.decided_at).localeCompare(String(a.decided_at))).slice(0, 8);\nconst wait = exps.filter(e => ['proposed', 'approved'].includes(e.status));\nconst lines = ['### Experiments'];\nif (run.length) lines.push('Running:', '', ...run.map(e => `- #${e.id} ${e.variable} on ${e.channels.join(', ')}: ${arms(e)}; ` +\n  `${e.assigned.A} + ${e.assigned.B} posts assigned, next look ${String(e.next_look_at || '?').slice(0, 10)}`), '');\nconst verdict = e => e.decision === 'winner' ? `**${e.winner.value}** beat ${e.loser.value}`\n  : e.decision === 'no_practical_difference' ? 'no practical difference: the choice is free' : 'inconclusive';\nconst winners = dec.filter(e => e.decision === 'winner'), nodiff = dec.filter(e => e.decision !== 'winner');\nif (winners.length) lines.push('Decided:', '', ...winners.map(e => `- #${e.id} ${e.variable} on ${e.channels.join(', ')}: ${verdict(e)} (${String(e.decided_at).slice(0, 10)}; a rule needs a second experiment that agrees)`), '');\nif (nodiff.length) lines.push('No difference or inconclusive:', '', ...nodiff.map(e => `- #${e.id} ${e.variable} on ${e.channels.join(', ')}, ${arms(e)}: ${verdict(e)} (${String(e.decided_at).slice(0, 10)})`), '');\nif (wait.length) lines.push(`${wait.length} proposed or approved, not started yet.`);\nreturn [{ json: { ...$('Check actions').first().json, markdown: [md, lines.join('\\n').trim()].filter(Boolean).join('\\n\\n') } }];\n"
+      }
+    },
+    {
+      "id": "bccc980c-a2eb-5927-9079-039c47f38bff",
+      "name": "Competitor suggestions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AD_LIBRARY_URL ? $env.AD_LIBRARY_URL.replace(/\\/+$/, '') + '/suggestions/scan' : $env.CAMPAIGNS_URL + '/health' }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "fb44363a-b492-5222-a003-2bd6946e9a58",
+      "name": "Suggestions section",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Experiments section').first().json;\nconst r = $input.first().json || {};\nconst b = $env.AD_LIBRARY_URL && r.statusCode >= 200 && r.statusCode < 300 && r.body && typeof r.body === 'object' ? r.body : null;\nif (!b || !b.pending) return [{ json: prev }];\nconst fresh = (b.new || []).map(n => `${n.name} (${n.mentions} mentions)`);\nconst lines = ['### Competitor suggestions',\n  `${b.pending} website(s) our reviews, social mentions or trend digests keep naming are waiting for you` +\n  (fresh.length ? `; new this week: ${fresh.slice(0, 5).join(', ')}` : '') + '.',\n  'See them with the quotes: `GET /suggestions` on ad-library-sync (78). Track one: ' +\n  '`POST /competitors/<name>/status {\"status\":\"active\"}`; drop it: `{\"status\":\"ignored\"}`.'];\nreturn [{ json: { ...prev, markdown: [prev.markdown, lines.join('\\n')].filter(Boolean).join('\\n\\n') } }];\n"
+      }
+    },
+    {
       "id": "7869eea3-71cd-54f6-98c4-19a0dbbb0349",
       "name": "Render report",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3840,
+        4800,
         300
       ],
       "parameters": {
@@ -394,7 +477,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4080,
+        5040,
         300
       ],
       "parameters": {
@@ -407,7 +490,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4320,
+        5280,
         300
       ],
       "parameters": {
@@ -420,7 +503,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4560,
+        5520,
         300
       ],
       "parameters": {
@@ -439,7 +522,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4560,
+        5520,
         480
       ],
       "parameters": {
@@ -452,7 +535,7 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        4800,
+        5760,
         480
       ],
       "parameters": {
@@ -643,6 +726,50 @@
       ]
     },
     "Check actions": {
+      "main": [
+        [
+          {
+            "node": "Experiments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Experiments": {
+      "main": [
+        [
+          {
+            "node": "Experiments section",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Experiments section": {
+      "main": [
+        [
+          {
+            "node": "Competitor suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Competitor suggestions": {
+      "main": [
+        [
+          {
+            "node": "Suggestions section",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggestions section": {
       "main": [
         [
           {

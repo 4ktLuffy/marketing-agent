@@ -1,6 +1,6 @@
 # link-shortener
 
-Deploy **16 of 71** of the local-LLM marketing agent. It turns long UTM links into short ones
+Deploy **16 of 81** of the local-LLM marketing agent. It turns long UTM links into short ones
 on your own domain and counts clicks per day and per referring site, so the publisher (39) can
 post tidy links and the weekly report can show what got clicked. It stores no IP addresses.
 It uses no LLM.
@@ -36,7 +36,7 @@ DB_PATH=./links.sqlite INTERNAL_API_KEY=change-me uvicorn app.main:app --port 81
 | GET | `/health` | — | `{"status":"ok"}` |
 | POST | `/links` 🔑 | `{"url","slug"?}` | 201 `{"slug","short_url","url"}` |
 | GET | `/{slug}` | — | 302 to the long URL, records a click |
-| GET | `/links` | `?utm_campaign=&utm_content=&limit=100` | `[{"slug","short_url","url","clicks","created_at"}]`, newest first |
+| GET | `/links` | `?utm_campaign=&utm_content=&limit=100&window_hours=` | `[{"slug","short_url","url","clicks","created_at"}]`, newest first; with `window_hours` each link also has `clicks_window` = clicks in the first N hours after the link was created (45 experiments use 72) |
 | GET | `/links/{slug}/stats` | — | `{"slug","url","clicks","by_day":{"YYYY-MM-DD":n},"referrers":{"host":n}}` |
 
 🔑 = header `X-API-Key: $INTERNAL_API_KEY`. Wrong or missing key → 401. If the service has

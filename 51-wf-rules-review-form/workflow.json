@@ -46,22 +46,13 @@
       ],
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.LEARNING_URL }}/rules",
+        "url": "={{ $env.LEARNING_URL }}/rules/review",
         "options": {
           "response": {
             "response": {
               "fullResponse": true
             }
           }
-        },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "status",
-              "value": "pending"
-            }
-          ]
         }
       }
     },
@@ -75,7 +66,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst rules = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(r => r && r.id).slice(0, 15);\nconst fields = [];\nfor (const r of rules) {\n  fields.push({ fieldType: 'html', html: `<p><b>${r.scope !== 'all' ? '[' + esc(r.scope) + '] ' : ''}${esc(r.text)}</b></p>` });\n  fields.push({ fieldLabel: `Rule #${r.id}`, fieldType: 'dropdown', requiredField: true,\n    fieldOptions: { values: [{ option: 'Decide later' }, { option: 'Keep' }, { option: 'Reject' }] } });\n}\nreturn [{ json: { count: rules.length, fields } }];\n"
+        "jsCode": "const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst rules = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(r => r && r.id).slice(0, 15);\nconst fields = [];\nfor (const r of rules) {\n  const ev = r.source === 'experiment' ? `<br><small>From experiments: ${r.support} agree (#${(r.source_experiment_ids || []).join(', #')}), ${r.contradicts} disagree. ` +\n    (r.evidence || []).map(e => esc(e.summary || '')).filter(Boolean).slice(-2).join(' / ') + '</small>' : '';\n  fields.push({ fieldType: 'html', html: `<p><b>${r.scope !== 'all' ? '[' + esc(r.scope) + '] ' : ''}${esc(r.text)}</b>${ev}</p>` });\n  fields.push({ fieldLabel: `Rule #${r.id}`, fieldType: 'dropdown', requiredField: true,\n    fieldOptions: { values: [{ option: 'Decide later' }, { option: 'Keep' }, { option: 'Reject' }] } });\n}\nreturn [{ json: { count: rules.length, fields } }];\n"
       }
     },
     {

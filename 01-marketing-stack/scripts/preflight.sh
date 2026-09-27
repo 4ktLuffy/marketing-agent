@@ -34,7 +34,7 @@ if [ ! -f .env ]; then
   fail ".env missing: cp .env.example .env and fill it in"
 else
   load_env
-  for v in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD; do
+  for v in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD CONTROL_PASSWORD CONTROL_ROOM_KEY; do
     val="${!v:-}"
     if [ -z "$val" ] || [[ "$val" == change-me* ]]; then
       fail "$v is empty or still a placeholder (openssl rand -hex 24)"
@@ -47,6 +47,12 @@ else
   if [ -n "${APPROVER_KEY:-}" ] && [ "${APPROVER_KEY:-}" = "${INTERNAL_API_KEY:-}" ]; then
     fail "APPROVER_KEY must differ from INTERNAL_API_KEY (it is what stops services approving copy)"
   fi
+  # The control room's key (72) only opens n8n's decision webhook; it must not double as another key.
+  for other in INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD CONTROL_PASSWORD; do
+    if [ -n "${CONTROL_ROOM_KEY:-}" ] && [ "${CONTROL_ROOM_KEY:-}" = "${!other:-}" ]; then
+      fail "CONTROL_ROOM_KEY must differ from $other"
+    fi
+  done
 fi
 
 echo "== Repositories next to this one"
@@ -93,7 +99,7 @@ if docker compose config -q >/dev/null 2>&1; then pass "docker-compose.yml valid
 
 echo "== Ports (bound to 127.0.0.1)"
 busy=""
-for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146 8147 8154 8155 8158 8161 8162 8163 8167 8170 8171; do
+for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146 8147 8154 8155 8158 8161 8162 8163 8167 8170 8171 8172 8173 8178 8179 8180; do
   if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then busy="$busy $p"; fi
 done
 [ -z "$busy" ] && pass "all ports free" || warn "already in use:$busy (fine if it's this stack already running)"

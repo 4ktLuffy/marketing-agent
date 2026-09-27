@@ -1,0 +1,10 @@
+fastapi==0.141.1
+uvicorn==0.53.0
+pydantic==2.13.5
+python-multipart==0.0.32
+httpx==0.28.1
+imageio-ffmpeg==0.6.0
+faster-whisper==1.2.1
+scenedetect==0.7.1
+opencv-python==5.0.0.93
+pillow==12.3.0

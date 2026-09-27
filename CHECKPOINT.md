@@ -4,7 +4,7 @@ Nothing has been deployed, pushed or committed. Everything is local files.
 
 ## State in one line
 
-71 deploys exist (54–71 added in Phase 3). All unit tests pass and the compose file validates (34 services).
+81 deploys exist (54–81 added in Phase 3). All unit tests pass and the compose file validates (39 services).
 Phase 2 is **built and verified end to end**, including the approval form, rewrites,
 learning, publishing and measurement (resumed session, see "Resumed" below).
 

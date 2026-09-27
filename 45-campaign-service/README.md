@@ -1,6 +1,6 @@
 # campaign-service
 
-Deploy **45 of 71** of the local-LLM marketing agent. It holds each campaign: the goal,
+Deploy **45 of 81** of the local-LLM marketing agent. It holds each campaign: the goal,
 audience, channels, dates and the KPI targets, set before anything ships. It builds UTM
 links for the campaign, pulls actual results from the link shortener (16) and analytics (20),
 and returns a scorecard that says which targets are met, on track or behind. It uses no LLM.
@@ -52,6 +52,14 @@ INTERNAL_API_KEY=change-me DB_PATH=./campaigns.sqlite uvicorn app.main:app --por
 | GET | `/report/unmeasured` | — | `[campaign + "unmeasured": [metric]]` |
 | GET | `/insights` | `?days=90` | `{"by_channel","top_posts","errors"}` |
 | GET | `/insights/hooks` | `?days=90&explore=0.2&seed=` | `{"recommended","explored","styles","unlabeled_posts","method","errors"}` |
+| POST | `/experiments` 🔑 | `{"hypothesis","variable","arms":[{"value","brief"?}×2],"channels":[],"min_posts_per_arm"?:12,"max_weeks"?:8,"rope"?:0.15,"created_by"?:"human"\|"agent"}` | experiment, `201` |
+| GET | `/experiments` | `?status=` (one or a comma list) `&channel=` | `[experiment]` |
+| GET | `/experiments/{id}` | — | experiment |
+| POST | `/experiments/{id}/status` 🔑 | `{"status":"approved"\|"running"\|"stopped","by"?,"reason"?}` (approved also needs `X-Approver-Key`) | experiment |
+| POST | `/experiments/{id}/assign` 🔑 | `{"slots":[{"slot_id","arm","channel","date","time_utc","item_id"?}],"remove_slot_ids":[]}` | `{"experiment_id","status","assigned","removed","by_arm","started_at"}` |
+| GET | `/experiments/{id}/assignments` | — | `[{"arm","slot_id","item_id","channel","date","time_utc","block"}]` |
+| GET | `/experiments/{id}/analysis` | — | analysis at the latest preset look (below) |
+| POST | `/experiments/{id}/decide` 🔑 | — | the analysis, recorded; `409` when no look is due |
 
 A campaign is:
 
@@ -200,6 +208,56 @@ and the error is listed.
     Tests include a simulation (32 posts at 2 clicks/post vs 8 at 6): the better style
     is first in ≥ 90% of seeds (96 of 100); ranking by raw click totals gets 2 of 100.
 
+### Experiments
+
+Fixed two-arm tests of one variable, so a playbook rule rests on a comparison and not on
+noise. Design: `_dev/research/experiment-loop.md` section 5. The agent (workflow 74) or a
+person proposes; a person approves (form 76); the content engine (61) gives the arms to
+planned slots; this service decides, in code, at weekly looks (workflow 75).
+
+- **Experiment**: `{id, hypothesis, variable, channels, metric: "clicks_72h", min_posts_per_arm,
+  max_weeks, rope, status, decision, winner_arm, winner, loser, created_by, approved_by,
+  stop_reason, created_at, approved_at, started_at, decided_at, updated_at,
+  arms: [{label: "A"|"B", value, brief}], assigned: {A, B}, looks: [{look, cutoff, decision}], next_look_at}`.
+- `variable`: `hook_style` (values from the six styles), `format` (`post`, `thread`,
+  `carousel_text`, `blog`, `email`, `video_script`), `cta` and `length` (free text, the
+  drafter follows it), `time` (`HH:MM` UTC). Exactly 2 arms that differ.
+- **Status**: `proposed → approved | stopped`, `approved → running | stopped`,
+  `running → stopped`; `decided` is set only by `/decide`. Approving needs the approver key
+  (`X-Approver-Key` = `APPROVER_KEY`, when set), like approving a post in 19: only n8n holds
+  it. The first `/assign` of an approved experiment starts it (`running`, `started_at`). At
+  most 2 experiments run on one channel (`409` otherwise).
+- **No re-runs**: creating an experiment with the same variable, the same two values and a
+  shared channel is a `409` while the first is proposed, approved or running, or when it was
+  decided `no_practical_difference` (the question is answered). A past `winner` may be run
+  again: that is the replication a rule needs (46).
+- **Metric**: a post is the calendar item its slot became (`item_id`, read from
+  `{ENGINE_URL}/slots/{slot_id}` when the planner did not send it). Its clicks are the
+  `clicks_window` of its short links from `{SHORTENER_URL}/links?window_hours=72`: clicks in
+  the first 72 h after the link was created (39 creates it at publishing), so an old post
+  does not win by age.
+- **Looks**: every `EXPERIMENT_LOOK_DAYS` (7) days from `started_at`, and the last one at
+  `max_weeks`. `/analysis` works on the latest look that has passed, with only the posts
+  whose 72 h window closed before that look (`pending` counts the others). Before the first
+  look it returns `decision: "not_due"` and no numbers: nobody peeks. `/decide` records the
+  due look once (`409` with `next_look_at` otherwise; `502` if the shortener is down) and
+  a recorded look is returned as stored.
+- **Verdict** (`app/expstats.py`, deterministic: fixed seed per experiment and look):
+  clicks of a post ~ Poisson(rate); per arm rate ~ Gamma with a weak prior centred on the
+  pooled clicks per post of both arms (worth `EXPERIMENT_PRIOR_POSTS`, 2 posts), counts
+  divided by the pooled Pearson dispersion (≥ 1) because real posts are overdispersed.
+  20,000 draws give the relative lift `rate_B / rate_A − 1`, its 95 % HDI, `p_b_better` and
+  `expected_loss`. Kruschke's HDI + ROPE rule with ROPE ±`rope`: HDI above +rope or below
+  −rope → `winner`; inside the ROPE → `no_practical_difference`; otherwise `continue`, or
+  `inconclusive` at the last look. No verdict before both arms have `min_posts_per_arm`
+  posts. Anything but `continue` ends the experiment (`decided`).
+- **Simulations** (tests, 200 seeds, 4 posts per arm a week, weekly looks, 8 weeks):
+  a true 2× lift (5 vs 10 clicks per post) is called a winner in 200/200; equal arms are
+  called winners in 1/200 (Poisson clicks) and 4/200 (negative binomial k = 2); looking
+  after every post and stopping at P(B > A) > 95 % calls a false winner in 77/200 and
+  180/200. With overdispersed clicks a 2× lift is found in 113/200 within 8 weeks: most
+  real tests will end `inconclusive`, by design.
+
 ## Configuration
 
 | Env var | Default | Meaning |
@@ -209,6 +267,10 @@ and the error is listed.
 | `SHORTENER_URL` | `http://link-shortener:8000` | Link shortener (16) |
 | `ANALYTICS_URL` | `http://analytics-ingest:8000` | Analytics ingest (20) |
 | `CALENDAR_URL` | `http://content-calendar:8000` | Content calendar (19) |
+| `ENGINE_URL` | `http://content-engine:8000` | Content engine (61): slot → calendar item for experiments |
+| `APPROVER_KEY` | — | When set, approving an experiment also needs header `X-Approver-Key` |
+| `EXPERIMENT_LOOK_DAYS` | `7` | Days between preset looks |
+| `EXPERIMENT_PRIOR_POSTS` | `2` | Weight of the pooled prior, in posts |
 
 ## CI
 

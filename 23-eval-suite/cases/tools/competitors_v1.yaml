@@ -1,0 +1,9 @@
+# Tool-choice set for track_competitor (81), written 2026-09-27 together with the tool, BEFORE
+# any run. Three requests to start tracking a competitor, and two near-misses that ask for a
+# one-off look at a competitor page and must still go to research_url.
+# Run: python -m evalsuite.tools --cases competitors_v1
+- {say: "Start tracking our competitor https://rival-beans.example.com", expect: track_competitor}
+- {say: "Add beanbox.com to our competitor list and keep an eye on their pricing and ads", expect: track_competitor}
+- {say: "Please monitor Trade Coffee (https://www.drinktrade.example.com) as a competitor from now on, we compete in Germany and France", expect: track_competitor}
+- {say: "What is Beanbox saying on their pricing page? https://beanbox.example.com/pricing", expect: research_url}
+- {say: "Analyse this competitor's landing page for weaknesses we could use: https://rival-beans.example.com/offer", expect: research_url}

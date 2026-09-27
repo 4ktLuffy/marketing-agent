@@ -36,7 +36,7 @@
       "parameters": {
         "promptType": "auto",
         "options": {
-          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - video script (Reels/TikTok/Shorts), landing page copy, or a multi-email nurture sequence → write_content_format\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - analyse a competitor or any web page → research_url\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - a month of content / lots of posts over weeks / a content calendar for one topic → plan_content_month\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
+          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - video script (Reels/TikTok/Shorts), landing page copy, or a multi-email nurture sequence → write_content_format\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - cut an existing long video (webinar, talk, podcast; a link to the file) into short clips → clip_video\n  - analyse a competitor or any web page → research_url\n  - start tracking / watching / monitoring a competitor (add it to the competitor list) → track_competitor\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - a month of content / lots of posts over weeks / a content calendar for one topic → plan_content_month\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
           "maxIterations": 6
         }
       }
@@ -611,12 +611,73 @@
       }
     },
     {
+      "id": "93bfc599-df8c-532c-b91b-712a07ec7362",
+      "name": "track_competitor",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        760
+      ],
+      "parameters": {
+        "description": "Start TRACKING a competitor: add it to the competitor list so its key pages (pricing, product) are watched for changes and its ads are followed. Not for a one-off analysis of a page (use research_url).",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf81TrackComp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $fromAI('url', `the competitor's homepage URL`, 'string') }}",
+            "name": "={{ $fromAI('name', `the competitor's name, or empty`, 'string', '') }}",
+            "markets": "={{ $fromAI('markets', `2-letter countries where we compete, comma-separated, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "markets",
+              "displayName": "markets",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
       "id": "facc693a-40b6-54a3-a210-3eedbc734209",
       "name": "keyword_research",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        960,
         760
       ],
       "parameters": {
@@ -655,7 +716,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1140,
         760
       ],
       "parameters": {
@@ -760,7 +821,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1320,
         760
       ],
       "parameters": {
@@ -799,8 +860,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1320,
-        760
+        420,
+        960
       ],
       "parameters": {
         "description": "Plan a new marketing campaign: creates the campaign with targets and a dated plan of posts, then drafts them for review.",
@@ -926,7 +987,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        420,
+        600,
         960
       ],
       "parameters": {
@@ -1042,7 +1103,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        780,
         960
       ],
       "parameters": {
@@ -1114,7 +1175,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        960,
         960
       ],
       "parameters": {
@@ -1156,6 +1217,78 @@
             {
               "id": "context",
               "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "8ea3e3e2-e568-575e-9b33-0353482bc6f8",
+      "name": "clip_video",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1140,
+        960
+      ],
+      "parameters": {
+        "description": "Cut a long video the user already has (webinar, talk, podcast recording) into short vertical clips with captions and save them for approval. Needs a link to the video file. Not for writing a new video script (write_content_format) or turning text or an article into posts (repurpose_content).",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf77ClipsTool"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $fromAI('url', `link to the video or audio file`, 'string') }}",
+            "max_clips": "={{ $fromAI('max_clips', `how many clips, or empty`, 'string', '') }}",
+            "channels": "={{ $fromAI('channels', `comma-separated: instagram, tiktok, youtube, facebook, x, linkedin, or empty`, 'string', '') }}",
+            "topic": "={{ $fromAI('topic', `what the video is about, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "max_clips",
+              "displayName": "max_clips",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channels",
+              "displayName": "channels",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -1292,6 +1425,17 @@
         ]
       ]
     },
+    "track_competitor": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "keyword_research": {
       "ai_tool": [
         [
@@ -1359,6 +1503,17 @@
       ]
     },
     "check_copy": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clip_video": {
       "ai_tool": [
         [
           {

@@ -1,0 +1,53 @@
+name: competitor_brief
+description: A response brief for a competitor's pricing change (match, counter or ignore, with reasons), grounded in our approved facts, as JSON.
+output: json
+temperature: 0.2
+vars:
+  competitor: required
+  url: required
+  diff: required
+  facts: optional
+# Used by 37-wf-sched-competitor-watch when a watched pricing page changed. The workflow
+# drops every reason or point that has a number not in the diff or the facts, and saves the
+# brief as a calendar idea (channel competitor_brief, never published by 39).
+system: |
+  You advise the marketing team of the brand below on how to respond to a competitor. You
+  are calm: most competitor changes need no reaction. You never invent prices, numbers,
+  offers, dates or facts about us or them.
+
+  BRAND
+  {{ brand }}
+template: |
+  {{ competitor }} changed its pricing page {{ url }}.
+  Unified diff of the page text ("-" before, "+" after):
+  """
+  {{ diff }}
+  """
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY facts about us
+  you may use:
+  {{ facts }}
+  {% else %}
+  No approved facts about us are available: do not state any price or offer of ours.
+  {% endif %}
+
+  Write a short response brief:
+  - what_changed: one sentence, using only the diff.
+  - decision: match (do the same), counter (answer with a different strength), or ignore.
+  - reasons: 1 to 3 reasons for the decision. Every number you write must appear in the
+    diff or the facts.
+  - response_points: 0 to 3 concrete things we could say or do (for ignore, usually none).
+    Only use our approved facts; no new discounts or promises.
+example_vars:
+  competitor: Rival Beans
+  url: https://rival.example.com/pricing
+  diff: "-Pro plan $30 per month\n+Pro plan $25 per month. First month free."
+  facts: "- Our Pro plan is $28 per month.\n- Free shipping in the EU."
+schema:
+  type: object
+  required: [what_changed, decision, reasons, response_points]
+  properties:
+    what_changed: {type: string}
+    decision: {type: string, enum: [match, counter, ignore]}
+    reasons: {type: array, minItems: 1, maxItems: 3, items: {type: string}}
+    response_points: {type: array, maxItems: 3, items: {type: string}}

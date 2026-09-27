@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}#{{ c.id }}{% endblock %}
+{% block main %}
+<p><a href="/calendar">← Calendar</a> · <a href="/">Queue</a></p>
+<h1>#{{ c.id }} · {{ c.item.title or '(no title)' }}</h1>
+<div class="chips">
+  <span class="chip" style="background: {{ STATUS_COLORS.get(c.item.status, '#5b6b82') }}; color: #fff">{{ c.item.status }}</span>
+  <span class="chip net-chip net-{{ c.channel }}">{{ c.channel }}</span>
+  {% if c.hook %}<span class="chip">hook: {{ c.hook }}</span>{% endif %}
+  {% if c.pillar_id %}<a class="chip" href="/engine">pillar: {{ c.pillar or ('#' ~ c.pillar_id) }}</a>{% endif %}
+  {% if c.item.campaign_id %}<a class="chip" href="/campaigns">campaign #{{ c.item.campaign_id }}</a>{% elif c.item.campaign %}<span class="chip">campaign: {{ c.item.campaign }}</span>{% endif %}
+</div>
+<dl class="facts">
+  <dt>Scheduled</dt><dd>{{ (c.item.scheduled_at or '—')|replace('T', ' ') }}</dd>
+  {% if c.item.published_at %}<dt>Published</dt><dd>{{ c.item.published_at|replace('T', ' ') }}</dd>{% endif %}
+  <dt>Rejections so far</dt><dd>{% if attempts %}{{ attempts.rejections }}{% else %}<span class="muted">learning service did not answer</span>{% endif %}</dd>
+  <dt>Updated</dt><dd>{{ (c.item.updated_at or '')|replace('T', ' ') }}</dd>
+</dl>
+{% if c.item.status == 'in_review' and not pending %}<p><a class="btn approve" href="/items/{{ c.id }}/edit">Edit &amp; approve</a> <a class="btn" href="/#card-{{ c.id }}">Decide in the queue</a></p>{% endif %}
+{% if c.flags %}<h2>Flags</h2><ul class="flags">{% for f in c.flags %}<li class="flag {{ f.level }}">{{ f.text }}</li>{% endfor %}</ul>{% endif %}
+<h2>Preview</h2>
+{% include "_preview.html" %}
+<h2>Notes</h2>
+{% if timeline %}
+<ol class="timeline">
+  {% for t in timeline %}<li>{% if t.at %}<time>{{ t.at|replace('T', ' ') }}</time>{% endif %} {% if t.change %}<b>{{ t.change }}</b>{% endif %} {{ t.text }}</li>{% endfor %}
+</ol>
+{% else %}<p class="muted">No notes.</p>{% endif %}
+{% endblock %}

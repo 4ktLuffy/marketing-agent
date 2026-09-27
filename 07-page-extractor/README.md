@@ -1,6 +1,6 @@
 # page-extractor
 
-Deploy **07 of 71** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
+Deploy **07 of 81** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
 into clean fields the LLM can work with: title, meta description, headings, main text, link
 counts and Open Graph tags. Navigation, headers, footers, sidebars, forms and scripts are
 dropped, so a 7B model reads the content and not the chrome. It uses no LLM.
@@ -34,6 +34,7 @@ uvicorn app.main:app --port 8107
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
 | POST | `/extract` | `{"url"}` or `{"html"}` (exactly one) | `{"url","title","description","lang","headings":[{"level","text"}],"text","word_count","links":{"internal","external"},"og":{}}` |
+| | | optional `"list_links": true` (with `url`) | also `"link_list":[{"url","text"}]`: the page's internal links (same host, `www.` ignored), absolute, without `#fragment`, deduped, first 200. Used by 81 (track competitor) to pick key pages |
 
 ```bash
 curl -s localhost:8107/extract -H 'content-type: application/json' \

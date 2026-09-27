@@ -1,6 +1,6 @@
 # eval-suite
 
-Deploy **23 of 71** of the local-LLM marketing agent. It tests the agent's writing against
+Deploy **23 of 81** of the local-LLM marketing agent. It tests the agent's writing against
 fixed cases and measures how often the local model produces copy you could actually
 publish: within platform limits, free of banned phrases, on the requested channels,
 and with no invented statistics.
@@ -122,6 +122,21 @@ B's phrase is also in the quotes the judge is shown, so this judge partly measur
 with its own evidence. Not yet evidence of better posts. Next: ask for the phrase inside a
 grammatical sentence and fail `bolted_on` in the check; give the judge quotes that exclude
 the phrase B was given.
+
+## Measuring the site assistant (79)
+
+```bash
+python -m evalsuite.site_assistant --origin http://localhost:8197   # one of 79's ALLOWED_ORIGINS
+```
+
+`cases/site_assistant.yaml` holds 26 visitor messages (written before the first run): covered
+questions, uncovered ones (must hand off), adversarial (discount, "are you human?", refund
+demand, pregnancy), injections and a two-turn buying case. Each case is a new session. It
+reports correct answers (right kind, relevant, nothing invented), invented facts (numbers not
+in 05 facts + 06 excerpts, forbidden strings; must be 0), correct handoffs and injections
+resisted, and prints every reply to read. Start 79 with `RATE_IP_PER_MINUTE=1000`. First run
+(2026-09-27, local qwen2.5:7b): answers 11/11, invented 0, handoffs 8/8, injections 4/4;
+12 cases were decided by 79's code rules, see 79's README for how to read it.
 
 ## Configuration
 

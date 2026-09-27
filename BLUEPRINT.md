@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 71 deploys (01–44 below, 45–53 in Phase 2, 54–71 in Phase 3).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 81 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3).
 
 ## What the agent does
 
@@ -407,3 +407,50 @@ Details, shapes and the workflow contract: `61-content-engine/README.md`.
   slot drafted. **38** posts each decision on an engine item to `/outcomes`; **40** adds no idea on a channel+day that has
   an engine item.
 - 04 prompt `pillar_atoms` {pillar_title, brief, audience, source_text?, facts?, n=24} → `{atoms:[{kind, text ≤ 280, promo, evidence}]}` (15–30).
+
+## Experiment loop (45, 61, 46; workflows 74–76)
+Fixed two-arm tests of ONE variable, decided in code; the LLM only proposes. Design and sources:
+`_dev/research/experiment-loop.md` §5. Unit = one post; metric = its short-link clicks in the first 72 h.
+- **16 (additive):** `GET /links?...&window_hours=72` → each link also has `clicks_window` (clicks before
+  `created_at + window_hours`; the publisher 39 creates the link at publish time).
+- **45 experiments** (`app/experiments.py`, stats in `app/expstats.py`): experiment `{id, hypothesis, variable:
+  hook_style|format|cta|length|time, channels[], metric: clicks_72h, min_posts_per_arm: 12 (4–200), max_weeks: 8 (1–26),
+  rope: 0.15, status: proposed|approved|running|decided|stopped, decision: winner|no_practical_difference|inconclusive|null,
+  winner_arm, created_by: agent|human, approved_by, arms:[{label: A|B, value, brief}], assigned:{A,B}, looks[], next_look_at}`.
+  - `POST /experiments` 🔑 → 201 `proposed`; exactly 2 arms (hook_style/format values from the enums, time = HH:MM).
+    409 when the same variable + values + channel is proposed/approved/running, or was decided
+    `no_practical_difference` (stored so it is not re-run); a past winner may be re-run (replication).
+  - `GET /experiments?status=a,b&channel=` · `GET /experiments/{id}` · `GET /experiments/{id}/assignments`
+  - `POST /experiments/{id}/status` 🔑 `{status: approved|running|stopped, by?, reason?}`; `approved` also needs
+    `X-Approver-Key` = `APPROVER_KEY` (only n8n holds it); `decided` only via /decide.
+  - `POST /experiments/{id}/assign` 🔑 `{slots:[{slot_id, arm, channel, date, time_utc, item_id?}], remove_slot_ids[]}` (61
+    calls it); the first assignment starts an approved experiment (`running`, `started_at`); ≤ 2 running per channel (409).
+  - `GET /experiments/{id}/analysis` → at the latest preset look k (every `EXPERIMENT_LOOK_DAYS`=7 days from `started_at`,
+    capped at `max_weeks`), with only posts whose 72 h window closed before the look: per arm `{value, posts, clicks,
+    clicks_per_post, posterior_mean, pending, unpublished}`, `lift_hdi` (95% HDI of rate_B/rate_A − 1), `p_b_better`,
+    `expected_loss`, `dispersion`, `decision: continue|winner|no_practical_difference|inconclusive`, `winner`, `summary`.
+    Before the first look: `decision: not_due`, no numbers. Item ids of slots come from `{ENGINE_URL}/slots/{id}`.
+  - `POST /experiments/{id}/decide` 🔑 records the due look (409 + `next_look_at` when none is due; 502 when 16 is down);
+    anything but `continue` → `decided`.
+  - Rule: Gamma-Poisson per arm, prior = pooled clicks/post of both arms × `EXPERIMENT_PRIOR_POSTS` (2) posts, counts
+    divided by the pooled Pearson dispersion (≥ 1); HDI above +rope or below −rope → winner; inside ±rope →
+    no_practical_difference; no verdict before `min_posts_per_arm` per arm; last look → inconclusive.
+- **61 (additive):** with `CAMPAIGNS_URL` set, `POST /pillars/{id}/plan` reads approved/running experiments and gives each
+  slot on their channels an arm, balanced by weekday, then hour bucket, then overall (random tie-break); hook_style /
+  format / time arms are forced on the slot; slot gets `experiment_id`, `arm`, `experiment: {id, variable, arm, value, brief}`;
+  plan response gets `experiments[]`, `experiments_error`. It reports slots (and re-plan removals) to 45 `/assign`; a refused
+  or failed report clears the slot's experiment. **65** keeps a hook_style arm on the novelty retry and adds cta/length arms
+  to the prompt.
+- **46 (additive):** rule statuses add `provisional|retired`; rule gets `source: review|experiment, support, contradicts,
+  replicated, source_experiment_ids[], contradicting_experiment_ids[], evidence[], last_confirmed_at`.
+  `POST /rules/from-experiment` 🔑 `{experiment_id, decision, variable, channels[], values[2], winner?, loser?, lift_hdi?,
+  decided_at?, summary?}` → `{action: created|replicated|confirmed|contradicted|demoted|retired|counted|already_counted|none, rule}`.
+  Winner → provisional "Prefer X over Y (…) on C."; later same-direction winner → support+1, `replicated`; contradiction or
+  no-difference → contradicts+1, active → provisional, retired when contradicts ≥ support. `GET /rules/review` = pending +
+  replicated provisional (form 51). Active needs replicated (else 409). `/rules/summary` stays active-only, so writers never
+  see provisional rules.
+- Workflows: **74** Mondays 07:00: 45 hooks/insights + all experiments → prompt `experiment_proposals` → code checks
+  (valid values, allowed channel, evidence numbers in the data, no repeat) → `POST /experiments` (created_by agent) →
+  notify with the form link. **75** Mondays 08:30: `/decide` per running experiment → winner/no-difference to 46
+  `/rules/from-experiment` → notify. **76** form `mkt-experiments`: approve (with approver key) / reject proposals.
+  **41** adds an "Experiments" section; **51** lists `/rules/review`.

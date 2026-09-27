@@ -1,0 +1,9 @@
+{
+  "name": "Marketing control room",
+  "short_name": "Control room",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#11151a",
+  "theme_color": "#1d2733",
+  "icons": [{ "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

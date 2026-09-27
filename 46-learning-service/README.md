@@ -1,6 +1,6 @@
 # learning-service
 
-Deploy **46 of 71** of the local-LLM marketing agent. It learns from the reviewer. Every
+Deploy **46 of 81** of the local-LLM marketing agent. It learns from the reviewer. Every
 approval, edit and rejection is recorded as an event. The service turns those events into
 two things the writers use:
 
@@ -48,16 +48,20 @@ INTERNAL_API_KEY=change-me DB_PATH=./learning.sqlite GATEWAY_URL=http://localhos
 | GET | `/items/{item_id}/attempts` | — | `{"item_id","rejections"}` |
 | GET | `/examples` | `?channel=&k=3` (k 1–10) | `[{"text","channel","decision"}]` |
 | POST | `/reflect` 🔑 | `{"since_days":7,"max_events":20}` (body optional) | `{"created":[rule],"reflected":n,"errors":[{"event_id","error"}]}` |
-| GET | `/rules` | `?status=pending\|active\|rejected` | `[rule]` |
+| GET | `/rules` | `?status=pending\|active\|rejected\|provisional\|retired` | `[rule]` |
+| GET | `/rules/review` | — | `[rule]`: pending rules and replicated provisional ones (form 51) |
 | POST | `/rules/{id}/status` 🔑 | `{"status":"active"\|"rejected"}` | rule |
+| POST | `/rules/from-experiment` 🔑 | `{"experiment_id","decision","variable","channels","values":[2],"winner"?,"loser"?,"lift_hdi"?,"decided_at"?,"summary"?}` | `{"action","rule"}` |
 | GET | `/rules/summary` | — | `{"summary","count"}` |
 
 An event is `{id, item_id, channel, campaign_id, decision, draft, final, reason, reviewer,
 created_at, reflected_at}`. `decision` is `approved`, `edited` or `rejected`. Empty
 `final`, `reason` and `reviewer` are stored as `null`.
 
-A rule is `{id, text, scope, status, source_event_ids[], created_at}`. `scope` is `all` or
-a channel name.
+A rule is `{id, text, scope, status, source_event_ids[], created_at, source, support,
+contradicts, replicated, source_experiment_ids[], contradicting_experiment_ids[], evidence[],
+last_confirmed_at}`. `scope` is `all` or a channel name. `source` is `review` (reflected from
+edits) or `experiment`; the counters are 0 for review rules.
 
 ```bash
 curl -s localhost:8146/events -H 'content-type: application/json' -H 'X-API-Key: change-me' \
@@ -92,6 +96,19 @@ curl -s localhost:8146/rules/summary
   rule shown as `- [linkedin] rule`. With no active rules the response is
   `{"summary":"","count":0}`.
 - **Attempts.** `rejections` is the number of `rejected` events for that item.
+
+- **Rules from experiments** (`POST /rules/from-experiment`, called by workflow 75 when 45
+  decides an experiment). The key is the variable, the channels and the two values (in any
+  order). Design: `_dev/research/experiment-loop.md` section 5.
+  - `winner` and no rule yet: a **provisional** rule "Prefer X over Y (hooks) on x." with
+    `support` 1. Provisional rules are not in `/rules/summary`, so writers never see them.
+  - `winner` in the same direction from another experiment: `support` + 1; a provisional
+    rule becomes `replicated` and appears in `/rules/review` for form 51. Only then can
+    `POST /rules/{id}/status {"status":"active"}` activate it (`409` before).
+  - `winner` the other way, or `no_practical_difference`: `contradicts` + 1. An active rule
+    goes back to provisional (not replicated). With `contradicts ≥ support` the rule is
+    `retired`; a contradicting winner then starts its own provisional rule.
+  - `inconclusive`: nothing changes. An experiment is counted once (`already_counted`).
 
 ## Configuration
 

@@ -88,8 +88,15 @@ PILLAR_COLUMNS = (
 ATOM_COLUMNS = ("id", "pillar_id", "kind", "text", "verified", "evidence", "promo", "created_at")
 SLOT_COLUMNS = (
     "id", "pillar_id", "date", "time_utc", "channel", "format", "atom_id", "hook_style",
-    "status", "calendar_item_id", "reason", "created_at", "updated_at",
+    "status", "calendar_item_id", "reason", "created_at", "updated_at", "experiment_id", "arm",
 )
+# Experiments (45): a slot of a running experiment carries its arm. hook_style, format and
+# time are forced on the slot; cta and length are instructions the drafter (65) follows.
+EXP_VARIABLES = ("hook_style", "format", "cta", "length", "time")
+MAX_EXPERIMENTS_PER_CHANNEL = 2
+# Columns added after the first release; old databases get them in migrate().
+SLOT_EXTRA_COLUMNS = {"experiment_id": "INTEGER", "arm": "TEXT", "exp_variable": "TEXT",
+                      "arm_value": "TEXT", "arm_brief": "TEXT"}
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pillars (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -218,6 +225,10 @@ def migrate(conn: sqlite3.Connection) -> None:
         try:
             for stmt in filter(str.strip, SCHEMA.split(";")):
                 conn.execute(stmt)
+            have = {r[1] for r in conn.execute("PRAGMA table_info(slots)")}
+            for col, decl in SLOT_EXTRA_COLUMNS.items():
+                if col not in have:
+                    conn.execute(f"ALTER TABLE slots ADD COLUMN {col} {decl}")
             conn.execute("COMMIT")
         except Exception:
             conn.execute("ROLLBACK")
@@ -263,7 +274,11 @@ def row_to_atom(row: sqlite3.Row) -> dict:
 
 
 def row_to_slot(row: sqlite3.Row) -> dict:
-    return {k: row[k] for k in SLOT_COLUMNS}
+    s = {k: row[k] for k in SLOT_COLUMNS}
+    s["experiment"] = ({"id": row["experiment_id"], "variable": row["exp_variable"], "arm": row["arm"],
+                        "value": row["arm_value"], "brief": row["arm_brief"]}
+                       if row["experiment_id"] is not None else None)
+    return s
 
 
 def valid_id(value: int) -> bool:
@@ -598,8 +613,66 @@ def week_days(week_start: date, k: int, rotation: int) -> list[date]:
     return [by_weekday[wd] for wd in order]
 
 
+def hour_bucket(time_utc: str) -> str:
+    h = int(time_utc[:2])
+    return "am" if h < 12 else "pm" if h < 17 else "eve"
+
+
+def assign_arms(slots: list[dict], experiments: list[dict], kept: list[dict], seed: int) -> None:
+    """Give each slot on a channel with a running experiment one of its two arms, in place.
+
+    Slots of a channel are shared round-robin by its experiments (at most 2, oldest first).
+    Inside one experiment and channel the arms are balanced by weekday first, then by hour
+    bucket (morning / afternoon / evening) and overall: each slot, in date order, gets the
+    arm with fewer slots on that weekday, then in that bucket, then in total; a tie is broken
+    at random (seeded), so the order alternates at random. Drafted slots (`kept`) that already
+    carry an arm count too. For a `time` experiment the arm sets the time, so only weekday
+    and total are balanced. The arm's value is forced on the slot: `format` and `time_utc`
+    here, `forced_hook` for the atom/hook step; cta and length go to the drafter.
+    """
+    by_channel: dict[str, list[dict]] = {}
+    for e in sorted(experiments, key=lambda e: e["id"]):
+        for ch in e["channels"]:
+            if len(by_channel.setdefault(ch, [])) < MAX_EXPERIMENTS_PER_CHANNEL:
+                by_channel[ch].append(e)
+    for ch, exps in by_channel.items():
+        mine = [s for s in slots if s["channel"] == ch]
+        for i, s in enumerate(mine):
+            s["_exp"] = exps[i % len(exps)]
+        for e in exps:
+            rng = random.Random(f"{seed}/{e['id']}/{ch}")
+            arms = {a["label"]: a for a in e["arms"]}
+            wd, bk, total = Counter(), Counter(), Counter()
+            for k in kept:
+                if k.get("experiment_id") == e["id"] and k["channel"] == ch and k.get("arm") in arms:
+                    d = date.fromisoformat(k["date"]).weekday()
+                    wd[(d, k["arm"])] += 1
+                    bk[(d, hour_bucket(k["time_utc"]), k["arm"])] += 1
+                    total[k["arm"]] += 1
+            for s in (x for x in mine if x["_exp"] is e):
+                d, b = date.fromisoformat(s["date"]).weekday(), hour_bucket(s["time_utc"])
+                timed = e["variable"] == "time"
+                label = min(sorted(arms), key=lambda lab: (wd[(d, lab)], 0 if timed else bk[(d, b, lab)],
+                                                         total[lab], rng.random()))
+                wd[(d, label)] += 1
+                bk[(d, b, label)] += 1
+                total[label] += 1
+                arm = arms[label]
+                s["experiment"] = {"id": e["id"], "variable": e["variable"], "arm": label,
+                                   "value": arm["value"], "brief": arm.get("brief")}
+                if e["variable"] == "format":
+                    s["format"] = arm["value"]
+                elif e["variable"] == "time":
+                    s["time_utc"] = arm["value"]
+                elif e["variable"] == "hook_style" and arm["value"] in HOOK_STYLES:
+                    s["forced_hook"] = arm["value"]
+        for s in mine:
+            s.pop("_exp", None)
+
+
 def plan_slots(*, channels: list[str], cadence: dict[str, int], start: date, weeks: int,
-               atoms: list[dict], kept: list[dict], promo_max: float, seed: int) -> tuple[list[dict], dict]:
+               atoms: list[dict], kept: list[dict], promo_max: float, seed: int,
+               experiments: list[dict] | None = None) -> tuple[list[dict], dict]:
     """Deterministic plan. Returns (new slots, unfilled count per channel).
 
     `kept` are slots already drafted: they hold their date on their channel and count
@@ -629,6 +702,9 @@ def plan_slots(*, channels: list[str], cadence: dict[str, int], start: date, wee
                                  "channel": ch, "format": rot[n % len(rot)]})
                 n += 1
     skeleton.sort(key=lambda s: (s["date"], s["time_utc"], CHANNELS.index(s["channel"])))
+    if experiments:   # arms of running experiments (45), balanced by weekday and hour
+        assign_arms(skeleton, experiments, kept, seed)
+        skeleton.sort(key=lambda s: (s["date"], s["time_utc"], CHANNELS.index(s["channel"])))
 
     # 2. state from kept slots
     order = atoms[:]
@@ -668,10 +744,12 @@ def plan_slots(*, channels: list[str], cadence: dict[str, int], start: date, wee
                 return len(used_channels[a["id"]]) < MAX_CHANNELS_PER_ATOM
             return len(prev) < REUSE_PER_CHANNEL and all((d - u).days >= REUSE_GAP_DAYS for u in prev)
 
+        forced = s.get("forced_hook")
         candidates = [
             a for a in order
             if channel_ok(a)
             and len(used_hooks[a["id"]]) < len(HOOK_STYLES)
+            and (forced is None or forced not in used_hooks[a["id"]])
             and (a["id"] not in promo_ids or promo_used[ch] < promo_cap.get(ch, 0))
         ]
         if not candidates:
@@ -685,8 +763,8 @@ def plan_slots(*, channels: list[str], cadence: dict[str, int], start: date, wee
 
         atom = min(candidates, key=score)
         aid = atom["id"]
-        hook = min((h for h in hook_order if h not in used_hooks[aid]),
-                   key=lambda h: (hook_count[ch][h], hook_order.index(h)))
+        hook = forced or min((h for h in hook_order if h not in used_hooks[aid]),
+                             key=lambda h: (hook_count[ch][h], hook_order.index(h)))
         used_channels[aid].add(ch)
         used_hooks[aid].add(hook)
         used_dates[aid].append(d)
@@ -694,7 +772,7 @@ def plan_slots(*, channels: list[str], cadence: dict[str, int], start: date, wee
         hook_count[ch][hook] += 1
         if aid in promo_ids:
             promo_used[ch] += 1
-        out.append(s | {"atom_id": aid, "hook_style": hook})
+        out.append({k: v for k, v in s.items() if k != "forced_hook"} | {"atom_id": aid, "hook_style": hook})
 
     # 4. when atoms ran out, the promo share of what WAS filled can exceed the cap: drop the
     # latest promo slots of that channel until it holds again
@@ -723,11 +801,74 @@ def slots_with_atoms(conn: sqlite3.Connection, rows) -> list[dict]:
     return out
 
 
+# ---------- experiments (45 campaign-service)
+
+
+def campaigns_url() -> str:
+    """Empty (the default outside the stack) = no experiments: plans ignore them."""
+    return (os.environ.get("CAMPAIGNS_URL") or "").rstrip("/")
+
+
+def key_headers() -> dict:
+    key = os.environ.get("INTERNAL_API_KEY")
+    return {"X-API-Key": key} if key else {}
+
+
+def fetch_experiments(channels: list[str]) -> tuple[list[dict], str | None]:
+    """Approved and running experiments on these channels, or ([], why not)."""
+    base = campaigns_url()
+    if not base:
+        return [], None
+    try:
+        r = httpx.get(f"{base}/experiments", params={"status": "approved,running"}, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+    except (httpx.HTTPError, ValueError) as e:
+        return [], f"experiments not read from {base}: {type(e).__name__}"
+    out = []
+    for e in data if isinstance(data, list) else []:
+        arms = e.get("arms") if isinstance(e, dict) else None
+        if (not isinstance(arms, list) or len(arms) != 2 or e.get("variable") not in EXP_VARIABLES
+                or not isinstance(e.get("id"), int)):
+            continue
+        chs = [c for c in e.get("channels") or [] if c in channels]
+        if chs:
+            out.append({"id": e["id"], "variable": e["variable"], "channels": chs,
+                        "arms": [{"label": a["label"], "value": a["value"], "brief": a.get("brief")} for a in arms]})
+    return out, None
+
+
+def report_assignments(slots: list[dict], removed: dict[int, list[int]]) -> tuple[dict[int, dict], list[int]]:
+    """POST each experiment's slots to 45 (/experiments/{id}/assign). Returns (per experiment
+    the response or the error, slot ids whose experiment refused or could not be reached)."""
+    per_exp: dict[int, list[dict]] = {}
+    for sl in slots:
+        if sl.get("experiment_id"):
+            per_exp.setdefault(sl["experiment_id"], []).append(
+                {"slot_id": sl["id"], "arm": sl["arm"], "channel": sl["channel"], "date": sl["date"],
+                 "time_utc": sl["time_utc"]})
+    results, failed = {}, []
+    for eid in sorted(set(per_exp) | set(removed)):
+        body = {"slots": per_exp.get(eid, []), "remove_slot_ids": removed.get(eid, [])}
+        try:
+            r = httpx.post(f"{campaigns_url()}/experiments/{eid}/assign", json=body, headers=key_headers(), timeout=10)
+            ok = r.status_code < 300
+            detail = r.json() if ok else {"error": f"HTTP {r.status_code}: {r.text[:200]}"}
+        except (httpx.HTTPError, ValueError) as e:
+            ok, detail = False, {"error": f"{type(e).__name__}"}
+        results[eid] = detail
+        if not ok:
+            failed += [x["slot_id"] for x in per_exp.get(eid, [])]
+    return results, failed
+
+
 @app.post("/pillars/{pillar_id}/plan", dependencies=[Depends(require_key)])
 def plan(pillar_id: int, req: PlanRequest | None = None):
     req = req or PlanRequest()
     min_atoms = int(env_num("MIN_ATOMS", 12))
     ts = now_utc()
+    with db() as conn:
+        experiments, exp_error = fetch_experiments(pillar_or_404(conn, pillar_id)["channels"])
     with db() as conn, write(conn):
         p = pillar_or_404(conn, pillar_id)
         if p["status"] == "paused":
@@ -750,22 +891,43 @@ def plan(pillar_id: int, req: PlanRequest | None = None):
             "SELECT s.*, a.promo FROM slots s JOIN atoms a ON a.id = s.atom_id"
             " WHERE s.pillar_id = ? AND s.status = 'drafted'", (pillar_id,)).fetchall()]
         new, unfilled = plan_slots(channels=p["channels"], cadence=cadence, start=start, weeks=req.weeks,
-                                   atoms=atoms, kept=kept, promo_max=p["promo_max"], seed=seed)
+                                   atoms=atoms, kept=kept, promo_max=p["promo_max"], seed=seed,
+                                   experiments=experiments)
         # A re-plan replaces the still-planned slots. Their calendar `idea` items would stay behind
         # as orphans, so the caller (64) gets their ids back to reject them.
         removed_items = sorted({r[0] for r in conn.execute(
             "SELECT calendar_item_id FROM slots WHERE pillar_id = ? AND status = 'planned'"
             " AND calendar_item_id IS NOT NULL", (pillar_id,)).fetchall()})
+        removed_exp: dict[int, list[int]] = {}
+        for r in conn.execute("SELECT id, experiment_id FROM slots WHERE pillar_id = ? AND status = 'planned'"
+                              " AND experiment_id IS NOT NULL", (pillar_id,)).fetchall():
+            removed_exp.setdefault(r["experiment_id"], []).append(r["id"])
         conn.execute("DELETE FROM slots WHERE pillar_id = ? AND status = 'planned'", (pillar_id,))
         for s in new:
+            x = s.get("experiment") or {}
             conn.execute(
                 "INSERT INTO slots (pillar_id, date, time_utc, channel, format, atom_id, hook_style, status,"
-                " calendar_item_id, reason, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'planned', NULL, NULL, ?, ?)",
-                (pillar_id, s["date"], s["time_utc"], s["channel"], s["format"], s["atom_id"], s["hook_style"], ts, ts),
+                " calendar_item_id, reason, created_at, updated_at, experiment_id, arm, exp_variable, arm_value,"
+                " arm_brief) VALUES (?, ?, ?, ?, ?, ?, ?, 'planned', NULL, NULL, ?, ?, ?, ?, ?, ?, ?)",
+                (pillar_id, s["date"], s["time_utc"], s["channel"], s["format"], s["atom_id"], s["hook_style"], ts, ts,
+                 x.get("id"), x.get("arm"), x.get("variable"), x.get("value"), x.get("brief")),
             )
         rows = conn.execute("SELECT * FROM slots WHERE pillar_id = ? AND status = 'planned'"
                             " ORDER BY date, time_utc, id", (pillar_id,)).fetchall()
         slots = slots_with_atoms(conn, rows)
+    # Tell 45 which slot got which arm (after the commit: no write lock held over HTTP).
+    exp_results: dict[int, dict] = {}
+    if any(s["experiment_id"] for s in slots) or removed_exp:
+        exp_results, failed = report_assignments(slots, removed_exp)
+        if failed:
+            # 45 refused (e.g. the experiment was stopped) or is down: these slots are not
+            # part of the experiment, so they must not look like it. The forced hook stays.
+            with db() as conn, write(conn):
+                conn.executemany("UPDATE slots SET experiment_id = NULL, arm = NULL, exp_variable = NULL,"
+                                 " arm_value = NULL, arm_brief = NULL WHERE id = ?", [(i,) for i in failed])
+                rows = conn.execute("SELECT * FROM slots WHERE pillar_id = ? AND status = 'planned'"
+                                    " ORDER BY date, time_utc, id", (pillar_id,)).fetchall()
+                slots = slots_with_atoms(conn, rows)
     end = start + timedelta(days=7 * req.weeks)
     kept_in_window = Counter(s["channel"] for s in kept if start.isoformat() <= s["date"] < end.isoformat())
     requested = {ch: cadence[ch] * req.weeks for ch in p["channels"]}
@@ -776,7 +938,12 @@ def plan(pillar_id: int, req: PlanRequest | None = None):
         "requested": requested, "planned": {ch: planned.get(ch, 0) for ch in p["channels"]},
         "kept_drafted": {ch: kept_in_window.get(ch, 0) for ch in p["channels"]},
         "unfilled": {ch: unfilled.get(ch, 0) for ch in p["channels"]},
-        "atoms_verified": len(atoms), "removed_calendar_item_ids": removed_items, "slots": slots,
+        "atoms_verified": len(atoms), "removed_calendar_item_ids": removed_items,
+        "experiments": [{"id": e["id"], "variable": e["variable"], "channels": e["channels"],
+                         "arms": {a["label"]: a["value"] for a in e["arms"]},
+                         "assigned": dict(Counter(s["arm"] for s in slots if s["experiment_id"] == e["id"])),
+                         "error": (exp_results.get(e["id"]) or {}).get("error")} for e in experiments],
+        "experiments_error": exp_error, "slots": slots,
     }
 
 

@@ -313,14 +313,31 @@ def internal_url(url: str, public_env: str, internal_env: str) -> str:
     return url
 
 
+# (public base, internal base) env pairs of the services whose files we post.
+CARDS_BASES = ("CARDS_PUBLIC_URL", "CARDS_URL")            # 17-image-cards
+VIDEO_BASES = ("VIDEO_PUBLIC_URL", "VIDEO_URL")            # 71-video-assembly
+CLIPS_BASES = ("CLIPS_PUBLIC_URL", "CLIPS_INTERNAL_URL")   # 73-clip-finder
+
+
+def mapped_url(url: str, *pairs: tuple[str, str]) -> str:
+    """The first public -> internal mapping that applies, else the URL unchanged."""
+    for public_env, internal_env in pairs:
+        mapped = internal_url(url, public_env, internal_env)
+        if mapped != url:
+            return mapped
+    return url
+
+
 def image_fetch_url(image_url: str) -> str:
-    """Where the bridge downloads the image from (cards from 17: CARDS_PUBLIC_URL -> CARDS_URL)."""
-    return internal_url(image_url, "CARDS_PUBLIC_URL", "CARDS_URL")
+    """Where the bridge downloads the image from: cards from 17 (CARDS_PUBLIC_URL -> CARDS_URL),
+    and posters of 71 videos and 73 clips (used when their video is left off)."""
+    return mapped_url(image_url, CARDS_BASES, VIDEO_BASES, CLIPS_BASES)
 
 
 def video_fetch_url(video_url: str) -> str:
-    """Where the bridge downloads the video from (71: VIDEO_PUBLIC_URL -> VIDEO_URL)."""
-    return internal_url(video_url, "VIDEO_PUBLIC_URL", "VIDEO_URL")
+    """Where the bridge downloads the video from (71: VIDEO_PUBLIC_URL -> VIDEO_URL;
+    73 clips: CLIPS_PUBLIC_URL -> CLIPS_INTERNAL_URL)."""
+    return mapped_url(video_url, VIDEO_BASES, CLIPS_BASES)
 
 
 def fetch_media(url: str, types: dict[str, str], max_bytes: int, what: str, kinds: str) -> tuple[bytes, str, str]:

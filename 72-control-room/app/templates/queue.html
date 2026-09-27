@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Review queue{% endblock %}
+{% block main %}
+<section class="queue-head">
+  <h1>Needs you <span class="count">{{ total }}</span></h1>
+  <nav class="tabs" aria-label="Filter">
+    <a href="/" {% if tab == 'all' %}aria-current="page"{% endif %}>All ({{ total }})</a>
+    <a href="/?tab=flagged" {% if tab == 'flagged' %}aria-current="page"{% endif %}>Flagged ({{ n_flagged }})</a>
+  </nav>
+  <p class="small muted hint">Swipe right to approve, left to reject. Keys: <kbd>a</kbd> approve · <kbd>e</kbd> edit · <kbd>r</kbd> reject · <kbd>s</kbd> skip · <kbd>j</kbd>/<kbd>k</kbd> next/previous · <kbd>?</kbd> help. Every decision waits {{ undo_seconds|round|int }} s so you can undo it.</p>
+</section>
+{% if error %}<p class="alert danger" role="alert">The calendar did not answer: {{ error }}</p>{% endif %}
+{% include "_results.html" %}
+<section id="queue" aria-label="Items in review">
+  {% for c in cards %}{% include "_card.html" %}{% endfor %}
+</section>
+<p class="empty" {% if cards %}hidden{% endif %}>{% if tab == 'flagged' %}No flagged items.{% else %}Nothing waits for review. The agent's drafts appear here when they reach <code>in_review</code>.{% endif %}</p>
+{% if toast %}<template id="initial-toast">{% set d = toast %}{% include "_toast.html" %}</template>{% endif %}
+<dialog id="help">
+  <h2>Shortcuts</h2>
+  <ul class="plain">
+    <li><kbd>a</kbd> approve the current card</li>
+    <li><kbd>e</kbd> edit, then approve</li>
+    <li><kbd>r</kbd> reject (pick a reason; with a reason it is rewritten)</li>
+    <li><kbd>s</kbd> skip (no decision, moves it to the end)</li>
+    <li><kbd>j</kbd> / <kbd>k</kbd> next / previous card</li>
+    <li>Swipe right: approve · swipe left: reject</li>
+  </ul>
+  <form method="dialog"><button class="btn">Close</button></form>
+</dialog>
+{% endblock %}

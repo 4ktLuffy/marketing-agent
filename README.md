@@ -19,8 +19,9 @@ configuration, how to test). They also work as separate repos.
 | `01`–`04` | Docker stack, Ollama models, LLM gateway, prompt library |
 | `05`–`22`, `44`–`46` | Python services (FastAPI): brand, knowledge base, research, content tools, calendar, analytics, fact checker, campaigns, learning |
 | `23` | Eval suite: writing quality, fact-checker accuracy, tool selection |
-| `24`–`43`, `47`–`53`, `56`, `57`, `59`, `60`, `64`–`66`, `68`, `69` | n8n workflows: chat agent, its tools, schedules, forms, content engine, newsletter, refresh, SEO |
-| `54`, `55`, `58`, `61`–`63`, `67`, `70`, `71` | Postiz bridge, Umami sync, review hub, content engine, CMS bridge (WordPress/Ghost), Listmonk bridge, Search Console sync, customer-language engine, video assembly (all bridges dry run by default) |
+| `24`–`43`, `47`–`53`, `56`, `57`, `59`, `60`, `64`–`66`, `68`, `69`, `74`–`77`, `81` | n8n workflows: chat agent, its tools, schedules, forms, content engine, newsletter, refresh, SEO, experiments, clips, competitors |
+| `54`, `55`, `58`, `61`–`63`, `67`, `70`, `71`, `73`, `78`–`80` | Postiz bridge, Umami sync, review hub, content engine, CMS bridge (WordPress/Ghost), Listmonk bridge, Search Console sync, customer-language engine, video assembly, clip finder, ad library + competitor registry, site assistant, lead hub (all bridges dry run by default) |
+| `72` | Control room: mobile web app to review, schedule and watch performance |
 
 ## Quick start
 

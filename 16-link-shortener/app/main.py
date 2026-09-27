@@ -103,21 +103,34 @@ def list_links(
     utm_campaign: str | None = None,
     utm_content: str | None = None,
     limit: int = Query(100, ge=1, le=1000),
+    window_hours: float | None = Query(None, gt=0, le=24 * 365),
 ):
-    """Links newest first, optionally filtered on the target URL's utm_* params (no key)."""
+    """Links newest first, optionally filtered on the target URL's utm_* params (no key).
+
+    With `window_hours`, each link also gets `clicks_window`: the clicks in the first
+    `window_hours` after the link was created (the publisher creates it when the post goes
+    out), so an older post doesn't win by age (experiments in 45 use 72 h).
+    """
     wanted = {k: v for k, v in (("utm_campaign", utm_campaign), ("utm_content", utm_content)) if v}
     out = []
+    window_days = (window_hours or 0) / 24.0
     with closing(db()) as conn:
         rows = conn.execute(
             "SELECT l.slug, l.url, l.created_at, "
-            "(SELECT COUNT(*) FROM clicks c WHERE c.slug = l.slug) "
-            "FROM links l ORDER BY l.created_at DESC, l.rowid DESC"
+            "(SELECT COUNT(*) FROM clicks c WHERE c.slug = l.slug), "
+            "(SELECT COUNT(*) FROM clicks c WHERE c.slug = l.slug"
+            " AND julianday(c.ts) < julianday(l.created_at) + ?) "
+            "FROM links l ORDER BY l.created_at DESC, l.rowid DESC",
+            (window_days,),
         )
-        for slug, url, created_at, clicks in rows:
+        for slug, url, created_at, clicks, in_window in rows:
             if wanted and not query_matches(url, wanted):
                 continue
-            out.append({"slug": slug, "short_url": f"{base_url()}/{slug}", "url": url,
-                        "clicks": clicks, "created_at": created_at})
+            link = {"slug": slug, "short_url": f"{base_url()}/{slug}", "url": url,
+                    "clicks": clicks, "created_at": created_at}
+            if window_hours:
+                link["clicks_window"] = in_window
+            out.append(link)
             if len(out) >= limit:
                 break
     return out

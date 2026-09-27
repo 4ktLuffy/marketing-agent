@@ -15,15 +15,20 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 import httpx
+from typing import Literal
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 log = logging.getLogger("learning-service")
 app = FastAPI(title="learning-service")
 
 DECISIONS = ("approved", "edited", "rejected")
 REFLECTED_DECISIONS = ("edited", "rejected")
-RULE_STATUSES = ("pending", "active", "rejected")
+# pending/active/rejected: rules reflected from reviews. Rules from experiments (45) start
+# provisional, become active only after a replication and a person's approval (51), and are
+# retired when later results contradict them at least as often as they support them.
+RULE_STATUSES = ("pending", "active", "rejected", "provisional", "retired")
 RULE_MAX_CHARS = 200
 EVENT_COLUMNS = (
     "id", "item_id", "channel", "campaign_id", "decision", "draft", "final", "reason",
@@ -56,6 +61,21 @@ CREATE TABLE IF NOT EXISTS rules (
 );
 CREATE INDEX IF NOT EXISTS rules_norm ON rules (norm);
 """
+# Columns added for rules from experiments; old databases get them on first use.
+RULE_EXTRA_COLUMNS = {
+    "source": "TEXT NOT NULL DEFAULT 'review'",
+    "exp_key": "TEXT",
+    "variable": "TEXT",
+    "winner": "TEXT",
+    "loser": "TEXT",
+    "support": "INTEGER NOT NULL DEFAULT 0",
+    "contradicts": "INTEGER NOT NULL DEFAULT 0",
+    "replicated": "INTEGER NOT NULL DEFAULT 0",
+    "source_experiment_ids": "TEXT NOT NULL DEFAULT '[]'",
+    "contradicting_experiment_ids": "TEXT NOT NULL DEFAULT '[]'",
+    "evidence": "TEXT NOT NULL DEFAULT '[]'",
+    "last_confirmed_at": "TEXT",
+}
 
 
 # ---------- time: stored as "YYYY-MM-DDTHH:MM:SSZ" so strings sort correctly
@@ -102,6 +122,10 @@ def db():
     conn.row_factory = sqlite3.Row
     try:
         conn.executescript(SCHEMA)
+        have = {r[1] for r in conn.execute("PRAGMA table_info(rules)")}
+        for col, decl in RULE_EXTRA_COLUMNS.items():
+            if col not in have:
+                conn.execute(f"ALTER TABLE rules ADD COLUMN {col} {decl}")
         yield conn
         conn.commit()
     finally:
@@ -120,6 +144,14 @@ def row_to_rule(row: sqlite3.Row) -> dict:
         "status": row["status"],
         "source_event_ids": json.loads(row["source_event_ids"]),
         "created_at": row["created_at"],
+        "source": row["source"],
+        "support": row["support"],
+        "contradicts": row["contradicts"],
+        "replicated": bool(row["replicated"]),
+        "source_experiment_ids": json.loads(row["source_experiment_ids"]),
+        "contradicting_experiment_ids": json.loads(row["contradicting_experiment_ids"]),
+        "evidence": json.loads(row["evidence"]),
+        "last_confirmed_at": row["last_confirmed_at"],
     }
 
 
@@ -186,6 +218,33 @@ class ReflectRequest(BaseModel):
 
 class RuleStatus(BaseModel):
     status: str
+
+
+class ExperimentResult(BaseModel):
+    """A decided experiment from 45 (POST /experiments/{id}/decide)."""
+    experiment_id: int = Field(ge=1)
+    decision: Literal["winner", "no_practical_difference", "inconclusive"]
+    variable: str = Field(min_length=1, max_length=40)
+    channels: list[str] = Field(min_length=1, max_length=20)
+    values: list[str] = Field(min_length=2, max_length=2)
+    winner: str | None = None
+    loser: str | None = None
+    lift_hdi: list[float] | None = None
+    decided_at: str | None = None
+    summary: str | None = Field(default=None, max_length=1000)
+
+    @model_validator(mode="after")
+    def check(self):
+        self.channels = sorted({c.strip().lower() for c in self.channels if c.strip()})
+        self.values = [v.strip() for v in self.values]
+        if not self.channels or any(not v for v in self.values):
+            raise ValueError("channels and both values must not be empty")
+        if self.decision == "winner":
+            if not self.winner or not self.loser:
+                raise ValueError("a winner needs winner and loser")
+            if {self.winner.casefold(), self.loser.casefold()} != {v.casefold() for v in self.values}:
+                raise ValueError("winner and loser must be the two values")
+        return self
 
 
 # ---------- reflection
@@ -377,12 +436,116 @@ def rules_summary():
     return {"summary": "\n".join(lines), "count": len(rows)}
 
 
+@app.get("/rules/review")
+def rules_to_review():
+    """What a person decides in form 51: pending rules from reviews, and provisional rules
+    from experiments that a later experiment replicated."""
+    with db() as conn:
+        return [row_to_rule(r) for r in conn.execute(
+            "SELECT * FROM rules WHERE status = 'pending' OR (status = 'provisional' AND replicated = 1)"
+            " ORDER BY id")]
+
+
 @app.post("/rules/{rule_id}/status", dependencies=[Depends(require_key)])
 def set_rule_status(rule_id: int, req: RuleStatus):
     if req.status not in ("active", "rejected"):
         raise HTTPException(422, "status must be 'active' or 'rejected'")
     with db() as conn:
-        if conn.execute("SELECT 1 FROM rules WHERE id = ?", (rule_id,)).fetchone() is None:
+        row = conn.execute("SELECT * FROM rules WHERE id = ?", (rule_id,)).fetchone()
+        if row is None:
             raise HTTPException(404, f"rule {rule_id} not found")
+        if (req.status == "active" and row["source"] == "experiment" and row["status"] != "active"
+                and not (row["status"] == "provisional" and row["replicated"])):
+            raise HTTPException(409, f"rule {rule_id} is {row['status']} and not replicated: a rule from an "
+                                     "experiment becomes active only after a later experiment agrees")
         conn.execute("UPDATE rules SET status = ? WHERE id = ?", (req.status, rule_id))
         return row_to_rule(conn.execute("SELECT * FROM rules WHERE id = ?", (rule_id,)).fetchone())
+
+
+# ---------- rules from experiments (45)
+
+
+def exp_key(variable: str, channels: list[str], values: list[str]) -> str:
+    """Same variable, same channels, same two values (either order) = the same question."""
+    return f"{variable.lower()}|{','.join(channels)}|{'/'.join(sorted(v.casefold() for v in values))}"
+
+
+def exp_rule_text(r: ExperimentResult) -> str:
+    what = {"hook_style": "hooks", "format": "format", "cta": "call to action", "length": "length",
+            "time": "posting time (UTC)"}.get(r.variable, r.variable)
+    return f"Prefer {r.winner} over {r.loser} ({what}) on {', '.join(r.channels)}."
+
+
+@app.post("/rules/from-experiment", dependencies=[Depends(require_key)])
+def rule_from_experiment(req: ExperimentResult):
+    """Turn a decided experiment into playbook evidence (design s. 5, "from result to playbook").
+
+    - winner, no rule yet: a PROVISIONAL rule "prefer X over Y on C" (support 1). Writers
+      never see provisional rules (/rules/summary lists active ones only).
+    - winner in the same direction from a later experiment: support + 1; a provisional rule
+      is then `replicated` and waits for a person in form 51 (/rules/review).
+    - winner the other way, or no_practical_difference: contradicts + 1; an active rule is
+      demoted to provisional; with contradicts >= support it is retired. A contradicting
+      winner then starts its own provisional rule.
+    - inconclusive: nothing changes.
+    The same experiment is counted once.
+    """
+    key = exp_key(req.variable, req.channels, req.values)
+    ts = now_utc()
+    item = {"experiment_id": req.experiment_id, "decision": req.decision, "winner": req.winner,
+            "lift_hdi": req.lift_hdi, "decided_at": req.decided_at or ts, "summary": req.summary}
+    with db() as conn:
+        row = conn.execute("SELECT * FROM rules WHERE exp_key = ? AND status IN ('provisional', 'active', 'rejected')"
+                           " ORDER BY id DESC LIMIT 1", (key,)).fetchone()
+        if row is not None and req.experiment_id in (json.loads(row["source_experiment_ids"])
+                                                     + json.loads(row["contradicting_experiment_ids"])):
+            return {"action": "already_counted", "rule": row_to_rule(row)}
+        if req.decision == "inconclusive":
+            return {"action": "none", "rule": row_to_rule(row) if row else None}
+
+        def create() -> int:
+            text = exp_rule_text(req)
+            cur = conn.execute(
+                "INSERT INTO rules (text, norm, scope, status, source_event_ids, created_at, source, exp_key,"
+                " variable, winner, loser, support, contradicts, replicated, source_experiment_ids, evidence,"
+                " last_confirmed_at) VALUES (?, ?, ?, 'provisional', '[]', ?, 'experiment', ?, ?, ?, ?, 1, 0, 0, ?, ?, ?)",
+                (text, normalize_rule(text), req.channels[0] if len(req.channels) == 1 else "all", ts, key,
+                 req.variable, req.winner, req.loser, json.dumps([req.experiment_id]), json.dumps([item]), ts))
+            return cur.lastrowid
+
+        if row is None:
+            if req.decision != "winner":
+                return {"action": "none", "rule": None}
+            rid = create()
+            return {"action": "created", "rule": row_to_rule(conn.execute("SELECT * FROM rules WHERE id = ?", (rid,)).fetchone())}
+
+        evidence = json.loads(row["evidence"]) + [item]
+        if req.decision == "winner" and req.winner.casefold() == (row["winner"] or "").casefold():
+            status, replicated = row["status"], row["replicated"]
+            if status == "provisional":
+                replicated, action = 1, "replicated"
+            else:
+                action = "confirmed" if status == "active" else "counted"
+            conn.execute("UPDATE rules SET support = support + 1, replicated = ?, last_confirmed_at = ?,"
+                         " source_experiment_ids = ?, evidence = ? WHERE id = ?",
+                         (replicated, ts, json.dumps(json.loads(row["source_experiment_ids"]) + [req.experiment_id]),
+                          json.dumps(evidence), row["id"]))
+            return {"action": action, "rule": row_to_rule(conn.execute("SELECT * FROM rules WHERE id = ?", (row["id"],)).fetchone())}
+
+        # contradicting: the other arm won, or no practical difference
+        contradicts = row["contradicts"] + 1
+        status, replicated, action = row["status"], row["replicated"], "contradicted"
+        if status == "active":
+            status, replicated, action = "provisional", 0, "demoted"
+        if contradicts >= row["support"] and status != "rejected":
+            status, action = "retired", "retired"
+        conn.execute("UPDATE rules SET contradicts = ?, status = ?, replicated = ?, contradicting_experiment_ids = ?,"
+                     " evidence = ? WHERE id = ?",
+                     (contradicts, status, replicated,
+                      json.dumps(json.loads(row["contradicting_experiment_ids"]) + [req.experiment_id]),
+                      json.dumps(evidence), row["id"]))
+        out = {"action": action, "rule": row_to_rule(conn.execute("SELECT * FROM rules WHERE id = ?", (row["id"],)).fetchone())}
+        if req.decision == "winner" and status in ("retired", "rejected"):
+            rid = create()
+            out["created"] = row_to_rule(conn.execute("SELECT * FROM rules WHERE id = ?", (rid,)).fetchone())
+        return out

@@ -1,6 +1,6 @@
 # postiz-bridge
 
-Deploy **54 of 71** of the local-LLM marketing agent. It receives the approved posts that the
+Deploy **54 of 81** of the local-LLM marketing agent. It receives the approved posts that the
 publisher (39) sends to `PUBLISH_WEBHOOK_URL` and posts them through
 [Postiz](https://postiz.com), self-hosted or cloud. Each of our channels (`linkedin`, `x`, …)
 maps to one connected Postiz integration. It uses no LLM.
@@ -103,7 +103,8 @@ curl -s localhost:8154/publish -H 'content-type: application/json' -H 'X-API-Key
 ### Video
 
 - The bridge downloads the video (MP4 or MOV, no redirects, never with the Postiz key; a URL
-  under `VIDEO_PUBLIC_URL` is fetched from `VIDEO_URL`), uploads it with the same
+  under `VIDEO_PUBLIC_URL` is fetched from `VIDEO_URL`, a clip of `73-clip-finder` under
+  `CLIPS_PUBLIC_URL` from `CLIPS_INTERNAL_URL`, and their posters likewise), uploads it with the same
   `POST /upload` as images, with its own content type (`video/mp4`), and attaches the
   returned `{id, path}` as the post's `image` list (Postiz keeps images and videos in one
   media library). **Not verified against a live Postiz** in this repo: the tests mock the
@@ -133,6 +134,8 @@ curl -s localhost:8154/publish -H 'content-type: application/json' -H 'X-API-Key
 | `CARDS_URL` | — | Internal base of `17-image-cards` (`http://image-cards:8000` in the stack); image URLs under `CARDS_PUBLIC_URL` are fetched from here. |
 | `VIDEO_PUBLIC_URL` | — | Public base of `71-video-assembly` (its `PUBLIC_BASE_URL`). |
 | `VIDEO_URL` | — | Internal base of `71-video-assembly` (`http://video-assembly:8000` in the stack); video URLs under `VIDEO_PUBLIC_URL` are fetched from here. |
+| `CLIPS_PUBLIC_URL` | — | Public base of `73-clip-finder` (its `PUBLIC_BASE_URL`). |
+| `CLIPS_INTERNAL_URL` | — | Internal base of `73-clip-finder` (`http://clip-finder:8000` in the stack); clip and poster URLs under `CLIPS_PUBLIC_URL` are fetched from here. |
 | `MAX_VIDEO_MB` | `100` | Largest video the bridge attaches; a larger one is left off with a `video_note`. |
 
 ## Postiz API reference used

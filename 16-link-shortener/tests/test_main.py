@@ -176,3 +176,21 @@ def test_list_links_does_not_shadow_other_routes(seeded):
     seeded.get("/links")
     assert seeded.get("/links/a-spring-12/stats").json()["clicks"] == 3
     assert seeded.post("/links", json={"url": "https://ex.com", "slug": "links"}, headers=KEY).status_code == 422
+
+
+def test_list_links_window_counts_only_early_clicks(client, monkeypatch):
+    import sqlite3
+    import os
+    add(client, "https://ex.com/w?utm_content=7", "win-7")
+    conn = sqlite3.connect(os.environ["DB_PATH"])
+    conn.execute("UPDATE links SET created_at = '2026-09-01T10:00:00+00:00' WHERE slug = 'win-7'")
+    conn.executemany("INSERT INTO clicks VALUES ('win-7', ?, NULL)", [
+        ("2026-09-01T10:05:00+00:00",), ("2026-09-04T09:59:59+00:00",),  # inside 72 h
+        ("2026-09-04T10:00:00+00:00",), ("2026-09-20T08:00:00+00:00",),  # at/after 72 h
+    ])
+    conn.commit()
+    conn.close()
+    link = client.get("/links?utm_content=7&window_hours=72").json()[0]
+    assert link["clicks"] == 4 and link["clicks_window"] == 2
+    assert "clicks_window" not in client.get("/links?utm_content=7").json()[0]
+    assert client.get("/links?window_hours=0").status_code == 422

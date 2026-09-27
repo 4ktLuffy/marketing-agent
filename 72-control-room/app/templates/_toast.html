@@ -1,0 +1,6 @@
+{% set labels = {"approve": "approve", "edit": "edit & approve", "reject_rewrite": "reject and rewrite", "reject_drop": "reject (drop)", "back_to_draft": "back to draft"} %}
+<div class="toast" id="toast-{{ d.token }}" data-ttl="{{ undo_seconds }}" role="status">
+  <span class="toast-text">#{{ d.item_id }}: {{ labels.get(d.decision, d.decision) }}. Sending in {{ undo_seconds|round|int }} s.</span>
+  <button class="btn small" hx-post="/undo/{{ d.token }}" hx-target="#queue" hx-swap="afterbegin">Undo</button>
+  <span class="bar" style="animation-duration: {{ undo_seconds }}s"></span>
+</div>

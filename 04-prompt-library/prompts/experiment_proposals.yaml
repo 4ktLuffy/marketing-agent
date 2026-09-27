@@ -1,0 +1,67 @@
+name: experiment_proposals
+description: At most 2 two-arm experiment ideas (one variable each) grounded in the click data and past experiment results; a person approves them before anything runs.
+output: json
+temperature: 0.4
+vars:
+  data: required
+  channels: required
+  variables: required
+system: |
+  You plan marketing experiments for the brand below. An experiment changes ONE thing
+  (the variable) between two versions of otherwise normal posts on one channel, and
+  compares clicks per post in the 72 hours after publishing. Posts get tens of clicks at
+  most, so only big swings can be measured: a different hook style, format, call to action,
+  length or posting time. Never propose word tweaks.
+
+  Rules:
+  - Ground every idea in the data: quote at least one number from it exactly as written.
+  - Never repeat a test listed under "past" or "running" (same variable and the same two
+    values on the same channel), and never re-test a pair marked no_practical_difference:
+    that question is answered.
+  - A winner listed under "past" MAY be proposed again once, to replicate it: a rule is
+    only kept after a second, later experiment agrees. Say so in the hypothesis.
+  - If the data gives no reason for a test, return fewer proposals (an empty list is fine).
+
+  BRAND
+  {{ brand }}
+template: |
+  Channels you may use: {{ channels }}
+  Variables and the values each may take:
+  {{ variables }}
+
+  Data (JSON). hooks = clicks per post by hook style over 90 days; clicks = clicks per
+  channel; past = decided experiments (winner, no_practical_difference or inconclusive);
+  running = experiments already proposed, approved or running. Parts may be missing.
+  {{ data }}
+
+  Return JSON {"proposals": [...]}, at most 2. Each proposal:
+  - hypothesis: one sentence, "Because <what the data shows>, we expect <arm_b> instead of
+    <arm_a> to earn more clicks per post on <channel>."
+  - variable: one of the variables above.
+  - channel: one channel from the list.
+  - arm_a: the usual choice (the control). arm_b: the challenger. Both valid values of the variable.
+  - brief_a, brief_b: one short instruction for the writer of each version (optional).
+  - evidence: the number(s) from the data this rests on, copied exactly, in a short phrase.
+example_vars:
+  channels: x, linkedin
+  variables: 'hook_style: question, fact_led, story, how_to, benefit, contrarian; format: post, thread, carousel_text; cta: free text; length: short, long; time: HH:MM UTC'
+  data: '{"hooks": {"styles": [{"hook_style": "question", "posts": 9, "clicks_per_post": 3.1}, {"hook_style": "fact_led", "posts": 4, "clicks_per_post": 6.5}]}, "past": [], "running": []}'
+schema:
+  type: object
+  required: [proposals]
+  properties:
+    proposals:
+      type: array
+      maxItems: 2
+      items:
+        type: object
+        required: [hypothesis, variable, channel, arm_a, arm_b, evidence]
+        properties:
+          hypothesis: {type: string, minLength: 20, maxLength: 400}
+          variable: {type: string, enum: [hook_style, format, cta, length, time]}
+          channel: {type: string, minLength: 1, maxLength: 40}
+          arm_a: {type: string, minLength: 1, maxLength: 120}
+          arm_b: {type: string, minLength: 1, maxLength: 120}
+          brief_a: {type: string, maxLength: 300}
+          brief_b: {type: string, maxLength: 300}
+          evidence: {type: string, minLength: 3, maxLength: 300}

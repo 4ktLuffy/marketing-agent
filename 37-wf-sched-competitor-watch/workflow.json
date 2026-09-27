@@ -50,16 +50,106 @@
       }
     },
     {
-      "id": "282d64d3-d03d-5070-815c-90970a519ed4",
-      "name": "Changes",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "e2b37e87-d4f2-5ade-82f2-9b6c4c63be94",
+      "name": "Sync ads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         480,
         300
       ],
       "parameters": {
-        "jsCode": "const changed = $input.first().json.changed || [];\nif (!changed.length) return [];\nreturn [{ json: {\n  date: new Date().toISOString().slice(0, 10),\n  changes: changed.map(c => `### ${c.label || c.url} (${c.url})\\n${String(c.diff).slice(0, 1500)}`).join('\\n\\n'),\n} }];\n"
+        "method": "POST",
+        "url": "={{ $env.AD_LIBRARY_URL ? $env.AD_LIBRARY_URL.replace(/\\/+$/, '') + '/sync' : $env.MONITOR_URL + '/health' }}",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a8939177-f453-5ed1-8f4d-3740b278392c",
+      "name": "New ads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.AD_LIBRARY_URL ? $env.AD_LIBRARY_URL.replace(/\\/+$/, '') + '/ads' : $env.MONITOR_URL + '/health' }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "since",
+              "value": "={{ new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10) }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "2190afd9-6615-517e-bb4f-597a8d33c120",
+      "name": "Ad library links",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.AD_LIBRARY_URL ? $env.AD_LIBRARY_URL.replace(/\\/+$/, '') + '/links' : $env.MONITOR_URL + '/health' }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "282d64d3-d03d-5070-815c-90970a519ed4",
+      "name": "Changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst clean = s => String(s ?? '').replace(/\\s+/g, ' ').trim();\n\nconst AD = String($env.AD_LIBRARY_URL || '').trim();\nconst changed = $('Check pages').first().json.changed || [];\nconst bodyOf = n => { const r = $(n).first().json || {}; return r.statusCode >= 200 && r.statusCode < 300 ? r.body : null; };\nconst adsBody = AD ? bodyOf('New ads') : null;\nconst ads = adsBody && Array.isArray(adsBody.ads) ? adsBody.ads.filter(a => a && a.ad_id) : [];\nconst linksBody = AD ? bodyOf('Ad library links') : null;\nconst links = Array.isArray(linksBody) ? linksBody.filter(c => c && Array.isArray(c.links)) : [];\nconst sync = AD ? ($('Sync ads').first().json || {}) : {};\nconst ad_note = !AD ? '' : sync.statusCode === 200 ? '' : `Ad library sync did not run: ${errText(sync) || 'no answer'} (showing stored ads).`;\nconst since = Date.now() - 6 * 3600 * 1000;\nconst fresh = ads.filter(a => [a.first_seen, a.changed_at, a.stopped_seen_at].some(t => t && Date.parse(t) >= since));\nif (!changed.length && !fresh.length) return [];\n// Every text 78 returned, exact: the digest may quote only these (or the page diffs).\nconst ad_texts = [...new Set(ads.flatMap(a => [...(a.texts || []), ...(a.link_titles || [])]).map(clean).filter(Boolean))];\nconst ads_text = ads.slice(0, 20).map(a => `- ${a.competitor} (${a.change}, first seen ${String(a.first_seen).slice(0, 10)}): ` +\n  ((a.texts || []).length ? a.texts.slice(0, 2).map(t => `\"${clean(t)}\"`).join(' / ') : '(no text: image or video ad)')).join('\\n');\n// \"They launched X\": added lines that announce something new.\nconst LAUNCH = /\\b(new|introducing|launch(es|ed|ing)?|now available|just released|coming soon|meet the)\\b/i;\nconst launches = [];\nfor (const c of changed) for (const line of String(c.diff || '').split('\\n'))\n  if (line.startsWith('+') && !line.startsWith('+++') && LAUNCH.test(line))\n    launches.push({ label: c.label || c.url, url: c.url, line: clean(line.slice(1)).slice(0, 200) });\n// Pricing pages: 78 labels them \"<name> · pricing\"; hand-made watches are matched by URL.\nconst isPricing = c => /·\\s*pricing$/i.test(c.label || '') || /\\/(pricing|plans?|prices?|preise|tarife?s?|abo|subscriptions?)(\\/|$|\\?|\\.)/i.test(c.url || '');\nconst pricing = changed.filter(isPricing).map(c => ({ competitor: String(c.label || c.url).split(' · ')[0], url: c.url, diff: String(c.diff).slice(0, 3000) }));\nreturn [{ json: {\n  date: new Date().toISOString().slice(0, 10),\n  changes: changed.length ? changed.map(c => `### ${c.label || c.url} (${c.url})\\n${String(c.diff).slice(0, 1500)}`).join('\\n\\n')\n                          : '(No watched page changed. Only the ads below are new.)',\n  ads_text, ad_texts, ads: ads.slice(0, 15), fresh: fresh.length, launches, pricing, links, ad_note,\n} }];\n"
       }
     },
     {
@@ -68,7 +158,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        720,
+        1440,
         300
       ],
       "parameters": {
@@ -88,7 +178,20 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ prompt: 'competitor_changes', vars: { changes: $json.changes } }) }}"
+        "jsonBody": "={{ JSON.stringify({ prompt: 'competitor_changes', vars: { changes: $json.changes, ads: $json.ads_text || null } }) }}"
+      }
+    },
+    {
+      "id": "08cb819e-5067-5257-952f-ebdcbc0bdd51",
+      "name": "Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst clean = s => String(s ?? '').replace(/\\s+/g, ' ').trim();\n\nconst d = $('Changes').first().json;\nconst norm = s => clean(s).replace(/[“”„]/g, '\"').replace(/[‘’]/g, \"'\");\nconst sources = [...(d.ad_texts || []), ...String(d.changes || '').split('\\n').map(l => l.replace(/^[+-]/, ''))].map(norm).filter(Boolean);\nlet removed = 0;\nconst checkQuotes = text => String(text || '').replace(/\"([^\"\\n]{2,800})\"|“([^”\\n]{2,800})”/g, (m, a, b) => {\n  const q = norm(a ?? b).replace(/^[.…\\s]+|[.…\\s]+$/g, '');\n  if (q.split(' ').length < 3 || sources.some(s => s.includes(q))) return m;\n  removed++;\n  return '[quote removed: not an exact ad or page text]';\n});\n// The model's text is checked; the sections below are built from 78's and 09's data, exact by construction.\nconst lines = [checkQuotes(String($input.first().json.output || '').trim())];\nif ((d.launches || []).length) lines.push('', '### Possible launches (check the page)',\n  ...d.launches.slice(0, 10).map(l => `- ${l.label}: \"${l.line}\" (${l.url})`));\nif ((d.ads || []).length) lines.push('', '### New, changed or stopped ads this week (Meta Ad Library, EU)',\n  ...d.ads.map(a => `- ${a.competitor}, ${a.change} (first seen ${String(a.first_seen).slice(0, 10)}): ` +\n    ((a.texts || []).length ? `\"${clean(a.texts[0])}\"` : '(no text: image or video ad)') + ` ${a.library_url}`));\nif (d.ad_note) lines.push('', `_${d.ad_note}_`);\nconst manual = (d.links || []).slice(0, 10).map(c => {\n  const seen = new Set();\n  const ls = c.links.filter(l => !l.api && (l.platform !== 'meta' || l.market === 'ALL'))\n    .filter(l => !seen.has(l.platform) && seen.add(l.platform))\n    .map(l => `[${l.platform === 'meta' ? 'Meta (all countries)' : l.platform[0].toUpperCase() + l.platform.slice(1)}](${l.url})`);\n  return ls.length ? `- ${c.competitor}: ${ls.join(' · ')}` : '';\n}).filter(Boolean);\nif (manual.length) lines.push('', '### Check by hand (no API, or outside the EU)', ...manual);\nlet digest = lines.join('\\n');\nif (removed) digest += `\\n\\n_${removed} quote(s) removed: not an exact ad text (78) or page text (09)._`;\nreturn [{ json: { digest, removed_quotes: removed, pricing: d.pricing || [] } }];\n"
       }
     },
     {
@@ -97,7 +200,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        960,
+        1920,
         300
       ],
       "parameters": {
@@ -115,7 +218,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ doc_id: 'competitors-' + $('Changes').first().json.date + '-' + Date.now(), title: 'Competitor changes ' + $('Changes').first().json.date, text: $json.output, source: 'competitor-watch' }) }}"
+        "jsonBody": "={{ JSON.stringify({ doc_id: 'competitors-' + $('Changes').first().json.date + '-' + Date.now(), title: 'Competitor changes ' + $('Changes').first().json.date, text: $json.digest, source: 'competitor-watch' }) }}"
       },
       "onError": "continueRegularOutput"
     },
@@ -125,7 +228,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        2160,
         300
       ],
       "parameters": {
@@ -138,11 +241,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
+        2400,
         300
       ],
       "parameters": {
-        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest('*Competitor pages changed*\\n' + $('Explain changes').first().json.output, $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest('*Competitor watch*\\n' + $('Digest').first().json.digest, $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
       }
     },
     {
@@ -151,7 +254,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1680,
+        2640,
         300
       ],
       "parameters": {
@@ -161,6 +264,114 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "cbc2e266-4996-547a-a18e-7d0265c3518a",
+      "name": "Approved facts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        520
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BRAND_URL }}/facts",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "dd58d35c-b7c6-5ed4-b39d-b720b82abdd7",
+      "name": "Pricing changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const fr = $input.first().json || {};\nconst facts = Array.isArray((fr.body || {}).facts) ? fr.body.facts : [];\nconst factsText = facts.map(f => `- ${String(f.text).trim()}`).join('\\n');\nreturn ($('Digest').first().json.pricing || []).slice(0, 3).map(p => ({ json: { ...p, facts: factsText } }));\n"
+      }
+    },
+    {
+      "id": "44303c44-6437-56f8-b291-474cd15d2f20",
+      "name": "Draft brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'competitor_brief', vars: { competitor: $json.competitor, url: $json.url, diff: $json.diff, facts: $json.facts || null } }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "60cdfcd5-fa47-535e-98b9-6c6290cc4c46",
+      "name": "Check brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const src = $('Pricing changes').all().map(i => i.json);\nconst nums = s => (String(s || '').match(/\\d[\\d,.]*/g) || []).map(n => n.replace(/[,.]$/, '').replace(/,(?=\\d{3}\\b)/g, ''));\nconst out = [];\n$input.all().forEach((it, i) => {\n  const x = src[i] || src[0] || {};\n  const b = it.json.output;\n  if (!b || typeof b !== 'object' || !['match', 'counter', 'ignore'].includes(b.decision)) return;\n  const known = new Set(nums(`${x.diff}\\n${x.facts}`));\n  let dropped = 0;\n  const ok = s => { const bad = nums(s).filter(n => !known.has(n)); if (bad.length) dropped++; return !bad.length; };\n  const reasons = (b.reasons || []).map(String).filter(ok);\n  const points = (b.response_points || []).map(String).filter(ok);\n  const what = ok(b.what_changed) ? String(b.what_changed) : 'See the diff below.';\n  const body = [`**${x.competitor}** changed its pricing page: ${x.url}`, '', `**What changed:** ${what}`,\n    `**Suggested decision:** ${b.decision}`, '', '**Why:**', ...(reasons.length ? reasons.map(r => `- ${r}`) : ['- (no reason left after the number check)']),\n    '', '**What we could do:**', ...(points.length ? points.map(p => `- ${p}`) : ['- nothing for now']),\n    '', '**Diff** (`-` before, `+` after):', '```diff', x.diff, '```',\n    ...(dropped ? ['', `_${dropped} line(s) dropped: a number not in the diff or our approved facts._`] : []),\n    '', '_Drafted by the competitor watch (37) from the approved facts (05). A brief for the team, never published._'].join('\\n');\n  out.push({ json: { title: `Competitor brief: ${x.competitor} pricing (${b.decision})`.slice(0, 200), channel: 'competitor_brief',\n    status: 'idea', link: x.url, body, notes: `competitor brief for ${x.url} (${b.decision})` } });\n});\nreturn out;\n"
+      }
+    },
+    {
+      "id": "1dec9f66-fd02-5502-aa8c-d8bc61b0a81b",
+      "name": "Save brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
       },
       "onError": "continueRegularOutput"
     }
@@ -192,6 +403,39 @@
       "main": [
         [
           {
+            "node": "Sync ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync ads": {
+      "main": [
+        [
+          {
+            "node": "New ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New ads": {
+      "main": [
+        [
+          {
+            "node": "Ad library links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ad library links": {
+      "main": [
+        [
+          {
             "node": "Changes",
             "type": "main",
             "index": 0
@@ -214,7 +458,23 @@
       "main": [
         [
           {
+            "node": "Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digest": {
+      "main": [
+        [
+          {
             "node": "Save to knowledge base",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Approved facts",
             "type": "main",
             "index": 0
           }
@@ -237,6 +497,50 @@
         [
           {
             "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved facts": {
+      "main": [
+        [
+          {
+            "node": "Pricing changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pricing changes": {
+      "main": [
+        [
+          {
+            "node": "Draft brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft brief": {
+      "main": [
+        [
+          {
+            "node": "Check brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check brief": {
+      "main": [
+        [
+          {
+            "node": "Save brief",
             "type": "main",
             "index": 0
           }

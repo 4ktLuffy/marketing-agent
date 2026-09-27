@@ -1,8 +1,14 @@
 # 37 · Competitor watch
 
-Deploy **37 of 71** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **37 of 81** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
-Every 6 hours it diffs the competitor pages you watch (09). When something changed, the LLM explains what changed and whether to react. The note is saved to the knowledge base and posted to your webhook.
+Every 6 hours it diffs the competitor pages you watch (09) and, when `AD_LIBRARY_URL` is set, syncs the competitors' ads from the official Meta Ad Library API (78 `POST /sync`, EU-delivered ads only) and reads the week's new, changed or stopped ads (78 `GET /ads`) and the manual-check links (78 `GET /links`). It goes on when a page changed or an ad appeared, changed or stopped since the last run. The LLM (prompt `competitor_changes`, with the ad texts) explains what changed and whether to react.
+
+**Checked in code, not trusted:** every quote in the digest must be an exact ad text from 78 or an exact part of a page diff; any other quote of 3+ words is replaced by `[quote removed: ...]` and counted. The code then adds: *Possible launches* (added lines that say new / introducing / launched / now available ...), *New, changed or stopped ads this week* (each ad's exact text and its Ad Library link) and *Check by hand* (Meta for all countries, Google Ads Transparency Center, LinkedIn and TikTok ad libraries: no API or outside the EU, so a person opens them; nothing is scraped). The digest is saved to the knowledge base and posted to your webhook.
+
+**Pricing page changed** (78 labels it `<name> · pricing`, or the URL has /pricing, /plans ...): the LLM (prompt `competitor_brief`, with the approved facts from 05) suggests match, counter or ignore, with reasons and response points. Lines with a number that is in neither the diff nor the facts are dropped. The brief is saved to the calendar (19) as an `idea` with channel `competitor_brief`, which the publisher (39) never sends. At most 3 briefs per run.
+
+With `AD_LIBRARY_URL` empty, or 78 down, it works as before on page changes only.
 
 ## Where to deploy
 
@@ -32,21 +38,27 @@ every 6 hours. Change it in the first node.
 | Env | Meaning |
 |---|---|
 | `NOTIFY_WEBHOOK_URL` | optional |
+| `AD_LIBRARY_URL` | 78-ad-library-sync, e.g. `http://ad-library-sync:8000`. Empty = pages only, no ads or links |
 
 ## Setup
 
-Add pages to watch:
+Add competitors in 78 (their key pages become 09 watches automatically), or ask the chat agent "track competitor https://rival.example.com" (tool 81):
 
 ```bash
-curl -X POST localhost:8109/watches -H "X-API-Key: $INTERNAL_API_KEY" \
-  -H 'content-type: application/json' -d '{"url":"https://competitor.com/pricing","label":"Rival pricing"}'
+curl -X POST localhost:8178/competitors -H "X-API-Key: $INTERNAL_API_KEY" \
+  -H 'content-type: application/json' -d '{"name":"Rival Beans","website":"https://rival.example.com/","key_pages":[{"url":"https://rival.example.com/pricing","type":"pricing"}],"meta_page_id":"123456789"}'
 ```
+
+Pages can still be watched by hand in 09 (`POST localhost:8109/watches`).
 
 ## Depends on
 
 - `03-llm-gateway`
+- `05-brand-service`
 - `06-knowledge-base`
 - `09-change-monitor`
+- `19-content-calendar`
+- `78-ad-library-sync (optional)`
 
 Service URLs come from env vars on the n8n container (`GATEWAY_URL`, `CALENDAR_URL`, …),
 which `01-marketing-stack` sets. `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set so

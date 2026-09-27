@@ -22,6 +22,8 @@ import yaml
 from evalsuite.checks import run_check
 
 CASES_DIR = Path(__file__).parent.parent / "cases"
+# Top-level case files that are not gateway prompt cases (they have their own runner).
+NOT_PROMPT_CASES = {"site_assistant", "site_assistant_heldout"}
 TOKENS = {"prompt": 0, "completion": 0}
 
 
@@ -29,7 +31,7 @@ def load_cases(only: str | None, files: str | None = None) -> list[dict]:
     """All cases/*.yaml, or only the comma-separated files named in `files` (without .yaml)."""
     cases = []
     paths = ([CASES_DIR / f"{n.strip()}.yaml" for n in files.split(",") if n.strip()] if files
-             else sorted(CASES_DIR.glob("*.yaml")))
+             else sorted(f for f in CASES_DIR.glob("*.yaml") if f.stem not in NOT_PROMPT_CASES))
     for f in paths:
         for case in yaml.safe_load(f.read_text()):
             if only and only not in (case["id"], case["prompt"]):

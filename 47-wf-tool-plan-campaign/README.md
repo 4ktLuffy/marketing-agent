@@ -1,6 +1,6 @@
 # 47 · Plan a campaign
 
-Deploy **47 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **47 of 81** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Turns a campaign brief into a real campaign: goal type, key messages and targets (yours, or proposed ones marked as such), created in the campaign service (45) with a dated plan of pieces in the calendar. It then starts the drafter (48) in the background. The campaign stays `planned` until you confirm the targets and activate it.
 

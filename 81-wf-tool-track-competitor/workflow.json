@@ -1,0 +1,378 @@
+{
+  "id": "mktWf81TrackComp",
+  "name": "81 · Tool · Track a competitor",
+  "nodes": [
+    {
+      "id": "4a5c2ee3-3b62-5f69-ab06-4939e987bcf1",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "url",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "markets",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2ed46806-feb9-5ebf-be3c-5dc59768d5fd",
+      "name": "Fetch homepage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EXTRACTOR_URL }}/extract",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: String($json.url || '').trim(), list_links: true }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "fc8dec8b-aa30-50cb-ac56-e53ea227077b",
+      "name": "Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst clean = s => String(s ?? '').replace(/\\s+/g, ' ').trim();\n\nconst s = $('Start').first().json;\nconst r = $input.first().json || {};\nconst b = r.body && typeof r.body === 'object' ? r.body : {};\nconst raw = String(s.url || '').trim();\nconst fail = text => [{ json: { go: false, result: text } }];\nif (!$env.AD_LIBRARY_URL) return fail('Competitor tracking needs the ad-library-sync service (78): AD_LIBRARY_URL is not set on n8n. Nothing was added.');\nif (!/^https?:\\/\\/[^\\s/]+\\.[^\\s/]+/i.test(raw)) return fail(`\"${raw}\" is not a website address (https://...). Nothing was added.`);\nif (!(r.statusCode >= 200 && r.statusCode < 300) || !b.url) return fail(`Could not read ${raw}: ${errText(r) || 'no answer from the page extractor'}. Nothing was added.`);\nconst host = u => { try { return new URL(u).hostname.toLowerCase().replace(/^www\\./, ''); } catch (e) { return ''; } };\nconst home = String(b.url);\nconst h = host(home);\nconst JUNK = /\\/(login|log-in|signin|sign-in|signup|register|account|cart|basket|checkout|privacy|terms|legal|imprint|impressum|cookies?|careers|jobs|contact|search|wp-admin)(\\/|$|\\?)/i;\nconst links = (b.link_list || []).map(l => ({ url: String(l.url || '').split('#')[0], text: clean(l.text) }))\n  .filter(l => host(l.url) === h && /^https?:/i.test(l.url) && !JUNK.test(l.url) && l.url.replace(/\\/$/, '') !== home.replace(/\\/$/, ''));\nconst uniq = [...new Map(links.map(l => [l.url, l])).values()].slice(0, 80);\nconst og = b.og || {};\nconst name = clean(s.name) || clean(og.site_name) || clean(String(b.title || '').split(/\\s[|\\-–—:·]\\s/)[0]) || h;\nreturn [{ json: { go: true, home, host: h, name: name.slice(0, 120), candidates: uniq.map(l => l.url),\n  links: uniq.map(l => l.text ? `${l.url} (${l.text})` : l.url).join('\\n'),\n  markets: String(s.markets || '').toUpperCase().split(/[\\s,;]+/).filter(m => /^[A-Z]{2}$/.test(m)) } }];\n"
+      }
+    },
+    {
+      "id": "bfeb7fa7-c0b4-5c30-aeb5-8e0c4e902502",
+      "name": "Can go on?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "da01993f-ee36-5bda-a20f-f3a720a8c590",
+              "leftValue": "={{ $json.go }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c0f48e02-80bf-5121-98c1-1a8f45401c87",
+      "name": "Propose pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'competitor_key_pages', vars: { url: $json.home, title: $json.name, links: $json.links || '(none)' } }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "79b2b88a-dcec-5009-9e17-63ba48427c05",
+      "name": "Pick pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Candidates').first().json;\nconst out = $input.first().json.output;\nconst TYPES = ['pricing', 'product', 'features', 'about'];\nconst allowed = new Set(c.candidates);\nconst picked = [], seen = new Set();\nlet rejected = 0;\nfor (const p of (out && Array.isArray(out.pages) ? out.pages : [])) {\n  const url = String(p && p.url || '').trim();\n  if (!allowed.has(url) || !TYPES.includes(p.type)) { rejected++; continue; }\n  if (seen.has(url)) continue;\n  seen.add(url);\n  picked.push({ url, type: p.type });\n}\nconst pages = picked.slice(0, 5);\n// One item per page for the reachability check; none picked: check the homepage only.\nreturn (pages.length ? pages : [{ url: c.home, type: 'home', noop: true }]).map(p => ({ json: { ...p, rejected } }));\n"
+      }
+    },
+    {
+      "id": "6b30aa95-8286-5332-9f98-6209e04311ad",
+      "name": "Readable?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EXTRACTOR_URL }}/extract",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json.url }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "def1da4b-a502-536c-a3f4-d229ec58b005",
+      "name": "Readable pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const picks = $('Pick pages').all().map(i => i.json);\nconst c = $('Candidates').first().json;\nconst key_pages = [], unreadable = [];\n$input.all().forEach((it, i) => {\n  const p = picks[i];\n  if (!p || p.noop) return;\n  const r = it.json || {};\n  if (r.statusCode >= 200 && r.statusCode < 300 && r.body && String(r.body.text || '').trim()) key_pages.push({ url: p.url, type: p.type });\n  else unreadable.push(p.url);\n});\nconst body = { name: c.name, website: c.home, key_pages, status: 'active', notes: 'added by the chat agent (81)' };\nif (c.markets.length) body.markets = c.markets;\nreturn [{ json: { body, unreadable, rejected: (picks[0] || {}).rejected || 0 } }];\n"
+      }
+    },
+    {
+      "id": "ab3a2b54-0ab9-58bb-9588-ca8a54049683",
+      "name": "Save competitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AD_LIBRARY_URL.replace(/\\/+$/, '') }}/competitors",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "upsert",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "28a4e7b8-46c9-57e6-b9e0-2fa4a6febe88",
+      "name": "Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst clean = s => String(s ?? '').replace(/\\s+/g, ' ').trim();\n\nconst r = $input.first().json || {};\nconst k = $('Readable pages').first().json;\nif (!(r.statusCode >= 200 && r.statusCode < 300) || !r.body || !r.body.id) {\n  return [{ json: { result: `Could not save the competitor in 78: ${errText(r) || 'no answer'}. Nothing was added.` } }];\n}\nconst c = r.body, w = c.watch_state || {};\nconst lines = [`Now tracking **${c.name}** (${c.website}).`, ''];\nlines.push('Watched pages (checked every 6 hours by the competitor watch):');\nlines.push(...((w.watches || []).length ? w.watches.map(x => `- ${x.label}: ${x.url}`) : ['- none']));\nif (w.error) lines.push('', `Watches could not be set up: ${w.error}`);\nfor (const e of w.errors || []) lines.push(`- not watched: ${e.url} (${e.error})`);\nif (k.unreadable.length) lines.push('', `Skipped (could not be read): ${k.unreadable.join(', ')}`);\nif (k.rejected) lines.push(`${k.rejected} suggested page(s) were not links on the homepage and were ignored.`);\nlines.push('', c.meta_page_id ? `Meta ads: page ${c.meta_page_id}, EU markets ${(c.markets.length ? c.markets : ['default']).join(', ')}.`\n  : 'Meta ads: searched by name until you add the Facebook page id (`meta_page_id`, from the page\\'s About > Page transparency).');\nlines.push(`Other ad libraries (Google, LinkedIn, TikTok) have no API: open them by hand from 78, GET /links/${encodeURIComponent(c.name)}.`);\nreturn [{ json: { result: lines.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "d25110f3-0b93-5935-bc24-0f7efcfbde1c",
+      "name": "Not added",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        500
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: $input.first().json.result } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Fetch homepage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch homepage": {
+      "main": [
+        [
+          {
+            "node": "Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidates": {
+      "main": [
+        [
+          {
+            "node": "Can go on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can go on?": {
+      "main": [
+        [
+          {
+            "node": "Propose pages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not added",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Propose pages": {
+      "main": [
+        [
+          {
+            "node": "Pick pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick pages": {
+      "main": [
+        [
+          {
+            "node": "Readable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readable?": {
+      "main": [
+        [
+          {
+            "node": "Readable pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readable pages": {
+      "main": [
+        [
+          {
+            "node": "Save competitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save competitor": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

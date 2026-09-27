@@ -1,0 +1,79 @@
+name: clip_scoring
+description: Scores transcript windows of a long video as short vertical clips (hook in the first 3 s, standalone sense, payoff, quotability) and names each one, as JSON (73 clip-finder).
+output: json
+temperature: 0.2
+vars:
+  windows: required
+  count: optional
+  language: optional
+# Used by 73-clip-finder, one batch of ~6 windows at a time. The windows are cut in code
+# from the speaker's own words; the model only judges and names them. The service checks the
+# answer in code: ids outside the batch are ignored, scores are clamped to 0-10, a "hook_line"
+# that is not copied word for word from its window is replaced by the window's opening words, and a
+# title with a number the window does not contain is replaced too. No brand in the prompt on
+# purpose: a clip is judged on what the speaker said, not on our marketing.
+system: |
+  You are a short-form video editor. You judge which moments of a long talk, podcast or
+  interview would work on their own as a 20-60 second vertical clip (Reels, TikTok, Shorts).
+  You judge only the transcript you are given. You never add facts, numbers, names or claims
+  that are not in the window, and you never rewrite what the speaker said.
+template: |
+  Transcript windows from one video. Each starts with its id in brackets, its time range and
+  length, the words spoken in its FIRST 3 SECONDS, and its FULL TEXT:
+
+  {{ windows }}
+
+  Score each of the {{ count or "given" }} windows with whole numbers from 0 to 10:
+  - "hook": do the first 3 seconds make a scrolling viewer stop? A question, a bold or
+    surprising statement, or a clear problem scores high. Filler ("so", "um", "and then",
+    "as I said"), greetings or a sentence that starts in the middle of a thought score low.
+  - "standalone": does it make sense to someone who has not seen the rest of the video?
+    Low if it depends on something said before ("that", "this one", "as I mentioned") or
+    ends before the point is made.
+  - "payoff": does it deliver something by the end: a lesson, an answer, a twist, a clear
+    takeaway? Low if it just stops.
+  - "quotable": is there a line people would repeat, share or put on screen?
+  Be strict: most windows are ordinary (3-6). Give 8-10 only to a window that is clearly
+  strong on that point.
+
+  For each window also write:
+  - "title": what the clip is about, at most 60 characters, plain words, no hashtags, no
+    emoji, no clickbait. Use only what is said in the window.
+  - "hook_line": the single strongest line of the window, copied WORD FOR WORD from its FULL TEXT
+    (at most 20 words, no quotation marks). Do not fix, shorten with "..." or combine lines.
+  - "reason": one short sentence on why it would or would not work as a clip.
+  {% if language %}
+  Write "title" and "reason" in this language: {{ language }}.
+  {% else %}
+  Write "title" and "reason" in the language of the transcript.
+  {% endif %}
+  Return one entry per window, with its id exactly as given (like w3).
+example_vars:
+  windows: |
+    [w1] 00:12-00:41 (29 s)
+    FIRST 3 SECONDS: So, um, where was I.
+    FULL TEXT: So, um, where was I. Right, the second slide. We tried a few tools last year and some of them were fine.
+
+    [w2] 01:05-01:48 (43 s)
+    FIRST 3 SECONDS: Nobody on a remote team drinks coffee together.
+    FULL TEXT: Nobody on a remote team drinks coffee together. That is the problem. So every Monday we open a video call, no agenda, cameras on, and everyone brings a cup. It sounds silly. It is the one meeting nobody skips.
+  count: 2
+schema:
+  type: object
+  required: [scores]
+  properties:
+    scores:
+      type: array
+      maxItems: 20
+      items:
+        type: object
+        required: [id, hook, standalone, payoff, quotable, title, hook_line]
+        properties:
+          id: {type: string, maxLength: 12}
+          hook: {type: integer, minimum: 0, maximum: 10}
+          standalone: {type: integer, minimum: 0, maximum: 10}
+          payoff: {type: integer, minimum: 0, maximum: 10}
+          quotable: {type: integer, minimum: 0, maximum: 10}
+          title: {type: string, maxLength: 100}
+          hook_line: {type: string, maxLength: 300}
+          reason: {type: string, maxLength: 300}

@@ -672,6 +672,66 @@ def test_dry_run_reports_the_video_upload_without_calling_postiz(video_env, monk
     assert vid.called
 
 
+# ---------- clips from 73-clip-finder: CLIPS_PUBLIC_URL -> CLIPS_INTERNAL_URL, like 71's videos
+
+CLIPS_PUBLIC = "http://localhost:8173"
+CLIPS_INTERNAL = "http://clip-finder:8000"
+CLIP_PATH = "/clips/fedcba9876543210fedcba9876543210.mp4"
+CLIP_POSTER = "/clips/fedcba9876543210fedcba9876543210.jpg"
+
+
+@pytest.fixture
+def clips_env(monkeypatch, video_env):
+    monkeypatch.setenv("CLIPS_PUBLIC_URL", CLIPS_PUBLIC)
+    monkeypatch.setenv("CLIPS_INTERNAL_URL", CLIPS_INTERNAL)
+
+
+def test_clip_url_is_fetched_from_the_internal_clip_finder(clips_env):
+    assert main.video_fetch_url(CLIPS_PUBLIC + CLIP_PATH) == CLIPS_INTERNAL + CLIP_PATH
+    assert main.image_fetch_url(CLIPS_PUBLIC + CLIP_POSTER) == CLIPS_INTERNAL + CLIP_POSTER
+    # 71's videos and 17's cards keep their own mapping; other hosts are fetched as given
+    assert main.video_fetch_url(VIDEO_PUBLIC + VIDEO_PATH) == VIDEO_INTERNAL + VIDEO_PATH
+    assert main.image_fetch_url(CARD_PUBLIC + CARD_PATH) == CARD_INTERNAL + CARD_PATH
+    assert main.video_fetch_url("https://cdn.example.com/clip.mp4") == "https://cdn.example.com/clip.mp4"
+    # a look-alike prefix is not the clip finder
+    assert main.video_fetch_url(CLIPS_PUBLIC + "0/clips/x.mp4") == CLIPS_PUBLIC + "0/clips/x.mp4"
+
+
+def test_clip_url_is_not_mapped_without_the_internal_address(monkeypatch):
+    monkeypatch.setenv("CLIPS_PUBLIC_URL", CLIPS_PUBLIC)
+    monkeypatch.delenv("CLIPS_INTERNAL_URL", raising=False)
+    assert main.video_fetch_url(CLIPS_PUBLIC + CLIP_PATH) == CLIPS_PUBLIC + CLIP_PATH
+
+
+def test_dry_run_reports_the_clip_upload_from_the_internal_address(clips_env, monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    clip = mock.get(CLIPS_INTERNAL + CLIP_PATH).mock(return_value=httpx.Response(
+        200, content=mp4(38.5), headers={"content-type": "video/mp4"}))
+    r = client.post("/publish", json=item(channel="instagram", image_url=CLIPS_PUBLIC + CLIP_POSTER,
+                                          video_url=CLIPS_PUBLIC + CLIP_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    up = r.json()["would_upload"]
+    assert up["video_url"] == CLIPS_PUBLIC + CLIP_PATH and up["fetched_from"] == CLIPS_INTERNAL + CLIP_PATH
+    assert up["content_type"] == "video/mp4" and up["duration_s"] == 38.5
+    assert clip.called and "authorization" not in clip.calls.last.request.headers
+    assert [c.request.url.host for c in mock.calls] == ["clip-finder"]
+
+
+def test_clip_too_long_for_x_falls_back_to_its_poster_from_the_internal_address(clips_env, mock):
+    mock_integrations(mock)
+    mock.get(CLIPS_INTERNAL + CLIP_PATH).mock(return_value=httpx.Response(
+        200, content=mp4(150), headers={"content-type": "video/mp4"}))
+    poster = mock.get(CLIPS_INTERNAL + CLIP_POSTER).mock(return_value=httpx.Response(
+        200, content=b"\xff\xd8\xff" + b"\0" * 64, headers={"content-type": "image/jpeg"}))
+    mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "pc", "integration": X_ID}]))
+    r = client.post("/publish", json=item(channel="x", image_url=CLIPS_PUBLIC + CLIP_POSTER,
+                                          video_url=CLIPS_PUBLIC + CLIP_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert "longer than x takes" in r.json()["video_note"]
+    assert poster.called and create.called
+
+
 def test_no_video_url_keeps_the_answer_unchanged(monkeypatch, mock):
     monkeypatch.setenv("DRY_RUN", "true")
     body = client.post("/publish", json=item(video_url=" "), headers=AUTH).json()

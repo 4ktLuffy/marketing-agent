@@ -1,0 +1,48 @@
+# Lead scoring rules (80 lead-hub). Replace with your own ideal customer profile and mount
+# the file at SCORING_RULES. Scoring is deterministic: every point comes from one rule below,
+# and the rule's `reason` is shown with the score, so a person can see why a lead is an A.
+#
+# A rule adds `points` (negative points subtract) when it matches:
+#   field: message | enrichment | industry | size | source | utm_source | utm_medium |
+#          utm_campaign | messages | has_company_domain | has_consent
+#   any:   keywords (text fields: whole words/phrases, any case) or values (source, utm_*)
+#   min:   for `messages` (how many times the lead contacted us)
+#   is:    true/false for has_company_domain / has_consent
+# Each category's total is capped at `caps`; the score is 0-100.
+# "enrichment" is only what the lead's own website says (checked facts), never guesses.
+
+caps: {fit: 40, intent: 45, engagement: 15}
+grades: {A: 70, B: 45, C: 25}   # score >= A -> A, >= B -> B, >= C -> C, else D
+
+rules:
+  # ---- fit: are they the kind of company we serve?
+  - {id: company_domain, category: fit, field: has_company_domain, is: true, points: 10,
+     reason: "writes from a company domain, not free mail"}
+  - {id: team_industry, category: fit, field: enrichment, points: 15,
+     any: [software, saas, agency, studio, consultancy, startup, remote, distributed, fully remote],
+     reason: "their site describes a company type that buys team perks (software, agency, remote)"}
+  - {id: size_stated, category: fit, field: size, any: [team, employees, people, staff, engineers],
+     points: 10, reason: "their site states a team size"}
+  - {id: remote_team, category: fit, field: message, any: [remote team, distributed team, remote-first, our team, whole team, teammates, employees, staff],
+     points: 10, reason: "asks for a team, not one person"}
+
+  # ---- intent: what did they ask for?
+  - {id: demo, category: intent, field: message, any: [demo, call, meeting, talk to someone, book],
+     points: 20, reason: "asked for a call or demo"}
+  - {id: pricing, category: intent, field: message, any: [pricing, price, prices, quote, cost, how much, invoice, budget],
+     points: 15, reason: "asked about pricing"}
+  - {id: team_box, category: intent, field: message, any: [team box, team plan, gift, perk, office],
+     points: 10, reason: "asked about the Team Box / team perk"}
+  - {id: team_size, category: intent, field: message, any: [people, employees, teammates, seats, team of],
+     points: 5, reason: "mentioned a team size"}
+  - {id: not_a_buyer, category: intent, field: message,
+     any: [job, internship, resume, cv, apply, sponsorship, seo services, guest post, backlinks, partnership proposal],
+     points: -30, reason: "looks like a job application or a pitch to us, not a buyer"}
+
+  # ---- engagement: how did they reach us, how often?
+  - {id: site_assistant, category: engagement, field: source, any: [site_assistant], points: 5,
+     reason: "came through the site assistant conversation"}
+  - {id: repeat, category: engagement, field: messages, min: 2, points: 10,
+     reason: "contacted us more than once"}
+  - {id: paid_or_newsletter, category: engagement, field: utm_medium, any: [email, newsletter, cpc, paid],
+     points: 5, reason: "arrived from our newsletter or ads"}

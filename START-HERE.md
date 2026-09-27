@@ -23,7 +23,7 @@ approve its own work; that rule is enforced in the workflow, not just stated in 
 The example brand is a made-up coffee subscription, *Northwind Roasters*. Replace it with
 yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 
-## The 71 deploys: each folder is one GitHub repo
+## The 81 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -45,6 +45,9 @@ yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 | **Customer language & video** | 70 customer-language engine: mines customers' own words from reviews, searches and support (every quote verbatim with its source) → themes, headline bank, grounded personas · 71 video assembly: script → 1080×1920 MP4 with on-screen text, captions and optional local voice (Piper) | containers |
 | **SEO & refresh** | 67 Search Console sync · 68 content refresh plans for pages losing clicks · 69 SEO briefs for queries ranking 5–20 | 67 → container · 68, 69 → n8n |
 | **Learning** | 46 learning service · 49 revise rejected drafts · 50 weekly rule proposals | 46 → container · rest → n8n |
+| **Control room & clips** | 72 control room: mobile web app to review (swipe, undo), see the calendar, previews, performance and engine status; same decisions as form 38 · 73 clip finder: long video (direct file or upload) → short vertical clips with word-by-word captions, transcribed locally · 77 chat tool `clip_video`: clips → captioned `video` items for approval | containers · 77 → n8n |
+| **Inbound & competitors** | 79 site assistant: website chat that answers only from your knowledge base and facts (claim-checked), says it's an AI, qualifies, offers your booking link, hands off to a person · 80 lead hub: consented inbound leads → enrichment from their own website → score with reasons → HubSpot/Pipedrive (dry run) → first reply for you to approve · 78 ad library + competitor registry (official Meta API for EU ads, links elsewhere) · 81 `track_competitor` chat tool · 77 `clip_video` chat tool (clips → approval) | 78–80 → containers · 77, 81 → n8n |
+| **Experiments** | the agent proposes one-variable A/B tests weekly (74), a person approves them (76), 61 gives the two versions to planned slots balanced by weekday and hour, 45 decides at weekly looks in code (HDI + ROPE on clicks per post within 72 h; 75); a winner becomes a provisional rule in 46 that writers only get after a later experiment agrees and a person approves it (51) | 45, 46, 61 → containers · 74–76 → n8n |
 | **Safety net** | 43 error handler | n8n |
 
 Every folder has its own `README.md` with a **Where to deploy** section, its config, and how to

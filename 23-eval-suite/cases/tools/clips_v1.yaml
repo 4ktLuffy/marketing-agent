@@ -1,0 +1,10 @@
+# Tool-choice set for clip_video (77), written 2026-09-27 together with the tool, BEFORE any
+# run. Four requests to cut an existing video into clips, and two near-misses that must still
+# go to write_content_format (a new video script) and repurpose_content (text/article to posts).
+# Run: python -m evalsuite.tools --cases clips_v1
+- {say: "cut this webinar into shorts: https://cdn.example.com/webinars/2026-09-coffee.mp4", expect: clip_video}
+- {say: "Make 3 Instagram Reels clips from our talk recording https://media.example.com/talks/remote-rituals.mp4", expect: clip_video}
+- {say: "Here's the podcast episode file https://podcast.example.com/ep12.m4a, find the best moments and turn them into TikTok clips", expect: clip_video}
+- {say: "Can you pull a few short vertical clips with captions out of this video? https://storage.example.com/uploads/founder-keynote.mov", expect: clip_video}
+- {say: "Write a 30-second TikTok script about our new cold brew", expect: write_content_format}
+- {say: "Turn this blog post into LinkedIn and X posts: https://example.com/blog/decaf-process", expect: repurpose_content}

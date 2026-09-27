@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Performance{% endblock %}
+{% block head %}<script src="/static/vendor/chart.umd.min.js" defer></script><script src="/static/charts.js" defer></script>{% endblock %}
+{% block main %}
+<h1>Performance</h1>
+<nav class="tabs" aria-label="Period">{% for d in (7, 30, 90) %}<a href="/performance?days={{ d }}" {% if d == days %}aria-current="page"{% endif %}>{{ d }} days</a>{% endfor %}</nav>
+{% for e in errors %}<p class="alert danger">{{ e }}</p>{% endfor %}
+<p class="small muted">Clicks on tracked short links (16) joined to calendar items, from the campaign service (45).</p>
+<section class="panel">
+  <h2>Clicks by channel</h2>
+  {% if insights and insights.by_channel %}<div class="chart"><canvas id="by-channel" aria-label="clicks by channel"></canvas></div>
+  <table><thead><tr><th>Channel</th><th>Posts</th><th>Clicks</th><th>Per post</th></tr></thead><tbody>
+  {% for r in insights.by_channel %}<tr><td>{{ r.channel }}</td><td>{{ r.posts }}</td><td>{{ r.clicks }}</td><td>{{ r.avg_clicks }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="muted">No tracked clicks in this period.</p>{% endif %}
+</section>
+<section class="panel">
+  <h2>Top posts</h2>
+  {% if insights and insights.top_posts %}
+  <ol class="top-posts">{% for p in insights.top_posts %}<li><a href="/items/{{ p.item_id }}">#{{ p.item_id }} {{ p.title or '(unknown)' }}</a> <span class="muted">{{ p.channel }}</span> <b>{{ p.clicks }}</b> clicks</li>{% endfor %}</ol>
+  {% else %}<p class="muted">None yet.</p>{% endif %}
+</section>
+<section class="panel">
+  <h2>Hook styles</h2>
+  {% if hooks and hooks.styles %}
+  <p class="small">Winners now: {% for s in hooks.recommended %}<b>{{ s }}</b>{% if not loop.last %}, {% endif %}{% endfor %}. <span class="muted">{{ hooks.method }}</span></p>
+  <div class="chart"><canvas id="hooks" aria-label="clicks per post by hook style"></canvas></div>
+  <table><thead><tr><th>Hook</th><th>Posts</th><th>Clicks</th><th>Per post</th></tr></thead><tbody>
+  {% for s in hooks.styles %}<tr {% if s.recommended %}class="win"{% endif %}><td>{{ s.hook_style }}</td><td>{{ s.posts }}</td><td>{{ s.clicks }}</td><td>{{ s.clicks_per_post }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% if hooks.unlabeled_posts %}<p class="small muted">{{ hooks.unlabeled_posts }} posts have no hook style.</p>{% endif %}
+  {% else %}<p class="muted">No data.</p>{% endif %}
+</section>
+<script type="application/json" id="perf-data">{{ {"by_channel": (insights.by_channel if insights else []), "hooks": (hooks.styles if hooks else [])}|tojson }}</script>
+{% endblock %}

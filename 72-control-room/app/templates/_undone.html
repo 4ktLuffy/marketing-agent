@@ -1,0 +1,2 @@
+{% if c %}{% include "_card.html" %}{% else %}<p class="alert warn">Undone. The calendar did not answer; reload to see #{{ d.item_id }} again.</p>{% endif %}
+<div id="toast-{{ token }}" hx-swap-oob="delete"></div>

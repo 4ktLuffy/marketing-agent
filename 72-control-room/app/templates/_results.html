@@ -1,0 +1,8 @@
+<div id="results" hx-get="/results" hx-trigger="every 4s" hx-swap="outerHTML">
+  {% if sending %}<p class="small muted">Saving {{ sending }} decision{{ 's' if sending != 1 }}… (a re-rendered video can take a few minutes)</p>{% endif %}
+  {% for r in results %}
+  <div class="result {{ 'ok' if r.ok else 'bad' }}">
+    {% for line in r.lines %}<div>{{ line }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+</div>

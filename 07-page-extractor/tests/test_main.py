@@ -141,3 +141,16 @@ def test_ipv6_forms_embedding_private_ipv4_are_blocked():
     for addr in ("64:ff9b::7f00:1", "2002:7f00:1::", "::127.0.0.1", "::ffff:10.0.0.1", "64:ff9b::a9fe:a9fe"):
         assert not _is_public(addr), addr
     assert _is_public("64:ff9b::808:808")      # NAT64 of a public address (8.8.8.8) is fine
+
+
+@respx.mock
+def test_list_links_returns_internal_urls_only_when_asked():
+    html = ('<html><body><nav><a href="/pricing">Pricing</a><a href="https://www.example.com/about#team">About</a>'
+            '<a href="/pricing">Pricing again</a><a href="https://other.example.org/x">Other</a>'
+            '<a href="mailto:a@example.com">Mail</a></nav><p>Hi</p></body></html>')
+    respx.get("https://example.com/").mock(return_value=httpx.Response(200, html=html))
+    plain = client.post("/extract", json={"url": "https://example.com/"}).json()
+    assert "link_list" not in plain
+    r = client.post("/extract", json={"url": "https://example.com/", "list_links": True}).json()
+    assert r["link_list"] == [{"url": "https://example.com/pricing", "text": "Pricing"},
+                              {"url": "https://www.example.com/about", "text": "About"}]

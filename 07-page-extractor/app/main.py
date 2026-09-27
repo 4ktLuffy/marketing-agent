@@ -19,6 +19,8 @@ DROP_TAGS = ["script", "style", "nav", "footer", "header", "aside", "form", "nos
 class ExtractRequest(BaseModel):
     url: str | None = None
     html: str | None = None
+    # true: also return `link_list`, the internal links as [{"url", "text"}] (first 200, deduped)
+    list_links: bool = False
 
     @model_validator(mode="after")
     def exactly_one(self):
@@ -49,7 +51,29 @@ def count_links(soup: BeautifulSoup, base_url: str | None) -> dict:
     return {"internal": internal, "external": external}
 
 
-def extract(soup: BeautifulSoup, url: str | None) -> dict:
+MAX_LINKS = 200
+
+
+def internal_links(soup: BeautifulSoup, base_url: str | None) -> list[dict]:
+    """Absolute http(s) URLs on the page's own host (ignoring www.), without #fragments."""
+    out, seen = [], set()
+    base_host = _host(urlsplit(base_url).netloc) if base_url else ""
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        if not href or href.startswith(("#", "mailto:", "tel:", "javascript:")):
+            continue
+        full = urljoin(base_url or "", href).split("#", 1)[0]
+        parts = urlsplit(full)
+        if parts.scheme not in ("http", "https") or _host(parts.netloc) != base_host or full in seen:
+            continue
+        seen.add(full)
+        out.append({"url": full, "text": " ".join(a.get_text(" ").split())[:120]})
+        if len(out) >= MAX_LINKS:
+            break
+    return out
+
+
+def extract(soup: BeautifulSoup, url: str | None, list_links: bool = False) -> dict:
     title = soup.title.get_text(strip=True) if soup.title else None
     desc = soup.find("meta", attrs={"name": re.compile(r"^description$", re.I)})
     og = {}
@@ -62,6 +86,7 @@ def extract(soup: BeautifulSoup, url: str | None) -> dict:
     ]
     headings = [h for h in headings if h["text"]]
     links = count_links(soup, url)
+    link_list = internal_links(soup, url) if list_links and url else None
 
     root = soup.find("article") or soup.find("main") or soup.body or soup
     for tag in root.find_all(DROP_TAGS):
@@ -78,6 +103,7 @@ def extract(soup: BeautifulSoup, url: str | None) -> dict:
         "word_count": len(text.split()),
         "links": links,
         "og": og,
+        **({"link_list": link_list} if link_list is not None else {}),
     }
 
 
@@ -110,4 +136,4 @@ def extract_endpoint(req: ExtractRequest):
     except FetchError as exc:
         raise HTTPException(502, f"could not fetch {req.url}: {exc}")
     soup = BeautifulSoup(page.content, "html.parser", from_encoding=page.encoding)
-    return extract(soup, page.url)
+    return extract(soup, page.url, req.list_links)

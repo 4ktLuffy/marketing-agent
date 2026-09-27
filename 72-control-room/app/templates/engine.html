@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Content engine{% endblock %}
+{% block main %}
+<h1>Content engine</h1>
+<p class="small muted">Each pillar (61) pauses itself when too many of its drafts are rejected. Resume it here after fixing the cause.</p>
+{% if error %}<p class="alert danger">{{ error }}</p>{% endif %}
+{% for r in rows %}
+<section class="panel pillar {% if r.p.status == 'paused' %}paused{% endif %}">
+  <h2>{{ r.p.title }} <span class="chip">{{ r.p.month }}</span> <span class="chip {{ 'bad' if r.p.status == 'paused' else 'good' }}">{{ r.p.status }}</span></h2>
+  <p class="small">Channels: {{ (r.p.channels or [])|join(', ') }} · atoms {{ r.p.atoms_verified }}/{{ r.p.atoms }} verified
+    {% if r.p.slots %}· slots: {{ r.p.slots.planned }} planned, {{ r.p.slots.drafted }} drafted, {{ r.p.slots.dropped }} dropped{% endif %}</p>
+  {% if r.h %}
+  <dl class="facts">
+    <dt>Decisions</dt><dd>{{ r.h.decided }} ({{ r.h.approved }} approved, {{ r.h.edited }} edited, {{ r.h.rejected }} rejected; the rule acts after {{ r.h.min_decisions }})</dd>
+    <dt>Approved as written</dt><dd>{% if r.h.approved_clean_rate is not none %}{{ (r.h.approved_clean_rate * 100)|round|int }} %{% else %}—{% endif %}</dd>
+    <dt>Rejected</dt><dd>{% if r.h.rejected_rate is not none %}{{ (r.h.rejected_rate * 100)|round|int }} %{% else %}—{% endif %}</dd>
+    {% if r.h.paused %}<dt>Paused because</dt><dd>{{ r.h.reason }}</dd>{% endif %}
+  </dl>
+  {% else %}<p class="muted small">Health not available.</p>{% endif %}
+  {% if r.p.status == 'paused' or (r.h and r.h.paused) %}
+  <form method="post" action="/engine/{{ r.p.id }}/resume">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn primary">Resume this pillar</button>
+  </form>
+  {% endif %}
+</section>
+{% else %}
+{% if not error %}<p class="muted">No pillars yet. Ask the chat agent to plan a month (tool 64).</p>{% endif %}
+{% endfor %}
+{% endblock %}

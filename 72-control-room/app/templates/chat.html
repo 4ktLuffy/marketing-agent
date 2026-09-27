@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Chat{% endblock %}
+{% block main %}
+<h1>Chat with the agent</h1>
+<p>The chat runs in n8n. It opens in a new tab and asks for your n8n login.</p>
+<p><a class="btn primary big" href="{{ chat_url }}" target="_blank" rel="noopener noreferrer">Open the chat</a></p>
+<p class="small muted">Why a link and not a chat here: n8n's chat widget is under n8n's Sustainable Use License, so it can't be copied into this repo, and a streaming proxy of the chat webhook through the control room is a separate piece of work. The agent can't approve anything either way; approvals happen only here or in the <a href="{{ form_url }}" target="_blank" rel="noopener noreferrer">approval form</a>.</p>
+{% endblock %}

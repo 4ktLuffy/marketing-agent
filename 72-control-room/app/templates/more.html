@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}More{% endblock %}
+{% block main %}
+<h1>More</h1>
+<ul class="menu">
+  <li><a href="/engine">Content engine <span class="muted">pillars, health, resume</span></a></li>
+  <li><a href="/campaigns">Campaigns <span class="muted">scorecards</span></a></li>
+  <li><a href="/chat">Chat <span class="muted">opens n8n</span></a></li>
+  <li><a href="/status">Health <span class="muted">services</span></a></li>
+</ul>
+<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">Log out</button></form>
+{% endblock %}

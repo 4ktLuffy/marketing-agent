@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 71** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 81** of the local-LLM marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.
@@ -18,11 +18,14 @@ change is reviewed and versioned.
 | `kb_answer` | text with citations, or refuses | 34 knowledge-base answer |
 | `rewrite_to_fix` | JSON edits + corrected text | 35 quality gate |
 | `trend_digest` | markdown | 36 morning digest |
-| `competitor_changes` | markdown | 37 competitor watch |
+| `competitor_changes` | markdown; optional `ads` (78's new/changed/stopped ads, exact texts): an ad is quoted exactly or not at all, and 37 removes any quote that is not an exact ad or page text | 37 competitor watch |
+| `competitor_brief` | JSON `{what_changed, decision: match\|counter\|ignore, reasons 1–3, response_points ≤ 3}` for a changed pricing page, grounded in the approved facts; 37 drops reasons/points with a number not in the diff or the facts | 37 competitor watch (saved as a `competitor_brief` calendar idea) |
+| `competitor_key_pages` | JSON `{pages ≤ 5: {url, type: pricing\|product\|features\|about}}` chosen from the homepage's links; 81 keeps only listed, same-domain, readable URLs | 81 track competitor |
 | `content_plan` | JSON week plan | 40 content planner |
 | `weekly_report_highlights` | markdown | 41 weekly report |
 | `weekly_actions` | JSON `{headline, what_changed ≤ 4, actions ≤ 5: {channel, action ≤ 140, why}}`, one action per channel; the workflow drops any action whose `why` cites a number not in the data | 41 weekly report |
 | `newsletter_issue` | JSON `{subject ≤ 60, preheader ≤ 90, intro, sections: {title, summary ≤ 280, link}, cta_text, cta_url}` from the week's published items; links must be copied from the items (the workflow blanks any other) | 66 weekly newsletter |
+| `experiment_proposals` | JSON `{proposals ≤ 2: {hypothesis, variable, channel, arm_a, arm_b, brief_a?, brief_b?, evidence}}`: one-variable, two-arm tests grounded in the click data and past results (no repeats; a past winner may be proposed once more to replicate it). The workflow drops a proposal whose evidence cites a number not in the data; the stats decide, never the model | 74 experiment manager |
 | `claim_details` | JSON details of one sentence (listed without seeing any facts) | 44 claim checker |
 | `detail_check` | JSON: is each detail stated in the facts, and where (quote) | 44 claim checker |
 | `video_script` | JSON hook, beats (spoken / on-screen / shot), CTA, caption | 57 content formats |
@@ -39,6 +42,10 @@ change is reviewed and versioned.
 | `customer_headlines` | JSON `{headlines: {phrase_id, text}}`: each reuses one given customer phrase word for word; 70 drops headlines without a given phrase, with a number not in the phrases/facts, or with quotation marks | 70 customer language (`POST /headlines`) |
 | `customer_personas` | JSON 2–4 personas `{label, goals, pains, objections, words_they_use}`, every item `{text, cites}` with theme/quote ids; 70 drops uncited items, non-verbatim `words_they_use`, ages and numbers not in the quotes | 70 customer language (`POST /personas`) |
 | `voc_judge` | JSON `{reason, closer: 1\|2}`: which of two posts sounds more like someone who knows these customers (given their quotes) | 23 `evalsuite.voc_ab` (blind, both orders) |
+| `clip_scoring` | JSON `{scores: {id, hook, standalone, payoff, quotable (0-10), title ≤ 100, hook_line, reason}}` for a batch of transcript windows of one long video; it only judges the given words. 73 ignores unknown ids, clamps scores, replaces a `hook_line` not copied word for word from its window and a title with a number the window does not say | 73 clip finder (candidate windows, in batches of 6) |
+| `site_answer` | JSON `{covered, answer ≤ 600, sources: [n], buying_intent}`: a website visitor's message answered only from the numbered sources (06 excerpts + 05 facts); "I don't know — let me get a person." when not covered. 79 does not trust it: code drops sentences with numbers, dates, offer, health or legal words not in the sources, promises and "I am human", then 44 checks the rest against the same sources; nothing left means a person takes over | 79 site assistant (`POST /chat`) |
+| `lead_enrich` | JSON `{industry, sells, facts ≤ 6: {text, quote, source_url}, size_hints ≤ 3: {statement, quote, source_url}}` from an inbound lead's own homepage/about page only; nothing inferred. 80 drops every fact or size hint whose quote is not on the page, then every statement the claim checker (44, page text as context) does not support | 80 lead hub (enrichment) |
+| `lead_first_reply` | JSON `{needs_human, reason, subject ≤ 70, reply ≤ 1000}`: a first reply to an inbound lead's own message from approved facts, with one next step (the booking link); inbound and consented only. 80 removes sentences 44 flags; a person approves and sends it | 80 lead hub (reply draft, channel `lead_reply`) |
 
 ## Where to deploy
 

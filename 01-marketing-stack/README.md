@@ -1,6 +1,6 @@
 # marketing-stack
 
-Deploy **1 of 71** of the local-LLM marketing agent. This repo holds the one
+Deploy **1 of 81** of the local-LLM marketing agent. This repo holds the one
 `docker compose` file that runs n8n, Postgres and all 20 services on one private network,
 plus the scripts that load the n8n workflows. Ollama runs next to it on the host.
 
@@ -83,7 +83,9 @@ open http://localhost:5678             # create the owner account once
 
 Nothing is exposed publicly. For a public short-link domain (16) or public n8n forms,
 put a reverse proxy (Caddy, Traefik) or a tunnel (Cloudflare Tunnel) in front of those
-two ports only.
+two ports only. The website chat (79, port 8179) is public by design: publish only its
+`/chat`, `/consent`, `/widget-config`, `/widget.js` and `/widget.css`, never `/admin`
+(`79-site-assistant/README.md` has a Caddy example).
 
 ## Configuration (`.env`)
 

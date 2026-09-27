@@ -875,3 +875,10 @@ def insights_hooks(days: int = 90, explore: float = 0.2, seed: int | None = None
         "method": "thompson sampling, Gamma(1,1) prior on clicks per post",
         "errors": errors,
     }
+
+
+# ---------- experiments (app/experiments.py): two-arm tests decided at preset weekly looks
+
+from app.experiments import router as experiments_router  # noqa: E402  (needs the helpers above)
+
+app.include_router(experiments_router)

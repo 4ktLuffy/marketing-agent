@@ -317,3 +317,87 @@ def test_writes_503_when_key_not_configured(path, body, monkeypatch):
 def test_reads_need_no_key():
     for path in ("/events", "/examples", "/rules", "/rules/summary", "/items/1/attempts"):
         assert client.get(path).status_code == 200, path
+
+
+# ---------- rules from experiments (45)
+
+
+def exp(eid, decision="winner", winner="fact_led", loser="question", **kw):
+    body = {"experiment_id": eid, "decision": decision, "variable": "hook_style", "channels": ["X"],
+            "values": ["question", "fact_led"], "lift_hdi": [0.4, 1.9], "summary": f"experiment {eid}", **kw}
+    if decision == "winner":
+        body |= {"winner": winner, "loser": loser}
+    r = client.post("/rules/from-experiment", json=body, headers=AUTH)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_winner_creates_provisional_rule_not_sent_to_writers():
+    out = exp(1)
+    rule = out["rule"]
+    assert out["action"] == "created"
+    assert rule["status"] == "provisional" and rule["source"] == "experiment" and rule["scope"] == "x"
+    assert rule["text"] == "Prefer fact_led over question (hooks) on x."
+    assert (rule["support"], rule["contradicts"], rule["replicated"]) == (1, 0, False)
+    assert rule["source_experiment_ids"] == [1] and rule["evidence"][0]["lift_hdi"] == [0.4, 1.9]
+    # the gateway's learning summary carries active rules only
+    assert client.get("/rules/summary").json() == {"summary": "", "count": 0}
+    assert client.get("/rules/review").json() == []
+    assert set_status(rule["id"], "active").status_code == 409   # not replicated yet
+
+
+def test_replication_then_human_approval_makes_it_active():
+    rid = exp(1)["rule"]["id"]
+    assert exp(1)["action"] == "already_counted"        # the same experiment counts once
+    out = exp(2)                                        # a later experiment, same direction
+    assert out["action"] == "replicated" and out["rule"]["support"] == 2 and out["rule"]["replicated"]
+    assert out["rule"]["status"] == "provisional"       # still needs a person
+    assert client.get("/rules/summary").json()["count"] == 0
+    assert [r["id"] for r in client.get("/rules/review").json()] == [rid]
+    assert set_status(rid, "active").json()["status"] == "active"
+    summary = client.get("/rules/summary").json()
+    assert summary["count"] == 1 and "- [x] Prefer fact_led over question (hooks) on x." in summary["summary"]
+    assert exp(3)["action"] == "confirmed"
+
+
+def test_contradiction_demotes_then_retires():
+    rid = exp(1)["rule"]["id"]
+    exp(2)
+    set_status(rid, "active")
+    out = exp(3, decision="no_practical_difference")
+    assert out["action"] == "demoted" and out["rule"]["status"] == "provisional"
+    assert out["rule"]["contradicts"] == 1 and not out["rule"]["replicated"]
+    assert client.get("/rules/summary").json()["count"] == 0
+    out = exp(4, winner="question", loser="fact_led")    # the other way round: 2 vs 2
+    assert out["action"] == "retired" and out["rule"]["status"] == "retired"
+    new = out["created"]
+    assert new["status"] == "provisional" and new["text"].startswith("Prefer question over fact_led")
+    assert exp(5, winner="question", loser="fact_led")["rule"]["id"] == new["id"]
+
+
+def test_inconclusive_and_first_no_difference_change_nothing():
+    assert exp(1, decision="inconclusive") == {"action": "none", "rule": None}
+    assert exp(2, decision="no_practical_difference") == {"action": "none", "rule": None}
+    assert client.get("/rules").json() == []
+
+
+def test_from_experiment_validation():
+    bad = {"experiment_id": 1, "decision": "winner", "variable": "hook_style", "channels": ["x"],
+           "values": ["question", "fact_led"], "winner": "story", "loser": "question"}
+    assert client.post("/rules/from-experiment", json=bad, headers=AUTH).status_code == 422
+    assert client.post("/rules/from-experiment", json=bad).status_code == 401
+
+
+def test_old_database_gets_new_columns(tmp_path, monkeypatch):
+    path = tmp_path / "old.sqlite"
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE rules (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, norm TEXT NOT NULL,"
+                 " scope TEXT NOT NULL, status TEXT NOT NULL, source_event_ids TEXT NOT NULL, created_at TEXT NOT NULL)")
+    conn.execute("INSERT INTO rules (text, norm, scope, status, source_event_ids, created_at)"
+                 " VALUES ('No emoji.', 'no emoji.', 'all', 'active', '[1]', '2026-01-01T00:00:00Z')")
+    conn.commit()
+    conn.close()
+    monkeypatch.setenv("DB_PATH", str(path))
+    rules = client.get("/rules").json()
+    assert rules[0]["source"] == "review" and rules[0]["support"] == 0
+    assert client.get("/rules/summary").json()["count"] == 1

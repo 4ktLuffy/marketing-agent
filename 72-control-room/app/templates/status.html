@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Health{% endblock %}
+{% block main %}
+<h1>Health</h1>
+{% if error %}<p class="alert danger">The status page (22) did not answer: {{ error }}</p>{% endif %}
+{% if st %}
+<p class="alert {{ 'ok' if st.all_ok else 'danger' }}">{% if st.all_ok %}All {{ st.services|length }} services answer.{% else %}{{ st.services|selectattr('ok', 'false')|list|length }} of {{ st.services|length }} services are down.{% endif %} <span class="small muted">checked {{ (st.checked_at or '')|replace('T', ' ') }}</span></p>
+<ul class="status-list">
+  {% for s in st.services|sort(attribute='ok') %}<li class="{{ 'ok' if s.ok else 'bad' }}"><span class="dot"></span><b>{{ s.name }}</b> {% if s.ok %}<span class="muted">{{ s.latency_ms }} ms</span>{% else %}<span class="small">{{ s.error }}</span>{% endif %}</li>{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

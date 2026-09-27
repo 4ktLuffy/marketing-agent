@@ -1,0 +1,26 @@
+{# The post as it will look on its network: c = views.card(item) #}
+<div class="preview net-{{ c.channel }}">
+  <div class="preview-head">
+    <span class="avatar" aria-hidden="true"></span>
+    <span class="who">Your brand</span>
+    <span class="net">{{ c.channel }}</span>
+  </div>
+  {% if c.channel in ('blog', 'email', 'newsletter') %}<div class="preview-title">{{ c.item.title }}</div>{% endif %}
+  {% if c.video %}
+    <div class="video-wrap">
+      <video controls playsinline preload="none" {% if c.poster %}poster="{{ c.poster }}"{% endif %} src="{{ c.video }}"></video>
+    </div>
+    <p class="small"><a href="{{ c.video_link }}" target="_blank" rel="noopener noreferrer">▶ Watch the video{% if c.video_s %} ({{ c.video_s }} s){% endif %}</a></p>
+  {% elif c.image and c.channel == 'instagram' %}
+    <img class="media square" src="{{ c.image }}" alt="image for #{{ c.id }}" loading="lazy">
+  {% endif %}
+  <div class="text">{{ c.body_head }}{% if c.fold %}<span class="fold" title="the feed cuts here">…see more</span><span class="after-fold">{{ c.body_tail }}</span>{% endif %}</div>
+  {% if c.image and not c.video and c.channel != 'instagram' %}
+    <img class="media" src="{{ c.image }}" alt="image for #{{ c.id }}" loading="lazy">
+  {% endif %}
+  {% if c.links %}
+  <ul class="links">
+    {% for k, u in c.links %}<li><span class="muted">{{ k|replace('_', ' ') }}:</span> <a href="{{ u }}" target="_blank" rel="noopener noreferrer">{{ u|truncate(60, True) }}</a></li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
