@@ -1,6 +1,6 @@
 # cms-bridge
 
-Deploy **62 of 81** of the local-LLM marketing agent. It receives approved **blog** items from
+Deploy **62 of 83** of the local-LLM marketing agent. It receives approved **blog** items from
 the publisher (39) and creates them as posts in your CMS: **WordPress** (REST API with an
 Application Password) or **Ghost** (Admin API). Markdown becomes HTML, the first paragraph
 becomes the excerpt, and an optional `image_url` becomes the featured image. It uses no LLM.

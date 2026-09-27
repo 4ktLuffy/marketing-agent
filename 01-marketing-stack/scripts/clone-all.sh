@@ -43,6 +43,8 @@ repos=(
   79-site-assistant
   80-lead-hub
   81-wf-tool-track-competitor
+  82-ai-visibility
+  83-wf-sched-ai-visibility
 )
 for r in "${repos[@]}"; do
   if [ -d "$r" ]; then echo "skip $r (exists)"; continue; fi

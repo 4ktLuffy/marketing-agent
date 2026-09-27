@@ -54,6 +54,7 @@ jobs:
           - 78-ad-library-sync
           - 79-site-assistant
           - 80-lead-hub
+          - 82-ai-visibility
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

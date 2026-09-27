@@ -1,0 +1,632 @@
+{
+  "id": "mktWf83AiVisibil",
+  "name": "83 · Schedule · AI visibility",
+  "nodes": [
+    {
+      "id": "853a965e-b793-5ec8-8a42-e2e4ceb300ed",
+      "name": "Tuesdays 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 2"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a3da212e-da27-519b-9a57-ee766a2cc4eb",
+      "name": "Visibility health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.VISIBILITY_URL ? $env.VISIBILITY_URL.replace(/\\/+$/, '') + '/health' : $env.CALENDAR_URL + '/health' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "588329ac-e914-5d23-a704-d0f0fbe7072c",
+      "name": "Ready?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst pct = r => r && r.rate != null ? `${Math.round(r.rate * 100)}%` + (r.ci95 ? ` (${Math.round(r.ci95[0] * 100)}–${Math.round(r.ci95[1] * 100)}%)` : '') : 'n/a';\nconst pp = d => d == null ? '' : ` ${d >= 0 ? '+' : ''}${Math.round(d * 100)} pts`;\n\nconst r = $input.first().json;\nconst b = bodyOf(r);\nif (!$env.VISIBILITY_URL) return [{ json: { go: false, notify: false, text: '*AI visibility*: VISIBILITY_URL is not set. Nothing to do.' } }];\nif (!ok(r)) return [{ json: { go: false, notify: true, text: `*AI visibility*: ai-visibility (82) did not answer (${r.statusCode || 'no response'}: ${errText(r)}).` } }];\nif (!(b.providers_enabled || []).length) return [{ json: { go: false, notify: true,\n  text: '*AI visibility*: no provider has an API key (VIS_OPENAI_API_KEY, VIS_PERPLEXITY_API_KEY, VIS_GROQ_API_KEY, ...). See 82-ai-visibility/README.md.' } }];\nif (!b.active_set) return [{ json: { go: false, notify: true,\n  text: '*AI visibility*: no approved question set yet. Generate one (82 `POST /questions/generate`), edit it and approve it (`POST /question-sets/<id>/approve`).' } }];\nreturn [{ json: { go: true, providers: b.providers_enabled, set: b.active_set } }];\n"
+      }
+    },
+    {
+      "id": "085a7d8c-7ba5-527e-bee6-5ccd039e5e6d",
+      "name": "Go?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0e641f93-8eee-5657-91f8-97f3615499f3",
+              "leftValue": "={{ $json.go }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "705d522f-312f-575c-8861-810afc3537fb",
+      "name": "Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VISIBILITY_URL.replace(/\\/+$/, '') }}/runs",
+        "options": {
+          "timeout": 3600000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "wait",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "425e13be-f4ed-5e78-b9ef-191b8d54270d",
+      "name": "Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.VISIBILITY_URL.replace(/\\/+$/, '') }}/summary",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "run_id",
+              "value": "={{ $json.body.id || 0 }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "48eaafba-f681-55e4-acc2-fdcaa4c902d7",
+      "name": "Wrong claims",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.VISIBILITY_URL.replace(/\\/+$/, '') }}/claims/wrong",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "run_id",
+              "value": "={{ $('Run').first().json.body.id || 0 }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "94a976e7-c2ad-5e19-bcc3-fceb7b6ff7d6",
+      "name": "Gaps",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.VISIBILITY_URL.replace(/\\/+$/, '') }}/gaps",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "run_id",
+              "value": "={{ $('Run').first().json.body.id || 0 }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "09467e52-41da-52c6-8257-840d9ddff067",
+      "name": "Visibility ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "visibility_gap"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e3dbeddc-7085-5558-8940-ad3f280f143b",
+      "name": "Build",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst pct = r => r && r.rate != null ? `${Math.round(r.rate * 100)}%` + (r.ci95 ? ` (${Math.round(r.ci95[0] * 100)}–${Math.round(r.ci95[1] * 100)}%)` : '') : 'n/a';\nconst pp = d => d == null ? '' : ` ${d >= 0 ? '+' : ''}${Math.round(d * 100)} pts`;\n\nconst run = $('Run').first().json;\nconst rb = bodyOf(run);\nif (!ok(run) || rb.status !== 'done') return [{ json: { notify: true, ideas: [],\n  text: `*AI visibility*: the weekly run did not finish (${run.statusCode || 'no response'}: ${rb.status ? rb.status + ', ' + (rb.error || '') : errText(run)}).` } }];\nconst sm = bodyOf($('Summary').first().json), wr = bodyOf($('Wrong claims').first().json), gp = bodyOf($('Gaps').first().json);\nconst cal = $('Visibility ideas').first().json;\nconst items = ok(cal) ? [].concat(cal.body ?? []).flat().filter(i => i && typeof i === 'object') : [];\nconst now = Date.now(), recent = new Set();\nlet thisWeek = 0;\nfor (const i of items) {\n  const age = (now - Date.parse(i.created_at || '')) / 864e5;\n  const m = String(i.notes || '').match(/visibility (?:gap|claim) key \\[([^\\]]+)\\]/);\n  if (!m) continue;\n  if (age <= 7) thisWeek++;\n  if (age <= 28) recent.add(m[1]);\n}\nconst CAP = Math.max(0, Math.floor(Number($env.VISIBILITY_IDEAS_PER_WEEK ?? 5)));\nconst keyOf = s => String(s).toLowerCase().replace(/[^a-z0-9 ]+/g, '').replace(/\\s+/g, ' ').trim().slice(0, 120);\nconst brand = sm.brand || 'us';\nconst lines = [`*AI visibility* (run ${rb.id}, question set v${rb.set_version}, ${rb.samples} answers per question per provider). API answers, not what a person sees in the app.`];\nfor (const [p, s] of Object.entries(sm.providers || {})) {\n  const t = s.trend;\n  lines.push(`- ${p}${s.web_search ? '' : ' (no web search)'}: ${brand} named in ${pct(s.mention)} of answers${t ? pp(t.mention_delta) : ''}` +\n    (s.citation ? `, cited in ${pct(s.citation)}${t ? pp(t.citation_delta) : ''}` : '') +\n    (s.avg_position ? `, average list position ${s.avg_position}` : '') +\n    (s.share_of_voice && s.share_of_voice[brand] && s.share_of_voice[brand].share != null ? `, share of voice ${Math.round(s.share_of_voice[brand].share * 100)}%` : '') +\n    (s.errors || s.skipped ? ` (${s.errors} failed, ${s.skipped} skipped)` : ''));\n}\nconst gaps = gp.gaps || [], claims = wr.claims || [];\nif (gaps.length) {\n  lines.push('', `Top gaps (competitors named, ${brand} not; ${gp.total} in total):`);\n  for (const g of gaps.slice(0, 3)) lines.push(`- \"${g.question}\": ${g.competitors.slice(0, 3).map(c => c.name).join(', ')}`);\n}\nif (claims.length) {\n  lines.push('', `AI says things about ${brand} that your approved facts do not support (${claims.length}):`);\n  for (const c of claims.slice(0, 3)) lines.push(`- \"${c.sentence.slice(0, 160)}\" (${c.providers.join(', ')}): ${(c.reasons || [])[0] || 'unsupported'}`);\n}\nconst ideas = [];\nlet left = Math.max(0, CAP - thisWeek);\n// Wrong numbers (prices, sizes) first; then claims and gaps take turns, so neither crowds out the other.\nconst claimIdea = c => ({ key: 'claim:' + keyOf(c.sentence), item: { title: `AI says: ${c.sentence}`.slice(0, 200), channel: 'visibility_gap', status: 'idea',\n  body: [`An AI answer says: \"${c.sentence}\"`, `Providers: ${c.providers.join(', ')}. Asked: ${c.questions.map(q => `\"${q}\"`).join('; ')}`,\n    `Why it was flagged: ${(c.reasons || []).join('; ') || 'not supported by the approved facts'}`, '',\n    'What to do: if it is wrong, correct it where the AI learns it (your own pages first, then the pages it cites); if it is true, add the fact to 05 brand.yaml.'].join('\\n') } });\nconst gapIdea = g => {\n  const pages = (g.cited_pages || []).slice(0, 5).map(p => `- ${p.url} (${p.owner})`);\n  return { key: 'gap:' + keyOf(g.question), item: { title: `AI visibility gap: ${g.question}`.slice(0, 200), channel: 'visibility_gap', status: 'idea',\n    body: [`Buyers ask: \"${g.question}\". AI answers name ${g.competitors.map(c => `${c.name} (${c.mentions}×)`).join(', ')} and not ${brand} (${g.answers} answers from ${g.providers.join(', ')}).`,\n      ...(pages.length ? ['', 'Pages the answers cite:', ...pages] : []), '',\n      `Suggested answer-first FAQ: ${g.suggested_faq.answer_first}`, '',\n      `Next: ask the chat agent for an SEO brief on \"${g.brief_keyword}\" (29), or add the FAQ to the page that should rank (68).`].join('\\n') } };\n};\nconst cq = [...claims].sort((a, b) => (b.kind === 'number') - (a.kind === 'number')).map(claimIdea).filter(x => !recent.has(x.key));\nconst gq = gaps.map(gapIdea).filter(x => !recent.has(x.key));\nwhile (left > 0 && (cq.length || gq.length)) {\n  for (const q of [cq, gq]) {\n    if (!left || !q.length) continue;\n    const x = q.shift();\n    if (recent.has(x.key)) continue;\n    ideas.push({ ...x.item, notes: `visibility ${x.key.split(':')[0]} key [${x.key}] (run ${rb.id})` });\n    recent.add(x.key); left--;\n  }\n}\nif (!ideas.length && (claims.length || gaps.length)) lines.push('', `No new calendar ideas (${thisWeek} in the last 7 days, VISIBILITY_IDEAS_PER_WEEK=${CAP}, or already noted in the last 28 days).`);\nreturn [{ json: { notify: true, ideas, text: lines.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "424d06a3-6490-50b2-ac59-7b922d73c76c",
+      "name": "Ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json;\nreturn b.ideas.length ? b.ideas.map(item => ({ json: { save: true, item } })) : [{ json: { save: false } }];\n"
+      }
+    },
+    {
+      "id": "51a4660f-72a5-54ef-9564-035552ce824f",
+      "name": "Any idea?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "db2dc296-0b72-50cd-b8c0-129d8f2b6402",
+              "leftValue": "={{ $json.save }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "66f5136d-e135-54ef-8265-9467dc52e475",
+      "name": "Save idea",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.item) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "8b710b4b-3a11-578e-bbac-9f00eaffd9e3",
+      "name": "Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const b = $('Build').first().json;\nlet saved = [];\ntry { saved = $('Save idea').all().map(i => i.json).filter(j => j && j.id); } catch (e) {}\nconst extra = saved.length ? `\\n\\nSaved ${saved.length} calendar idea(s) (channel visibility_gap): ${saved.map(s => '#' + s.id).join(', ')}.` : '';\nreturn [{ json: { notify: b.notify, text: b.text + extra } }];\n"
+      }
+    },
+    {
+      "id": "27864b8b-1169-50c1-bc03-3194d7d7703f",
+      "name": "Report?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Not configured: no notification.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all().filter(i => i.json.notify) : [];\n"
+      }
+    },
+    {
+      "id": "d176d4f4-01ab-59c4-996e-276940585c52",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "60a898db-0c3a-5ead-9493-bc4f9de9edb3",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tuesdays 06:00": {
+      "main": [
+        [
+          {
+            "node": "Visibility health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Visibility health": {
+      "main": [
+        [
+          {
+            "node": "Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready?": {
+      "main": [
+        [
+          {
+            "node": "Go?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Go?": {
+      "main": [
+        [
+          {
+            "node": "Run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Wrong claims",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrong claims": {
+      "main": [
+        [
+          {
+            "node": "Gaps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gaps": {
+      "main": [
+        [
+          {
+            "node": "Visibility ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Visibility ideas": {
+      "main": [
+        [
+          {
+            "node": "Build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build": {
+      "main": [
+        [
+          {
+            "node": "Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ideas": {
+      "main": [
+        [
+          {
+            "node": "Any idea?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any idea?": {
+      "main": [
+        [
+          {
+            "node": "Save idea",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save idea": {
+      "main": [
+        [
+          {
+            "node": "Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report": {
+      "main": [
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

@@ -1,6 +1,6 @@
 # 24 · Marketing chat agent
 
-Deploy **24 of 81** of the local-LLM marketing agent. This deploy is an n8n workflow.
+Deploy **24 of 83** of the local-LLM marketing agent. This deploy is an n8n workflow.
 
 The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) with 8 turns of memory and 17 tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.
 

@@ -1,6 +1,6 @@
 # 31 · Research a URL
 
-Deploy **31 of 81** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **31 of 83** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Reads a web page (07) and returns a competitive analysis: messages, pricing, strengths, weaknesses and opportunities for your brand.
 

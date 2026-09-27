@@ -1,6 +1,6 @@
 # 25 · Blog writer
 
-Deploy **25 of 81** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **25 of 83** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Writes a markdown blog post. It pulls brand facts from the knowledge base (06), writes through the gateway (03), runs the quality gate (35) and saves the post to the calendar (19).
 

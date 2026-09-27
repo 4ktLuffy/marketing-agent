@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 81** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 83** of the local-LLM marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.
@@ -46,6 +46,7 @@ change is reviewed and versioned.
 | `site_answer` | JSON `{covered, answer ≤ 600, sources: [n], buying_intent}`: a website visitor's message answered only from the numbered sources (06 excerpts + 05 facts); "I don't know — let me get a person." when not covered. 79 does not trust it: code drops sentences with numbers, dates, offer, health or legal words not in the sources, promises and "I am human", then 44 checks the rest against the same sources; nothing left means a person takes over | 79 site assistant (`POST /chat`) |
 | `lead_enrich` | JSON `{industry, sells, facts ≤ 6: {text, quote, source_url}, size_hints ≤ 3: {statement, quote, source_url}}` from an inbound lead's own homepage/about page only; nothing inferred. 80 drops every fact or size hint whose quote is not on the page, then every statement the claim checker (44, page text as context) does not support | 80 lead hub (enrichment) |
 | `lead_first_reply` | JSON `{needs_human, reason, subject ≤ 70, reply ≤ 1000}`: a first reply to an inbound lead's own message from approved facts, with one next step (the booking link); inbound and consented only. 80 removes sentences 44 flags; a person approves and sends it | 80 lead hub (reply draft, channel `lead_reply`) |
+| `visibility_questions` | JSON `{questions: [{text, kind: category\|comparison\|problem\|branded}]}`: 15–30 questions buyers type into AI assistants, from the brand's products and audience; only `branded_count` of them name the brand (unaided visibility vs accuracy). 82 re-labels a question naming the brand as branded, drops one naming a competitor and duplicates; a person edits and approves the set | 82 ai-visibility (`POST /questions/generate`) |
 
 ## Where to deploy
 

@@ -1,6 +1,6 @@
 # 39 · Publisher
 
-Deploy **39 of 81** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **39 of 83** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every 15 minutes it takes the approved calendar items that are due, swaps each link for a tracked short link (16) and routes each post by channel: `blog` goes to the CMS bridge (`CMS_PUBLISH_URL`, 62), every other channel to your publish endpoint (`PUBLISH_WEBHOOK_URL`, e.g. 54 Postiz). A channel whose URL is empty is skipped. An item is marked published only if the endpoint accepted it and it really went live: a dry run is not published, and a blog post the CMS created as a **draft** stays `approved` with the note `sent to CMS as draft: <url>` (and `external_url` set), so a person presses Publish in the CMS and the post is not sent again. A CMS that publishes live (`cms_status` `publish`/`future`/`published`/`scheduled`) marks it published. Review replies (channel `review_reply`, from 60) and newsletters (`newsletter`, 66, already a Listmonk draft) are never sent: a person handles those by hand.
 

@@ -1,6 +1,6 @@
 # 59 · Winner recycler
 
-Deploy **59 of 81** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **59 of 83** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Monday it takes the posts whose tracked short links earned the most clicks in the last 90 days (45 insights, from 16 clicks) and turns the best ones into fresh drafts: same channel, same facts, a new opening, through the repurpose tool (30), which runs the quality gate (35) and saves each draft to the calendar (19) with the note `recycled from #<id> (<n> clicks)`. A post qualifies when it has at least `RECYCLE_MIN_CLICKS` clicks, was published at least `RECYCLE_MIN_AGE_DAYS` days ago and was not recycled in the last 90 days. At most `RECYCLE_PER_WEEK` posts are recycled per 7 days, most clicks first (fewer, better). The old tracked link is not copied: the draft gets the clean target URL, so the publisher (39) tracks the new post under its own id. Nothing is published until a person approves the draft. When nothing qualifies it posts the reasons and stops.
 

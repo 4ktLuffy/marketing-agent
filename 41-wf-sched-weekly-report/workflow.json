@@ -454,12 +454,49 @@
       }
     },
     {
+      "id": "3907c6e6-f76f-58d7-be52-0d39915d20e3",
+      "name": "AI visibility",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4800,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.VISIBILITY_URL ? $env.VISIBILITY_URL.replace(/\\/+$/, '') + '/summary' : $env.CAMPAIGNS_URL + '/health' }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "7bebbd3b-d236-56f7-98d8-6acff562d298",
+      "name": "Visibility section",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5040,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst pct = r => r && r.rate != null ? `${Math.round(r.rate * 100)}%` + (r.ci95 ? ` (${Math.round(r.ci95[0] * 100)}–${Math.round(r.ci95[1] * 100)}%)` : '') : 'n/a';\nconst pp = d => d == null ? '' : ` ${d >= 0 ? '+' : ''}${Math.round(d * 100)} pts`;\n\nconst prev = $('Suggestions section').first().json;\nconst r = $input.first().json || {};\nconst b = $env.VISIBILITY_URL && ok(r) ? bodyOf(r) : null;\nif (!b || !b.run || !b.providers) return [{ json: prev }];\nconst brand = b.brand || 'us';\nconst parts = Object.entries(b.providers).map(([p, s]) => `${p} ${pct(s.mention)}${s.trend ? pp(s.trend.mention_delta) : ''}` +\n  (s.citation ? `, cited ${pct(s.citation)}` : ''));\nconst wrong = Object.values(b.providers).reduce((n, s) => n + ((s.branded || {}).wrong_claims || 0), 0);\nconst line = ['### AI visibility', `${brand} named in unaided AI answers (run ${b.run.id}, ${b.run.finished_at.slice(0, 10)}): ${parts.join('; ')}.` +\n  (wrong ? ` ${wrong} sentence(s) about ${brand} not supported by the approved facts: \\`GET /claims/wrong\\` on ai-visibility (82).` : '') +\n  ' API answers, not what a person sees in the app.'].join('\\n');\nreturn [{ json: { ...prev, markdown: [prev.markdown, line].filter(Boolean).join('\\n\\n') } }];\n"
+      }
+    },
+    {
       "id": "7869eea3-71cd-54f6-98c4-19a0dbbb0349",
       "name": "Render report",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4800,
+        5280,
         300
       ],
       "parameters": {
@@ -477,7 +514,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5040,
+        5520,
         300
       ],
       "parameters": {
@@ -490,7 +527,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5280,
+        5760,
         300
       ],
       "parameters": {
@@ -503,7 +540,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5520,
+        6000,
         300
       ],
       "parameters": {
@@ -522,7 +559,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5520,
+        6000,
         480
       ],
       "parameters": {
@@ -535,7 +572,7 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        5760,
+        6240,
         480
       ],
       "parameters": {
@@ -770,6 +807,28 @@
       ]
     },
     "Suggestions section": {
+      "main": [
+        [
+          {
+            "node": "AI visibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI visibility": {
+      "main": [
+        [
+          {
+            "node": "Visibility section",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Visibility section": {
       "main": [
         [
           {

@@ -23,7 +23,7 @@ approve its own work; that rule is enforced in the workflow, not just stated in 
 The example brand is a made-up coffee subscription, *Northwind Roasters*. Replace it with
 yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 
-## The 81 deploys: each folder is one GitHub repo
+## The 83 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -47,6 +47,7 @@ yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 | **Learning** | 46 learning service · 49 revise rejected drafts · 50 weekly rule proposals | 46 → container · rest → n8n |
 | **Control room & clips** | 72 control room: mobile web app to review (swipe, undo), see the calendar, previews, performance and engine status; same decisions as form 38 · 73 clip finder: long video (direct file or upload) → short vertical clips with word-by-word captions, transcribed locally · 77 chat tool `clip_video`: clips → captioned `video` items for approval | containers · 77 → n8n |
 | **Inbound & competitors** | 79 site assistant: website chat that answers only from your knowledge base and facts (claim-checked), says it's an AI, qualifies, offers your booking link, hands off to a person · 80 lead hub: consented inbound leads → enrichment from their own website → score with reasons → HubSpot/Pipedrive (dry run) → first reply for you to approve · 78 ad library + competitor registry (official Meta API for EU ads, links elsewhere) · 81 `track_competitor` chat tool · 77 `clip_video` chat tool (clips → approval) | 78–80 → containers · 77, 81 → n8n |
+| **AI visibility (GEO)** | 82 ai-visibility: a versioned, approved set of buyer questions asked to AI assistants through their official APIs (OpenAI web search, Perplexity, Groq model knowledge; Gemini only if you accept its terms), 3 answers each; is the brand named, cited, where in the list, share of voice vs the 78 competitors, and sentences about the brand checked by 44 · 83 weekly run: numbers to your notifications, gaps and wrong claims as calendar ideas (`visibility_gap`, never published) | 82 → container · 83 → n8n |
 | **Experiments** | the agent proposes one-variable A/B tests weekly (74), a person approves them (76), 61 gives the two versions to planned slots balanced by weekday and hour, 45 decides at weekly looks in code (HDI + ROPE on clicks per post within 72 h; 75); a winner becomes a provisional rule in 46 that writers only get after a later experiment agrees and a person approves it (51) | 45, 46, 61 → containers · 74–76 → n8n |
 | **Safety net** | 43 error handler | n8n |
 

@@ -1,6 +1,6 @@
 # 75 · Experiment analysis
 
-Deploy **75 of 81** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **75 of 83** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Monday at 08:30 (before the weekly report) it asks the campaign service (45) to record the weekly look of every running experiment (`POST /experiments/{id}/decide`). 45 decides in code: per arm a Gamma-Poisson posterior of clicks per post (72 h after publishing, from the link shortener 16) with a prior at the pooled channel rate and a dispersion correction, the 95% HDI of the relative lift, and the HDI + ROPE rule (±15%): `winner`, `no_practical_difference`, or `inconclusive` at the last look (`max_weeks`); otherwise it waits for the next look. A look that is not due yet is refused (409) and skipped here: results are never peeked at early. A winner or a no-difference result goes to the learning service (46, `/rules/from-experiment`): a winner starts a **provisional** rule that writers do not see; a later experiment in the same direction marks it replicated, and only a person makes it active in the rules form (51); a contradicting result demotes or retires it. The summary (with the rules form link when a rule waits) goes to your webhook.
 

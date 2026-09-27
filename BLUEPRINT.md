@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 81 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 83 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility).
 
 ## What the agent does
 
@@ -454,3 +454,25 @@ Fixed two-arm tests of ONE variable, decided in code; the LLM only proposes. Des
   notify with the form link. **75** Mondays 08:30: `/decide` per running experiment → winner/no-difference to 46
   `/rules/from-experiment` → notify. **76** form `mkt-experiments`: approve (with approver key) / reject proposals.
   **41** adds an "Experiments" section; **51** lists `/rules/review`.
+
+## AI visibility / GEO (82, workflow 83)
+
+- **82 ai-visibility** (service, port 8182, SQLite `/data`). Providers, official APIs only, each on only with its key:
+  `openai_search` (Responses API + `web_search`, `url_citation` annotations), `perplexity` (Agent API `POST /v1/agent`,
+  `search_results` items; Sonar chat completions retired 2026-09-27), `gemini_grounded` (`google_search` grounding;
+  also needs `VIS_GEMINI_TERMS_ACCEPTED=true`, Google's terms forbid analysing Grounded Results), `groq_knowledge`
+  (no web search). Daily call/token/USD caps per provider; `/usage` holds tokens and cost.
+- Question sets are versioned: `POST /questions/generate` 🔑 {count 15–30, branded 0–6} → prompt `visibility_questions`
+  → draft (a question naming a competitor is dropped, one naming us becomes `branded`); `PUT /question-sets/{id}` 🔑
+  (draft only), `POST /question-sets/{id}/approve` 🔑 (retires the previous), `/revise` 🔑 (new draft version).
+- `POST /runs` 🔑 {set_id?, providers?, samples? (3), question_ids?} `?wait=true` → approved questions × providers ×
+  samples. Code measures brand/competitor mentions (whole words, aliases from 05 `aliases`/`BRAND_ALIASES` and
+  `COMPETITOR_ALIASES`; competitors = 78 active registry), citations of our/their domains, list position, share of
+  voice. Sentences about us → 44 `/verify`; unsupported → `claims`.
+- Reads: `GET /summary?since=&run_id=` (per provider: mention rate on unaided questions with Wilson ci95, per-question
+  rate, citation rate (null without web search), list position, SoV, competitors, branded accuracy, trend vs the
+  previous run on the same set), `GET /claims/wrong`, `GET /gaps` (competitor named/cited, we are not; cited pages;
+  suggested answer-first FAQ; `brief_keyword`), `GET /questions/{id}/answers`, `/providers`, `/usage`, `/runs`.
+- **83** Tuesdays 06:00: `/health` → `POST /runs?wait=true` → summary, wrong claims, gaps → notify; wrong claims then
+  gaps → calendar `visibility_gap` ideas (≤ `VISIBILITY_IDEAS_PER_WEEK`, once per 28 days). **39** `NOT_POSTS` includes
+  `visibility_gap`. **41** adds an "AI visibility" line from `/summary`.

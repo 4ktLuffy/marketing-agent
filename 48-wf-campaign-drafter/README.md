@@ -1,6 +1,6 @@
 # 48 · Campaign drafter
 
-Deploy **48 of 81** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **48 of 83** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Drafts every `idea` piece of a campaign in the background. Social posts get the campaign's tracked link (utm_content = the calendar item id) and 2 posts you approved before as style examples (46). Every draft goes through the quality gate and fact check (35). Drafts that pass go to `in_review`; the others stay `draft` with the problems noted. Social pieces for instagram, facebook, threads, linkedin and x get a title card from 17 (the piece's title, the brand name from 05, sized by channel) as their `image_url`; if the card fails the piece is saved without one (an Instagram piece gets a note, since Instagram needs an image).
 

@@ -1,0 +1,81 @@
+name: visibility_questions
+description: Realistic questions a buyer would type into an AI assistant (ChatGPT, Perplexity, Gemini) before buying in our category, as JSON. Most do not name any brand, so they measure unaided visibility; a few name our brand to measure accuracy.
+output: json
+temperature: 0.5
+vars:
+  count: required
+  branded_count: required
+  products: optional
+  audience: optional
+  market: optional
+  avoid: optional
+# Used by 82 ai-visibility (POST /questions/generate). 82 checks the output in code: a question
+# that names our brand or a known competitor is re-labelled or dropped, duplicates are removed,
+# and a person edits and approves the set before any weekly run uses it.
+system: |
+  You help a marketing team measure whether AI assistants recommend their brand. You write the
+  questions real buyers type into ChatGPT, Perplexity or Gemini while they are choosing what to buy.
+  Buyers write plainly, often with their situation in the question, and rarely know brand names.
+
+  BRAND
+  {{ brand }}
+template: |
+  {% if products %}
+  What the brand sells:
+  {{ products }}
+
+  {% endif %}
+  {% if audience %}
+  Who buys it:
+  {{ audience }}
+
+  {% endif %}
+  {% if market %}
+  Market: {{ market }}. Write the questions the way buyers there would.
+
+  {% endif %}
+  {% if avoid %}
+  Do not repeat these existing questions:
+  {{ avoid }}
+
+  {% endif %}
+  Write exactly {{ count }} questions as JSON {"questions": [{"text", "kind"}]}.
+
+  Kinds, and how many of each:
+  - category: the buyer asks for the best options in the category, for their situation
+    (e.g. "What is the best coffee subscription for a remote team of 10?"). About 40%.
+  - comparison: the buyer compares types of options or asks what to look for
+    (e.g. "Is a coffee subscription cheaper than buying beans at the supermarket?"). About 25%.
+  - problem: the buyer describes a problem, not a product
+    (e.g. "My coffee at home tastes flat after a week, what am I doing wrong?"). About 20%.
+  - branded: exactly {{ branded_count }} questions that name the brand itself and ask what it
+    sells, what it costs, or how it works (e.g. "How much does <brand> cost per month?").
+
+  Rules:
+  - Only the branded questions may contain the brand's name or its product names. The others
+    must not name any company, brand or product.
+  - One question per line of thought: 6 to 25 words, a real question a person would type.
+  - Cover different situations from the audience above (team size, budget, taste, brewing gear,
+    gifting, switching from a supermarket or another subscription).
+  - No questions about health effects or medical topics.
+  - No two questions that are the same question in different words.
+example_vars:
+  count: 18
+  branded_count: 3
+  products: "- Desk Blend: Chocolate-hazelnut medium roast for drip and French press.\n- Team Box: 1.5 kg across two blends, shipped to each teammate."
+  audience: Remote workers who drink 2+ cups a day at a home desk; small distributed teams that want a shared coffee perk.
+  market: US
+schema:
+  type: object
+  required: [questions]
+  properties:
+    questions:
+      type: array
+      minItems: 5
+      maxItems: 30
+      items:
+        type: object
+        required: [text, kind]
+        properties:
+          text: {type: string, minLength: 10, maxLength: 240}
+          kind: {type: string, enum: [category, comparison, problem, branded]}

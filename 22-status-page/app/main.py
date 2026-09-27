@@ -19,7 +19,7 @@ DEFAULT_SERVICES = [
     "content-calendar", "analytics-ingest", "report-builder", "claim-checker",
     "campaign-service", "learning-service", "llm-gateway-verifier", "review-hub",
     "cms-bridge", "content-engine", "gsc-sync", "customer-language", "video-assembly", "control-room",
-    "clip-finder", "ad-library-sync", "site-assistant", "lead-hub",
+    "clip-finder", "ad-library-sync", "site-assistant", "lead-hub", "ai-visibility",
 ]
 
 

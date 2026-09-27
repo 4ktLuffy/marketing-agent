@@ -1,6 +1,6 @@
 # brand-service
 
-Deploy **05 of 81** of the local-LLM marketing agent. It holds one brand profile (voice,
+Deploy **05 of 83** of the local-LLM marketing agent. It holds one brand profile (voice,
 products, key messages, banned phrases, disclaimers) and serves it two ways: as JSON, and
 as a compact plain-text summary the LLM gateway (03) embeds in every prompt. `POST /check`
 lints any draft against the brand rules before it goes near the calendar.

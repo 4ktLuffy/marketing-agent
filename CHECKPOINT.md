@@ -4,7 +4,7 @@ Nothing has been deployed, pushed or committed. Everything is local files.
 
 ## State in one line
 
-81 deploys exist (54–81 added in Phase 3). All unit tests pass and the compose file validates (39 services).
+83 deploys exist (54–81 added in Phase 3; 82 ai-visibility and workflow 83 added after). All unit tests pass and the compose file validates (39 services).
 Phase 2 is **built and verified end to end**, including the approval form, rewrites,
 learning, publishing and measurement (resumed session, see "Resumed" below).
 
@@ -81,6 +81,21 @@ learning, publishing and measurement (resumed session, see "Resumed" below).
 
 Integrate instead of build: **Postiz** (publishing), **Umami** (analytics API instead of CSV),
 **Listmonk** (email). Measure `qwen3:8b` against the current model for tool calling.
+
+## AI visibility (82, workflow 83), 2026-09-27
+
+| What | Result |
+|---|---|
+| 82 unit tests (respx for Groq, OpenAI, Perplexity, Gemini, 03, 05, 44, 78) | 33 passed |
+| 83 Build / Ready? and 41 "AI visibility" line (`tests/visibility_test.js`), also on a real run's output | pass |
+| Real run, Groq `gpt-oss-120b` without web search, 18 questions × 2 samples | 36 calls, 0 errors, 35,487 tokens (~$0.02) |
+| Fictional Northwind Roasters in unaided answers | 0 / 30 (95% CI 0–11%), the expected baseline |
+| Competitors (local 78 only): Trade Coffee / Atlas Coffee Club | 11 / 30 and 4 / 30; share of voice 73% / 27%; 7 gaps |
+| Branded answers checked by 44 | 10 of 14 sentences flagged, e.g. Team Box "$69" and "$199" (fact: $79); 1 flag was a true paraphrase |
+| Question drafts by the local 7B | 15 usable, 0 of 3 branded (now a warning; a person adds them) |
+
+Perplexity Sonar chat completions ended 2026-09-27, so 82 uses the Agent API. Gemini grounding stays off
+unless `VIS_GEMINI_TERMS_ACCEPTED=true` (Google's terms forbid analysing Grounded Results).
 
 ## Files for continuing (NOT deploys, don't push to GitHub)
 

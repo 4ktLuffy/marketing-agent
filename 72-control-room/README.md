@@ -1,6 +1,6 @@
 # control-room
 
-Deploy **72 of 81** of the local-LLM marketing agent. A small, mobile-first web app for the one
+Deploy **72 of 83** of the local-LLM marketing agent. A small, mobile-first web app for the one
 person who approves the agent's work:
 
 1. **Login** for one approver (`CONTROL_USER` / `CONTROL_PASSWORD`).
