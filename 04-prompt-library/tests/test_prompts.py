@@ -59,3 +59,16 @@ def test_template_uses_only_declared_vars(path):
     for part in (p["template"], p.get("system", "")):
         used |= meta.find_undeclared_variables(env.parse(part))
     assert used <= declared, f"undeclared vars used: {used - declared}"
+
+
+def test_social_posts_open_with_is_optional_and_exact():
+    p = load(Path(__file__).parent.parent / "prompts" / "social_posts.yaml")
+    base = {k: None for k in p["vars"]} | {"topic": "Pausing before a trip", "channels": "x"}
+    without = env.from_string(p["template"]).render(base)
+    assert "FIRST sentence" not in without
+    with_ = env.from_string(p["template"]).render(base | {"open_with": "pause my subscription"})
+    assert 'The FIRST sentence of every post must contain this exact phrase, word for word: "pause my subscription".' in with_
+    assert "do not attribute it to a customer" in with_
+    retry = env.from_string(p["template"]).render(base | {"open_with": "pause my subscription",
+                                                          "open_with_feedback": "FEEDBACK-LINE"})
+    assert "FEEDBACK-LINE" in retry and "FEEDBACK-LINE" not in with_

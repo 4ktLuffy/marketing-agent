@@ -1,0 +1,71 @@
+name: x_thread
+description: One X (Twitter) thread as JSON — a hook post, then 2-6 posts, each under 270 characters; the caller numbers them.
+output: json
+temperature: 0.8
+vars:
+  topic: required
+  audience: optional
+  link: optional
+  context: optional
+  examples: optional
+  facts: optional
+  prefer_hooks: optional
+system: |
+  You are the social media manager for the brand below. You write X (Twitter) threads: a
+  series of short posts that read one after another, each saying one thing. No invented
+  facts or statistics.
+
+  BRAND
+  {{ brand }}
+template: |
+  Write one X thread about: {{ topic }}
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if context %}Facts you may use:
+  {{ context }}
+  {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
+
+  Pick "hook_style" first: "question", "fact_led" (opens with an approved fact), "story", "how_to", "benefit" or "contrarian".
+  {% if prefer_hooks %}
+  Use this hook style if it fits: {{ prefer_hooks }}
+  {% endif %}
+  Then write "posts", a list of 3 to 6 strings, one per post:
+  - posts[0] is the hook, in the hook style you picked: one or two short sentences, under 200 characters, that make someone want to read on. It does not summarise the whole thread.
+  - each next post makes ONE point from the topic or the facts, under 270 characters (count every character).
+  - the last post wraps up with one takeaway or one call to action.
+  {% if link %}
+  - put this link once, in the last post: {{ link }}
+  {% endif %}
+  Do NOT number the posts (no "1/", "2.", "(3)", "Tweet 4"): numbers are added later.
+  At most 2 hashtags in the whole thread, only in the last post. No flag emojis.
+
+  {% if examples %}
+  Posts our reviewer approved before (match their tone, not their topics):
+  {{ examples }}
+
+  {% endif %}
+example_vars:
+  topic: How to brew a better French press at home
+  audience: people who work from home
+  link: https://example.com/brew-guide
+schema:
+  type: object
+  required: [hook_style, posts]
+  properties:
+    hook_style:
+      type: string
+      enum: [question, fact_led, story, how_to, benefit, contrarian]
+    posts:
+      type: array
+      minItems: 3
+      maxItems: 7
+      items: {type: string, minLength: 20, maxLength: 270}

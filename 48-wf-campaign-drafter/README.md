@@ -1,8 +1,8 @@
 # 48 · Campaign drafter
 
-Deploy **48 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **48 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
-Drafts every `idea` piece of a campaign in the background. Social posts get the campaign's tracked link (utm_content = the calendar item id) and 2 posts you approved before as style examples (46). Every draft goes through the quality gate and fact check (35). Drafts that pass go to `in_review`; the others stay `draft` with the problems noted.
+Drafts every `idea` piece of a campaign in the background. Social posts get the campaign's tracked link (utm_content = the calendar item id) and 2 posts you approved before as style examples (46). Every draft goes through the quality gate and fact check (35). Drafts that pass go to `in_review`; the others stay `draft` with the problems noted. Social pieces for instagram, facebook, threads, linkedin and x get a title card from 17 (the piece's title, the brand name from 05, sized by channel) as their `image_url`; if the card fails the piece is saved without one (an Instagram piece gets a note, since Instagram needs an image).
 
 ## Where to deploy
 
@@ -40,6 +40,8 @@ Its workflow id is fixed (`mktWf48CampDraft`), because other workflows call it b
 - `03-llm-gateway`
 - `46-learning-service`
 - `35-wf-tool-quality-gate`
+- `05-brand-service`
+- `17-image-cards`
 
 Service URLs come from env vars on the n8n container (`GATEWAY_URL`, `CALENDAR_URL`, …),
 which `01-marketing-stack` sets. `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set so

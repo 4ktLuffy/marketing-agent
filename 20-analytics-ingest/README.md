@@ -1,6 +1,6 @@
 # analytics-ingest
 
-Deploy **20 of 60** of the local-LLM marketing agent. It stores daily metrics per channel
+Deploy **20 of 71** of the local-LLM marketing agent. It stores daily metrics per channel
 from CSV exports (your own sheet, or a GA4 export) and computes KPIs for any period,
 compared with the period before it. The weekly report (deploy 41) reads `/kpis` and
 passes the result to `21-report-builder`. It uses no LLM.

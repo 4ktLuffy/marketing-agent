@@ -11,6 +11,9 @@ vars:
   examples: optional
   facts: optional
   prefer_hooks: optional
+  customer_phrases: optional
+  open_with: optional
+  open_with_feedback: optional
 system: |
   You are the social media manager for the brand below. Each channel gets a post written
   for that channel, not one post copied everywhere. No invented facts or statistics.
@@ -32,6 +35,19 @@ template: |
   may state; if a detail is not here, do not state it, describe the experience instead.
   Do not copy the [f..] labels.
   {{ facts }}
+
+  {% endif %}
+  {% if customer_phrases %}
+  Customers describe this in their own words as:
+  {{ customer_phrases }}
+  Reuse one of these phrases where it fits naturally; never put words in a customer's mouth or present them as a quote.
+
+  {% endif %}
+  {% if open_with %}
+  The FIRST sentence of every post must contain this exact phrase, word for word: "{{ open_with }}". It is how customers say it; do not put it in quotation marks and do not attribute it to a customer.
+  {% if open_with_feedback %}
+  {{ open_with_feedback }}
+  {% endif %}
 
   {% endif %}
   No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.

@@ -1,0 +1,124 @@
+name: content_refresh
+description: A refresh plan for one existing page that is losing Google clicks, as JSON — diagnosis, new title and meta, 3–8 concrete changes that each cite a query or number, answer-first FAQ.
+output: json
+temperature: 0.3
+vars:
+  page_url: required
+  page_title: required
+  page_text: required
+  top_queries: required
+  clicks_now: required
+  clicks_before: required
+  drop_pct: optional
+  clicks_lost: optional
+  facts: optional
+# Used by 68-wf-sched-content-refresh with data from 67-gsc-sync (/pages/declining,
+# /pages/{url}/queries) and the page text from 07. The workflow checks the answer in code:
+# a change whose "why" has a number that is not in this input, or that cites neither a
+# query nor a number, is dropped; an update_fact without a known fact label is dropped.
+# So the rules below say exactly that, and "fact" comes before "what" in each change so
+# the model picks the fact first and writes from it (small models follow the key order).
+# First 3 runs (qwen2.5:7b, one page): long "where" quotes of a whole paragraph, a "remove"
+# that carried replacement text (an update_fact in disguise), and [f1] labels in FAQ answers:
+# hence the 12-word quote, the remove rule and the label ban (code strips labels too).
+# First n8n e2e: the model wrote "lost 21 clicks" and "gained 3.7 positions" (its own
+# arithmetic), and those changes were dropped by the number check. Now the differences are
+# given (clicks lost, places lower), so it can copy them instead.
+system: |
+  You are an SEO editor for the brand below. You improve existing pages that are losing
+  Google search clicks. You change what the searchers need and leave the rest alone. You
+  never invent statistics, prices, dates, studies or quotes.
+
+  BRAND
+  {{ brand }}
+template: |
+  Page: {{ page_url }}
+  Current title: {{ page_title }}
+  Google clicks: {{ clicks_before }} in the previous 28 days, {{ clicks_now }} in the last 28 days{% if clicks_lost %}: {{ clicks_lost }} clicks lost{% endif %}{% if drop_pct %} ({{ drop_pct }}% fewer){% endif %}.
+
+  Search queries this page used to win (previous 28 days → last 28 days):
+  {% for q in top_queries %}
+  - "{{ q.query }}": clicks {{ q.clicks_before }} → {{ q.clicks_now }}, impressions {{ q.impressions_before }} → {{ q.impressions_now }}, position {{ q.position_before if q.position_before is not none else 'none' }} → {{ q.position_now if q.position_now is not none else 'none' }}{% if q.clicks_lost %}; {{ q.clicks_lost }} clicks lost{% endif %}{% if q.places_down %}; {{ q.places_down }} places lower{% endif %}
+  {% endfor %}
+
+  Page text:
+  """
+  {{ page_text }}
+  """
+
+  {% if facts %}
+  Approved facts about our products, prices and policies, with labels. These are the ONLY
+  such facts you may add; if a detail is not here or in the page text, do not state it.
+  {{ facts }}
+
+  {% endif %}
+  Write a refresh plan for this page.
+
+  - diagnosis: at most 300 characters. Why the page is likely losing clicks, based only on
+    the numbers and queries above (for example: a query's position fell, or the page does
+    not answer a query it used to win).
+  - changes: 3 to 8 concrete edits, most important first. Each has:
+    - type: add_section (a new H2 section), rewrite (rewrite a passage), update_fact
+      (replace an outdated or wrong detail with an approved fact), remove (cut an outdated
+      or off-topic passage; "what" says what to cut, with no new text), add_faq (a question
+      and answer on the page).
+    - fact: for update_fact ONLY, the label of the approved fact it uses, exactly as written
+      in the list (for example f3). Otherwise an empty string. No list, no label: do not
+      write update_fact.
+    - where: the page heading it belongs under, exactly as written, or a quote of at most
+      12 words copied word for word from the page text.
+    - what: at most 400 characters. The actual new or changed text, or what to cut. Write
+      the words to put on the page, not advice. Use only numbers that are in the page text
+      or the approved facts. Do not write the [f..] labels here.
+    - why: one sentence that names a query from the list above in double quotes or a
+      number from above (clicks, clicks lost, impressions, position, places lower). Copy
+      numbers exactly as written above; do not calculate new ones.
+  - new_title: at most 60 characters. Contains the query that lost the most clicks.
+  - new_meta: at most 155 characters. Answers that query in the first sentence.
+  - faq: at most 4 questions searchers ask, taken from the queries above. Each answer starts
+    with the direct answer in its first sentence, then at most one sentence of detail, and
+    uses only the page text and the approved facts.
+example_vars:
+  page_url: https://example.com/blog/cold-brew-ratio
+  page_title: How to make cold brew at home
+  page_text: >-
+    How to make cold brew at home. Cold brew is coffee steeped in cold water. Ratio: use
+    1 part coffee to 8 parts water. Steep for 12 hours. Grind: coarse. Serve over ice.
+    Our Desk Blend works well for cold brew.
+  top_queries:
+    - {query: cold brew ratio, clicks_before: 60, clicks_now: 15, impressions_before: 1400, impressions_now: 1500, position_before: 4.0, position_now: 9.0, clicks_lost: 45, places_down: 5.0}
+    - {query: how long to steep cold brew, clicks_before: 20, clicks_now: 9, impressions_before: 600, impressions_now: 640, position_before: 5.2, position_now: 7.8, clicks_lost: 11, places_down: 2.6}
+  clicks_now: 30
+  clicks_before: 100
+  drop_pct: 70
+  clicks_lost: 70
+  facts: "[f1] Desk Blend is a medium roast with notes of chocolate and caramel.\n[f2] Free shipping on orders over $30."
+schema:
+  type: object
+  required: [diagnosis, changes, new_title, new_meta, faq]
+  properties:
+    diagnosis: {type: string, minLength: 20, maxLength: 300}
+    changes:
+      type: array
+      minItems: 3
+      maxItems: 8
+      items:
+        type: object
+        required: [type, fact, where, what, why]
+        properties:
+          type: {type: string, enum: [add_section, rewrite, update_fact, remove, add_faq]}
+          fact: {type: string, maxLength: 10}
+          where: {type: string, minLength: 2, maxLength: 150}
+          what: {type: string, minLength: 5, maxLength: 400}
+          why: {type: string, minLength: 5, maxLength: 300}
+    new_title: {type: string, minLength: 10, maxLength: 60}
+    new_meta: {type: string, minLength: 50, maxLength: 155}
+    faq:
+      type: array
+      maxItems: 4
+      items:
+        type: object
+        required: [q, a]
+        properties:
+          q: {type: string, minLength: 5, maxLength: 150}
+          a: {type: string, minLength: 10, maxLength: 400}

@@ -155,7 +155,7 @@ def test_happy_path_now_post(mock):
     r = client.post("/publish", json=item(), headers=AUTH)
     assert r.status_code == 200, r.text
     assert r.json() == {"url": None, "postiz_id": "post-123", "status": "queued",
-                        "channel": "linkedin", "provider": "linkedin-page"}
+                        "channel": "linkedin", "provider": "linkedin-page", "media": []}
 
     req = route.calls.last.request
     assert req.headers["authorization"] == SECRET  # raw key, no "Bearer"
@@ -206,7 +206,7 @@ def test_media_required_provider_is_422(mock):
     create = mock_create(mock, httpx.Response(201, json=[]))
     r = client.post("/publish", json=item(channel="instagram"), headers=AUTH)
     assert r.status_code == 422
-    assert "instagram" in r.json()["detail"] and "text only" in r.json()["detail"]
+    assert "instagram" in r.json()["detail"] and "no image_url" in r.json()["detail"]
     assert not create.called
 
 
@@ -355,3 +355,324 @@ def test_postiz_key_never_appears_in_any_response(monkeypatch, mock):
     for r in responses:
         assert SECRET not in r.text, r.text
         assert SECRET not in json.dumps(dict(r.headers))
+
+
+# ---------- images (image_url, e.g. a card from 17-image-cards)
+
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+CARD_PUBLIC = "http://localhost:8117"
+CARD_INTERNAL = "http://image-cards:8000"
+CARD_PATH = "/cards/0123456789abcdef0123456789abcdef.png"
+# POST /public/v1/upload -> MediaFile, example from postiz-docs public-api/openapi.json
+MEDIA = {"id": "e639003b-f727-4a1e-87bd-74a2c48ae41e", "name": "card.png",
+         "path": "https://uploads.postiz.com/card.png", "organizationId": "org",
+         "createdAt": "2024-12-14T08:18:54.274Z", "updatedAt": "2024-12-14T08:18:54.274Z"}
+
+
+@pytest.fixture
+def cards_env(monkeypatch):
+    monkeypatch.setenv("CARDS_PUBLIC_URL", CARD_PUBLIC)
+    monkeypatch.setenv("CARDS_URL", CARD_INTERNAL)
+
+
+def mock_card(mock, status=200, content=PNG, ctype="image/png"):
+    return mock.get(CARD_INTERNAL + CARD_PATH).mock(
+        return_value=httpx.Response(status, content=content, headers={"content-type": ctype}))
+
+
+def test_image_is_fetched_uploaded_and_attached(cards_env, mock):
+    mock_integrations(mock)
+    card = mock_card(mock)
+    upload = mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "p1", "integration": LINKEDIN_ID}]))
+    r = client.post("/publish", json=item(image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert r.json()["media"] == [{"id": MEDIA["id"], "path": MEDIA["path"]}]
+
+    # fetched from the internal cards URL, without the Postiz key
+    assert card.called
+    assert "authorization" not in card.calls.last.request.headers
+    # uploaded as multipart field "file" with the Postiz key
+    up = upload.calls.last.request
+    assert up.headers["authorization"] == SECRET
+    assert up.headers["content-type"].startswith("multipart/form-data")
+    assert b'name="file"; filename="0123456789abcdef0123456789abcdef.png"' in up.content
+    assert b"Content-Type: image/png" in up.content and PNG in up.content
+    # the post references the upload by id and path
+    post = json.loads(create.calls.last.request.content)["posts"][0]
+    assert post["value"][0]["image"] == [{"id": MEDIA["id"], "path": MEDIA["path"]}]
+
+
+def test_instagram_with_image_is_accepted(cards_env, mock):
+    mock_integrations(mock)
+    mock_card(mock)
+    mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "p2", "integration": IG_ID}]))
+    r = client.post("/publish", json=item(channel="instagram", image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert r.json()["provider"] == "instagram"
+    assert json.loads(create.calls.last.request.content)["posts"][0]["value"][0]["image"][0]["id"] == MEDIA["id"]
+
+
+def test_instagram_without_image_says_so(mock):
+    mock_integrations(mock)
+    r = client.post("/publish", json=item(channel="instagram", image_url="  "), headers=AUTH)
+    assert r.status_code == 422
+    assert "no image_url" in r.json()["detail"]
+
+
+def test_other_urls_are_fetched_as_given(mock):
+    mock_integrations(mock)
+    img = mock.get("https://cdn.example/a/pic.jpeg").mock(
+        return_value=httpx.Response(200, content=b"\xff\xd8jpeg", headers={"content-type": "image/jpeg"}))
+    upload = mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    mock_create(mock, httpx.Response(201, json=[{"postId": "p3", "integration": LINKEDIN_ID}]))
+    r = client.post("/publish", json=item(image_url="https://cdn.example/a/pic.jpeg"), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert img.called
+    assert b'filename="pic.jpg"' in upload.calls.last.request.content
+
+
+@pytest.mark.parametrize("status,content,ctype,expect", [
+    (404, b"nope", "text/plain", "HTTP 404"),
+    (200, b"<html>", "text/html", "not a PNG"),
+    (200, b"", "image/png", "empty body"),
+    (200, b"x" * (10 * 1024 * 1024 + 1), "image/png", "larger than 10 MB"),
+])
+def test_image_that_cannot_be_loaded_is_502_and_nothing_is_posted(cards_env, mock, status, content, ctype, expect):
+    mock_integrations(mock)
+    mock_card(mock, status=status, content=content, ctype=ctype)
+    upload = mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[]))
+    r = client.post("/publish", json=item(image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 502
+    assert expect in r.json()["detail"]["image_error"]
+    assert not upload.called and not create.called
+
+
+def test_image_url_must_be_http(mock):
+    mock_integrations(mock)
+    r = client.post("/publish", json=item(image_url="file:///etc/passwd"), headers=AUTH)
+    assert r.status_code == 502 and "http(s)" in r.json()["detail"]["image_error"]
+
+
+def test_image_unreachable_is_502(cards_env, mock):
+    mock_integrations(mock)
+    mock.get(CARD_INTERNAL + CARD_PATH).mock(side_effect=httpx.ConnectError("refused"))
+    r = client.post("/publish", json=item(image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 502 and "cannot fetch" in r.json()["detail"]["image_error"]
+
+
+@pytest.mark.parametrize("resp", [
+    httpx.Response(400, json={"msg": "Invalid file type"}),
+    httpx.Response(201, json={"name": "no id"}),
+])
+def test_upload_failure_is_502_and_nothing_is_posted(cards_env, mock, resp):
+    mock_integrations(mock)
+    mock_card(mock)
+    mock.post(f"{API}/upload").mock(return_value=resp)
+    create = mock_create(mock, httpx.Response(201, json=[]))
+    r = client.post("/publish", json=item(image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 502
+    assert not create.called
+
+
+def test_upload_error_echoing_the_key_is_scrubbed(cards_env, mock):
+    mock_integrations(mock)
+    mock_card(mock)
+    mock.post(f"{API}/upload").mock(return_value=httpx.Response(400, json={"msg": f"bad key {SECRET}"}))
+    r = client.post("/publish", json=item(image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 502 and SECRET not in r.text
+
+
+def test_dry_run_reports_the_upload_without_calling_postiz(cards_env, monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    card = mock_card(mock)
+    r = client.post("/publish", json=item(channel="instagram", image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "dry_run"
+    assert body["would_upload"] == {
+        "image_url": CARD_PUBLIC + CARD_PATH, "fetched_from": CARD_INTERNAL + CARD_PATH,
+        "endpoint": f"{API}/upload", "file": "0123456789abcdef0123456789abcdef.png",
+        "content_type": "image/png", "bytes": len(PNG)}
+    assert body["would_send"]["posts"][0]["value"][0]["image"] == [
+        {"id": "<id from POST /upload>", "path": "<path from POST /upload>"}]
+    # only our own image service was called, never Postiz
+    assert [c.request.url.host for c in mock.calls] == ["image-cards"]
+    assert card.called
+
+
+def test_dry_run_without_image_has_no_upload(monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    body = client.post("/publish", json=item(), headers=AUTH).json()
+    assert body["would_upload"] is None
+    assert body["would_send"]["posts"][0]["value"][0]["image"] == []
+
+
+def test_dry_run_with_broken_image_is_502(cards_env, monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    mock_card(mock, status=404, content=b"", ctype="text/plain")
+    r = client.post("/publish", json=item(image_url=CARD_PUBLIC + CARD_PATH), headers=AUTH)
+    assert r.status_code == 502
+
+
+def test_video_networks_still_refuse_an_image_only_post(monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    monkeypatch.setenv("CHANNEL_MAP", json.dumps({"youtube": "yt1"}))
+    r = client.post("/publish", json=item(channel="youtube", image_url="https://cdn.example/p.png"), headers=AUTH)
+    assert r.status_code == 422 and "video" in r.json()["detail"]
+    assert not mock.calls
+
+
+# ---------- videos (video_url, e.g. an MP4 from 71-video-assembly)
+
+VIDEO_PUBLIC = "http://localhost:8171"
+VIDEO_INTERNAL = "http://video-assembly:8000"
+VIDEO_PATH = "/videos/0123456789abcdef0123456789abcdef.mp4"
+YT_ID = "cm4youtube00001"
+
+
+def mp4(seconds: float, version: int = 0) -> bytes:
+    """A tiny MP4-like file: ftyp + moov/mvhd with the given duration (timescale 1000)."""
+    if version == 1:
+        mvhd = b"mvhd" + bytes([1, 0, 0, 0]) + b"\0" * 16 + (1000).to_bytes(4, "big") + int(seconds * 1000).to_bytes(8, "big")
+    else:
+        mvhd = b"mvhd" + bytes([0, 0, 0, 0]) + b"\0" * 8 + (1000).to_bytes(4, "big") + int(seconds * 1000).to_bytes(4, "big")
+    mvhd += b"\0" * 80
+    return b"\0\0\0\x18ftypisom" + b"\0" * 12 + (len(mvhd) + 12).to_bytes(4, "big") + b"moov" \
+        + (len(mvhd) + 4).to_bytes(4, "big") + mvhd + b"mdat" + b"\x01" * 64
+
+
+VIDEO_MEDIA = {**MEDIA, "id": "vid-media-1", "name": "clip.mp4", "path": "https://uploads.postiz.com/clip.mp4"}
+
+
+@pytest.fixture
+def video_env(monkeypatch, cards_env):
+    monkeypatch.setenv("VIDEO_PUBLIC_URL", VIDEO_PUBLIC)
+    monkeypatch.setenv("VIDEO_URL", VIDEO_INTERNAL)
+
+
+def mock_video(mock, status=200, content=None, ctype="video/mp4"):
+    return mock.get(VIDEO_INTERNAL + VIDEO_PATH).mock(return_value=httpx.Response(
+        status, content=mp4(31.2) if content is None else content, headers={"content-type": ctype}))
+
+
+def test_mp4_duration_reads_mvhd_v0_and_v1():
+    assert main.mp4_duration(mp4(31.2)) == 31.2
+    assert main.mp4_duration(mp4(150, version=1)) == 150
+    assert main.mp4_duration(b"not a video") is None
+
+
+def test_video_is_fetched_uploaded_and_attached_instead_of_the_image(video_env, mock):
+    mock_integrations(mock)
+    vid = mock_video(mock)
+    card = mock_card(mock)
+    upload = mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=VIDEO_MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "pv", "integration": IG_ID}]))
+    r = client.post("/publish", json=item(channel="instagram", image_url=CARD_PUBLIC + CARD_PATH,
+                                          video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert r.json()["media"] == [{"id": "vid-media-1", "path": VIDEO_MEDIA["path"]}]
+    assert r.json()["video_note"] is None
+    assert vid.called and "authorization" not in vid.calls.last.request.headers
+    assert not card.called   # the poster is not attached next to the video
+    up = upload.calls.last.request
+    assert upload.call_count == 1 and up.headers["authorization"] == SECRET
+    assert b'filename="0123456789abcdef0123456789abcdef.mp4"' in up.content
+    assert b"Content-Type: video/mp4" in up.content
+    post = json.loads(create.calls.last.request.content)["posts"][0]
+    assert post["value"][0]["image"] == [{"id": "vid-media-1", "path": VIDEO_MEDIA["path"]}]
+
+
+def test_youtube_with_a_video_is_accepted(video_env, monkeypatch, mock):
+    monkeypatch.setenv("CHANNEL_MAP", json.dumps({"youtube": YT_ID}))
+    mock.get(f"{API}/integrations").mock(return_value=httpx.Response(200, json=[
+        {"id": YT_ID, "name": "Acme", "identifier": "youtube", "picture": "", "disabled": False, "profile": "acme"}]))
+    mock_video(mock)
+    mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=VIDEO_MEDIA))
+    mock_create(mock, httpx.Response(201, json=[{"postId": "py", "integration": YT_ID}]))
+    r = client.post("/publish", json=item(channel="youtube", video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert r.json()["provider"] == "youtube"
+
+
+def test_video_too_long_for_x_is_left_off_and_the_text_post_goes_out(video_env, mock):
+    mock_integrations(mock)
+    mock_video(mock, content=mp4(150))
+    card = mock_card(mock)
+    upload = mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "px", "integration": X_ID}]))
+    r = client.post("/publish", json=item(channel="x", image_url=CARD_PUBLIC + CARD_PATH,
+                                          video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert "150 s is longer than x takes (140 s)" in r.json()["video_note"]
+    # the post goes out as before: text plus the image
+    assert card.called and upload.call_count == 1
+    assert json.loads(create.calls.last.request.content)["posts"][0]["value"][0]["image"][0]["id"] == MEDIA["id"]
+
+
+def test_video_over_max_video_mb_is_left_off(video_env, monkeypatch, mock):
+    monkeypatch.setenv("MAX_VIDEO_MB", "1")
+    mock_integrations(mock)
+    mock_video(mock, content=mp4(20) + b"\0" * (1024 * 1024))
+    upload = mock.post(f"{API}/upload").mock(return_value=httpx.Response(201, json=MEDIA))
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "pl", "integration": LINKEDIN_ID}]))
+    r = client.post("/publish", json=item(video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert "larger than 1 MB" in r.json()["video_note"] and "MAX_VIDEO_MB=1" in r.json()["video_note"]
+    assert not upload.called and create.called
+
+
+@pytest.mark.parametrize("status,ctype,expect", [(404, "text/plain", "HTTP 404"), (200, "text/html", "not a MP4/MOV")])
+def test_video_that_is_gone_or_not_a_video_is_left_off(video_env, mock, status, ctype, expect):
+    mock_integrations(mock)
+    mock_video(mock, status=status, content=b"<html>", ctype=ctype)
+    create = mock_create(mock, httpx.Response(201, json=[{"postId": "pg", "integration": LINKEDIN_ID}]))
+    r = client.post("/publish", json=item(video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200 and expect in r.json()["video_note"]
+    assert create.called
+
+
+def test_video_service_unreachable_is_502_and_nothing_is_posted(video_env, mock):
+    mock_integrations(mock)
+    mock.get(VIDEO_INTERNAL + VIDEO_PATH).mock(side_effect=httpx.ConnectError("refused"))
+    create = mock_create(mock, httpx.Response(201, json=[]))
+    r = client.post("/publish", json=item(video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 502 and "cannot fetch" in r.json()["detail"]["video_error"]
+    assert not create.called
+
+
+def test_image_only_network_leaves_the_video_off(video_env, monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    monkeypatch.setenv("CHANNEL_MAP", json.dumps({"pinterest": "pin1"}))
+    mock_card(mock)
+    r = client.post("/publish", json=item(channel="pinterest", image_url=CARD_PUBLIC + CARD_PATH,
+                                          video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    assert "takes images only" in r.json()["video_note"]
+    assert r.json()["would_upload"]["image_url"] == CARD_PUBLIC + CARD_PATH
+
+
+def test_dry_run_reports_the_video_upload_without_calling_postiz(video_env, monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    vid = mock_video(mock)
+    r = client.post("/publish", json=item(channel="instagram", image_url=CARD_PUBLIC + CARD_PATH,
+                                          video_url=VIDEO_PUBLIC + VIDEO_PATH), headers=AUTH)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["would_upload"] == {
+        "video_url": VIDEO_PUBLIC + VIDEO_PATH, "fetched_from": VIDEO_INTERNAL + VIDEO_PATH,
+        "endpoint": f"{API}/upload", "file": "0123456789abcdef0123456789abcdef.mp4",
+        "content_type": "video/mp4", "bytes": len(mp4(31.2)), "duration_s": 31.2}
+    assert body["video_note"] is None
+    assert body["would_send"]["posts"][0]["value"][0]["image"] == [
+        {"id": "<id from POST /upload>", "path": "<path from POST /upload>"}]
+    assert [c.request.url.host for c in mock.calls] == ["video-assembly"]
+    assert vid.called
+
+
+def test_no_video_url_keeps_the_answer_unchanged(monkeypatch, mock):
+    monkeypatch.setenv("DRY_RUN", "true")
+    body = client.post("/publish", json=item(video_url=" "), headers=AUTH).json()
+    assert "video_note" not in body and body["would_upload"] is None

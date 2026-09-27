@@ -1,0 +1,63 @@
+# Voice A/B (python -m evalsuite.voice_ab). Written BEFORE the first run and not changed
+# after it: the answers are the example brand's interview (05 GET /voice/questions), the
+# topics are the hold-out the profile is measured on. Do not tune voice_profile.yaml or
+# voice_judge.yaml on these topics; add new topics to a new file instead.
+# (Kept in cases/voice/, not cases/: top-level case files are eval-run cases with checks.)
+brand: Northwind Roasters (05 config/brand.yaml)
+answers:
+  - q: Who do you talk to? Describe one real customer.
+    a: >-
+      Mostly people who work from a desk at home. Think of Priya, a developer who makes her
+      second pot at about ten, has two cats on the keyboard and no time to read about coffee.
+      She wants it to be good and to show up before she runs out.
+  - q: How would you explain what you sell to a friend, in two or three sentences?
+    a: >-
+      We roast coffee when you order it and post it on the schedule you pick. So it is fresh
+      when it lands, and you never end up with the sad jar of instant on a Wednesday.
+  - q: Which three words describe how you sound? Which three words should never describe you?
+    a: >-
+      Warm, dry, plain. Never loud, salesy or clever-clever. We are not trying to impress
+      anyone, we are the friend who knows about coffee and doesn't go on about it.
+  - q: Paste a post you loved (yours or anyone's) and say why.
+    a: >-
+      "Tuesday is decaf roasting day. The whole street smells like toast." I liked it because
+      it is one true thing, it is short, and it doesn't ask you to buy anything.
+  - q: How much humour, and what kind?
+    a: >-
+      A little, and dry. A raised eyebrow, not a joke with a punchline. No puns on "brew" or
+      "bean", we've heard them all.
+  - q: How formal are you? Would you write "we're" or "we are", "hi" or "dear"?
+    a: >-
+      Casual. We're, you'll, it's. "Hi" at most, usually we just start talking. No corporate
+      words like "solutions", "offerings" or "customers journey".
+  - q: Emoji, exclamation marks, hashtags - how many, and when?
+    a: >-
+      One emoji is plenty and often none. Hardly ever an exclamation mark, never two. A couple
+      of hashtags at the end where the platform expects them, never in the middle of a sentence.
+  - q: What do competitors or other brands in your space sound like that you don't want to?
+    a: >-
+      Big coffee brands talk about "elevating your morning ritual" and "unlocking" flavour, as
+      if coffee were a self-help course. Or they shout: limited time, don't miss out, rocket
+      emojis. We don't want to sound like either.
+  - q: What does a customer say about you, in their own words?
+    a: >-
+      "It just turns up and it's good." Someone also wrote "the only subscription I've never
+      forgotten to cancel, because I don't want to."
+  - q: What do you never promise or claim?
+    a: >-
+      That coffee makes you more productive or healthier. That we are the best. Anything about
+      shipping times outside the US, or discounts we haven't actually got.
+# Held-out topics, one channel each, spread across the channels 14 knows.
+topics:
+  - {id: desk_blend_intro, channel: x, topic: "Introduce the Desk Blend to people who have never tried it"}
+  - {id: pause_delivery, channel: facebook, topic: "Reminder that you can skip or pause a delivery before a holiday"}
+  - {id: team_box_managers, channel: linkedin, topic: "The Team Box as a perk for a small remote team"}
+  - {id: rotation_new_origin, channel: instagram, topic: "This month's Single-Origin Rotation has shipped"}
+  - {id: decaf_evenings, channel: threads, topic: "Swiss Water decaf for the afternoon cup"}
+  - {id: roast_to_ship, channel: mastodon, topic: "Why we roast within 48 hours of shipping"}
+  - {id: monday_ritual, channel: x, topic: "The first cup on a Monday at a home desk"}
+  - {id: returns_policy, channel: facebook, topic: "Our return policy on unopened bags, explained plainly"}
+  - {id: french_press_tip, channel: instagram, topic: "A French press tip for the Desk Blend"}
+  - {id: free_shipping_us, channel: linkedin, topic: "Free shipping on US subscriptions and how the schedule works"}
+# Generic words that make copy sound machine-written (fixed list, used by the objective metric).
+generic_ai_words: [elevate, unlock, seamless, delve, game-changer, "in today's fast-paced", tapestry, harness, leverage]

@@ -1,11 +1,18 @@
 """Brand service: one brand profile, a compact prompt summary, and a rule checker."""
+import hmac
+import json
+import logging
 import os
 import re
+import tempfile
 import threading
+from typing import Annotated
 
 import yaml
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
+
+log = logging.getLogger("brand-service")
 
 app = FastAPI(title="brand-service")
 
@@ -75,8 +82,104 @@ def _join(items, sep="; ") -> str:
     return sep.join(str(i).strip().rstrip(".") for i in items)
 
 
-def build_summary(b: dict) -> str:
-    """Plain-text profile for prompts. Hard rules first, so truncation only drops colour."""
+# --- Voice profile (learned from an interview; stored apart from the read-only brand.yaml) ---
+
+VOICE_QUESTIONS = [
+    "Who do you talk to? Describe one real customer.",
+    "How would you explain what you sell to a friend, in two or three sentences?",
+    "Which three words describe how you sound? Which three words should never describe you?",
+    "Paste a post you loved (yours or anyone's) and say why.",
+    "How much humour, and what kind?",
+    "How formal are you? Would you write \"we're\" or \"we are\", \"hi\" or \"dear\"?",
+    "Emoji, exclamation marks, hashtags - how many, and when?",
+    "What do competitors or other brands in your space sound like that you don't want to?",
+    "What does a customer say about you, in their own words?",
+    "What do you never promise or claim?",
+]
+
+
+Rule = Annotated[str, Field(min_length=1, max_length=120)]
+Word = Annotated[str, Field(min_length=1, max_length=40)]
+Sample = Annotated[str, Field(min_length=1, max_length=200)]
+
+
+class VoiceProfile(BaseModel):
+    """Output of the 04 `voice_profile` prompt. Limits match that prompt's schema."""
+    summary: str = Field(min_length=1, max_length=300)
+    do: list[Rule] = Field(default=[], max_length=6)
+    dont: list[Rule] = Field(default=[], max_length=6)
+    words_we_use: list[Word] = Field(default=[], max_length=10)
+    words_we_avoid: list[Word] = Field(default=[], max_length=10)
+    sentence_style: str = Field(default="", max_length=200)
+    sample_lines: list[Sample] = Field(default=[], max_length=3)
+
+
+def voice_file() -> str:
+    return os.environ.get("VOICE_FILE", "/config/voice.json")
+
+
+def require_key(x_api_key: str | None = Header(default=None)):
+    """Enforced whenever INTERNAL_API_KEY is set (the stack sets it); open for local tests."""
+    expected = os.environ.get("INTERNAL_API_KEY")
+    if expected and not (x_api_key and hmac.compare_digest(x_api_key, expected)):
+        raise HTTPException(401, "missing or wrong X-API-Key")
+
+
+def load_voice() -> dict | None:
+    """The stored profile, or None. A broken file is logged and ignored, never a 500."""
+    try:
+        with open(voice_file(), encoding="utf-8") as fh:
+            return VoiceProfile(**json.load(fh)).model_dump()
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError, TypeError) as exc:
+        log.warning("ignoring unreadable voice file %s: %s", voice_file(), exc)
+        return None
+
+
+def save_voice(profile: dict) -> None:
+    """Write-then-rename, so a reader never sees half a file."""
+    path = voice_file()
+    folder = os.path.dirname(os.path.abspath(path))
+    fd, tmp = tempfile.mkstemp(dir=folder, prefix=".voice-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(profile, fh, ensure_ascii=False, indent=2)
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
+def voice_lines(v: dict) -> list[str]:
+    """The voice rules for the prompt summary: summary, do, don't, words to avoid."""
+    lines = [f"Voice: {v['summary'].strip()}"]
+    if v.get("do"):
+        lines.append("Voice do: " + _join(v["do"]))
+    if v.get("dont"):
+        lines.append("Voice don't: " + _join(v["dont"]))
+    if v.get("words_we_avoid"):
+        lines.append("Avoid words: " + _join(v["words_we_avoid"], ", "))
+    return lines
+
+
+def voice_extras(v: dict) -> list[str]:
+    """Lower-priority voice detail, appended at the very end only while it fits."""
+    extras = []
+    if (v.get("sentence_style") or "").strip():
+        extras.append("\nSentences: " + v["sentence_style"].strip())
+    if v.get("words_we_use"):
+        extras.append("\nWords we use: " + _join(v["words_we_use"], ", "))
+    # Sample lines are NOT sent to writers: in the eval they carried invented details (a customer
+    # name, "by noon") that writers copy. They stay stored for people to read (GET /voice).
+    return extras
+
+
+def build_summary(b: dict, learned: dict | None = None) -> str:
+    """Plain-text profile for prompts. Hard rules first, then the voice rules, so the
+    SUMMARY_MAX cut only drops descriptive colour. Voice extras (sentence style, words we
+    use, sample lines) come last and only while they fit; they are never cut mid-way."""
     lines = [f"Brand: {b.get('name', '')} - {b.get('one_liner', '')}"]
     if b.get("website"):
         lines.append(f"Website: {b['website']}")
@@ -94,6 +197,8 @@ def build_summary(b: dict) -> str:
     if emoji_max is not None:
         allowed = (b.get("emoji_policy") or {}).get("allowed")
         lines.append(f"Emoji: max {emoji_max} per post" + (f", only these: {' '.join(allowed)}" if allowed else ""))
+    if learned:  # right after the hard rules: the cut below can never reach it
+        lines += voice_lines(learned)
     if b.get("preferred_hashtags"):
         lines.append("Hashtags: " + _join(b["preferred_hashtags"], " "))
     if b.get("key_messages"):
@@ -110,7 +215,11 @@ def build_summary(b: dict) -> str:
         ))
     text = "\n".join(lines)
     if len(text) > SUMMARY_MAX:
-        text = text[: SUMMARY_MAX - 3].rstrip() + "..."
+        return text[: SUMMARY_MAX - 3].rstrip() + "..."
+    for extra in voice_extras(learned or {}):
+        if len(text) + len(extra) > SUMMARY_MAX:
+            break
+        text += extra
     return text
 
 
@@ -170,7 +279,39 @@ def facts():
 
 @app.get("/profile/summary")
 def profile_summary():
-    return {"summary": build_summary(load_brand())}
+    return {"summary": build_summary(load_brand(), load_voice())}
+
+
+@app.get("/voice/questions")
+def voice_questions():
+    return {"questions": VOICE_QUESTIONS}
+
+
+@app.get("/voice")
+def get_voice():
+    v = load_voice()
+    if v is None:
+        raise HTTPException(404, "no voice profile stored")
+    return v
+
+
+@app.put("/voice", dependencies=[Depends(require_key)])
+def put_voice(profile: VoiceProfile):
+    data = profile.model_dump()
+    try:
+        save_voice(data)
+    except OSError as exc:
+        raise HTTPException(500, f"cannot write VOICE_FILE {voice_file()}: {exc.strerror}") from exc
+    return data
+
+
+@app.delete("/voice", dependencies=[Depends(require_key)])
+def delete_voice():
+    try:
+        os.unlink(voice_file())
+        return {"deleted": True}
+    except FileNotFoundError:
+        return {"deleted": False}
 
 
 @app.post("/check")
@@ -191,6 +332,11 @@ def check(req: CheckRequest):
             # Quote the text as written: an LLM fixing the copy needs the exact words.
             rule = f" (rule: '{phrase}')" if found.lower() != phrase.lower() else ""
             add("banned_phrase", f"contains banned phrase '{found}'{rule}", "error", match=found)
+
+    for word in ((load_voice() or {}).get("words_we_avoid") or []):
+        found = find_token(text, word) if word.strip() else None
+        if found:
+            add("avoid_word", f"uses '{found}', a word the brand voice avoids", "warn", match=found)
 
     if req.channel:
         channel = req.channel.strip().lower()

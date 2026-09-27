@@ -1,0 +1,9 @@
+# Tool-choice set for plan_content_month (64), written 2026-09-24 together with the tool,
+# BEFORE any run. Three requests for a month of content from one topic or long piece, and two
+# near-misses that name a goal, dates or targets and must still go to plan_campaign.
+# Run: python -m evalsuite.tools --cases engine_v1
+- {say: "Plan a month of LinkedIn and X content from our remote coffee ritual guide", expect: plan_content_month}
+- {say: "I need lots of posts for October across linkedin, x and instagram about our decaf process", expect: plan_content_month}
+- {say: "Turn this article into a content calendar for next month on linkedin and the blog: https://example.com/brew-guide", expect: plan_content_month}
+- {say: "Plan a campaign to get 50 Team Box signups from October 5 to 30 on LinkedIn and email", expect: plan_campaign}
+- {say: "Set up a holiday gift campaign for December with a goal of 200 clicks on instagram", expect: plan_campaign}

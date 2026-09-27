@@ -1,0 +1,23 @@
+# Voice-of-customer A/B (python -m evalsuite.voc_ab). Written BEFORE the first run and not
+# changed after it. Do not tune customer_themes / social_posts / voc_judge on these topics;
+# add new topics to a new file instead.
+# Data: 70-customer-language/samples/northwind_sources.json (FICTIONAL EXAMPLE DATA for the
+# example brand Northwind Roasters, 05 config/brand.yaml). `--setup` imports it and mines.
+brand: Northwind Roasters (05 config/brand.yaml)
+samples: ../70-customer-language/samples/northwind_sources.json
+# Product names are brand words, not customer language: left out of the phrase bank.
+ignore_phrases: [Desk Blend, Team Box, Single-Origin Rotation, Swiss Water decaf]
+# How many /relevant items side B gets (what 26/65 will pass as customer_phrases).
+k: 8
+# Held-out topics, one channel each, spread across the channels 14 knows.
+topics:
+  - {id: pause_before_trip, channel: facebook, topic: "Skipping or pausing a delivery before you travel"}
+  - {id: running_out, channel: x, topic: "Never running out of coffee in the middle of the week"}
+  - {id: grind_choice, channel: instagram, topic: "Choosing the right grind for your brewer"}
+  - {id: decaf_afternoon, channel: threads, topic: "Swiss Water decaf for the afternoon cup"}
+  - {id: team_perk, channel: linkedin, topic: "The Team Box as a perk for a small remote team"}
+  - {id: worth_the_price, channel: mastodon, topic: "Why fresh-roasted coffee costs more than supermarket coffee"}
+  - {id: roast_to_ship, channel: linkedin, topic: "Why we roast within 48 hours of shipping"}
+  - {id: rotation_shipped, channel: instagram, topic: "This month's Single-Origin Rotation has shipped"}
+  - {id: home_desk_ritual, channel: x, topic: "The first cup at a home desk before the laptop opens"}
+  - {id: delivery_timing, channel: facebook, topic: "How our delivery schedule works and what to do if a box is late"}

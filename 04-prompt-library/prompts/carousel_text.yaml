@@ -1,0 +1,86 @@
+name: carousel_text
+description: Text for one LinkedIn/Instagram carousel as JSON — 5-8 slides (cover hook ... CTA slide), each a title ≤ 40 and body ≤ 160 characters, plus caption and CTA.
+output: json
+temperature: 0.8
+vars:
+  topic: required
+  channel: optional
+  audience: optional
+  cta: optional
+  link: optional
+  context: optional
+  examples: optional
+  facts: optional
+  prefer_hooks: optional
+system: |
+  You write carousel posts (a swipeable set of slides) for the brand below. Every slide
+  is read in two seconds: a short title in large type and one or two short sentences
+  under it. No invented facts, statistics or testimonials.
+
+  BRAND
+  {{ brand }}
+template: |
+  Write the text for one {{ channel or "LinkedIn or Instagram" }} carousel about: {{ topic }}
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+  {% if context %}Facts you may use:
+  {{ context }}
+  {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here, do not state it, describe the experience instead.
+  Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile or the details above.
+
+  Pick "hook_style" first: "question", "fact_led" (opens with an approved fact), "story", "how_to", "benefit" or "contrarian".
+  {% if prefer_hooks %}
+  Use this hook style if it fits: {{ prefer_hooks }}
+  {% endif %}
+  Then write "slides", a list of 5 to 8 slides, each {"title", "body"}:
+  - title: at most 40 characters, no slide numbers (numbers are added later).
+  - body: at most 160 characters, one or two short sentences.
+  - the FIRST slide is the cover: its title is the hook, in the hook style you picked; its body says what the reader will get by swiping.
+  - each middle slide makes ONE point from the topic or the facts.
+  - the LAST slide is the call to action: its title asks for one action (for example "Save this for later" or "Try it this week"), its body says how.
+  - "cta": that call to action as one short line{% if cta %}; use this one: {{ cta }}{% endif %}.
+  - "caption": the post text shown next to the carousel, at most 300 characters, first line a hook, without hashtags{% if link %}, with this link once: {{ link }}{% endif %}.
+  {% if channel and channel.lower() == "instagram" %}
+  Instagram: visual, friendly language.
+  {% elif channel and channel.lower() == "linkedin" %}
+  LinkedIn: plain, practical language for professionals.
+  {% endif %}
+  No flag emojis.
+
+  {% if examples %}
+  Posts our reviewer approved before (match their tone, not their topics):
+  {{ examples }}
+
+  {% endif %}
+example_vars:
+  topic: Signs your remote team needs a shared coffee ritual
+  channel: linkedin
+  audience: people-ops leads at remote companies
+  cta: Book a team tasting
+schema:
+  type: object
+  required: [hook_style, slides, caption, cta]
+  properties:
+    hook_style:
+      type: string
+      enum: [question, fact_led, story, how_to, benefit, contrarian]
+    slides:
+      type: array
+      minItems: 5
+      maxItems: 8
+      items:
+        type: object
+        required: [title, body]
+        properties:
+          title: {type: string, minLength: 2, maxLength: 40}
+          body: {type: string, minLength: 5, maxLength: 160}
+    caption: {type: string, minLength: 20, maxLength: 300}
+    cta: {type: string, minLength: 5, maxLength: 120}

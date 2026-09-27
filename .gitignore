@@ -3,6 +3,7 @@ _dev/
 
 # Secrets and local state
 .env
+secrets/
 *.sqlite
 *.db
 data/

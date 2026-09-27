@@ -1,0 +1,87 @@
+name: voice_profile
+description: Turn a brand-voice interview (05 /voice/questions answers) into a checkable voice profile, as JSON for 05 PUT /voice.
+output: json
+temperature: 0.3
+vars:
+  answers: required
+  examples: optional
+# Vague rules ("be authentic", "sound human") change nothing in a small model's output and
+# can't be checked. Every rule here must be something a reviewer or code could verify.
+# The brand summary is shown for context only: rules already in it are not repeated, so the
+# voice block in 05's summary adds new information instead of spending characters twice.
+# Measured once on mkt-writer (qwen2.5:7b) with the example interview, before the A/B eval:
+# the first version made topic rules ("Mention decaf roasting day", "Refer to Priya's
+# routine" - Priya was the owner's example customer), put an invented schedule in a sample
+# line ("We ship every Monday") and repeated the brand's banned phrases. Hence the HOW-not-
+# WHAT line, the explicit "not in Never say" and the sample-line wording below.
+system: |
+  You turn a brand owner's interview answers into a writing-voice profile that another
+  writer will follow. You only use what the answers and examples show; you never invent
+  products, facts, prices, numbers or customer quotes.
+
+  BRAND (context; do not repeat its rules)
+  {{ brand }}
+template: |
+  Interview answers:
+  """
+  {{ answers }}
+  """
+  {% if examples %}
+
+  Posts the brand approved (evidence of the voice, not topics):
+  """
+  {{ examples }}
+  """
+  {% endif %}
+
+  Write the profile.
+  - summary: at most 300 characters, second person, starting "Write like".
+  - do / dont: up to 6 each. Rules say HOW to write, never WHAT to write about: no rule
+    names a person, product, day, place or topic from the answers, and no rule repeats one
+    already in the brand profile. Every rule must be concrete and checkable by reading one post:
+    a length, a word, a punctuation habit, a structure. Good: "Sentences under 15 words",
+    "Use contractions: we're, you'll", "At most one emoji, placed at the end",
+    "Never use 'elevate', 'unlock', 'seamless'". Bad (never write these): "Be authentic",
+    "Sound human", "Engage the reader", "Be on-brand". Each rule under 100 characters.
+  - words_we_use: up to 10 words or short phrases taken from the answers.
+  - words_we_avoid: up to 10 single words or short phrases the answers reject or that
+    sound like the brands they don't want to sound like, and that are NOT already in the
+    brand's "Never say" list. Also include common filler words
+    of machine-written marketing ("elevate", "unlock", "seamless", "delve", "leverage")
+    when there is room.
+  - sentence_style: one line with a number in it (e.g. "Short, plain sentences, mostly under 12 words").
+  - sample_lines: exactly 3 lines in this voice, each under 200 characters, about the brand's
+    everyday product and ritual. Use only facts written in the answers or the brand profile:
+    no new days, schedules, numbers, prices, discounts or claims, and no customer names.
+example_vars:
+  answers: |
+    Q: Which three words describe how you sound? A: Warm, dry, plain. Never loud or salesy.
+    Q: Emoji, exclamation marks? A: One emoji at most. Hardly ever an exclamation mark.
+    Q: What do competitors sound like? A: "Elevate your morning ritual." We hate that.
+schema:
+  type: object
+  required: [summary, do, dont, words_we_use, words_we_avoid, sentence_style, sample_lines]
+  properties:
+    summary: {type: string, minLength: 10, maxLength: 300}
+    do:
+      type: array
+      maxItems: 6
+      items: {type: string, minLength: 3, maxLength: 120}
+    dont:
+      type: array
+      maxItems: 6
+      items: {type: string, minLength: 3, maxLength: 120}
+    words_we_use:
+      type: array
+      maxItems: 10
+      items: {type: string, minLength: 1, maxLength: 40}
+    words_we_avoid:
+      type: array
+      maxItems: 10
+      items: {type: string, minLength: 1, maxLength: 40}
+    sentence_style: {type: string, maxLength: 200}
+    sample_lines:
+      type: array
+      minItems: 3
+      maxItems: 3
+      items: {type: string, minLength: 5, maxLength: 200}

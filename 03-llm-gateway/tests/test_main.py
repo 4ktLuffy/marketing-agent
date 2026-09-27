@@ -19,6 +19,7 @@ def configure(monkeypatch):
     monkeypatch.setattr(main, "OLLAMA_URL", OLLAMA)
     monkeypatch.setattr(main, "BRAND_URL", "")
     monkeypatch.setattr(main, "LEARNING_URL", "")
+    monkeypatch.setattr(main, "_policy_cache", {"at": None, "policy": None})
 
 
 client = TestClient(main.app)
@@ -455,3 +456,31 @@ def test_oversized_vars_and_bad_temperature_rejected(monkeypatch):
     assert client.post("/v1/run", json=big).status_code == 413
     hot = {"prompt": "headline", "vars": {"topic": "c"}, "temperature": 9}
     assert client.post("/v1/run", json=hot).status_code == 422
+
+
+# ---------- brand emoji policy enforced in code
+
+
+@respx.mock
+def test_emoji_outside_the_set_and_over_the_max_are_removed(monkeypatch):
+    monkeypatch.setattr(main, "BRAND_URL", "http://brand.test")
+    respx.get("http://brand.test/summary").mock(return_value=httpx.Response(200, json={"summary": "B"}))
+    respx.get("http://brand.test/profile/summary").mock(return_value=httpx.Response(200, json={"summary": "B"}))
+    respx.get("http://brand.test/facts").mock(return_value=httpx.Response(200, json={"facts": []}))
+    respx.get("http://brand.test/profile").mock(return_value=httpx.Response(
+        200, json={"emoji_policy": {"max_per_post": 2, "allowed": ["☕", "🌱", "✨"]}}))
+    respx.post(f"{OLLAMA}/api/chat").mock(return_value=reply(
+        '{"headlines": ["Fresh ☕️ brew 🚀 today!", "☕ 🌱 ✨ three", "no emoji"]}'))
+    r = client.post("/v1/run", json={"prompt": "headline", "vars": {"topic": "c"}})
+    assert r.status_code == 200
+    assert r.json()["output"]["headlines"] == ["Fresh ☕️ brew today!", "☕ 🌱 three", "no emoji"]
+    assert sorted(r.json()["emoji_removed"]) == sorted(["🚀", "✨"])
+
+
+def test_policy_skipped_for_listed_prompts_and_when_brand_down(monkeypatch):
+    removed = []
+    pol = {"allowed": {"☕"}, "max": 1}
+    assert main.apply_emoji_policy({"a": ["x 🚀 y", 3]}, pol, removed) == {"a": ["x y", 3]} and removed == ["🚀"]
+    monkeypatch.setattr(main, "BRAND_URL", "http://down.invalid")
+    assert main.emoji_policy() is None          # fail-soft: no policy, output untouched
+    assert "claim_details" in main.EMOJI_POLICY_SKIP

@@ -1,8 +1,8 @@
 # 41 · Weekly KPI report
 
-Deploy **41 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **41 of 71** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
-Every Monday it pulls last week's KPIs against the week before (20), has the LLM write plain-language highlights, renders an HTML report (21), and sends it to your webhook and/or email.
+Every Monday it pulls last week's KPIs against the week before (20), has the LLM write plain-language highlights, then adds a **Next actions** section: last week's tracked clicks by channel and top posts (45 `/insights`), the hook styles that earn clicks (45 `/insights/hooks`), the scorecards of active campaigns (45) and, when `ENGINE_URL` is set, the review health of active content pillars (61) go to the LLM (prompt `weekly_actions`), which returns a headline, what changed and at most ONE next action per channel. The workflow checks every action in code: each `why` must cite a number that appears in that data (sign ignored), or the action is dropped and counted; the same check removes unsupported numbers from the headline and the what-changed lines. It renders an HTML report (21) and sends it to your webhook and/or email. Any source that fails is left out; if the LLM fails, the report goes out without the actions.
 
 ## Where to deploy
 
@@ -34,6 +34,7 @@ Mondays 09:00. Change it in the first node.
 | `NOTIFY_WEBHOOK_URL` | optional |
 | `REPORT_EMAIL_TO` | optional; needs an **SMTP** credential attached to the *Email report* node |
 | `REPORT_EMAIL_FROM` | optional sender |
+| `ENGINE_URL` | optional; content engine (61) for pillar health |
 
 ## Setup
 
@@ -49,6 +50,8 @@ curl -X POST 'localhost:8120/upload?source=ga4' -H "X-API-Key: $INTERNAL_API_KEY
 - `03-llm-gateway`
 - `20-analytics-ingest`
 - `21-report-builder`
+- `45-campaign-service`
+- `61-content-engine (optional)`
 
 Service URLs come from env vars on the n8n container (`GATEWAY_URL`, `CALENDAR_URL`, …),
 which `01-marketing-stack` sets. `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set so

@@ -1,6 +1,6 @@
 # llm-gateway
 
-Deploy **3 of 60** of the local-LLM marketing agent. Every LLM call the agent makes
+Deploy **3 of 71** of the local-LLM marketing agent. Every LLM call the agent makes
 goes through this service. You call it with a **prompt name and variables**, and it
 returns **validated text or JSON**.
 
@@ -75,6 +75,7 @@ curl -s localhost:8103/v1/run -H 'content-type: application/json' -d '{
 | `REASONING_EFFORT` | empty | for reasoning models on `openai` provider: `low`/`medium`/`high`. Use `low` for `gpt-oss` on Groq (default effort produced empty JSON for social posts; `low` passed 4/4) |
 | `RATE_LIMIT_RETRIES` | `4` | 429 retries, waiting as long as the API's reset headers say (max 60 s each). A daily-limit 429 stops immediately with a clear error |
 | `OLLAMA_URL` | `http://host.docker.internal:11434` | Ollama server |
+| `EMOJI_POLICY_SKIP` | `claim_details,detail_check,voice_judge,reflect_rule` | prompts whose output is NOT cleaned. For every other prompt the brand's `emoji_policy` (05 `/profile`: `allowed` set, `max_per_post`) is enforced in code on every string of the output: emoji outside the set are removed, then each string keeps at most `max_per_post`. Removed emoji are listed in the response as `emoji_removed`. Models ignored this rule in the prompt (most brand errors in the evals were emoji); if the brand service is down, nothing is changed |
 | `INTERNAL_API_KEY` | empty | when set (the stack sets it), `POST /v1/run` requires header `X-API-Key` with this value. `/health` and `/v1/prompts` stay open |
 | `ALLOWED_MODELS` | empty | extra models a caller may request in `model` (comma-separated). Always allowed: `MODEL` and models named in prompt files. Anything else gets 403, so nothing on the network can run arbitrary (paid) models through the gateway |
 | `MAX_VARS_CHARS` | `60000` | largest `vars` (as JSON) accepted; 413 above it. `temperature` must be 0–2 |

@@ -1,6 +1,6 @@
 # 42 · Add to knowledge base
 
-Deploy **42 of 60** of the local-LLM marketing agent. This deploy is an n8n form workflow.
+Deploy **42 of 71** of the local-LLM marketing agent. This deploy is an n8n form workflow.
 
 A web form to add facts to the knowledge base (06): paste text or give a URL (fetched with 07). The blog, email and Q&A tools then ground their answers in these facts.
 

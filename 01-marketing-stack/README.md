@@ -1,6 +1,6 @@
 # marketing-stack
 
-Deploy **1 of 60** of the local-LLM marketing agent. This repo holds the one
+Deploy **1 of 71** of the local-LLM marketing agent. This repo holds the one
 `docker compose` file that runs n8n, Postgres and all 20 services on one private network,
 plus the scripts that load the n8n workflows. Ollama runs next to it on the host.
 
@@ -93,6 +93,7 @@ two ports only.
 | `N8N_ENCRYPTION_KEY` | yes | encrypts n8n credentials. **Never change it after first start** |
 | `INTERNAL_API_KEY` | yes | `X-API-Key` for write endpoints of 06, 09, 16, 19, 20 |
 | `N8N_PUBLIC_URL` | | public n8n URL (webhooks, form links) |
+| `CARDS_PUBLIC_URL` | `http://localhost:8117` | public base of the image cards (17). Post images link here and the approval form (38) shows them, so the reviewer's browser must reach it |
 | `OLLAMA_URL` | | default `http://host.docker.internal:11434` |
 | `AGENT_MODEL` / `WRITER_MODEL` / `EMBED_MODEL` | | from 02 |
 | `SHORT_LINK_BASE_URL` | | public base of 16, e.g. `https://go.yourbrand.com` |

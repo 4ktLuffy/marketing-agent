@@ -1,6 +1,6 @@
 # 33 · Content calendar
 
-Deploy **33 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **33 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Gives the agent access to the content calendar (19): list, get, create, change status and schedule items. Status changes follow the calendar's rules, so the agent can't skip human approval.
 

@@ -37,7 +37,7 @@
         "promptType": "auto",
         "needsFallback": true,
         "options": {
-          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - video script (Reels/TikTok/Shorts), landing page copy, or a multi-email nurture sequence → write_content_format\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - analyse a competitor or any web page → research_url\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
+          "systemMessage": "=You are the in-house marketing agent for the brand described in the knowledge base. Today is {{ $now.toFormat('cccc d LLLL yyyy') }}.\n\nHow you work:\n- For any writing task, CALL A TOOL. Never write marketing copy yourself: the tools apply the brand rules, platform limits and quality checks.\n  - blog article → write_blog_post\n  - social posts → write_social_posts (pass every channel the user names, comma-separated)\n  - search ads → write_ad_copy\n  - newsletter → write_email\n  - video script (Reels/TikTok/Shorts), landing page copy, or a multi-email nurture sequence → write_content_format\n  - SEO plan for a keyword → seo_brief; keyword ideas → keyword_research\n  - turn an article/page/text into posts → repurpose_content\n  - analyse a competitor or any web page → research_url\n  - \"is this copy ok?\" → check_copy\n  - questions about our products, policies, digests, competitors → ask_knowledge_base\n  - see or change planned content → content_calendar\n  - plan a new campaign (goal, dates, channels) → plan_campaign\n  - a month of content / lots of posts over weeks / a content calendar for one topic → plan_content_month\n  - list campaigns, their scorecard/results, activate/pause/complete them, set targets → campaigns\n- After a tool returns, show the user its result (you may trim it). Keep calendar ids (#12) so they can refer to them.\n- Ask one short question only if a required detail is missing (e.g. no topic). Otherwise pick sensible defaults and go.\n- Never claim something was published. Content is published only after a human approves it in the approval form.\n- Do not invent facts, prices, statistics or customer names.",
           "maxIterations": 6
         }
       }
@@ -951,12 +951,128 @@
       }
     },
     {
+      "id": "2bc03b6e-d50a-5e26-aed6-1c56313355d5",
+      "name": "plan_content_month",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        960
+      ],
+      "parameters": {
+        "description": "Plan a MONTH of content: many dated posts over 4 weeks across several channels from ONE topic or source (article, guide, transcript), fact-checked and drafted daily for review. Not for writing a single piece (use the writing tools). No goal or KPIs: for a campaign use plan_campaign.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf64ContEngin"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "topic": "={{ $fromAI('topic', `what the content is about`, 'string') }}",
+            "channels": "={{ $fromAI('channels', `comma-separated: linkedin, x, instagram, facebook, threads, mastodon, blog, email, video`, 'string') }}",
+            "brief": "={{ $fromAI('brief', `the angle in a sentence, or empty`, 'string', '') }}",
+            "audience": "={{ $fromAI('audience', `who it is for, or empty`, 'string', '') }}",
+            "month": "={{ $fromAI('month', `month YYYY-MM, or empty`, 'string', '') }}",
+            "start_date": "={{ $fromAI('start_date', `start date YYYY-MM-DD, or empty`, 'string', '') }}",
+            "source_url": "={{ $fromAI('source_url', `URL of the source article to plan from, or empty`, 'string', '') }}",
+            "source_text": "={{ $fromAI('source_text', `pasted source text to plan from, or empty`, 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channels",
+              "displayName": "channels",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "brief",
+              "displayName": "brief",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "month",
+              "displayName": "month",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "start_date",
+              "displayName": "start_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "source_url",
+              "displayName": "source_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "source_text",
+              "displayName": "source_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
       "id": "9ee4d9a7-b9c9-5e6e-b599-3466a33485af",
       "name": "campaigns",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        420,
+        600,
         960
       ],
       "parameters": {
@@ -1028,7 +1144,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        780,
         960
       ],
       "parameters": {
@@ -1251,6 +1367,17 @@
       ]
     },
     "plan_campaign": {
+      "ai_tool": [
+        [
+          {
+            "node": "Marketing agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "plan_content_month": {
       "ai_tool": [
         [
           {

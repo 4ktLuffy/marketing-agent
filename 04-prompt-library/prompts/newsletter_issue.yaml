@@ -1,0 +1,70 @@
+name: newsletter_issue
+description: Weekly newsletter issue built only from this week's published items — subject, preheader, intro, one section per item with its own link, CTA.
+output: json
+temperature: 0.5
+vars:
+  week: required
+  items: required
+  audience: optional
+  facts: optional
+system: |
+  You write the brand's weekly newsletter from content the brand already published this week.
+  Skimmable, warm, specific. You summarise; you do not add news. Never invent facts,
+  discounts, dates or links.
+
+  BRAND
+  {{ brand }}
+template: |
+  Newsletter for week {{ week }}.
+  {% if audience %}Audience: {{ audience }}
+  {% endif %}
+
+  This week's items. Each has a title, a channel, a link and its text:
+  {{ items }}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here or in the items, do not state it. Do not copy the [f..] labels.
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the items, the approved facts or the brand profile.
+
+  - subject: at most 60 characters, no clickbait, no ALL CAPS.
+  - preheader: at most 90 characters, complements (does not repeat) the subject.
+  - intro: 2–3 sentences that say what this issue covers.
+  - sections: one per item worth reading, most useful first (at least 2). For each:
+    title (short, may differ from the item title), summary (at most 280 characters, what the
+    reader gets from it, only facts from that item), link (copy the item's link EXACTLY;
+    use "" if the item has no link).
+  - cta_text: 2–5 words for the button. cta_url: copy one of the item links exactly, or "".
+  Never write a URL that is not in the items above.
+example_vars:
+  week: 2026-W39
+  items: |
+    1. [linkedin] Why our decaf keeps its flavour
+       link: https://s.example/abc
+       text: Our Swiss Water decaf is roasted like our regular beans, so the chocolate notes stay.
+    2. [blog] How to brew for a team of ten
+       link: https://example.com/blog/team-brew
+       text: A 1:16 ratio and a big press: our guide for office coffee that tastes good.
+schema:
+  type: object
+  required: [subject, preheader, intro, sections, cta_text, cta_url]
+  properties:
+    subject: {type: string, minLength: 10, maxLength: 60}
+    preheader: {type: string, minLength: 10, maxLength: 90}
+    intro: {type: string, minLength: 40, maxLength: 600}
+    sections:
+      type: array
+      minItems: 2
+      maxItems: 8
+      items:
+        type: object
+        required: [title, summary, link]
+        properties:
+          title: {type: string, minLength: 3, maxLength: 100}
+          summary: {type: string, minLength: 20, maxLength: 280}
+          link: {type: string}
+    cta_text: {type: string, minLength: 2, maxLength: 30}
+    cta_url: {type: string}

@@ -1,0 +1,814 @@
+{
+  "id": "mktWf64ContEngin",
+  "name": "64 · Tool · Content engine (plan a month)",
+  "nodes": [
+    {
+      "id": "902b8b93-3131-5464-addb-9913e3979f2f",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "topic",
+              "type": "string"
+            },
+            {
+              "name": "brief",
+              "type": "string"
+            },
+            {
+              "name": "audience",
+              "type": "string"
+            },
+            {
+              "name": "channels",
+              "type": "string"
+            },
+            {
+              "name": "month",
+              "type": "string"
+            },
+            {
+              "name": "start_date",
+              "type": "string"
+            },
+            {
+              "name": "source_url",
+              "type": "string"
+            },
+            {
+              "name": "source_text",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0007dd52-0fde-5e09-962c-04cd2dceae9f",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nconst ENGINE = ['linkedin', 'x', 'instagram', 'facebook', 'threads', 'mastodon', 'blog', 'email', 'video'];\n// The chat model paraphrases channel names: map what it means, report what we can't plan.\nconst ALIAS = { twitter: 'x', 'x/twitter': 'x', tweets: 'x', ig: 'instagram', insta: 'instagram', fb: 'facebook',\n  newsletter: 'email', emails: 'email', mail: 'email', reels: 'video', reel: 'video', tiktok: 'video', shorts: 'video',\n  youtube: 'video', videos: 'video', video_script: 'video', article: 'blog', articles: 'blog', 'blog posts': 'blog' };\nconst bad = result => [{ json: { ok: false, result } }];\nconst topic = String(s.topic || '').trim();\nif (!topic) return bad('What should the month of content be about? Give a topic, and ideally the long piece to plan from (paste it, or a URL).');\nconst raw = String(s.channels || '').split(/,|;|\\/| and |&/).map(c => c.trim().toLowerCase()).filter(Boolean);\nconst channels = [...new Set(raw.map(c => ALIAS[c] || c).filter(c => ENGINE.includes(c)))];\nconst unknown = raw.filter(c => !ENGINE.includes(ALIAS[c] || c));\nif (!channels.length) return bad(`Which channels should the month cover? For example \"linkedin, x, blog\". Possible: ${ENGINE.join(', ')}.`);\nconst startRaw = String(s.start_date || '').trim();\nconst start_date = /^\\d{4}-\\d{2}-\\d{2}$/.test(startRaw) ? startRaw : null;\n// Month: YYYY-MM, or \"October 2026\" / \"october\", else the start date's month, else next month.\nconst NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];\nlet month = String(s.month || '').trim().toLowerCase();\nconst named = month.match(/\\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?\\s*(\\d{4})?/);\nconst now = new Date();\nif (/^\\d{4}-(0[1-9]|1[0-2])$/.test(month)) { /* as given */ }\nelse if (named) {\n  const m = NAMES.indexOf(named[1]);\n  let y = named[2] ? Number(named[2]) : now.getUTCFullYear();\n  if (!named[2] && m < now.getUTCMonth()) y += 1;   // \"march\" in September = next March\n  month = `${y}-${String(m + 1).padStart(2, '0')}`;\n} else if (start_date) month = start_date.slice(0, 7);\nelse { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)); month = d.toISOString().slice(0, 7); }\nconst url = String(s.source_url || '').trim();\nif (url && !/^https?:\\/\\/\\S+$/.test(url)) return bad(`\"${url}\" is not a web address (it must start with http:// or https://).`);\nreturn [{ json: { ok: true, topic: topic.slice(0, 300), brief: String(s.brief || '').trim().slice(0, 5000) || topic.slice(0, 300),\n  audience: String(s.audience || '').trim().slice(0, 1000) || 'our usual audience (see the brand profile)',\n  channels, unknown, month, start_date, source_url: url || null, source_text: String(s.source_text || '').trim() } }];\n"
+      }
+    },
+    {
+      "id": "1b606fff-0037-5e98-be7c-e24b728c9686",
+      "name": "Can plan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "654d1d69-f8ea-5980-aacb-943573458fe4",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b5d2885a-2be1-5218-922b-ede138165d06",
+      "name": "Explain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        520
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { result: $input.first().json.result } }];\n"
+      }
+    },
+    {
+      "id": "22413528-8841-577b-9c8e-4e39eda2cb53",
+      "name": "Fetch source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EXTRACTOR_URL }}/extract",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json.source_text ? 'none' : ($json.source_url || 'none') }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "4b7975b9-10cb-5255-80d8-a6d3ca035fbf",
+      "name": "Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const errText = j => { j = j || {}; const e = j.error ?? j.detail ?? j.body?.detail; return e == null ? '' : String(typeof e === 'object' ? e.message || JSON.stringify(e) : e).slice(0, 200); };\n\nconst p = $('Prepare').first().json;\nconst page = $input.first().json || {};\n// The local 7B model extracts atoms from at most this much text, and the claim checker gets it\n// as evidence for every atom (its limit is 20,000 characters).\nconst MAX = 12000;\nlet source = p.source_text || (p.source_url ? String(page.text || '').trim() : '');\nif (p.source_url && !p.source_text && !source)\n  throw new Error(`Could not read ${p.source_url} (${errText(page) || 'no text'}). Paste the text instead.`);\nconst cut = source.length > MAX;\nreturn [{ json: { ...p, source: source.slice(0, MAX), cut, source_title: page.title || null } }];\n"
+      }
+    },
+    {
+      "id": "9b18df12-3823-508e-a67a-58ac4c0cf359",
+      "name": "Create pillar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/pillars",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.topic, brief: $json.brief, audience: $json.audience, source_text: $json.source || null, source_url: $json.source_url, channels: $json.channels, month: $json.month, promo_max: 0.2 }) }}"
+      }
+    },
+    {
+      "id": "06c9d315-0efa-5a0c-bb2c-124aa19862c3",
+      "name": "Extract atoms",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'pillar_atoms', vars: { pillar_title: $('Source').first().json.topic, brief: $('Source').first().json.brief, audience: $('Source').first().json.audience, source_text: $('Source').first().json.source || null } }) }}"
+      }
+    },
+    {
+      "id": "81c1e8a0-eeed-5d85-8937-6789d549c35e",
+      "name": "Screen atoms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Screen the model's atoms IN CODE before the (slow) claim check: an faq/objection that ends\n// with \"?\" has no answer (the prompt says so and the model still does it sometimes).\nconst pillar = $('Create pillar').first().json;\nif (!pillar.id) throw new Error(`Pillar not created: ${JSON.stringify(pillar.detail || pillar).slice(0, 300)}`);\nconst KINDS = ['claim', 'story', 'faq', 'tip', 'stat', 'objection', 'quote'];\nconst atoms = ((($input.first().json || {}).output || {}).atoms) || [];\nconst dropped = [], keep = [], seen = new Set();\nfor (const a of atoms) {\n  const text = String((a && a.text) || '').trim();\n  const kind = String((a && a.kind) || '').trim().toLowerCase();\n  if (!text || !KINDS.includes(kind)) { dropped.push({ kind, text, why: 'no text or unknown kind' }); continue; }\n  if ((kind === 'faq' || kind === 'objection') && /\\?\\s*$/.test(text)) { dropped.push({ kind, text, why: `${kind} without an answer (ends with \"?\")` }); continue; }\n  const norm = text.toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu, ' ').trim();\n  if (seen.has(norm)) { dropped.push({ kind, text, why: 'duplicate' }); continue; }\n  seen.add(norm);\n  const ev = a.evidence == null || a.evidence === '' ? null : (typeof a.evidence === 'string' ? a.evidence : JSON.stringify(a.evidence));\n  keep.push({ kind, text: text.slice(0, 1000), evidence: ev ? ev.slice(0, 2000) : null, promo: a.promo === true });\n}\nif (!keep.length) throw new Error(`The model returned no usable atoms (${atoms.length} returned, all dropped).`);\nconst screened = { returned: atoms.length, dropped };\nreturn keep.map((a, i) => ({ json: { ...a, n: i + 1, screened: i === 0 ? screened : undefined } }));\n"
+      }
+    },
+    {
+      "id": "c31770bf-0ab8-588f-81f8-a2f6d9e731ed",
+      "name": "Check atoms",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "9276f23c-52d2-5dcb-be0b-78b2a6e9b7c0",
+      "name": "Claim check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLAIMS_URL }}/verify",
+        "options": {
+          "timeout": 900000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, context: [$('Source').first().json.topic, $('Source').first().json.brief, $('Source').first().json.source].filter(Boolean).join('\\n') }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "0f450980-7e11-5122-958d-027f86e4def1",
+      "name": "Record check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const errText = j => { j = j || {}; const e = j.error ?? j.detail ?? j.body?.detail; return e == null ? '' : String(typeof e === 'object' ? e.message || JSON.stringify(e) : e).slice(0, 200); };\n\nconst a = $('Check atoms').first(1).json;   // loop output 1 = the atom checked in this round\nconst r = $input.first().json || {};\nconst checked = typeof r.ok === 'boolean';\nconst reasons = (r.claims || []).filter(c => c && c.supported === false).flatMap(c => c.reasons || []);\nconst why = !checked ? `claim checker unavailable (${errText(r) || 'no answer'})`\n  : r.ok ? '' : (reasons.join('; ') || (r.unsupported || []).join('; ') || 'not supported by the source or the facts');\nreturn [{ json: { ...a, verified: r.ok === true, checked, why: why.slice(0, 300) } }];\n"
+      }
+    },
+    {
+      "id": "686ee024-698b-5ecc-97c2-7d0fff738a64",
+      "name": "Atoms payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nreturn [{ json: { body: { atoms: rows.map(r => ({ kind: r.kind, text: r.text, verified: r.verified,\n  evidence: r.evidence, promo: r.promo })) }, rows } }];\n"
+      }
+    },
+    {
+      "id": "17bac666-6421-5229-abff-294c842966a1",
+      "name": "Save atoms",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/pillars/{{ $('Create pillar').first().json.id }}/atoms",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      }
+    },
+    {
+      "id": "d47fcbc7-8bdb-5135-ae70-3a4222daae13",
+      "name": "Plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/pillars/{{ $('Create pillar').first().json.id }}/plan",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ start_date: $('Source').first().json.start_date, weeks: 4 }) }}"
+      }
+    },
+    {
+      "id": "c016e426-2aad-52b8-b5f9-bd895aef7b1e",
+      "name": "Orphan ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\n// A re-plan deletes the pillar's still-planned slots; 61 returns their idea items, which\n// would otherwise stay in the calendar as orphans. They are rejected, not deleted.\nconst ids = ((($input.first().json || {}).body || {}).removed_calendar_item_ids) || [];\nreturn opsToItems(ids.filter(Number.isInteger).map(id => ({ method: 'POST', url: `${$env.CALENDAR_URL}/items/${id}/status`,\n  body: { status: 'rejected', note: 're-planned' } })), $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "516bf1bf-dcda-5f66-8e07-8081043d3189",
+      "name": "Reject orphans",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "aedb1f6d-c1cd-5f84-a22d-da4ad6d13221",
+      "name": "Calendar ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const errText = j => { j = j || {}; const e = j.error ?? j.detail ?? j.body?.detail; return e == null ? '' : String(typeof e === 'object' ? e.message || JSON.stringify(e) : e).slice(0, 200); };\n\nconst res = $('Plan').first().json;   // full response\nconst pid = $('Create pillar').first().json.id;\nconst plan = res.body || {};\nif (res.statusCode !== 200) return [{ json: { planned: false, detail: errText(res) || `plan failed (${res.statusCode})` } }];\nconst slots = Array.isArray(plan.slots) ? plan.slots : [];\nif (!slots.length) return [{ json: { planned: false, detail: 'the plan has no slots (see unfilled)' } }];\nconst words = (t, n) => { const w = String(t).replace(/\\s+/g, ' ').trim().split(' '); return w.slice(0, n).join(' ') + (w.length > n ? '…' : ''); };\n// One `idea` item per slot. The notes line is how 38 (outcomes), 40 (skips engine days) and\n// 65 (drafter) recognise engine items: keep its shape.\nreturn slots.map(s => ({ json: { planned: true, slot_id: s.id, item: {\n  title: `${s.hook_style}: ${words(s.atom.text, 10)}`.slice(0, 120), channel: s.channel, status: 'idea',\n  body: `[${s.format} · ${s.hook_style}] ${s.atom.text}` + (s.atom.evidence ? `\\nEvidence: ${s.atom.evidence}` : ''),\n  scheduled_at: `${s.date}T${s.time_utc}:00Z`, hook_style: s.hook_style, campaign: `engine-p${pid}`,\n  notes: `engine pillar #${pid} slot #${s.id} atom #${s.atom_id} (${s.atom.kind})` } } }));\n"
+      }
+    },
+    {
+      "id": "6e9b6fc5-b832-5095-baad-63a1a6a5ee6f",
+      "name": "Planned?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cdea6f2c-f535-524e-998c-89d7900b8291",
+              "leftValue": "={{ $json.planned }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "17ba2f85-a1a9-5382-b506-175f63b565cc",
+      "name": "Add ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.item) }}"
+      }
+    },
+    {
+      "id": "11894e5e-a9cd-59a0-a816-0cccdba68b60",
+      "name": "Slot items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// The slot stays `planned`; it only records its idea item, which the drafter (65) fills.\nconst ideas = $('Calendar ideas').all();\nreturn $input.all().map((r, i) => ({ json: { method: 'POST', url: `${$env.ENGINE_URL}/slots/${ideas[i].json.slot_id}/status`,\n  body: JSON.stringify({ status: 'planned', calendar_item_id: r.json.id }) } }));\n"
+      }
+    },
+    {
+      "id": "cf0cd2db-b555-5a1d-870d-c486bcfd4b52",
+      "name": "Record slot items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "a7cbdfae-2cc5-5132-952f-fc58426affda",
+      "name": "Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function atomLines() {\n  const pillar = $('Create pillar').first().json;\n  const src = $('Source').first().json;\n  const scr = $('Screen atoms').first().json.screened;\n  const rows = $('Atoms payload').first().json.rows;\n  const saved = $('Save atoms').first().json;\n  const kept = rows.filter(r => r.verified);\n  const unsupported = rows.filter(r => r.checked && !r.verified);\n  const unchecked = rows.filter(r => !r.checked);\n  const kinds = {};\n  for (const r of kept) kinds[r.kind] = (kinds[r.kind] || 0) + 1;\n  const lines = [\n    `Pillar #${pillar.id} \"${pillar.title}\" for ${pillar.month}` + (src.cut ? ' (source cut to its first 12,000 characters)' : '') + '.',\n    `Atoms: ${scr.returned} extracted, **${kept.length} verified and kept** (${Object.entries(kinds).map(([k, n]) => `${n} ${k}`).join(', ')}), ` +\n      `${scr.dropped.length + unsupported.length + unchecked.length} dropped.`,\n  ];\n  const why = {};\n  for (const d of scr.dropped) why[d.why] = (why[d.why] || 0) + 1;\n  for (const [w, n] of Object.entries(why)) lines.push(`- ${n} dropped before checking: ${w}`);\n  if (unsupported.length) lines.push(`- ${unsupported.length} not supported by the source or the approved facts, e.g.:`,\n    ...unsupported.slice(0, 4).map(r => `  - \"${r.text.slice(0, 90)}\" (${r.why.slice(0, 120)})`));\n  if (unchecked.length) lines.push(`- ${unchecked.length} could not be checked (claim checker unavailable), so they are not used`);\n  const skipped = Array.isArray(saved.skipped) ? saved.skipped.length : Number(saved.skipped) || 0;\n  if (skipped) lines.push(`- ${skipped} already stored for this pillar`);\n  return { lines, pillar, saved };\n}\n\nconst { lines, pillar } = atomLines();\nconst plan = $('Plan').first().json.body;\nconst ideas = $('Add ideas').all().map(i => i.json);\nconst linkFails = $('Record slot items').all().filter(r => !r.json.noop && r.json.statusCode >= 300).length;\nconst orphans = $('Reject orphans').all().filter(r => !r.json.noop);\nconst orphanFails = orphans.filter(r => r.json.statusCode >= 300).length;\nconst unknown = $('Prepare').first().json.unknown;\nconst fmt = d => new Date(d + 'T00:00:00Z').toUTCString().slice(0, 11);\nlines.push('', `Plan ${fmt(plan.start_date)} – ${fmt(plan.end_date)} (${plan.weeks} weeks), ${plan.slots.length} slots:`);\nfor (const ch of Object.keys(plan.planned)) {\n  const days = plan.slots.filter(s => s.channel === ch).map(s => s.date.slice(5));\n  lines.push(`- ${ch}: ${plan.planned[ch]} of ${plan.requested[ch]}` + (plan.unfilled[ch] ? ` (${plan.unfilled[ch]} unfilled: not enough verified atoms)` : '') +\n    (days.length ? ` · ${days.join(', ')}` : ''));\n}\nif (unknown.length) lines.push(`Not planned (unknown channel): ${unknown.join(', ')}.`);\nconst ids = ideas.map(i => i.id).filter(Boolean);\nlines.push('', `Calendar: ${ids.length} idea items${ids.length ? ` (#${Math.min(...ids)}–#${Math.max(...ids)})` : ''}, each with its date, channel and hook style.` +\n  (linkFails ? ` ${linkFails} slots could not be linked to their item.` : '') +\n  (orphans.length ? ` Re-plan: ${orphans.length - orphanFails} idea items of replaced slots moved to rejected` +\n    (orphanFails ? ` (${orphanFails} could not be moved)` : '') + '.' : ''),\n  'The engine drafter (65) writes them each morning a few days ahead; drafts that pass the quality gate appear in the approval form. Nothing is published until a person approves it.');\nreturn [{ json: { result: lines.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "8db8c10f-38dd-5668-8fc7-d3aa6b65fb07",
+      "name": "Too thin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        520
+      ],
+      "parameters": {
+        "jsCode": "function atomLines() {\n  const pillar = $('Create pillar').first().json;\n  const src = $('Source').first().json;\n  const scr = $('Screen atoms').first().json.screened;\n  const rows = $('Atoms payload').first().json.rows;\n  const saved = $('Save atoms').first().json;\n  const kept = rows.filter(r => r.verified);\n  const unsupported = rows.filter(r => r.checked && !r.verified);\n  const unchecked = rows.filter(r => !r.checked);\n  const kinds = {};\n  for (const r of kept) kinds[r.kind] = (kinds[r.kind] || 0) + 1;\n  const lines = [\n    `Pillar #${pillar.id} \"${pillar.title}\" for ${pillar.month}` + (src.cut ? ' (source cut to its first 12,000 characters)' : '') + '.',\n    `Atoms: ${scr.returned} extracted, **${kept.length} verified and kept** (${Object.entries(kinds).map(([k, n]) => `${n} ${k}`).join(', ')}), ` +\n      `${scr.dropped.length + unsupported.length + unchecked.length} dropped.`,\n  ];\n  const why = {};\n  for (const d of scr.dropped) why[d.why] = (why[d.why] || 0) + 1;\n  for (const [w, n] of Object.entries(why)) lines.push(`- ${n} dropped before checking: ${w}`);\n  if (unsupported.length) lines.push(`- ${unsupported.length} not supported by the source or the approved facts, e.g.:`,\n    ...unsupported.slice(0, 4).map(r => `  - \"${r.text.slice(0, 90)}\" (${r.why.slice(0, 120)})`));\n  if (unchecked.length) lines.push(`- ${unchecked.length} could not be checked (claim checker unavailable), so they are not used`);\n  const skipped = Array.isArray(saved.skipped) ? saved.skipped.length : Number(saved.skipped) || 0;\n  if (skipped) lines.push(`- ${skipped} already stored for this pillar`);\n  return { lines, pillar, saved };\n}\n\nconst { lines, pillar, saved } = atomLines();\nlines.push('', `No month planned: ${$json.detail}`,\n  `The plan needs at least ${saved.min_atoms || 12} verified atoms. Give a longer, more substantial source (an article, guide or transcript of 1,200+ words) and ask again.`);\nreturn [{ json: { result: lines.join('\\n') } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Can plan?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can plan?": {
+      "main": [
+        [
+          {
+            "node": "Fetch source",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch source": {
+      "main": [
+        [
+          {
+            "node": "Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source": {
+      "main": [
+        [
+          {
+            "node": "Create pillar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create pillar": {
+      "main": [
+        [
+          {
+            "node": "Extract atoms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract atoms": {
+      "main": [
+        [
+          {
+            "node": "Screen atoms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screen atoms": {
+      "main": [
+        [
+          {
+            "node": "Check atoms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check atoms": {
+      "main": [
+        [
+          {
+            "node": "Atoms payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claim check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim check": {
+      "main": [
+        [
+          {
+            "node": "Record check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record check": {
+      "main": [
+        [
+          {
+            "node": "Check atoms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atoms payload": {
+      "main": [
+        [
+          {
+            "node": "Save atoms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save atoms": {
+      "main": [
+        [
+          {
+            "node": "Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan": {
+      "main": [
+        [
+          {
+            "node": "Orphan ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orphan ideas": {
+      "main": [
+        [
+          {
+            "node": "Reject orphans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject orphans": {
+      "main": [
+        [
+          {
+            "node": "Calendar ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar ideas": {
+      "main": [
+        [
+          {
+            "node": "Planned?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planned?": {
+      "main": [
+        [
+          {
+            "node": "Add ideas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Too thin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add ideas": {
+      "main": [
+        [
+          {
+            "node": "Slot items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slot items": {
+      "main": [
+        [
+          {
+            "node": "Record slot items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record slot items": {
+      "main": [
+        [
+          {
+            "node": "Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

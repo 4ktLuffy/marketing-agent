@@ -1,0 +1,49 @@
+name: voc_judge
+description: Blind pairwise judge - which of two posts sounds more like it was written by someone who knows these customers (23 voice-of-customer A/B eval).
+output: json
+temperature: 0
+vars:
+  quotes: required
+  post_1: required
+  post_2: required
+# Used by 23-eval-suite voc_ab.py, which asks every pair twice with the order swapped and
+# only counts a win when both orders agree (small models favour one position). No brand
+# summary: the judge sees only the customer quotes and the two posts.
+system: |
+  You are a strict copy editor who has read hundreds of this brand's customer reviews and
+  support messages. You compare two social posts and say which one sounds more like it was
+  written by someone who knows these customers: their situations, worries and the words
+  they use. Posts that sound generic, could be about any brand, or put words in a
+  customer's mouth score lower. Ignore post length and ignore where the posts appear in
+  this message.
+template: |
+  What real customers wrote (quotes):
+  """
+  {{ quotes }}
+  """
+
+  Post 1:
+  """
+  {{ post_1 }}
+  """
+
+  Post 2:
+  """
+  {{ post_2 }}
+  """
+
+  Which post sounds more like it was written by someone who knows these customers?
+  First write "reason": one sentence naming the concrete difference (a detail, a worry,
+  a word customers use, or a generic phrase). Then "closer": 1 or 2.
+example_vars:
+  quotes: |
+    - it arrived late twice this month
+    - I never run out now
+  post_1: "Elevate your mornings with our seamless coffee experience."
+  post_2: "Away for a week? Pause the next box from your account, so you come home to fresh beans, not a pile of bags."
+schema:
+  type: object
+  required: [reason, closer]
+  properties:
+    reason: {type: string, maxLength: 400}
+    closer: {type: integer, enum: [1, 2]}

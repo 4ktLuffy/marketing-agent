@@ -43,6 +43,12 @@ jobs:
           - 54-postiz-bridge
           - 55-umami-sync
           - 58-review-hub
+          - 61-content-engine
+          - 62-cms-bridge
+          - 63-listmonk-bridge
+          - 67-gsc-sync
+          - 70-customer-language
+          - 71-video-assembly
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -1,6 +1,6 @@
 # 27 · Ad copy
 
-Deploy **27 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **27 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Writes responsive search ad assets. Google's length limits are enforced by the gateway's schema, and the copy gets a brand check before it's saved to the calendar.
 

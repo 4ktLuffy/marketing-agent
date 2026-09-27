@@ -78,6 +78,17 @@ services:
       LEARNING_URL: http://learning-service:8000
       UMAMI_SYNC_URL: ${UMAMI_SYNC_URL:-}
       REVIEWS_URL: http://review-hub:8000
+      ENGINE_URL: http://content-engine:8000
+      NEWSLETTER_URL: http://listmonk-bridge:8000
+      GSC_URL: http://gsc-sync:8000
+      VOC_URL: http://customer-language:8000
+      VIDEO_URL: http://video-assembly:8000
+      # Voice for video previews (57/65): piper | none. Empty = the video service's TTS_BACKEND.
+      VIDEO_VOICE: ${VIDEO_VOICE:-}
+      NEWSLETTER_AUDIENCE: ${NEWSLETTER_AUDIENCE:-}
+      # Publisher (39): blog items go to the CMS bridge (62), everything else to PUBLISH_WEBHOOK_URL.
+      CMS_PUBLISH_URL: ${CMS_PUBLISH_URL-http://cms-bridge:8000/publish}
+      CMS_PUBLISH_KEY: ${CMS_BRIDGE_KEY:-}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       APPROVER_KEY: ${APPROVER_KEY:?set APPROVER_KEY in .env}
       N8N_PUBLIC_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
@@ -85,6 +96,9 @@ services:
       PUBLISH_WEBHOOK_URL: ${PUBLISH_WEBHOOK_URL:-}
       PUBLISH_WEBHOOK_KEY: ${PUBLISH_WEBHOOK_KEY:-}
       NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
+      NOTIFY_FORMAT: ${NOTIFY_FORMAT:-generic}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       REPORT_EMAIL_TO: ${REPORT_EMAIL_TO:-}
       REPORT_EMAIL_FROM: ${REPORT_EMAIL_FROM:-}
       PLAN_CHANNELS: ${PLAN_CHANNELS:-linkedin, x}
@@ -94,6 +108,16 @@ services:
       RECYCLE_MIN_AGE_DAYS: ${RECYCLE_MIN_AGE_DAYS:-30}
       RECYCLE_PER_WEEK: ${RECYCLE_PER_WEEK:-2}
       REVIEW_REPLIES_PER_RUN: ${REVIEW_REPLIES_PER_RUN:-10}
+      ENGINE_DRAFTS_PER_RUN: ${ENGINE_DRAFTS_PER_RUN:-12}
+      ENGINE_LOOKAHEAD_DAYS: ${ENGINE_LOOKAHEAD_DAYS:-7}
+      REFRESH_PER_WEEK: ${REFRESH_PER_WEEK:-3}
+      REFRESH_MIN_CLICKS: ${REFRESH_MIN_CLICKS:-20}
+      REFRESH_MIN_DROP: ${REFRESH_MIN_DROP:-0.3}
+      SEO_BRIEFS_PER_WEEK: ${SEO_BRIEFS_PER_WEEK:-2}
+      SEO_MIN_IMPRESSIONS: ${SEO_MIN_IMPRESSIONS:-100}
+      SEO_MIN_POSITION: ${SEO_MIN_POSITION:-5}
+      SEO_MAX_POSITION: ${SEO_MAX_POSITION:-20}
+      SEO_AUDIENCE: ${SEO_AUDIENCE:-}
     volumes:
       - n8n_data:/home/node/.n8n
       # (no repo mount: import-n8n.sh streams each workflow in, so .env never enters n8n)
@@ -196,6 +220,12 @@ services:
     <<: *service
     build: ../17-image-cards
     ports: ["127.0.0.1:8117:8000"]
+    environment:
+      <<: *keyed
+      # Base of the card URLs (POST /cards). The approval form shows the image from here, so it
+      # must be reachable from the reviewer's browser.
+      PUBLIC_BASE_URL: ${CARDS_PUBLIC_URL:-http://localhost:8117}
+    volumes: [cards_data:/data]
 
   email-renderer:
     <<: *service
@@ -293,6 +323,13 @@ services:
       POSTIZ_API_KEY: ${POSTIZ_API_KEY:-}
       CHANNEL_MAP: ${POSTIZ_CHANNEL_MAP:-{}}
       DRY_RUN: ${POSTIZ_DRY_RUN:-true}
+      # Card URLs under CARDS_PUBLIC_URL are downloaded from the internal address instead.
+      CARDS_PUBLIC_URL: ${CARDS_PUBLIC_URL:-http://localhost:8117}
+      CARDS_URL: http://image-cards:8000
+      # Video URLs under VIDEO_PUBLIC_URL (71) likewise; larger videos are left off the post.
+      VIDEO_PUBLIC_URL: ${VIDEO_PUBLIC_URL:-http://localhost:8171}
+      VIDEO_URL: http://video-assembly:8000
+      MAX_VIDEO_MB: ${MAX_VIDEO_MB:-100}
 
   # Real analytics: set UMAMI_SYNC_URL=http://umami-sync:8000 to enable the daily sync (56).
   umami-sync:
@@ -319,6 +356,139 @@ services:
       <<: *keyed
     volumes: [review_data:/data]
 
+  # Content engine (61): pillar -> atoms -> a month of planned slots, novelty check, stop rule.
+  # Writes nothing itself; n8n drafts against it and a person approves every piece.
+  content-engine:
+    <<: *service
+    build: ../61-content-engine
+    ports: ["127.0.0.1:8161:8000"]
+    environment:
+      <<: *keyed
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      EMBED_MODEL: ${EMBED_MODEL:-qwen3-embedding:0.6b}
+    volumes: [engine_data:/data]
+
+  # Blog items -> WordPress or Ghost, as drafts by default (62). The publisher sends blog
+  # items to CMS_PUBLISH_URL=http://cms-bridge:8000/publish. DRY_RUN=true until checked.
+  cms-bridge:
+    <<: *service
+    build: ../62-cms-bridge
+    ports: ["127.0.0.1:8162:8000"]
+    environment:
+      CMS_BRIDGE_KEY: ${CMS_BRIDGE_KEY:-${INTERNAL_API_KEY:?set INTERNAL_API_KEY in .env}}
+      CMS: ${CMS:-wordpress}
+      WP_URL: ${WP_URL:-}
+      WP_USER: ${WP_USER:-}
+      WP_APP_PASSWORD: ${WP_APP_PASSWORD:-}
+      WP_STATUS: ${WP_STATUS:-draft}
+      GHOST_URL: ${GHOST_URL:-}
+      GHOST_ADMIN_KEY: ${GHOST_ADMIN_KEY:-}
+      GHOST_STATUS: ${GHOST_STATUS:-draft}
+      ALLOWED_IMAGE_HOSTS: ${ALLOWED_IMAGE_HOSTS:-image-cards,localhost}
+      DRY_RUN: ${CMS_DRY_RUN:-true}
+
+  # Newsletter -> Listmonk as a DRAFT campaign (63); a person presses send in Listmonk.
+  # n8n calls NEWSLETTER_URL/campaigns. DRY_RUN=true until checked against GET /lists.
+  listmonk-bridge:
+    <<: *service
+    build: ../63-listmonk-bridge
+    ports: ["127.0.0.1:8163:8000"]
+    environment:
+      <<: *keyed
+      LISTMONK_URL: ${LISTMONK_URL:-http://listmonk:9000}
+      LISTMONK_USER: ${LISTMONK_USER:-}
+      LISTMONK_TOKEN: ${LISTMONK_TOKEN:-}
+      LISTMONK_AUTH_MODE: ${LISTMONK_AUTH_MODE:-token}
+      LISTMONK_LIST_IDS: ${LISTMONK_LIST_IDS:-}
+      LISTMONK_PUBLIC_URL: ${LISTMONK_PUBLIC_URL:-http://localhost:9000}
+      LISTMONK_FROM_EMAIL: ${LISTMONK_FROM_EMAIL:-}
+      LISTMONK_TEMPLATE_ID: ${LISTMONK_TEMPLATE_ID:-}
+      DRY_RUN: ${NEWSLETTER_DRY_RUN:-true}
+      ALLOW_SCHEDULE: ${NEWSLETTER_ALLOW_SCHEDULE:-false}
+      TEST_EMAILS: ${NEWSLETTER_TEST_EMAILS:-}
+
+  # Google Search Console (67): declining pages (content refresh) and striking-distance
+  # queries (SEO briefs). Key: secrets/gsc.json (gitignored); /health says configured:false without it.
+  gsc-sync:
+    <<: *service
+    build: ../67-gsc-sync
+    ports: ["127.0.0.1:8167:8000"]
+    environment:
+      <<: *keyed
+      GSC_SITE_URL: ${GSC_SITE_URL:-}
+      GSC_CREDENTIALS_FILE: /secrets/gsc.json
+      ANALYTICS_URL: ${GSC_ANALYTICS_URL:-}
+    volumes:
+      - gsc_data:/data
+      - ./secrets:/secrets:ro
+
+  # Customer language (70): phrases and themes customers repeat, mined from reviews (58),
+  # Search Console queries (67) and imports; every quote is verbatim. Writers read /relevant.
+  customer-language:
+    <<: *service
+    build: ../70-customer-language
+    ports: ["127.0.0.1:8170:8000"]
+    environment:
+      <<: *keyed
+      GATEWAY_URL: http://llm-gateway:8000
+      REVIEWS_URL: http://review-hub:8000
+      GSC_URL: http://gsc-sync:8000
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      EMBED_MODEL: ${EMBED_MODEL:-qwen3-embedding:0.6b}
+    volumes: [voc_data:/data]
+
+  # Script -> vertical MP4 (71). Local only: Pillow frames, piper voice, ffmpeg.
+  video-assembly:
+    <<: *service
+    build: ../71-video-assembly
+    ports: ["127.0.0.1:8171:8000"]
+    environment:
+      <<: *keyed
+      DATA_DIR: /data
+      # Base of the video URLs; the approval form links them, so the reviewer's browser must reach it.
+      PUBLIC_BASE_URL: ${VIDEO_PUBLIC_URL:-http://localhost:8171}
+      TTS_BACKEND: ${VIDEO_TTS_BACKEND:-piper}
+      RETENTION_DAYS: ${VIDEO_RETENTION_DAYS:-0}
+    volumes: [video_data:/data]
+
+  # Optional self-hosted Listmonk (AGPL): docker compose --profile newsletter up -d
+  # Admin UI http://localhost:9000. Based on github.com/knadh/listmonk docker-compose.yml.
+  listmonk:
+    <<: *service
+    image: listmonk/listmonk:${LISTMONK_VERSION:-latest}
+    profiles: [newsletter]
+    depends_on:
+      listmonk-db: {condition: service_healthy}
+    ports: ["127.0.0.1:9000:9000"]
+    command: [sh, -c, "./listmonk --install --idempotent --yes --config '' && ./listmonk --upgrade --yes --config '' && ./listmonk --config ''"]
+    environment:
+      LISTMONK_app__address: 0.0.0.0:9000
+      LISTMONK_db__host: listmonk-db
+      LISTMONK_db__port: 5432
+      LISTMONK_db__user: listmonk
+      LISTMONK_db__password: ${LISTMONK_DB_PASSWORD:-listmonk}
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__ssl_mode: disable
+      TZ: ${TZ:-UTC}
+      # Set both on the first start to create the admin user; otherwise set it up in the UI.
+      LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-}
+      LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:-}
+    volumes: [listmonk_uploads:/listmonk/uploads]
+
+  listmonk-db:
+    <<: *service
+    image: postgres:17-alpine
+    profiles: [newsletter]
+    environment:
+      POSTGRES_USER: listmonk
+      POSTGRES_PASSWORD: ${LISTMONK_DB_PASSWORD:-listmonk}
+      POSTGRES_DB: listmonk
+    volumes: [listmonk_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U listmonk"]
+      interval: 5s
+      retries: 10
+
   ollama:
     <<: *service
     image: ollama/ollama:latest
@@ -332,6 +502,7 @@ networks:
 
 volumes:
   pg_data:
+  cards_data:
   n8n_data:
   kb_data:
   rss_data:
@@ -342,4 +513,10 @@ volumes:
   campaigns_data:
   learning_data:
   review_data:
+  engine_data:
+  listmonk_data:
+  listmonk_uploads:
+  gsc_data:
+  voc_data:
+  video_data:
   ollama_data:

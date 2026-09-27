@@ -1,6 +1,6 @@
 # 49 · Revise a rejected draft
 
-Deploy **49 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **49 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Rewrites a rejected draft following the reviewer's reason, keeps its links, and runs it through the quality gate and fact check again. It goes back to `in_review` if it passes. After 3 rejections of the same item (counted by the learning service, 46) it stops and leaves the item as a draft for a human.
 

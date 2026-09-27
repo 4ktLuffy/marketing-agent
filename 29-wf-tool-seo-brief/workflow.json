@@ -133,7 +133,50 @@
         300
       ],
       "parameters": {
-        "jsCode": "const b = $input.first().json.output;\nconst lines = [\n  `# SEO brief: ${$('Prepare').first().json.keyword}`,\n  `**Intent:** ${b.search_intent} · **Target length:** ~${b.target_word_count} words`,\n  '', '**Title options**', ...b.title_options.map(t => `- ${t} (${t.length})`),\n  '', `**Meta description** (${b.meta_description.length}): ${b.meta_description}`,\n  '', '**Outline**', ...b.outline.flatMap(o => [`## ${o.h2}`, ...o.points.map(p => `- ${p}`)]),\n  '', '**FAQs**', ...b.faqs.map(f => `- **${f.q}** ${f.a}`),\n];\nreturn [{ json: { result: lines.join('\\n') } }];\n"
+        "jsCode": "const b = $input.first().json.output;\nconst lines = [\n  `# SEO brief: ${$('Prepare').first().json.keyword}`,\n  `**Intent:** ${b.search_intent} · **Target length:** ~${b.target_word_count} words`,\n  '', '**Title options**', ...b.title_options.map(t => `- ${t} (${t.length})`),\n  '', `**Meta description** (${b.meta_description.length}): ${b.meta_description}`,\n  '', '**Outline**', ...b.outline.flatMap(o => [`## ${o.h2}`, ...o.points.map(p => `- ${p}`)]),\n  '', '**FAQs**', ...b.faqs.map(f => `- **${f.q}** ${f.a}`),\n];\n// Only the prose goes to the claim checker, one statement per line: not the \"(54)\" length\n// counts or the word count, which are numbers the facts can't contain.\nconst stop = s => { s = String(s || '').trim(); return !s || /[.!?]$/.test(s) ? s : s + '.'; };\nconst prose = [...b.title_options, b.meta_description, ...b.outline.flatMap(o => [o.h2, ...o.points]),\n  ...b.faqs.map(f => f.a)].map(stop).filter(Boolean);\nreturn [{ json: { result: lines.join('\\n'), check_text: prose.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "b2f6fd91-e9a0-533a-aa52-abc2418bb793",
+      "name": "Claim check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLAIMS_URL }}/verify",
+        "options": {
+          "timeout": 1800000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.check_text, context: ['Target keyword: ' + $('Start').first().json.keyword, $('Start').first().json.audience ? 'Audience: ' + $('Start').first().json.audience : ''].filter(Boolean).join('\\n') }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "20433313-c89f-5b4e-930e-5f43d5b790bb",
+      "name": "Annotate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const brief = $('Format').first().json.result;\nconst r = $input.first().json;\nif (!Array.isArray(r.unsupported)) {\n  const why = String((r.error && (r.error.message || r.error)) || r.detail || 'no answer').slice(0, 200);\n  return [{ json: { result: `${brief}\\n\\n_Claims were not fact-checked (claim checker: ${why})._` } }];\n}\nif (!r.unsupported.length) return [{ json: { result: brief } }];\nconst reasons = new Map((r.claims || []).filter(c => !c.supported).map(c => [c.claim, c.reasons || []]));\nconst list = r.unsupported.map(u => {\n  const why = (reasons.get(u) || []).join('; ');\n  return `- ${u}${why ? ` (${why})` : ''}`;\n});\nconst n = r.unsupported.length;\nreturn [{ json: { result: [\n  `> ⚠ ${n} statement${n === 1 ? '' : 's'} in this brief ${n === 1 ? 'is' : 'are'} not in the approved facts: check them before writing (list at the end).`,\n  '', brief, '', '## Claims to check before writing', '',\n  'Not supported by the approved facts (05) or the brief inputs. Verify or drop them in the article.', '',\n  ...list,\n].join('\\n') } }];\n"
       }
     }
   ],
@@ -187,6 +230,28 @@
         [
           {
             "node": "Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format": {
+      "main": [
+        [
+          {
+            "node": "Claim check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim check": {
+      "main": [
+        [
+          {
+            "node": "Annotate",
             "type": "main",
             "index": 0
           }

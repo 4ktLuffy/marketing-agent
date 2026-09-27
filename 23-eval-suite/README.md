@@ -1,6 +1,6 @@
 # eval-suite
 
-Deploy **23 of 60** of the local-LLM marketing agent. It tests the agent's writing against
+Deploy **23 of 71** of the local-LLM marketing agent. It tests the agent's writing against
 fixed cases and measures how often the local model produces copy you could actually
 publish: within platform limits, free of banned phrases, on the requested channels,
 and with no invented statistics.
@@ -51,8 +51,11 @@ The cases live in `cases/*.yaml`. Each one is a prompt, fixed variables, and che
 | `brand_ok` | brand service (05) reports an **error** violation |
 | `platform_ok` | platform rules (14) reject a post for its channel |
 | `channels_match` | posts don't cover exactly the requested channels |
+| `no_numbering` | an item starts with numbering the model added (`1/`, `2.`, `Slide 3:`) or ends with `2/5`; the workflow numbers thread posts itself |
+| `cta_like` | an item has no call to action (weak proxy: no action verb such as try/save/start/order, and no link) |
 
-Paths select what to check: `""` means the whole output, `subject`, `headlines[*]`, `posts[*].text`.
+Paths select what to check: `""` means the whole output, `subject`, `headlines[*]`, `posts[*].text`,
+or one item by index: `posts[0]`, `slides[-1]`.
 
 ## Measuring the claim checker (44)
 
@@ -65,6 +68,61 @@ brand's facts. It reports how many invented claims were caught and how many true
 were flagged. Both numbers matter. Write your own labelled claims when you replace the
 example brand.
 
+## Measuring customer language (70)
+
+```bash
+python -m evalsuite.voc_ab --setup                       # import the fictional sample into 70, mine, run
+python -m evalsuite.voc_ab --judge-gateway http://other:8103   # judge on another gateway/model
+python -m evalsuite.voc_ab --cases cases/voc/voc_ab_v2.yaml     # the second, held-out topic set
+python -m evalsuite.voc_ab --rejudge results/voc_ab-X.json --judge-gateway URL   # same posts, other judge
+python -m evalsuite.voc_ab --no-open-with                       # B = customer_phrases only (the first runs)
+```
+
+`cases/voc/voc_ab.yaml` holds 10 held-out topics (written before the first run). Each topic
+is written twice with `social_posts`: A without `customer_phrases`, B with 70's
+`GET /relevant` phrases for the topic. A blind judge (`voc_judge`, both orders, a win only
+when both agree) sees short customer quotes and the two posts. Objective metrics: posts that
+contain a customer phrase word for word (phrases already in the topic, brand summary or
+facts are not counted, since A sees them too), generic "AI" words (the voice A/B list),
+length, quotation marks, brand errors. Needs 03, 05 and 70; `--setup` writes to 70, so
+point `--voc` at a scratch instance, not production.
+
+First runs (2026-09-27, local `mkt-writer` = qwen2.5:7b writer and judge, fictional sample,
+10 topics each):
+
+| Run | Posts with a given customer phrase A / B | Any mined phrase A / B | Judge B / A / tie | Judge same position both orders |
+|---|---|---|---|---|
+| 1 (seed 7) | 2/10 / 3/10 | 2/10 / 3/10 | 4 / 1 / 5 | 5/10 |
+| 2 (seed 11) | 1/10 / 2/10 | 2/10 / 3/10 | 2 / 0 / 8 | 8/10 |
+
+Generic AI words: 1 vs 0, then 0 vs 0. No post put customer words in quotation marks.
+Read it as: the local writer mostly ignores the phrases (B reused one in 2–3 of 10 posts),
+and the local judge mostly picks a position, not a post. The difference is too small to
+claim an effect. Re-run the judge on a stronger model with `--judge-gateway`.
+
+With `open_with` (2026-09-27, second pass). Writer: local `mkt-writer` (qwen2.5:7b). B =
+`customer_phrases` + `open_with` (picked in code from 70's hybrid `/relevant`, first sentence
+checked in code, one retry). The same posts were judged twice: locally (`mkt-writer`) and on
+Groq `openai/gpt-oss-120b` (`_dev/local-test/voc-ab-groq.sh --rejudge <report>`). The v1
+topics were already seen; `cases/voc/voc_ab_v2.yaml` (8 topics) was written before this run.
+
+| Topics | Phrase in 1st sentence A / B | B enforced first try / after retry | B phrase bolted on | Judge B / A / tie (same position) local | Groq |
+|---|---|---|---|---|---|
+| v1 (10, seen) | 1/10 / 10/10 | 7/10 / 10/10 | 7/10 | 4 / 0 / 6 (6) | 8 / 1 / 1 (1) |
+| v2 (8, held out) | 0/8 / 6/8 | 6/8 / 6/8 | 6/8 | 3 / 0 / 5 (5) | 6 / 2 / 0 (0) |
+
+Generic AI words 0 / 0, brand errors 0 / 0, quotation marks 0 / 0 on both sets. Average
+length A 287 / B 322 (v1), 284 / 321 (v2) characters. Groq judge: 12,445 + 9,968 tokens.
+
+Read it as: enforcement puts the phrase where asked, but mostly by pasting it as a label
+("box arrived late We're sorry…", "pause my subscription | When you pause…"): 13 of the 16
+enforced posts (`phrase_bolted_on`, which even undercounts). Groq prefers B clearly and
+without position bias, but its reasons mostly cite the echoed phrase, and in 11 of 18 topics
+B's phrase is also in the quotes the judge is shown, so this judge partly measures overlap
+with its own evidence. Not yet evidence of better posts. Next: ask for the phrase inside a
+grammatical sentence and fail `bolted_on` in the check; give the judge quotes that exclude
+the phrase B was given.
+
 ## Configuration
 
 | Env / flag | Default |
@@ -72,6 +130,7 @@ example brand.
 | `GATEWAY_URL` / `--gateway` | `http://localhost:8103` |
 | `BRAND_URL` / `--brand` | `http://localhost:8105` |
 | `RULES_URL` / `--rules` | `http://localhost:8114` |
+| `VOC_URL` / `--voc` (voc_ab) | `http://localhost:8170` |
 
 ## CI
 

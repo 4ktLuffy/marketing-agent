@@ -3,7 +3,7 @@ from pathlib import Path
 
 CASES = Path(__file__).parent.parent / "cases"
 KNOWN = {"max_chars", "min_chars", "contains", "not_contains", "count", "numbers_from_input",
-         "brand_ok", "platform_ok", "channels_match", "equals"}
+         "brand_ok", "platform_ok", "channels_match", "equals", "no_numbering", "cta_like"}
 
 
 def test_case_files_are_valid_and_ids_unique():

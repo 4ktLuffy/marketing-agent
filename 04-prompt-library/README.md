@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 60** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 71** of the local-LLM marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.
@@ -8,10 +8,10 @@ change is reviewed and versioned.
 | Prompt | Output | Used by |
 |---|---|---|
 | `blog_post` | markdown | 25 blog writer |
-| `social_posts` | JSON posts per channel | 26 social writer |
+| `social_posts` | JSON posts per channel; optional `customer_phrases` (70 `GET /relevant` → `customer_phrases`) asks it to reuse one customer phrase where it fits, never as a quote; optional `open_with` (one phrase picked in code) requires it word for word in the first sentence of every post, and `open_with_feedback` carries the caller's one retry after a code check (70 README) | 26 social writer |
 | `ad_copy` | JSON headlines ≤30 / descriptions ≤90 | 27 ad copy |
 | `email_newsletter` | JSON subject/preheader/body/CTA | 28 email writer |
-| `seo_brief` | JSON brief | 29 SEO brief |
+| `seo_brief` | JSON brief | 29 SEO brief (also run weekly for Search Console queries by 69) |
 | `repurpose` | JSON posts grounded in a source | 30 repurpose |
 | `summarize_page` | JSON competitive read | 31 research |
 | `keyword_clusters` | JSON clusters by intent | 32 keyword research |
@@ -21,12 +21,24 @@ change is reviewed and versioned.
 | `competitor_changes` | markdown | 37 competitor watch |
 | `content_plan` | JSON week plan | 40 content planner |
 | `weekly_report_highlights` | markdown | 41 weekly report |
+| `weekly_actions` | JSON `{headline, what_changed ≤ 4, actions ≤ 5: {channel, action ≤ 140, why}}`, one action per channel; the workflow drops any action whose `why` cites a number not in the data | 41 weekly report |
+| `newsletter_issue` | JSON `{subject ≤ 60, preheader ≤ 90, intro, sections: {title, summary ≤ 280, link}, cta_text, cta_url}` from the week's published items; links must be copied from the items (the workflow blanks any other) | 66 weekly newsletter |
 | `claim_details` | JSON details of one sentence (listed without seeing any facts) | 44 claim checker |
 | `detail_check` | JSON: is each detail stated in the facts, and where (quote) | 44 claim checker |
 | `video_script` | JSON hook, beats (spoken / on-screen / shot), CTA, caption | 57 content formats |
 | `landing_page` | JSON hero, benefits, social proof (facts only), answer-first FAQ, CTA | 57 content formats |
 | `email_sequence` | JSON 3–5 emails: day, subject, preview, body, CTA | 57 content formats |
 | `review_reply` | JSON `needs_human`, `reason`, reply ≤ 600 chars (no invented offers, never asks for a better rating) | no workflow yet; vars come from 58 `GET /reviews/{id}/reply-context` |
+| `voice_profile` | JSON voice profile from the 10 interview answers: summary, checkable do/don't rules, words to use/avoid, sentence style, 3 sample lines | stored with 05 `PUT /voice`; 05 adds it to every prompt's `{{ brand }}` |
+| `voice_judge` | JSON `{reason, closer: 1\|2}`: which of two posts is closer to a voice | 23 `evalsuite.voice_ab` (blind, both orders) |
+| `x_thread` | JSON `{hook_style, posts: 3–7 strings ≤ 270}`: hook post first, not numbered (the workflow adds "1/N") | 65 engine drafter (`thread` slots) |
+| `carousel_text` | JSON `{hook_style, slides: 5–8 {title ≤ 40, body ≤ 160}, caption ≤ 300, cta}`: cover slide is the hook, last slide the CTA | 65 engine drafter (`carousel_text` slots) |
+| `pillar_atoms` | JSON 15–30 atoms `{kind, text ≤ 280, promo, evidence}` from one pillar, ≥ 4 kinds | 61 content engine: stored with `POST /pillars/{id}/atoms` after each atom is checked by 44 |
+| `content_refresh` | JSON `{diagnosis ≤ 300, changes 3–8: {type, fact, where, what ≤ 400, why}, new_title ≤ 60, new_meta ≤ 155, faq ≤ 4}` for a page losing Google clicks; the workflow drops changes whose `why` has a number not in the input or cites no query, and `update_fact` without an approved fact label | 68 content refresh |
+| `customer_themes` | JSON themes `{name, kind: pain\|desire\|objection\|trigger\|outcome\|word_choice, quotes: {source_id, quote}}` from one batch of customer snippets; 70 drops every quote that is not an exact part of the snippet it cites, and every theme left with < 2 valid quotes from 2 sources | 70 customer language (`POST /mine`) |
+| `customer_headlines` | JSON `{headlines: {phrase_id, text}}`: each reuses one given customer phrase word for word; 70 drops headlines without a given phrase, with a number not in the phrases/facts, or with quotation marks | 70 customer language (`POST /headlines`) |
+| `customer_personas` | JSON 2–4 personas `{label, goals, pains, objections, words_they_use}`, every item `{text, cites}` with theme/quote ids; 70 drops uncited items, non-verbatim `words_they_use`, ages and numbers not in the quotes | 70 customer language (`POST /personas`) |
+| `voc_judge` | JSON `{reason, closer: 1\|2}`: which of two posts sounds more like someone who knows these customers (given their quotes) | 23 `evalsuite.voc_ab` (blind, both orders) |
 
 ## Where to deploy
 

@@ -1,0 +1,55 @@
+name: weekly_actions
+description: Weekly report in plain English — a headline, what changed, and ONE next action per channel, each backed by a number from the data.
+output: json
+temperature: 0.3
+vars:
+  data: required
+  period: required
+system: |
+  You are the marketing analyst for the brand below. You turn last week's numbers into a
+  short plan a busy owner can act on. Plain English, no jargon. Use only the numbers in the
+  data, copied exactly as written (do not round, convert or compute new ones). When the data has
+  a "facts" list, take every number you state from those sentences: each comparison there is already
+  worked out, so never combine two numbers into a new one (no "fell by X" unless X is written there). Never state
+  a cause as a fact; if you guess, say "possibly".
+
+  BRAND
+  {{ brand }}
+template: |
+  Period: {{ period }}
+  Data (JSON). kpis = site analytics (delta_pct = % change vs the week before);
+  clicks = tracked short-link clicks per channel and top posts; hooks = how posts open and
+  the clicks per post of each style; campaigns = targets vs actuals; pillars = review
+  approval rates of the content engine. Parts may be missing.
+  {{ data }}
+
+  Return JSON:
+  - headline: one sentence, the single most important thing this week.
+  - what_changed: up to 4 short bullets, each with a number from the data.
+  - actions: up to 5, at most ONE per channel. Each:
+    channel (a channel name from the data),
+    action (imperative, specific, at most 140 characters, e.g. "Post 2 more question-led LinkedIn posts"),
+    why (one sentence citing at least one number exactly as it appears in the data).
+  Skip a channel if the data says nothing useful about it.
+example_vars:
+  period: 2026-09-14 to 2026-09-20
+  data: '{"kpis": {"totals": {"sessions": 1200}, "delta_pct": {"sessions": 12.5}}, "clicks": {"by_channel": [{"channel": "linkedin", "posts": 3, "clicks": 20, "avg_clicks": 6.7}]}}'
+schema:
+  type: object
+  required: [headline, what_changed, actions]
+  properties:
+    headline: {type: string, minLength: 10, maxLength: 200}
+    what_changed:
+      type: array
+      maxItems: 4
+      items: {type: string, minLength: 5, maxLength: 200}
+    actions:
+      type: array
+      maxItems: 5
+      items:
+        type: object
+        required: [channel, action, why]
+        properties:
+          channel: {type: string, minLength: 1, maxLength: 40}
+          action: {type: string, minLength: 10, maxLength: 140}
+          why: {type: string, minLength: 10, maxLength: 300}

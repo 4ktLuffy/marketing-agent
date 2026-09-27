@@ -9,6 +9,11 @@ Postiz facts this file relies on (read from the Postiz source and docs, Septembe
   image:[]}], settings:{__type, ...}}]}` -> `[{postId, integration}]`. No public URL yet:
   the provider publishes asynchronously and `releaseURL` is filled in later.
 - Only `POST /posts` is rate limited (API_LIMIT per hour, default 90; cloud 100) -> 429.
+- `POST /upload` (multipart, field `file`) -> MediaFile `{id, name, path, ...}`; a post
+  references it as `value[].image: [{id, path}]` (MediaDto: id and path required). A video
+  goes through the same endpoint with its own content type (video/mp4) and the same
+  `image` list: Postiz keeps images and videos in one media library. NOT verified against a
+  live Postiz here (see README "Video").
 See README "Postiz API reference used" for the exact URLs.
 """
 import hmac
@@ -19,6 +24,7 @@ import os
 import threading
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -32,9 +38,16 @@ log = logging.getLogger("postiz-bridge")
 DEFAULT_POSTIZ_URL = "https://api.postiz.com"
 TIMEOUT_S = 30.0
 INTEGRATIONS_TTL_S = 300
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+IMAGE_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
+VIDEO_TYPES = {"video/mp4": ".mp4", "video/quicktime": ".mov"}
+# Longest video a provider takes through its API; a longer one is left off (text post kept).
+VIDEO_MAX_SECONDS = {"x": 140}
+# Providers that take images but no video through Postiz: the video is left off.
+VIDEO_REFUSED = {"pinterest", "dribbble"}
 
 # Providers whose Postiz validation (checkValidity) rejects a post without media.
-# This bridge sends text only, so these would always fail inside Postiz.
+# A post with an image_url satisfies the ones in IMAGE_SATISFIES; the rest need video.
 MEDIA_REQUIRED = {
     "instagram": "Instagram posts need at least one image or video",
     "instagram-standalone": "Instagram posts need at least one image or video",
@@ -44,6 +57,8 @@ MEDIA_REQUIRED = {
     "pinterest": "Pinterest pins need at least one image",
     "dribbble": "Dribbble shots need one image",
 }
+IMAGE_SATISFIES = {"instagram", "instagram-standalone", "tiktok", "tiktok-business", "pinterest", "dribbble"}
+VIDEO_SATISFIES = {"instagram", "instagram-standalone", "tiktok", "tiktok-business", "youtube"}
 
 # Settings Postiz requires per provider (docs "Create Post" table + provider DTOs) that the
 # bridge cannot guess. Supply them in CHANNEL_MAP as {"id": ..., "settings": {...}}.
@@ -217,13 +232,13 @@ def retry_after_of(r: httpx.Response) -> str | None:
     return None
 
 
-def call_postiz(method: str, path: str, body: dict | None = None):
+def call_postiz(method: str, path: str, body: dict | None = None, files: dict | None = None):
     if not postiz_key():
         raise PostizError(None, "POSTIZ_API_KEY is not set")
     url = postiz_base() + path
     try:
         with http_client() as client:
-            r = client.request(method, url, json=body)
+            r = client.request(method, url, json=body, files=files)
     except httpx.TimeoutException:
         raise PostizError(None, f"Postiz did not answer within {TIMEOUT_S:.0f} s") from None
     except httpx.HTTPError as e:
@@ -276,6 +291,133 @@ def bad_gateway(e: PostizError):
     return HTTPException(502, detail, headers=headers)
 
 
+# ---------- images
+
+
+class ImageError(Exception):
+    """A media file could not be loaded. `transient`: worth retrying (network, 5xx)."""
+
+    def __init__(self, message: str, transient: bool = False):
+        super().__init__(message)
+        self.transient = transient
+
+
+def internal_url(url: str, public_env: str, internal_env: str) -> str:
+    """URLs under the public base (for the reviewer's browser, e.g. http://localhost:8117)
+    are fetched from the internal one (e.g. http://image-cards:8000): the public one is not
+    reachable from inside the container."""
+    public = (os.environ.get(public_env) or "").strip().rstrip("/")
+    internal = (os.environ.get(internal_env) or "").strip().rstrip("/")
+    if public and internal and (url == public or url.startswith(public + "/")):
+        return internal + url[len(public):]
+    return url
+
+
+def image_fetch_url(image_url: str) -> str:
+    """Where the bridge downloads the image from (cards from 17: CARDS_PUBLIC_URL -> CARDS_URL)."""
+    return internal_url(image_url, "CARDS_PUBLIC_URL", "CARDS_URL")
+
+
+def video_fetch_url(video_url: str) -> str:
+    """Where the bridge downloads the video from (71: VIDEO_PUBLIC_URL -> VIDEO_URL)."""
+    return internal_url(video_url, "VIDEO_PUBLIC_URL", "VIDEO_URL")
+
+
+def fetch_media(url: str, types: dict[str, str], max_bytes: int, what: str, kinds: str) -> tuple[bytes, str, str]:
+    """Download a media file -> (bytes, content type, file name). Never sends the Postiz key."""
+    if urlparse(url).scheme not in ("http", "https"):
+        raise ImageError(f"{what}_url must be an http(s) URL")
+    try:
+        with httpx.Client(timeout=TIMEOUT_S, follow_redirects=False) as client:
+            with client.stream("GET", url) as r:
+                if r.status_code != 200:
+                    raise ImageError(f"GET {url} answered HTTP {r.status_code}", transient=r.status_code >= 500)
+                ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
+                if ctype not in types:
+                    raise ImageError(f"GET {url} is not a {kinds} {what} ({ctype or 'no content type'})")
+                data = b""
+                for chunk in r.iter_bytes():
+                    data += chunk
+                    if len(data) > max_bytes:
+                        raise ImageError(f"{what} at {url} is larger than {max_bytes // (1024 * 1024)} MB")
+    except httpx.TimeoutException:
+        raise ImageError(f"GET {url} did not answer within {TIMEOUT_S:.0f} s", transient=True) from None
+    except httpx.HTTPError as e:
+        raise ImageError(f"cannot fetch {url}: {type(e).__name__}", transient=True) from None
+    if not data:
+        raise ImageError(f"GET {url} returned an empty body")
+    name = os.path.basename(urlparse(url).path) or what
+    ext = types[ctype]
+    if not name.lower().endswith(ext):
+        name = os.path.splitext(name)[0] + ext
+    return data, ctype, name
+
+
+def fetch_image(image_url: str) -> tuple[bytes, str, str]:
+    return fetch_media(image_fetch_url(image_url), IMAGE_TYPES, MAX_IMAGE_BYTES, "image", "PNG/JPEG/GIF/WebP")
+
+
+def max_video_bytes() -> int:
+    try:
+        mb = float(os.environ.get("MAX_VIDEO_MB", "") or 100)
+    except ValueError:
+        mb = 100
+    return int(max(mb, 1) * 1024 * 1024)
+
+
+def mp4_duration(data: bytes) -> float | None:
+    """Seconds from the MP4 movie header (mvhd), or None when there is none."""
+    i = data.find(b"mvhd")
+    if i < 4 or len(data) < i + 36:
+        return None
+    if data[i + 4] == 1:
+        scale, dur = int.from_bytes(data[i + 24:i + 28], "big"), int.from_bytes(data[i + 28:i + 36], "big")
+    else:
+        scale, dur = int.from_bytes(data[i + 16:i + 20], "big"), int.from_bytes(data[i + 20:i + 24], "big")
+    return round(dur / scale, 2) if scale else None
+
+
+def fetch_video(video_url: str, provider: str | None) -> tuple[dict | None, str | None]:
+    """-> ({data, ctype, name, fetched_from, duration_s} or None, note).
+
+    A video this post can't carry (too large, too long for the network, a network that takes
+    no video, not an MP4, gone) is left off with a note: the text (and image) still go out.
+    Only a transient failure (unreachable, timeout, 5xx) raises, so the publisher retries.
+    """
+    if provider in VIDEO_REFUSED:
+        return None, f"video not attached: Postiz '{provider}' takes images only"
+    url = video_fetch_url(video_url)
+    try:
+        data, ctype, name = fetch_media(url, VIDEO_TYPES, max_video_bytes(), "video", "MP4/MOV")
+    except ImageError as e:
+        if e.transient:
+            raise
+        return None, f"video not attached: {e} (MAX_VIDEO_MB={max_video_bytes() // (1024 * 1024)})" \
+            if "larger than" in str(e) else f"video not attached: {e}"
+    secs = mp4_duration(data)
+    cap = VIDEO_MAX_SECONDS.get(provider or "")
+    if cap and secs and secs > cap:
+        return None, f"video not attached: {secs:g} s is longer than {provider} takes ({cap} s)"
+    return {"data": data, "ctype": ctype, "name": name, "fetched_from": url, "duration_s": secs}, None
+
+
+def image_problem(e: ImageError) -> HTTPException:
+    # 502 so the publisher (39) keeps the item approved and retries on its next run.
+    return HTTPException(502, {"message": "cannot load the post's image", "image_error": str(e)})
+
+
+def video_problem(e: ImageError) -> HTTPException:
+    return HTTPException(502, {"message": "cannot load the post's video", "video_error": str(e)})
+
+
+def upload_image(data: bytes, ctype: str, name: str) -> dict:
+    """POST /upload -> {id, path} for value[].image."""
+    media = call_postiz("POST", "/upload", files={"file": (name, data, ctype)})
+    if not isinstance(media, dict) or not media.get("id") or not media.get("path"):
+        raise PostizError(200, "Postiz accepted the upload but returned no id/path")
+    return {"id": str(media["id"]), "path": str(media["path"])}
+
+
 # ---------- content
 
 
@@ -305,14 +447,19 @@ def build_settings(provider: str | None, extra: dict) -> dict:
     return settings
 
 
-def check_provider(channel: str, provider: str | None, settings: dict):
+def check_provider(channel: str, provider: str | None, settings: dict, has_image: bool = False,
+                   has_video: bool = False):
     if not provider:
         return
-    if provider in MEDIA_REQUIRED:
+    if provider in MEDIA_REQUIRED and not (has_image and provider in IMAGE_SATISFIES) \
+            and not (has_video and provider in VIDEO_SATISFIES):
+        how = ("This post has no image_url (the image card may have failed): add one, or post it by hand in Postiz."
+               if provider in IMAGE_SATISFIES else
+               "This post has no video (video_url, e.g. from 71-video-assembly), or it could not be attached: "
+               "add one, post it by hand in Postiz, or map the channel to a text network.")
         raise HTTPException(422, (
             f"channel '{channel}' is a Postiz '{provider}' integration: "
-            f"{MEDIA_REQUIRED[provider]}. This bridge publishes text only, so post it by hand "
-            f"in Postiz or map the channel to a text network."))
+            f"{MEDIA_REQUIRED[provider]}. {how}"))
     missing = [s for s in REQUIRED_SETTINGS.get(provider, []) if s not in settings]
     if missing:
         raise HTTPException(422, (
@@ -321,7 +468,7 @@ def check_provider(channel: str, provider: str | None, settings: dict):
             f"{{\"{channel}\": {{\"id\": \"...\", \"settings\": {{...}}}}}}."))
 
 
-def post_body(integration_id: str, content: str, settings: dict) -> dict:
+def post_body(integration_id: str, content: str, settings: dict, images: list[dict] | None = None) -> dict:
     return {
         "type": "now",
         # Postiz requires an ISO date even for "now" (it then uses the current time).
@@ -330,7 +477,7 @@ def post_body(integration_id: str, content: str, settings: dict) -> dict:
         "tags": [],
         "posts": [{
             "integration": {"id": integration_id},
-            "value": [{"content": to_postiz_html(content), "image": []}],
+            "value": [{"content": to_postiz_html(content), "image": images or []}],
             "settings": settings,
         }],
     }
@@ -348,6 +495,8 @@ class PublishRequest(BaseModel):
     text: str
     link: str | None = None
     campaign: str | None = None
+    image_url: str | None = None  # uploaded to Postiz and attached (e.g. a card from 17)
+    video_url: str | None = None  # an MP4 (e.g. from 71); attached instead of the image
 
 
 @app.get("/health")
@@ -391,16 +540,45 @@ def publish(req: PublishRequest):
     content = build_content(req.text, req.link)
     if not content:
         raise HTTPException(422, "text is empty")
+    image_url = (req.image_url or "").strip() or None
+    video_url = (req.video_url or "").strip() or None
 
     if dry_run():
-        # No call to Postiz at all. The provider is only known from a hint here.
+        # No call to Postiz at all. The provider is only known from a hint here. The media is
+        # downloaded (from our own service, not Postiz) to prove the live run could upload it.
         provider = entry["provider"] or (channel if channel in KNOWN_PROVIDERS else None)
         settings = build_settings(provider, entry["settings"])
-        check_provider(channel, provider, settings)
+        video, video_note = None, None
+        if video_url:
+            try:
+                video, video_note = fetch_video(video_url, provider)
+            except ImageError as e:
+                raise video_problem(e)
+        check_provider(channel, provider, settings, has_image=bool(image_url), has_video=bool(video))
+        images, would_upload = [], None
+        if video:
+            # A video post carries the video only: the poster as a second media file would
+            # turn it into a carousel (Instagram) or be refused (YouTube).
+            would_upload = {"video_url": video_url, "fetched_from": video["fetched_from"],
+                            "endpoint": postiz_base() + "/upload", "file": video["name"],
+                            "content_type": video["ctype"], "bytes": len(video["data"]),
+                            "duration_s": video["duration_s"]}
+            images = [{"id": "<id from POST /upload>", "path": "<path from POST /upload>"}]
+        elif image_url:
+            try:
+                data, ctype, name = fetch_image(image_url)
+            except ImageError as e:
+                raise image_problem(e)
+            would_upload = {"image_url": image_url, "fetched_from": image_fetch_url(image_url),
+                            "endpoint": postiz_base() + "/upload", "file": name,
+                            "content_type": ctype, "bytes": len(data)}
+            images = [{"id": "<id from POST /upload>", "path": "<path from POST /upload>"}]
         return {
             "status": "dry_run", "url": None, "postiz_id": None,
             "channel": channel, "integration": entry["id"],
-            "would_send": post_body(entry["id"], content, settings),
+            "would_upload": would_upload,
+            "would_send": post_body(entry["id"], content, settings, images),
+            **({"video_note": video_note} if video_url else {}),
         }
 
     if not postiz_key():
@@ -425,10 +603,32 @@ def publish(req: PublishRequest):
 
     provider = found["provider"]
     settings = build_settings(provider, entry["settings"])
-    check_provider(channel, provider, settings)
+    video, video_note = None, None
+    if video_url:
+        try:
+            video, video_note = fetch_video(video_url, provider)
+        except ImageError as e:
+            raise video_problem(e)
+    check_provider(channel, provider, settings, has_image=bool(image_url), has_video=bool(video))
+
+    images = []
+    if video:
+        try:
+            images = [upload_image(video["data"], video["ctype"], video["name"])]
+        except PostizError as e:
+            raise bad_gateway(e)
+    elif image_url:
+        try:
+            data, ctype, name = fetch_image(image_url)
+        except ImageError as e:
+            raise image_problem(e)
+        try:
+            images = [upload_image(data, ctype, name)]
+        except PostizError as e:
+            raise bad_gateway(e)
 
     try:
-        created = call_postiz("POST", "/posts", post_body(entry["id"], content, settings))
+        created = call_postiz("POST", "/posts", post_body(entry["id"], content, settings, images))
     except PostizError as e:
         raise bad_gateway(e)
     first = created[0] if isinstance(created, list) and created and isinstance(created[0], dict) else {}
@@ -443,6 +643,8 @@ def publish(req: PublishRequest):
         "status": "queued",
         "channel": channel,
         "provider": provider,
+        "media": images,
+        **({"video_note": video_note} if video_url else {}),
     }
     _published[dedupe_key] = result
     log.info("item %s queued in Postiz as %s (%s)", req.id, postiz_id, provider)

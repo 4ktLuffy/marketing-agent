@@ -1,6 +1,6 @@
 # 37 · Competitor watch
 
-Deploy **37 of 60** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **37 of 71** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every 6 hours it diffs the competitor pages you watch (09). When something changed, the LLM explains what changed and whether to react. The note is saved to the knowledge base and posted to your webhook.
 

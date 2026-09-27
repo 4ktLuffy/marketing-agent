@@ -1,6 +1,6 @@
 # 43 · Error handler
 
-Deploy **43 of 60** of the local-LLM marketing agent. This deploy is an n8n workflow.
+Deploy **43 of 71** of the local-LLM marketing agent. This deploy is an n8n workflow.
 
 Every other workflow reports failures here (`settings.errorWorkflow`). It posts the workflow name, the failing node, the error and a link to the execution to your webhook.
 
@@ -31,7 +31,9 @@ n8n Error Trigger
 
 | Env | Meaning |
 |---|---|
-| `NOTIFY_WEBHOOK_URL` | Slack/Discord/Teams incoming webhook. Without it, errors are only in n8n's execution list. |
+| `NOTIFY_WEBHOOK_URL` | Slack/Discord/Teams incoming webhook. Without it (or Telegram), errors are only in n8n's execution list. |
+| `NOTIFY_FORMAT` | `generic` (default, `{text, content}`), `slack`, `discord` or `telegram`; used by every workflow that notifies (`n8nlib.NOTIFY_FORMAT_JS`). Summaries where drafts wait for a person end with the approval-form link |
+| `TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` | for `NOTIFY_FORMAT=telegram` (Bot API `sendMessage`, HTML); `TELEGRAM_API_URL` optionally points to a self-hosted Bot API server |
 
 ## Depends on
 

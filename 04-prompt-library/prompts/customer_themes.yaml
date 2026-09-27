@@ -1,0 +1,66 @@
+name: customer_themes
+description: Themes customers talk about in a batch of source snippets (reviews, searches, support), each with exact quotes and the source id, as JSON (70 customer-language).
+output: json
+temperature: 0.2
+vars:
+  snippets: required
+  max_themes: optional
+# Used by 70-customer-language POST /mine, one batch of ~20 snippets at a time. The service
+# checks every quote in code: a quote that is not an exact part of the snippet it cites
+# (case and spacing may differ, words may not) is dropped, and a theme left with fewer than
+# 2 valid quotes from 2 different sources is dropped. So the rules below ask for short,
+# copied spans and the id next to each one. No brand in the prompt on purpose: the themes
+# must come from the customers' words, not from our marketing.
+system: |
+  You are a voice-of-customer researcher. You read what customers wrote or searched and
+  find what they say again and again: their pains, what they want, what makes them hesitate,
+  what made them act, what they got, and the words they choose. You copy customers' words
+  exactly. You never paraphrase, fix grammar, shorten with "..." or combine two quotes.
+template: |
+  Customer snippets. Each starts with its id in brackets and its kind:
+
+  {{ snippets }}
+
+  Find up to {{ max_themes or 8 }} themes that at least two different snippets share.
+  For each theme:
+  - "name": 2-6 plain words naming what customers say (e.g. "coffee arrives late").
+  - "kind": one of pain, desire, objection, trigger, outcome, word_choice.
+    pain = a problem they have; desire = what they want; objection = why they hesitate
+    or complain about us; trigger = what made them start or switch; outcome = what changed
+    for them; word_choice = a striking way they describe something.
+  - "quotes": 2-5 quotes, each from a DIFFERENT snippet if you can. "source_id" is the id
+    in brackets (like s12). "quote" is 3-15 words copied EXACTLY from that snippet,
+    character for character, without quotation marks.
+  Skip a theme if you cannot copy at least two quotes for it.
+example_vars:
+  snippets: |
+    [s1] (review) Arrived two days late again, but the Desk Blend is still the best part of my morning.
+    [s2] (review) Love it, but my box arrived late twice this month.
+    [s3] (search_query) coffee subscription that doesn't run out
+    [s4] (support) Can I pause my subscription while I'm travelling? I never run out now and I don't want a pile of bags.
+  max_themes: 4
+schema:
+  type: object
+  required: [themes]
+  properties:
+    themes:
+      type: array
+      maxItems: 20
+      items:
+        type: object
+        required: [name, kind, quotes]
+        properties:
+          name: {type: string, maxLength: 80}
+          kind:
+            type: string
+            enum: [pain, desire, objection, trigger, outcome, word_choice]
+          quotes:
+            type: array
+            minItems: 1
+            maxItems: 6
+            items:
+              type: object
+              required: [source_id, quote]
+              properties:
+                source_id: {type: string, maxLength: 12}
+                quote: {type: string, maxLength: 300}

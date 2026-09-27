@@ -56,7 +56,7 @@ def test_create_defaults_to_draft_with_all_fields():
     assert set(item) == {
         "id", "title", "channel", "body", "status", "scheduled_at", "published_at",
         "campaign", "link", "external_url", "notes", "created_at", "updated_at",
-        "campaign_id", "short_url", "hook_style",
+        "campaign_id", "short_url", "hook_style", "image_url", "video_url",
     }
     assert item["campaign_id"] is None and item["short_url"] is None
     assert isinstance(item["id"], int)
@@ -465,8 +465,8 @@ def test_migrates_old_schema_db(tmp_path, monkeypatch):
     assert [i["id"] for i in client.get("/items?campaign_id=5").json()] == [1, new["id"]]
 
     cols = {r[1] for r in sqlite3.connect(path).execute("PRAGMA table_info(items)")}
-    assert {"campaign_id", "short_url", "hook_style"} <= cols
-    assert old["hook_style"] is None
+    assert {"campaign_id", "short_url", "hook_style", "image_url", "video_url"} <= cols
+    assert old["hook_style"] is None and old["image_url"] is None and old["video_url"] is None
 
 
 def test_migration_is_idempotent(tmp_path, monkeypatch):
@@ -575,3 +575,173 @@ def test_approving_and_publishing_need_the_approver_key(monkeypatch):
                        headers={**AUTH, "X-Approver-Key": "boss"}).status_code == 200
     other = create(status="in_review")
     assert move(other["id"], "rejected").status_code == 200                     # other moves: no approver key
+
+
+# ---------- image_url (a card from 17-image-cards; the publisher passes it on)
+
+IMG = "http://localhost:8117/cards/0123456789abcdef0123456789abcdef.png"
+
+
+def test_create_with_image_url_and_read_it_back():
+    item = create(image_url=f"  {IMG} ", channel="instagram")
+    assert item["image_url"] == IMG
+    assert client.get(f"/items/{item['id']}").json()["image_url"] == IMG
+    assert [i["image_url"] for i in client.get("/items?channel=instagram").json()] == [IMG]
+    assert create()["image_url"] is None
+    assert create(image_url=" ")["image_url"] is None
+
+
+def test_image_url_is_in_due_items():
+    item = item_in("approved", image_url=IMG, scheduled_at="2020-01-01T00:00:00Z")
+    assert [i["image_url"] for i in client.get("/due").json() if i["id"] == item["id"]] == [IMG]
+
+
+@pytest.mark.parametrize("bad", ["javascript:alert(1)", "file:///etc/passwd", "not a url",
+                                 "http://", "https://x.test/a b.png", "http://x.test/" + "a" * 2000])
+def test_image_url_must_be_http_422(bad):
+    r = client.post("/items", headers=AUTH, json={"title": "t", "channel": "x", "body": "b", "image_url": bad})
+    assert r.status_code == 422
+    item = create()
+    assert client.patch(f"/items/{item['id']}", headers=AUTH, json={"image_url": bad}).status_code == 422
+
+
+@pytest.mark.parametrize("status", ["idea", "draft", "in_review"])
+def test_patch_image_url_before_approval(status):
+    item = item_in(status)
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"image_url": IMG})
+    assert r.status_code == 200 and r.json()["image_url"] == IMG
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"image_url": None})
+    assert r.status_code == 200 and r.json()["image_url"] is None
+
+
+@pytest.mark.parametrize("status", ["approved", "published"])
+def test_patch_image_url_frozen_after_approval(status):
+    item = item_in(status, image_url=IMG)
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"image_url": "https://other.test/x.png"})
+    assert r.status_code == 409
+    assert "image_url" in r.json()["detail"]["message"]
+    assert client.get(f"/items/{item['id']}").json()["image_url"] == IMG
+    # scheduling stays editable
+    assert client.patch(f"/items/{item['id']}", headers=AUTH,
+                        json={"notes": "moved"}).status_code == 200
+
+
+def test_migration_adds_image_url_to_db_that_already_has_hook_style(tmp_path, monkeypatch):
+    path = tmp_path / "phase3.sqlite"
+    conn = sqlite3.connect(path)
+    conn.executescript(OLD_SCHEMA)
+    for col in ("campaign_id INTEGER", "short_url TEXT", "hook_style TEXT"):
+        conn.execute(f"ALTER TABLE items ADD COLUMN {col}")
+    conn.execute(
+        "INSERT INTO items (title, channel, body, status, created_at, updated_at)"
+        " VALUES ('Old', 'x', 'b', 'draft', '2020-01-01T00:00:00Z', '2020-01-01T00:00:00Z')")
+    conn.commit()
+    conn.close()
+    monkeypatch.setenv("DB_PATH", str(path))
+    assert client.get("/items/1").json()["image_url"] is None
+    item = create(image_url=IMG)
+    assert client.get(f"/items/{item['id']}").json()["image_url"] == IMG
+
+
+# ---------- video_url (an MP4 from 71-video-assembly; the publisher passes it on)
+
+VID = "http://localhost:8171/videos/0123456789abcdef0123456789abcdef.mp4"
+
+
+def test_create_with_video_url_and_read_it_back():
+    item = create(video_url=f"  {VID} ", image_url=IMG, channel="instagram")
+    assert item["video_url"] == VID and item["image_url"] == IMG
+    assert client.get(f"/items/{item['id']}").json()["video_url"] == VID
+    assert [i["video_url"] for i in client.get("/items?channel=instagram").json()] == [VID]
+    assert create()["video_url"] is None
+    assert create(video_url=" ")["video_url"] is None
+
+
+def test_video_url_is_in_due_items():
+    item = item_in("approved", video_url=VID, scheduled_at="2020-01-01T00:00:00Z")
+    assert [i["video_url"] for i in client.get("/due").json() if i["id"] == item["id"]] == [VID]
+
+
+@pytest.mark.parametrize("bad", ["javascript:alert(1)", "file:///etc/passwd", "not a url",
+                                 "http://", "https://x.test/a b.mp4", "http://x.test/" + "a" * 2000])
+def test_video_url_must_be_http_422(bad):
+    r = client.post("/items", headers=AUTH, json={"title": "t", "channel": "x", "body": "b", "video_url": bad})
+    assert r.status_code == 422
+    assert "video_url" in r.text
+    item = create()
+    assert client.patch(f"/items/{item['id']}", headers=AUTH, json={"video_url": bad}).status_code == 422
+
+
+@pytest.mark.parametrize("status", ["idea", "draft", "in_review"])
+def test_patch_video_url_before_approval(status):
+    item = item_in(status)
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"video_url": VID})
+    assert r.status_code == 200 and r.json()["video_url"] == VID
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"video_url": None})
+    assert r.status_code == 200 and r.json()["video_url"] is None
+
+
+@pytest.mark.parametrize("status", ["approved", "published"])
+def test_patch_video_url_frozen_after_approval(status):
+    item = item_in(status, video_url=VID)
+    r = client.patch(f"/items/{item['id']}", headers=AUTH, json={"video_url": "https://other.test/x.mp4"})
+    assert r.status_code == 409
+    assert "video_url" in r.json()["detail"]["message"]
+    assert client.get(f"/items/{item['id']}").json()["video_url"] == VID
+
+
+def test_migration_adds_video_url_to_db_that_already_has_image_url(tmp_path, monkeypatch):
+    path = tmp_path / "phase4.sqlite"
+    conn = sqlite3.connect(path)
+    conn.executescript(OLD_SCHEMA)
+    for col in ("campaign_id INTEGER", "short_url TEXT", "hook_style TEXT", "image_url TEXT"):
+        conn.execute(f"ALTER TABLE items ADD COLUMN {col}")
+    conn.execute(
+        "INSERT INTO items (title, channel, body, status, image_url, created_at, updated_at)"
+        " VALUES ('Old', 'x', 'b', 'draft', 'http://i.test/a.png', '2020-01-01T00:00:00Z', '2020-01-01T00:00:00Z')")
+    conn.commit()
+    conn.close()
+    monkeypatch.setenv("DB_PATH", str(path))
+    old = client.get("/items/1").json()
+    assert old["video_url"] is None and old["image_url"] == "http://i.test/a.png"
+    item = create(video_url=VID)
+    assert client.get(f"/items/{item['id']}").json()["video_url"] == VID
+
+
+# ---------- POST /items/{id}/notes
+
+
+def test_add_note_appends_a_line_in_any_status():
+    item = item_in("approved", notes="first")
+    r = client.post(f"/items/{item['id']}/notes", json={"note": "sent to CMS as draft:\n https://blog.example/?p=5",
+                                                        "external_url": "https://blog.example/?p=5"}, headers=AUTH)
+    assert r.status_code == 200, r.text
+    got = r.json()
+    assert got["status"] == "approved"   # a note never moves the item
+    lines = got["notes"].split("\n")
+    assert lines[0] == "first"
+    assert lines[1].endswith("] sent to CMS as draft: https://blog.example/?p=5")
+    assert got["external_url"] == "https://blog.example/?p=5"
+    r = client.post(f"/items/{item['id']}/notes", json={"note": "second"}, headers=AUTH)
+    assert r.json()["notes"].count("\n") == 2
+    assert r.json()["external_url"] == "https://blog.example/?p=5"   # kept when not given
+
+
+def test_add_note_validation_and_auth():
+    item = create()
+    assert client.post(f"/items/{item['id']}/notes", json={"note": "x"}).status_code == 401
+    assert client.post(f"/items/{item['id']}/notes", json={"note": "  "}, headers=AUTH).status_code == 422
+    assert client.post(f"/items/{item['id']}/notes", json={"note": "x" * 1001}, headers=AUTH).status_code == 422
+    assert client.post(f"/items/{item['id']}/notes", json={"note": "x", "external_url": "javascript:alert(1)"},
+                       headers=AUTH).status_code == 422
+    assert client.post("/items/999/notes", json={"note": "x"}, headers=AUTH).status_code == 404
+    r = client.post(f"/items/{item['id']}/notes", json={"note": "x", "external_url": ""}, headers=AUTH)
+    assert r.status_code == 200 and r.json()["external_url"] is None
+
+
+def test_idea_can_be_rejected_with_a_note():
+    """The content engine (64) rejects idea items whose slots a re-plan removed."""
+    item = item_in("idea")
+    r = move(item["id"], "rejected", note="re-planned")
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "rejected" and "idea -> rejected: re-planned" in r.json()["notes"]

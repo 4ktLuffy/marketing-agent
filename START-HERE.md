@@ -23,7 +23,7 @@ approve its own work; that rule is enforced in the workflow, not just stated in 
 The example brand is a made-up coffee subscription, *Northwind Roasters*. Replace it with
 yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 
-## The 60 deploys: each folder is one GitHub repo
+## The 71 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -40,6 +40,10 @@ yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 | **Campaigns** | 45 campaign service · 47 plan-campaign tool · 48 campaign drafter · 52 daily measurement · 53 campaigns tool | 45 → container · rest → n8n |
 | **Publishing & analytics** | 54 Postiz bridge (dry run by default) · 55 Umami sync · 56 daily analytics sync | 54, 55 → containers · 56 → n8n |
 | **Reviews & proof** | 58 review hub: reviews inbox, reply context (health/legal → a person), testimonials kept verbatim with consent · 60 review replies (daily: reply drafts for new reviews; a person posts them, nothing is posted automatically) | 58 → container · 60 → n8n (schedule) |
+| **Volume** | 61 content engine: one pillar → atoms → a month of planned slots (atoms × hook × format × channel, capped per channel and per atom), a near-duplicate check (5-grams, opening, embeddings) and a stop rule that pauses the pillar when too many drafts are rejected · 64 plan-a-month chat tool · 65 daily drafter (writes the next week's slots, retries duplicates with another hook, gate, images) | 61 → container · 64, 65 → n8n |
+| **Publishing** | 62 CMS bridge (blog → WordPress/Ghost drafts) · 63 Listmonk bridge (newsletter drafts; a person presses send) · 66 weekly newsletter · 39 routes blog → CMS, social → Postiz | 62, 63 → containers · 66 → n8n |
+| **Customer language & video** | 70 customer-language engine: mines customers' own words from reviews, searches and support (every quote verbatim with its source) → themes, headline bank, grounded personas · 71 video assembly: script → 1080×1920 MP4 with on-screen text, captions and optional local voice (Piper) | containers |
+| **SEO & refresh** | 67 Search Console sync · 68 content refresh plans for pages losing clicks · 69 SEO briefs for queries ranking 5–20 | 67 → container · 68, 69 → n8n |
 | **Learning** | 46 learning service · 49 revise rejected drafts · 50 weekly rule proposals | 46 → container · rest → n8n |
 | **Safety net** | 43 error handler | n8n |
 

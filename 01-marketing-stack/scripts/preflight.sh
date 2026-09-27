@@ -93,7 +93,7 @@ if docker compose config -q >/dev/null 2>&1; then pass "docker-compose.yml valid
 
 echo "== Ports (bound to 127.0.0.1)"
 busy=""
-for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146 8147 8154 8155 8158; do
+for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146 8147 8154 8155 8158 8161 8162 8163 8167 8170 8171; do
   if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then busy="$busy $p"; fi
 done
 [ -z "$busy" ] && pass "all ports free" || warn "already in use:$busy (fine if it's this stack already running)"

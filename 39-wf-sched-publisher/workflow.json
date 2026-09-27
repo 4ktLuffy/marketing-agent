@@ -62,7 +62,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "if (!$env.PUBLISH_WEBHOOK_URL) return [];   // not configured: publish nothing, mark nothing\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst all = raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw.filter(i => i && i.id);\n// Review replies (60) are never sent anywhere: a person copies the approved reply to\n// Google or Trustpilot by hand.\nconst items = all.filter(i => String(i.channel).toLowerCase() !== 'review_reply');\n// The stored link is the base URL; the text usually carries it with UTM parameters.\n// Shorten the full URL as it appears in the text so tracking survives.\nreturn items.map(i => {\n  // Campaign drafts carry their tracked URL only in the text (link field empty): use the\n  // first URL then, or campaign clicks could never be counted through the short link.\n  const urls = (String(i.body).match(/https?:\\/\\/\\S+/g) || []).map(u => u.replace(/[).,!?]+$/, ''));\n  const inText = i.link ? urls.find(u => u.startsWith(i.link)) : urls[0];\n  const full = inText || i.link || null;\n  // Fill in missing UTM tags (a reviewer may paste a plain link): utm_content = calendar item\n  // id so clicks map back to this exact post; campaign posts also get their campaign tags,\n  // or the campaign's click count would miss them.\n  const MEDIUM = { email: 'email', blog: 'referral', google_ads: 'cpc' };\n  const add = (u, k, v) => !u || !v || new RegExp(`[?&]${k}=`).test(u) ? u : `${u}${u.includes('?') ? '&' : '?'}${k}=${encodeURIComponent(v)}`;\n  let tracked = full;\n  if (i.campaign) {\n    tracked = add(tracked, 'utm_source', String(i.channel).toLowerCase());\n    tracked = add(tracked, 'utm_medium', MEDIUM[i.channel] || 'social');\n    tracked = add(tracked, 'utm_campaign', i.campaign);\n  }\n  tracked = add(tracked, 'utm_content', String(i.id));\n  return { json: { ...i, full_link: full, tracked_link: tracked } };\n});\n"
+        "jsCode": "const raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst all = raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw.filter(i => i && i.id);\n// Router: blog -> CMS_PUBLISH_URL (62 cms-bridge), every other channel -> PUBLISH_WEBHOOK_URL.\n// A channel whose URL is empty is skipped: nothing sent, nothing marked.\n// Review replies (60) are never sent anywhere: a person copies the approved reply to\n// Google or Trustpilot by hand. Newsletters (66) already sit in Listmonk as a draft campaign.\n// A blog post the CMS kept as a draft stays approved with the note \"sent to CMS as ...\"\n// (written below) and is never sent again. A DRY-RUN send only holds it for 24 h: after the\n// bridge goes live the post is sent for real within a day, with nothing to clean up by hand.\nconst isBlog = i => String(i.channel).toLowerCase() === 'blog';\nconst cmsHeld = i => {\n  const lines = String(i.notes || '').split('\\n').filter(l => /sent to CMS as /.test(l));\n  if (lines.some(l => !/\\(dry run/.test(l))) return true;                 // really sent: done\n  const last = lines.map(l => Date.parse((l.match(/^\\[([^\\]]+)\\]/) || [])[1] || '')).filter(n => !isNaN(n));\n  return last.length > 0 && Date.now() - Math.max(...last) < 24 * 3600 * 1000;\n};\n// Work items, not posts: a refresh plan (68) and an SEO brief (69) are instructions for a person,\n// never content to publish, even once approved.\nconst NOT_POSTS = ['review_reply', 'newsletter', 'blog_refresh', 'seo_brief'];\nconst items = all.filter(i => !NOT_POSTS.includes(String(i.channel).toLowerCase()))\n  .filter(i => isBlog(i) ? !!$env.CMS_PUBLISH_URL && !cmsHeld(i) : !!$env.PUBLISH_WEBHOOK_URL);\n// The stored link is the base URL; the text usually carries it with UTM parameters.\n// Shorten the full URL as it appears in the text so tracking survives.\nreturn items.map(i => {\n  // Campaign drafts carry their tracked URL only in the text (link field empty): use the\n  // first URL then, or campaign clicks could never be counted through the short link.\n  const urls = (String(i.body).match(/https?:\\/\\/\\S+/g) || []).map(u => u.replace(/[).,!?]+$/, ''));\n  const inText = i.link ? urls.find(u => u.startsWith(i.link)) : urls[0];\n  const full = inText || i.link || null;\n  // Fill in missing UTM tags (a reviewer may paste a plain link): utm_content = calendar item\n  // id so clicks map back to this exact post; campaign posts also get their campaign tags,\n  // or the campaign's click count would miss them.\n  const MEDIUM = { email: 'email', blog: 'referral', google_ads: 'cpc' };\n  const add = (u, k, v) => !u || !v || new RegExp(`[?&]${k}=`).test(u) ? u : `${u}${u.includes('?') ? '&' : '?'}${k}=${encodeURIComponent(v)}`;\n  let tracked = full;\n  if (i.campaign) {\n    tracked = add(tracked, 'utm_source', String(i.channel).toLowerCase());\n    tracked = add(tracked, 'utm_medium', MEDIUM[i.channel] || 'social');\n    tracked = add(tracked, 'utm_campaign', i.campaign);\n  }\n  tracked = add(tracked, 'utm_content', String(i.id));\n  return { json: { ...i, full_link: full, tracked_link: tracked } };\n});\n"
       }
     },
     {
@@ -108,7 +108,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "const item = $('One per item').item.json;\nconst short = $json.short_url;\nconst text = item.full_link && short ? String(item.body).split(item.full_link).join(short) : item.body;\nreturn { json: { id: item.id, channel: item.channel, title: item.title, text, link: short || item.full_link || null,\n  short_url: short || null, campaign: item.campaign } };\n",
+        "jsCode": "const item = $('One per item').item.json;\nconst short = $json.short_url;\nconst text = item.full_link && short ? String(item.body).split(item.full_link).join(short) : item.body;\nreturn { json: { id: item.id, channel: item.channel, title: item.title, text, link: short || item.full_link || null,\n  short_url: short || null, campaign: item.campaign, image_url: item.image_url || null,\n  video_url: item.video_url || null, scheduled_at: item.scheduled_at || null } };\n",
         "mode": "runOnceForEachItem"
       }
     },
@@ -123,13 +123,13 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PUBLISH_WEBHOOK_URL }}",
+        "url": "={{ String($json.channel).toLowerCase() === 'blog' ? $env.CMS_PUBLISH_URL : $env.PUBLISH_WEBHOOK_URL }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "={{ $env.PUBLISH_WEBHOOK_KEY || '' }}"
+              "value": "={{ String($json.channel).toLowerCase() === 'blog' ? ($env.CMS_PUBLISH_KEY || $env.INTERNAL_API_KEY) : ($env.PUBLISH_WEBHOOK_KEY || '') }}"
             }
           ]
         },
@@ -157,7 +157,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Only items the publish endpoint accepted are marked published; failures stay approved\n// and are retried on the next run.\nconst out = [];\n$input.all().forEach((r, i) => {\n  const item = $('Payload').all()[i].json;\n  // A dry run (54-postiz-bridge with DRY_RUN=true) answers 200 but published nothing.\n  const dry = r.json.body && typeof r.json.body === 'object' && r.json.body.status === 'dry_run';\n  if (r.json.statusCode >= 200 && r.json.statusCode < 300 && !dry) {\n    const body = r.json.body || {};\n    out.push({ json: { id: item.id, external_url: (typeof body === 'object' && body.url) || null, short_url: item.short_url } });\n  }\n});\nreturn out;\n"
+        "jsCode": "// Only items the publish endpoint accepted are marked published; failures stay approved\n// and are retried on the next run.\nconst LIVE = ['publish', 'future', 'published', 'scheduled'];   // CMS statuses that go live (62)\nconst out = [];\n$input.all().forEach((r, i) => {\n  const item = $('Payload').all()[i].json;\n  const body = r.json.body && typeof r.json.body === 'object' ? r.json.body : {};\n  // A dry run (54-postiz-bridge / 62-cms-bridge with DRY_RUN=true) answers 200 but published nothing.\n  const dry = body.status === 'dry_run';\n  // A CMS draft is not published: a person presses Publish in the CMS (see \"CMS drafts\").\n  const cmsDraft = String(item.channel).toLowerCase() === 'blog' && !LIVE.includes(String(body.cms_status || '').toLowerCase());\n  if (r.json.statusCode >= 200 && r.json.statusCode < 300 && !dry && !cmsDraft) {\n    out.push({ json: { id: item.id, external_url: body.external_url || body.url || null, short_url: item.short_url } });\n  }\n});\nreturn out;\n"
       }
     },
     {
@@ -189,6 +189,46 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ external_url: $json.external_url, short_url: $json.short_url }) }}"
+      }
+    },
+    {
+      "id": "72780520-d92f-5874-ba4b-5790f2ab5f78",
+      "name": "CMS drafts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        480
+      ],
+      "parameters": {
+        "jsCode": "// Blog posts the CMS accepted as a draft (or a cms-bridge dry run): not published. The item\n// stays approved and gets the note \"sent to CMS as <status>: <url>\", which \"One per item\"\n// skips, so it is not sent again. To send it again, remove that line from the notes.\nconst LIVE = ['publish', 'future', 'published', 'scheduled'];\nconst out = [];\n$input.all().forEach((r, i) => {\n  const item = $('Payload').all()[i].json;\n  if (String(item.channel).toLowerCase() !== 'blog') return;\n  const body = r.json.body && typeof r.json.body === 'object' ? r.json.body : {};\n  if (!(r.json.statusCode >= 200 && r.json.statusCode < 300)) return;   // failed: retried next run\n  const st = String(body.cms_status || 'draft').toLowerCase();\n  const url = body.external_url || body.url || null;\n  if (body.status === 'dry_run') {\n    out.push({ json: { id: item.id, note: `sent to CMS as ${st} (dry run: cms-bridge DRY_RUN=true, nothing created)`, external_url: null } });\n  } else if (!LIVE.includes(st)) {\n    out.push({ json: { id: item.id, note: `sent to CMS as ${st}: ${url || '(no URL returned)'}`, external_url: url } });\n  }\n});\nreturn out;\n"
+      }
+    },
+    {
+      "id": "bf4dd269-a3fb-59b5-9bc5-98ad0296bcaf",
+      "name": "Add note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items/{{ $json.id }}/notes",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ note: $json.note, external_url: $json.external_url }) }}"
       }
     }
   ],
@@ -255,6 +295,11 @@
             "node": "Succeeded",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "CMS drafts",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -264,6 +309,17 @@
         [
           {
             "node": "Mark published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CMS drafts": {
+      "main": [
+        [
+          {
+            "node": "Add note",
             "type": "main",
             "index": 0
           }

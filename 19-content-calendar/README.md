@@ -1,6 +1,6 @@
 # content-calendar
 
-Deploy **19 of 60** of the local-LLM marketing agent. It is the central store for every
+Deploy **19 of 71** of the local-LLM marketing agent. It is the central store for every
 piece of content: the chat agent saves drafts here, a human approves them here, and the
 publisher picks up approved, due items from here. It enforces the review workflow, so
 nothing reaches `approved` without passing `in_review`. It uses no LLM.
@@ -35,12 +35,13 @@ INTERNAL_API_KEY=change-me DB_PATH=./calendar.sqlite uvicorn app.main:app --port
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
-| POST | `/items` 🔑 | `{"title","channel","body","status"?,"scheduled_at"?,"campaign"?,"campaign_id"?,"link"?,"notes"?,"hook_style"?}` | item, `201` |
+| POST | `/items` 🔑 | `{"title","channel","body","status"?,"scheduled_at"?,"campaign"?,"campaign_id"?,"link"?,"notes"?,"hook_style"?,"image_url"?,"video_url"?}` | item, `201` |
 | GET | `/items` | `?status=&channel=&campaign_id=&hook_style=&from=&to=` | `[item]` |
 | GET | `/items/{id}` | — | item |
-| PATCH | `/items/{id}` 🔑 | any of `title, channel, body, scheduled_at, campaign, campaign_id, link, notes, hook_style` | item |
+| PATCH | `/items/{id}` 🔑 | any of `title, channel, body, scheduled_at, campaign, campaign_id, link, notes, hook_style, image_url, video_url` | item |
 | POST | `/items/{id}/status` 🔑 | `{"status","note"?}` | item |
 | POST | `/items/{id}/published` 🔑 | `{"external_url"?,"short_url"?}` (body optional) | item |
+| POST | `/items/{id}/notes` 🔑 | `{"note","external_url"?}` | item: appends `[time] note` to `notes` (one line, ≤ 1000 chars) in any status, status unchanged; sets `external_url` when given (http(s)). The publisher (39) uses it for blog posts sent to the CMS as drafts. |
 | GET | `/due` | `?now=ISO` (default: now, UTC) | `[item]` approved, `scheduled_at <= now` |
 
 An item is:
@@ -50,7 +51,8 @@ An item is:
  "scheduled_at":"2026-10-01T09:00:00Z","published_at":null,"campaign":"launch",
  "link":"https://example.com","external_url":null,"notes":null,
  "created_at":"2026-09-23T10:00:00Z","updated_at":"2026-09-23T10:00:00Z",
- "campaign_id":3,"short_url":null,"hook_style":"question"}
+ "campaign_id":3,"short_url":null,"hook_style":"question",
+ "image_url":"http://localhost:8117/cards/3f9c....png"}
 ```
 
 - `campaign_id` (integer ≥ 1 or `null`) links the item to a campaign in
@@ -66,7 +68,16 @@ An item is:
   characters. It is content, so like `body` it is frozen once the item is `approved`.
   `GET /items?hook_style=question` filters on it. `45-campaign-service`
   `GET /insights/hooks` joins clicks to it to learn which hook style earns clicks.
-- A database created by an older version gets the `campaign_id`, `short_url` and `hook_style` columns
+- `image_url` (an `http(s)` URL of at most 2000 characters, or `null`; blank means `null`,
+  anything else is a 422) is the post's image. The social writer (26) and campaign drafter (48)
+  set it to a card from `17-image-cards`; the approval form (38) shows it and the publisher
+  (39) sends it on (`54-postiz-bridge` uploads it to Postiz). Like `body` it is content, so
+  it is frozen once the item is `approved`.
+- `video_url` (same rules as `image_url`) is the post's video: an MP4 from
+  `71-video-assembly`, set by the content formats (57) and the engine drafter (65) for
+  `video_script` drafts. The approval form links to it, the publisher sends it on and
+  `54-postiz-bridge` uploads it as media. Frozen once `approved`, like `image_url`.
+- A database created by an older version gets the `campaign_id`, `short_url`, `hook_style`, `image_url` and `video_url` columns
   added on first use (`ALTER TABLE ... ADD COLUMN`). Existing rows read them as `null`.
 
 ```bash
@@ -83,7 +94,7 @@ curl -s localhost:8119/items/1/status -H 'content-type: application/json' -H 'X-
 
 | From | Allowed next |
 |---|---|
-| `idea` | `draft` |
+| `idea` | `draft`, `rejected` (an idea that won't be written, e.g. re-planned away by the content engine) |
 | `draft` | `in_review`, `rejected` |
 | `in_review` | `approved`, `draft`, `rejected` |
 | `approved` | `published`, `draft` |
@@ -97,7 +108,7 @@ curl -s localhost:8119/items/1/status -H 'content-type: application/json' -H 'X-
   `[2026-09-23T10:00:00Z] in_review -> draft: tone too salesy` to `notes`.
 - `PATCH` cannot change `status`; sending it is a 422 error. For an `approved` or
   `published` item, `PATCH` also refuses to change `title`, `channel`, `body`,
-  `link` or `hook_style` (409 error), because a human approved that exact text. Move the item back to
+  `link`, `hook_style`, `image_url` or `video_url` (409 error), because a human approved that exact text. Move the item back to
   `draft` to edit it. You can still change `scheduled_at`, `campaign`, `campaign_id` and
   `notes`. In `idea`, `draft` and `in_review` all fields can be edited, including `body`.
 - Moving to `published` (via `/status` or `/published`) sets `published_at`.

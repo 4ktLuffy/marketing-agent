@@ -84,7 +84,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst items = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.id).slice(0, 8);\nconst fields = [];\nfor (const it of items) {\n  fields.push({ fieldType: 'html', html:\n    `<h3>#${it.id} · ${esc(it.channel)} · ${esc(it.title)}</h3>` +\n    (it.notes ? `<p style=\"color:#888;font-size:12px\">${esc(String(it.notes).slice(-300))}</p>` : '') });\n  fields.push({ fieldLabel: `Decision #${it.id}`, fieldType: 'dropdown', requiredField: true,\n    fieldOptions: { values: ['Skip', 'Approve', 'Edit & approve', 'Reject – rewrite it', 'Reject – drop it', 'Back to draft'].map(option => ({ option })) } });\n  fields.push({ fieldLabel: `Text #${it.id}`, fieldType: 'textarea', defaultValue: String(it.body || '') });\n  fields.push({ fieldLabel: `Reason #${it.id}`, fieldType: 'text',\n    placeholder: 'why? (required to rewrite; teaches the agent)' });\n  fields.push({ fieldLabel: `Publish at #${it.id}`, fieldType: 'text',\n    placeholder: it.scheduled_at || 'YYYY-MM-DD HH:MM (UTC) — blank = next full hour' });\n}\nreturn [{ json: { count: items.length, fields, items } }];\n"
+        "jsCode": "const esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst raw = [].concat($input.first().json.body ?? []);  // full response: the list is in body\nconst items = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.id).slice(0, 8);\nconst fields = [];\nfor (const it of items) {\n  fields.push({ fieldType: 'html', html:\n    `<h3>#${it.id} · ${esc(it.channel)} · ${esc(it.title)}</h3>` +\n    // The image (a card from 17) loads from CARDS_PUBLIC_URL, so it must be reachable from your browser.\n    // n8n's form sanitizer drops style attributes on <img>; width (height follows) is kept.\n    (/^https?:\\/\\//.test(it.image_url || '') ? `<p><img src=\"${esc(it.image_url)}\" alt=\"image for #${it.id}\" width=\"320\"></p>` : '') +\n    // A video preview (71) loads from its PUBLIC_BASE_URL; the length comes from the note 57/65 wrote.\n    (/^https?:\\/\\//.test(it.video_url || '') ? (() => {\n      const m = String(it.notes || '').split(`video preview: ${it.video_url} (`)[1];\n      const secs = m && /^[\\d.]+ s\\)/.test(m) ? ` (${Math.round(parseFloat(m))} s)` : '';\n      const poster = /^https?:\\/\\//.test(it.image_url || '') ? '' : it.video_url.replace(/\\/videos\\/([0-9a-f]{32})\\.mp4$/, '/videos/$1.jpg');\n      return `<p><a href=\"${esc(it.video_url)}\" target=\"_blank\">▶ Watch the video${secs}</a></p>` +\n        (poster && poster !== it.video_url ? `<p><a href=\"${esc(it.video_url)}\" target=\"_blank\"><img src=\"${esc(poster)}\" alt=\"video poster for #${it.id}\" width=\"320\"></a></p>` : '');\n    })() : '') +\n    (it.notes ? `<p style=\"color:#888;font-size:12px\">${esc(String(it.notes).slice(-300))}</p>` : '') });\n  fields.push({ fieldLabel: `Decision #${it.id}`, fieldType: 'dropdown', requiredField: true,\n    fieldOptions: { values: ['Skip', 'Approve', 'Edit & approve', 'Reject – rewrite it', 'Reject – drop it', 'Back to draft'].map(option => ({ option })) } });\n  fields.push({ fieldLabel: `Text #${it.id}`, fieldType: 'textarea', defaultValue: String(it.body || '') });\n  fields.push({ fieldLabel: `Reason #${it.id}`, fieldType: 'text',\n    placeholder: 'why? (required to rewrite; teaches the agent)' });\n  fields.push({ fieldLabel: `Publish at #${it.id}`, fieldType: 'text',\n    placeholder: it.scheduled_at || 'YYYY-MM-DD HH:MM (UTC) — blank = next full hour' });\n}\nreturn [{ json: { count: items.length, fields, items } }];\n"
       }
     },
     {
@@ -150,7 +150,93 @@
         200
       ],
       "parameters": {
-        "jsCode": "// A field sent twice arrives as a list; the last value wins.\nconst a = Object.fromEntries(Object.entries($input.first().json).map(([k, v]) => [k, Array.isArray(v) ? v[v.length - 1] : v]));\nconst reviewer = $('Open approval form').first().json.Reviewer || 'reviewer';\nconst items = Object.fromEntries($('Build review page').first().json.items.map(i => [String(i.id), i]));\nconst cal = $env.CALENDAR_URL;\nconst nextHour = () => { const d = new Date(); d.setUTCMinutes(0, 0, 0); d.setUTCHours(d.getUTCHours() + 1); return d.toISOString(); };\nconst toIso = s => { s = String(s || '').trim(); if (!s) return null;\n  const d = new Date(s.replace(' ', 'T') + (/[zZ]|[+-]\\d\\d:?\\d\\d$/.test(s) ? '' : 'Z')); return isNaN(d) ? null : d.toISOString(); };\nconst norm = s => String(s || '').replace(/\\r\\n/g, '\\n').trim();\nconst ops = [], events = [], revisions = [], summary = [];\nfor (const [id, it] of Object.entries(items)) {\n  const choice = a[`Decision #${id}`];\n  if (!choice || choice === 'Skip') continue;\n  const edited = norm(a[`Text #${id}`]);\n  const reason = norm(a[`Reason #${id}`]);\n  const when = toIso(a[`Publish at #${id}`]) || it.scheduled_at || nextHour();\n  const note = s => `${s} by ${reviewer}${reason ? ': ' + reason : ''}`;\n  const ev = (decision, final) => events.push({ item_id: Number(id), channel: it.channel, campaign_id: it.campaign_id ?? null,\n    decision, draft: it.body, final: final ?? null, reason: reason || null, reviewer });\n  if (choice === 'Approve' || choice === 'Edit & approve') {\n    const changed = choice === 'Edit & approve' && edited && edited !== norm(it.body);\n    const patch = { scheduled_at: when };\n    if (changed) patch.body = edited;\n    ops.push({ stage: 1, method: 'PATCH', url: `${cal}/items/${id}`, body: patch });\n    ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'approved', note: note(changed ? 'edited and approved' : 'approved') } });\n    ev(changed ? 'edited' : 'approved', changed ? edited : it.body);\n    summary.push(`#${id}: ${changed ? 'edited and approved' : 'approved'} for ${when.slice(0, 16).replace('T', ' ')} UTC`);\n  } else if (choice.startsWith('Reject')) {\n    const rewrite = choice.includes('rewrite');\n    ops.push({ stage: 1, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'rejected', note: note('rejected') } });\n    ev('rejected', null);\n    if (rewrite && reason) {\n      ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'draft', note: 'sent back for an automatic rewrite' } });\n      revisions.push({ item_id: String(id), reason });\n      summary.push(`#${id}: rejected, being rewritten (\"${reason}\")`);\n    } else {\n      summary.push(`#${id}: rejected${rewrite ? ' (no reason given, so it was not rewritten)' : ''}`);\n    }\n  } else if (choice === 'Back to draft') {\n    ops.push({ stage: 1, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'draft', note: note('sent back to draft') } });\n    summary.push(`#${id}: back to draft`);\n  }\n}\nreturn [{ json: { ops, events, revisions, summary } }];\n"
+        "jsCode": "// -> { script } or { error }. oldBody (the item before the edit) supplies each beat's shot.\nfunction parseVideoScript(text, oldBody) {\n  const LABEL = /^(?:[*_]{1,2})?(hook|say|on[ -]?screen|close|cta|caption)(?:[*_]{1,2})?\\s*:\\s*(?:[*_]{1,2})?\\s*(.*)$/i;\n  const TAIL = /^(estimated length\\b|shot list\\s*:?\\s*$)/i;\n  const TAGS = /^(#[^\\s#]+\\s*)+$/;\n  const clean = s => String(s || '').replace(/\\s+/g, ' ').trim();\n  const add = (o, k, v) => { o[k] = clean((o[k] || '') + ' ' + v); };\n  const all = String(text || '').replace(/\\r\\n?/g, '\\n').split('\\n').map(l => l.trim());\n  const cut = all.findIndex(l => TAIL.test(l));\n  const lines = cut < 0 ? all : all.slice(0, cut);           // the tail is not part of the video\n  const top = { hook: null, cta: null, caption: null };\n  const beats = [], hashtags = [];\n  let cur = null, field = null;                               // field: [object, key]\n  const seg = () => { const s = { spoken: '', on_screen: '' }; if (top.hook) beats.push(s); else top.hook = s; return s; };\n  const labelAhead = (i, re) => { for (let j = i + 1; j < lines.length && lines[j]; j++) { const m = lines[j].match(LABEL); if (m) return re.test(m[1]); } return false; };\n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    if (!line) { field = null; continue; }                    // a blank line ends a field\n    if (TAGS.test(line)) { hashtags.push(...line.split(/\\s+/).map(h => h.replace(/^#+/, '')).filter(Boolean)); field = null; continue; }\n    const m = line.match(LABEL);\n    if (m) {\n      const k = m[1].toLowerCase().replace(/[ -]/g, '');\n      if (k === 'hook') {\n        if (top.hook) return { error: 'the script has two \"Hook:\" lines' };\n        cur = seg(); field = [cur, 'spoken'];\n      } else if (k === 'say') {\n        if (top.cta !== null) return { error: 'a \"Say:\" line comes after \"Close:\"' };\n        if (!top.hook) return { error: 'the script does not start with the hook (\"Hook:\" line)' };\n        cur = seg(); field = [cur, 'spoken'];\n      } else if (k === 'onscreen') {\n        if (top.cta !== null) return { error: 'an \"On screen:\" line comes after \"Close:\"' };\n        if (!cur || cur.on_screen) cur = seg();               // a beat whose \"Say:\" label was removed\n        field = [cur, 'on_screen'];\n      } else if (k === 'close' || k === 'cta') {\n        if (top.cta !== null) return { error: 'the script has two \"Close:\" lines' };\n        top.cta = ''; cur = null; field = [top, 'cta'];\n      } else {\n        top.caption = top.caption || ''; cur = null; field = [top, 'caption'];\n      }\n      add(field[0], field[1], m[2]);\n      continue;\n    }\n    // A line without a label: a line of the field above, or (after a blank line) the next part.\n    if (field) {\n      // Right under a spoken line, with no \"On screen:\" coming in this block: the on-screen text.\n      if (field[1] === 'spoken' && cur && !cur.on_screen && field[0][field[1]] && !labelAhead(i, /^on[ -]?screen$/i)) field = [cur, 'on_screen'];\n      add(field[0], field[1], line);\n    } else if (top.caption !== null || top.cta !== null) {\n      top.caption = top.caption || ''; cur = null; field = [top, 'caption']; add(top, 'caption', line);\n    } else {\n      cur = seg(); field = [cur, 'spoken']; add(cur, 'spoken', line);\n    }\n  }\n  // \"Close:\" label removed: the last block is a lone line with no on-screen text.\n  if (top.cta === null && beats.length > 1 && !beats[beats.length - 1].on_screen) top.cta = beats.pop().spoken;\n  const hook = top.hook;\n  if (!hook || !hook.spoken) return { error: 'no hook (the \"Hook:\" line)' };\n  if (!hook.on_screen) return { error: 'the hook has no \"On screen:\" line' };\n  if (!beats.length) return { error: 'no beats (\"Say:\" + \"On screen:\" lines)' };\n  if (beats.length > 8) return { error: `${beats.length} beats: the video has at most 8` };\n  for (const [i, b] of beats.entries()) {\n    if (!b.spoken) return { error: `beat ${i + 1} has no \"Say:\" line` };\n    if (!b.on_screen) return { error: `beat ${i + 1} has no \"On screen:\" line` };\n  }\n  if (!top.cta) return { error: 'no \"Close:\" line' };\n  // Shots come from the old item's \"Shot list\": the same beat (same line) keeps its shot; with\n  // the same number of beats, beat k keeps shot k; a new beat has none.\n  let shots = [], old = [];\n  if (oldBody) {\n    const ol = String(oldBody).replace(/\\r\\n?/g, '\\n').split('\\n').map(l => l.trim());\n    const s = ol.findIndex(l => /^shot list\\s*:?\\s*$/i.test(l));\n    if (s >= 0) for (const l of ol.slice(s + 1)) { const x = l.match(/^-\\s*beat\\s*(\\d+)\\s*:\\s*(.+)$/i); if (x) shots[Number(x[1]) - 1] = clean(x[2]); }\n    const p = parseVideoScript(oldBody, null);\n    old = p.script ? p.script.beats : [];\n  }\n  const same = (a, b) => a.toLowerCase() === b.toLowerCase();\n  const out = beats.map((b, i) => {\n    const j = old.findIndex(o => same(o.spoken, b.spoken) || same(o.on_screen, b.on_screen));\n    const shot = j >= 0 ? shots[j] : beats.length === old.length ? shots[i] : null;\n    return { spoken: b.spoken, on_screen: b.on_screen, shot: shot || null };\n  });\n  return { script: { hook: { spoken: hook.spoken, on_screen: hook.on_screen }, beats: out, cta: top.cta,\n    caption: top.caption ? top.caption : null, hashtags } };\n}\n\n// A field sent twice arrives as a list; the last value wins.\nconst a = Object.fromEntries(Object.entries($input.first().json).map(([k, v]) => [k, Array.isArray(v) ? v[v.length - 1] : v]));\nconst reviewer = $('Open approval form').first().json.Reviewer || 'reviewer';\nconst items = Object.fromEntries($('Build review page').first().json.items.map(i => [String(i.id), i]));\nconst cal = $env.CALENDAR_URL;\nconst nextHour = () => { const d = new Date(); d.setUTCMinutes(0, 0, 0); d.setUTCHours(d.getUTCHours() + 1); return d.toISOString(); };\nconst toIso = s => { s = String(s || '').trim(); if (!s) return null;\n  const d = new Date(s.replace(' ', 'T') + (/[zZ]|[+-]\\d\\d:?\\d\\d$/.test(s) ? '' : 'Z')); return isNaN(d) ? null : d.toISOString(); };\nconst norm = s => String(s || '').replace(/\\r\\n/g, '\\n').trim();\nconst ops = [], events = [], revisions = [], summary = [], videos = [];\nfor (const [id, it] of Object.entries(items)) {\n  const choice = a[`Decision #${id}`];\n  if (!choice || choice === 'Skip') continue;\n  const edited = norm(a[`Text #${id}`]);\n  const reason = norm(a[`Reason #${id}`]);\n  const when = toIso(a[`Publish at #${id}`]) || it.scheduled_at || nextHour();\n  const note = s => `${s} by ${reviewer}${reason ? ': ' + reason : ''}`;\n  const event = (decision, final) => ({ item_id: Number(id), channel: it.channel, campaign_id: it.campaign_id ?? null,\n    decision, draft: it.body, final: final ?? null, reason: reason || null, reviewer });\n  const ev = (decision, final) => events.push(event(decision, final));\n  if (choice === 'Approve' || choice === 'Edit & approve') {\n    const changed = choice === 'Edit & approve' && edited && edited !== norm(it.body);\n    const patch = { scheduled_at: when };\n    if (changed) patch.body = edited;\n    // An edited video script: its video (71, rendered from the old script) no longer matches.\n    // It is rendered again from the edited text before approving ('Final decisions').\n    const hasVideo = /^https?:\\/\\//.test(it.video_url || '');\n    if (changed && (hasVideo || (String(it.channel || '').toLowerCase() === 'video' && $env.VIDEO_URL))) {\n      videos.push({ id, ...parseVideoScript(edited, it.body), patch, when, note: note('edited and approved'),\n        event: event('edited', edited), old_video: it.video_url || null, old_image: it.image_url || null });\n      continue;\n    }\n    ops.push({ stage: 1, method: 'PATCH', url: `${cal}/items/${id}`, body: patch });\n    ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'approved', note: note(changed ? 'edited and approved' : 'approved') } });\n    ev(changed ? 'edited' : 'approved', changed ? edited : it.body);\n    summary.push(`#${id}: ${changed ? 'edited and approved' : 'approved'} for ${when.slice(0, 16).replace('T', ' ')} UTC`);\n  } else if (choice.startsWith('Reject')) {\n    const rewrite = choice.includes('rewrite');\n    ops.push({ stage: 1, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'rejected', note: note('rejected') } });\n    ev('rejected', null);\n    if (rewrite && reason) {\n      ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'draft', note: 'sent back for an automatic rewrite' } });\n      revisions.push({ item_id: String(id), reason });\n      summary.push(`#${id}: rejected, being rewritten (\"${reason}\")`);\n    } else {\n      summary.push(`#${id}: rejected${rewrite ? ' (no reason given, so it was not rewritten)' : ''}`);\n    }\n  } else if (choice === 'Back to draft') {\n    ops.push({ stage: 1, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'draft', note: note('sent back to draft') } });\n    summary.push(`#${id}: back to draft`);\n  }\n}\nreturn [{ json: { ops, events, revisions, summary, videos } }];\n"
+      }
+    },
+    {
+      "id": "21b8cfd2-3c6b-58b3-a26a-e6c8c4623b56",
+      "name": "Brand profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BRAND_URL }}/profile",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3aee43ec-8c32-56e3-a46c-44f772116c49",
+      "name": "Video request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// A video_script draft gets a preview MP4 from 71 (POST $VIDEO_URL/render). Other formats,\n// or no VIDEO_URL, make a harmless GET /health instead so the item still passes through.\nfunction videoRequest(script) {\n  if (!$env.VIDEO_URL || !script || typeof script !== 'object') {\n    return { skip: true, method: 'GET', url: `${$env.VIDEO_URL || $env.CALENDAR_URL}/health`, body: '{}' };\n  }\n  const b = ($('Brand profile').first().json || {}).body;\n  const brand = b && typeof b === 'object' ? b : {};\n  const name = String(brand.name || '').trim().slice(0, 40);\n  const accent = /^#[0-9a-fA-F]{6}$/.test(String(brand.accent_color || '')) ? brand.accent_color : null;\n  const logo = name.split(/\\s+/).map(w => (w.match(/[\\p{L}\\p{N}]/u) || [''])[0]).join('').slice(0, 3).toUpperCase();\n  const voice = String($env.VIDEO_VOICE || '').trim();   // empty: the service's TTS_BACKEND\n  return { skip: false, method: 'POST', url: `${$env.VIDEO_URL}/render`, body: JSON.stringify({\n    script, brand: { name: name || null, accent, logo_text: logo || null },\n    ...(voice ? { voice: { backend: voice } } : {}) }) };\n}\n\n// One render per edited video script that parsed; the others only pass through (GET /health).\nconst v = $('Decisions').first().json.videos;\nconst pass = { skip: true, method: 'GET', url: `${$env.VIDEO_URL || $env.CALENDAR_URL}/health`, body: '{}' };\nreturn v.length ? v.map(x => ({ json: { id: x.id, ...(x.script ? videoRequest(x.script) : pass) } })) : [{ json: { id: null, ...pass } }];\n"
+      }
+    },
+    {
+      "id": "0d17424b-4dbb-5549-9021-83e739401635",
+      "name": "Render video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        200
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "8bb019da-f5e5-536c-bbad-d0eb6158ff25",
+      "name": "Final decisions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        200
+      ],
+      "parameters": {
+        "jsCode": "function videoResult(req, res) {\n  if (!req || req.skip) return { video_url: null, poster_url: null, video_note: null };\n  const b = res && res.body;\n  const http = u => typeof u === 'string' && /^https?:\\/\\/\\S+$/.test(u) && u.length <= 2000;\n  if (res && res.statusCode === 201 && b && http(b.url)) {\n    return { video_url: b.url, poster_url: http(b.poster_url) ? b.poster_url : null,\n      video_note: `video preview: ${b.url} (${b.duration_s} s)` };\n  }\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const err = res && res.error;\n  const why = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d)\n    : err ? (typeof err === 'string' ? err : err.message || JSON.stringify(err)) : 'no answer';\n  const code = res && res.statusCode ? `HTTP ${res.statusCode}: ` : '';\n  return { video_url: null, poster_url: null,\n    video_note: `video not rendered: ${(code + String(why)).replace(/\\s+/g, ' ').trim().slice(0, 300)}` };\n}\n\n// An edited video item is approved only with a video of the edited script: the new video_url\n// is PATCHed in stage 1 while the item is still in_review (approved items are frozen), then\n// stage 2 approves it. If the script can't be read or 71 can't render it, the stale video is\n// cleared and the item goes back to draft: it is never approved with the old video.\nconst d = $('Decisions').first().json;\nconst reqs = $('Video request').all().map(i => i.json);\nconst res = $('Render video').all().map(i => i.json);\nconst ops = [...d.ops], events = [...d.events], summary = [...d.summary];\nfor (const v of d.videos) {\n  const k = reqs.findIndex(r => r.id === v.id);\n  const req = reqs[k] || { skip: true };\n  const r = v.error ? null : videoResult(req, res[k]);\n  const url = `${$env.CALENDAR_URL}/items/${v.id}`;\n  // The poster of the old video (57/65 use it as the image) is replaced or cleared with it.\n  const oldPoster = v.old_video ? v.old_video.replace(/\\.mp4$/, '.jpg') : null;\n  const posterIsImage = !v.old_image || v.old_image === oldPoster;\n  if (r && r.video_url) {\n    const patch = { ...v.patch, video_url: r.video_url, ...(posterIsImage && r.poster_url ? { image_url: r.poster_url } : {}) };\n    ops.push({ stage: 1, method: 'PATCH', url, body: patch });\n    ops.push({ stage: 2, method: 'POST', url: `${url}/status`, body: { status: 'approved',\n      note: `${v.note} | video re-rendered after edit, ${r.video_note}`.slice(0, 1500) } });\n    events.push(v.event);\n    summary.push(`#${v.id}: edited and approved for ${v.when.slice(0, 16).replace('T', ' ')} UTC; video re-rendered after edit (${r.video_note.replace(/^.*\\(/, '').replace(/\\)$/, '')})`);\n  } else {\n    const why = v.error ? `the script could not be read: ${v.error}`\n      : r && r.video_note ? r.video_note.replace(/^video not rendered: /, '')\n      : 'VIDEO_URL is not set';\n    const patch = { body: v.patch.body, video_url: null, ...(v.old_image && v.old_image === oldPoster ? { image_url: null } : {}) };\n    ops.push({ stage: 1, method: 'PATCH', url, body: patch });\n    ops.push({ stage: 2, method: 'POST', url: `${url}/status`, body: { status: 'draft',\n      note: `script edited: video could not be re-rendered (${why}), render it again before approving`.slice(0, 1500) } });\n    summary.push(`#${v.id}: NOT approved, back to draft: your edit is saved, but the video could not be re-rendered (${why}); the old video was removed. Render it again before approving.`);\n  }\n}\nreturn [{ json: { ops, events, summary } }];\n"
       }
     },
     {
@@ -159,11 +245,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
+        2400,
         200
       ],
       "parameters": {
-        "jsCode": "const ops = $('Decisions').first().json.ops;\nreturn ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }];\n"
+        "jsCode": "const ops = $('Final decisions').first().json.ops;\nreturn ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }];\n"
       }
     },
     {
@@ -172,7 +258,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
+        1920,
         300
       ],
       "parameters": {
@@ -185,7 +271,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1200,
+        2160,
         300
       ],
       "parameters": {
@@ -223,7 +309,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
+        2400,
         300
       ],
       "parameters": {
@@ -236,7 +322,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1680,
+        2640,
         300
       ],
       "parameters": {
@@ -274,11 +360,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2880,
+        3840,
         200
       ],
       "parameters": {
-        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst events = $('Decisions').first().json.events.map(e => ({ method: 'POST', url: `${$env.LEARNING_URL}/events`, body: e }));\nreturn opsToItems(events, $env.LEARNING_URL);\n"
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst events = $('Final decisions').first().json.events.map(e => ({ method: 'POST', url: `${$env.LEARNING_URL}/events`, body: e }));\nreturn opsToItems(events, $env.LEARNING_URL);\n"
       }
     },
     {
@@ -287,7 +373,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3120,
+        4080,
         200
       ],
       "parameters": {
@@ -316,12 +402,61 @@
       }
     },
     {
+      "id": "fc53d281-9eeb-5166-987a-d2ff7d0daece",
+      "name": "Engine outcomes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        400
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst items = $('Build review page').first().json.items;\nconst ops = [];\nfor (const e of $('Final decisions').first().json.events) {\n  const it = items.find(i => Number(i.id) === e.item_id) || {};\n  const m = String(it.notes || '').match(/engine pillar #(\\d+)/);\n  if (m) ops.push({ method: 'POST', url: `${$env.ENGINE_URL}/pillars/${m[1]}/outcomes`, body: { item_id: e.item_id, decision: e.decision } });\n}\nreturn opsToItems($env.ENGINE_URL ? ops : [], $env.LEARNING_URL);\n"
+      }
+    },
+    {
+      "id": "7118a6fc-f388-56a0-8b5e-25901bd8b7fc",
+      "name": "Record engine outcomes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        400
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
       "id": "4862ee02-7f1e-5d89-835a-6192e43e46ef",
       "name": "Rewrites",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3360,
+        4320,
         200
       ],
       "parameters": {
@@ -334,7 +469,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3600,
+        4560,
         200
       ],
       "parameters": {
@@ -387,11 +522,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3840,
+        4800,
         200
       ],
       "parameters": {
-        "jsCode": "const d = $('Decisions').first().json;\nconst failed = ['Run stage 1', 'Run stage 2'].flatMap(n => $(n).all())\n  .filter(r => !r.json.noop && r.json.statusCode >= 300).map(r => JSON.stringify((r.json.body || {}).detail || r.json.body));\nconst lines = d.summary.length ? d.summary : ['No decisions made.'];\nif (failed.length) lines.push('', 'Some updates failed:', ...failed);\nreturn [{ json: { message: lines.join('\\n') } }];\n"
+        "jsCode": "const d = $('Final decisions').first().json;\nconst failed = ['Run stage 1', 'Run stage 2'].flatMap(n => $(n).all())\n  .filter(r => !r.json.noop && r.json.statusCode >= 300).map(r => JSON.stringify((r.json.body || {}).detail || r.json.body));\nconst lines = d.summary.length ? d.summary : ['No decisions made.'];\nif (failed.length) lines.push('', 'Some updates failed:', ...failed);\nreturn [{ json: { message: lines.join('\\n') } }];\n"
       }
     },
     {
@@ -400,7 +535,7 @@
       "type": "n8n-nodes-base.form",
       "typeVersion": 2.3,
       "position": [
-        4080,
+        5040,
         200
       ],
       "parameters": {
@@ -417,7 +552,7 @@
       "type": "n8n-nodes-base.form",
       "typeVersion": 2.3,
       "position": [
-        1920,
+        2880,
         420
       ],
       "parameters": {
@@ -496,6 +631,50 @@
       "main": [
         [
           {
+            "node": "Brand profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand profile": {
+      "main": [
+        [
+          {
+            "node": "Video request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video request": {
+      "main": [
+        [
+          {
+            "node": "Render video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render video": {
+      "main": [
+        [
+          {
+            "node": "Final decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final decisions": {
+      "main": [
+        [
+          {
             "node": "Calendar ops",
             "type": "main",
             "index": 0
@@ -570,6 +749,28 @@
       ]
     },
     "Log decisions": {
+      "main": [
+        [
+          {
+            "node": "Engine outcomes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Engine outcomes": {
+      "main": [
+        [
+          {
+            "node": "Record engine outcomes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record engine outcomes": {
       "main": [
         [
           {

@@ -1,0 +1,144 @@
+# X threads and LinkedIn/Instagram carousels, as the engine drafter (65) asks for them:
+# `x_thread` and `carousel_text`. Written BEFORE the prompts existed; do not tune the prompts
+# on these cases. Run alone with:  python -m evalsuite.run --cases threads_carousels
+#
+# - schema valid: the gateway (03) validates the output against the prompt's schema and
+#   answers non-200 otherwise, which fails the case. The counts and lengths below are checked
+#   here as well, so the result does not depend on the schema's limits.
+# - thread: 3-7 posts, each <= 270 characters (X's 280 minus room for the "1/7 " the
+#   workflow adds), not numbered by the model (the workflow numbers them), the first one a
+#   short hook.
+# - carousel: 5-8 slides, title <= 40 and body <= 160 characters, the last slide a call to
+#   action (`cta_like`: a weak proxy, an action verb or a link), caption <= 300.
+# - no invented numbers, brand check ok.
+# Vars mirror what 65 sends: the atom as topic, "Idea/Source/Pillar" as context, the hook.
+
+- id: thread_how_to_french_press
+  prompt: x_thread
+  vars:
+    topic: How to brew Desk Blend in a French press without a bitter cup
+    context: |
+      Idea: A coarse grind and a short steep keep French press coffee from tasting bitter.
+      Pillar: Better coffee at your desk. Small brewing habits for people who work from home.
+    facts: &facts |
+      [f1] Desk Blend is a medium roast with chocolate and hazelnut tasting notes.
+      [f2] Desk Blend is made for drip and French press brewing.
+      [f3] Single-Origin Rotation is a light roast, with a different origin in every shipment.
+      [f4] Team Box contains 1.5 kg of coffee across two blends and ships to each teammate.
+      [f5] Our Swiss Water decaf is roasted in small batches every Tuesday.
+      [f6] Unopened bags can be returned within 30 days for a full refund.
+      [f7] Subscribers can skip or pause a delivery from their account page at any time, with no fee.
+      [f8] Specialty coffee, roasted to order and delivered on your workweek schedule.
+      [f9] Desk Blend costs $18 / 340 g.
+      [f11] Single-Origin Rotation costs $22 / 250 g.
+      [f13] Team Box costs $79 / month.
+      [f15] Roasted within 48 hours of shipping.
+      [f16] Ships every 1, 2 or 4 weeks, skip or pause any time.
+      [f17] Free shipping on subscriptions in the US.
+    prefer_hooks: how_to
+  checks: &thread_checks
+    - {type: count, path: "posts[*]", min: 3, max: 7}
+    - {type: max_chars, path: "posts[*]", value: 270}
+    - {type: min_chars, path: "posts[*]", value: 20}
+    - {type: no_numbering, path: "posts[*]"}
+    # a hook is short: it has to stop the scroll on its own
+    - {type: max_chars, path: "posts[0]", value: 200}
+    - {type: numbers_from_input, path: "posts[*]"}
+    - {type: brand_ok, path: "posts[*]"}
+
+- id: thread_team_box_numbers
+  # facts with numbers: the thread may use 1.5 kg / $79 (they are in the facts), nothing else
+  prompt: x_thread
+  vars:
+    topic: What is inside the Team Box, and what it costs
+    context: |
+      Idea: The Team Box sends 1.5 kg of coffee across two blends to each teammate, for $79 a month.
+      Source: Team Box contains 1.5 kg of coffee across two blends and ships to each teammate.
+      Pillar: Coffee for remote teams. A shared ritual for people who never meet in a kitchen.
+    facts: *facts
+    prefer_hooks: fact_led
+  checks:
+    - {type: count, path: "posts[*]", min: 3, max: 7}
+    - {type: max_chars, path: "posts[*]", value: 270}
+    - {type: min_chars, path: "posts[*]", value: 20}
+    - {type: no_numbering, path: "posts[*]"}
+    - {type: max_chars, path: "posts[0]", value: 200}
+    - {type: numbers_from_input, path: "posts[*]"}
+    - {type: contains, path: "", value: "Team Box"}
+    - {type: brand_ok, path: "posts[*]"}
+
+- id: thread_story_roasted_to_order
+  prompt: x_thread
+  vars:
+    topic: Why we roast to order instead of keeping a warehouse full of bags
+    context: |
+      Idea: Coffee roasted to order reaches you fresh; a warehouse of pre-roasted bags goes stale.
+      Pillar: What fresh coffee means. How roasting, shipping and brewing change the cup.
+    facts: *facts
+    prefer_hooks: story
+  checks: *thread_checks
+
+- id: carousel_linkedin_team_ritual
+  prompt: carousel_text
+  vars:
+    topic: Signs your remote team needs a shared coffee ritual
+    channel: linkedin
+    audience: people-ops leads at remote companies
+    context: |
+      Idea: Remote teams lose the small talk that happens by the office kitchen; a fixed weekly coffee call brings some of it back.
+      Pillar: Coffee for remote teams. A shared ritual for people who never meet in a kitchen.
+    facts: *facts
+    prefer_hooks: question
+  checks: &carousel_checks
+    - {type: count, path: "slides[*]", min: 5, max: 8}
+    - {type: max_chars, path: "slides[*].title", value: 40}
+    - {type: max_chars, path: "slides[*].body", value: 160}
+    - {type: min_chars, path: "slides[*].title", value: 2}
+    - {type: no_numbering, path: "slides[*].title"}
+    - {type: cta_like, path: "slides[-1]"}
+    - {type: max_chars, path: caption, value: 300}
+    - {type: numbers_from_input, path: "slides[*]"}
+    - {type: numbers_from_input, path: caption}
+    - {type: brand_ok, path: caption}
+    - {type: brand_ok, path: "slides[*].body"}
+
+- id: carousel_instagram_rotation_promo
+  # promo: a product with an offer and a CTA
+  prompt: carousel_text
+  vars:
+    topic: Single-Origin Rotation, a new light-roast origin in every shipment
+    channel: instagram
+    audience: home brewers who like trying new coffees
+    cta: Start your Rotation subscription
+    context: |
+      Idea: Single-Origin Rotation sends a different light-roast origin in every shipment, with free US shipping on subscriptions.
+      Source: Single-Origin Rotation is a light roast, with a different origin in every shipment.
+      Pillar: Explore coffee origins. Why the same bean every month gets boring.
+    facts: *facts
+    prefer_hooks: benefit
+  checks:
+    - {type: count, path: "slides[*]", min: 5, max: 8}
+    - {type: max_chars, path: "slides[*].title", value: 40}
+    - {type: max_chars, path: "slides[*].body", value: 160}
+    - {type: min_chars, path: "slides[*].title", value: 2}
+    - {type: no_numbering, path: "slides[*].title"}
+    - {type: cta_like, path: "slides[-1]"}
+    - {type: max_chars, path: caption, value: 300}
+    - {type: numbers_from_input, path: "slides[*]"}
+    - {type: numbers_from_input, path: caption}
+    - {type: contains, path: "", value: "Rotation"}
+    - {type: not_contains, path: "", values: ["best in the world", "world's best", "guaranteed", "award"]}
+    - {type: brand_ok, path: caption}
+    - {type: brand_ok, path: "slides[*].body"}
+
+- id: carousel_instagram_pause_skip
+  prompt: carousel_text
+  vars:
+    topic: How to skip or pause a delivery when you travel
+    channel: instagram
+    context: |
+      Idea: Subscribers can skip or pause a delivery from their account page at any time, with no fee.
+      Pillar: Subscriptions that fit your life. Flexible deliveries for busy weeks.
+    facts: *facts
+    prefer_hooks: how_to
+  checks: *carousel_checks

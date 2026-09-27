@@ -1,8 +1,8 @@
 # 24 · Marketing chat agent
 
-Deploy **24 of 60** of the local-LLM marketing agent. This deploy is an n8n workflow.
+Deploy **24 of 71** of the local-LLM marketing agent. This deploy is an n8n workflow.
 
-The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) with 8 turns of memory and 14 tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.
+The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) with 8 turns of memory and 15 tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.
 
 ## Where to deploy
 
@@ -43,6 +43,7 @@ n8n hosted chat at `<N8N_PUBLIC_URL>/webhook/mkt-marketing-chat/chat` (n8n login
 | `content_calendar` | 33-wf-tool-calendar | Read or change the content calendar. action = list | get | create | set_status | schedule. |
 | `ask_knowledge_base` | 34-wf-tool-kb-answer | Answer questions from the knowledge base: our brand, products and policies, the daily morning trend digest, competitor-change notes and uploaded documents. |
 | `plan_campaign` | 47-wf-tool-plan-campaign | Plan a new marketing campaign: creates the campaign with targets and a dated plan of posts, then drafts them for review. |
+| `plan_content_month` | 64-wf-tool-content-engine | Plan a MONTH of content: many dated posts over 4 weeks across several channels from ONE topic or source (article, guide, transcript), fact-checked and drafted daily for review. Not for writing a single piece (use the writing tools). No goal or KPIs: for a campaign use plan_campaign. |
 | `campaigns` | 53-wf-tool-campaigns | List campaigns, show a campaign's scorecard (results vs targets), activate/pause/complete/cancel one, or set a target. |
 | `check_copy` | 35-wf-tool-quality-gate | Check copy against brand rules, platform limits and our approved facts; returns problems and a fixed version. |
 

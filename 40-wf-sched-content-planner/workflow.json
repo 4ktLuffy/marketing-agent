@@ -130,16 +130,60 @@
       }
     },
     {
-      "id": "9e252bc3-d3ab-554e-a7a6-c2831f685df6",
-      "name": "To calendar items",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "3c42695a-809f-54bc-b54b-0cff8083fdb7",
+      "name": "Engine items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1200,
         300
       ],
       "parameters": {
-        "jsCode": "const p = $('Prepare').first().json;\nconst days = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };\nreturn $input.first().json.output.items\n  .filter(i => p.channels.includes(String(i.channel).trim().toLowerCase()))\n  .map(i => {\n    const d = new Date(p.week_start + 'T00:00:00Z');\n    d.setUTCDate(d.getUTCDate() + days[i.day]);\n    const [h, m] = i.time.split(':').map(Number);\n    d.setUTCHours(Math.min(h, 23), m, 0, 0);\n    return { json: { title: i.title, channel: i.channel.trim().toLowerCase(), status: 'idea',\n      body: `[${i.angle}] ${i.brief}`, scheduled_at: d.toISOString(), campaign: `week-${p.week_start}` } };\n  });\n"
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $('Prepare').first().json.week_start }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ new Date(Date.parse($('Prepare').first().json.week_start) + 6 * 864e5).toISOString().slice(0, 10) }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "9e252bc3-d3ab-554e-a7a6-c2831f685df6",
+      "name": "To calendar items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Prepare').first().json;\nconst days = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };\nconst raw = [].concat(($input.first().json || {}).body ?? []);\nconst engine = new Set((raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw)\n  .filter(i => i && /engine pillar #\\d+/.test(String(i.notes || '')) && i.scheduled_at)\n  .map(i => `${String(i.channel).toLowerCase()}|${String(i.scheduled_at).slice(0, 10)}`));\nreturn $('Plan week').first().json.output.items\n  .filter(i => p.channels.includes(String(i.channel).trim().toLowerCase()))\n  .filter(i => !engine.has(`${String(i.channel).trim().toLowerCase()}|${new Date(Date.parse(p.week_start) + (days[i.day] ?? 0) * 864e5).toISOString().slice(0, 10)}`))\n  .map(i => {\n    const d = new Date(p.week_start + 'T00:00:00Z');\n    d.setUTCDate(d.getUTCDate() + days[i.day]);\n    const [h, m] = i.time.split(':').map(Number);\n    d.setUTCHours(Math.min(h, 23), m, 0, 0);\n    return { json: { title: i.title, channel: i.channel.trim().toLowerCase(), status: 'idea',\n      body: `[${i.angle}] ${i.brief}`, scheduled_at: d.toISOString(), campaign: `week-${p.week_start}` } };\n  });\n"
       }
     },
     {
@@ -148,7 +192,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1440,
+        1680,
         300
       ],
       "parameters": {
@@ -175,7 +219,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
+        1920,
         300
       ],
       "parameters": {
@@ -188,11 +232,24 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
+        2160,
         300
       ],
       "parameters": {
-        "jsCode": "// Skip notifying when no webhook is configured.\nreturn $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+        "jsCode": "// Skip notifying when no destination is configured.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "3a3fc141-9eef-5244-94d4-960e28a6ec51",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
       }
     },
     {
@@ -201,21 +258,32 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2160,
+        2640,
         300
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $json.text, content: $json.text }) }}"
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
       },
       "onError": "continueRegularOutput"
     }
   ],
   "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Mondays 07:00": {
       "main": [
         [
@@ -264,6 +332,17 @@
       "main": [
         [
           {
+            "node": "Engine items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Engine items": {
+      "main": [
+        [
+          {
             "node": "To calendar items",
             "type": "main",
             "index": 0
@@ -308,7 +387,7 @@
       "main": [
         [
           {
-            "node": "Notify",
+            "node": "Notify format",
             "type": "main",
             "index": 0
           }

@@ -1,0 +1,564 @@
+{
+  "id": "mktWf66Newslettr",
+  "name": "66 · Schedule · Weekly newsletter",
+  "nodes": [
+    {
+      "id": "de64b832-e436-5bc9-b8f1-0cade5199812",
+      "name": "Fridays 10:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 5"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d55a8e46-70d1-5e56-9141-52d36991f603",
+      "name": "Calendar items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "091a879b-702b-5aba-9139-99b8273922a5",
+      "name": "This week",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// The week's content: items published in the last 7 days plus approved blog posts (those\n// sit in the CMS as drafts). One issue per ISO week: a calendar item with channel\n// \"newsletter\" and the week in its title means this week is done.\nconst raw = [].concat($input.first().json.body ?? []);   // full response: the list is in body\nconst all = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(i => i && i.id);\nconst isoWeek = d => {\n  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));\n  const day = t.getUTCDay() || 7;\n  t.setUTCDate(t.getUTCDate() + 4 - day);\n  const y = t.getUTCFullYear();\n  return `${y}-W${String(Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7)).padStart(2, '0')}`;\n};\nconst now = new Date(), week = isoWeek(now);\nconst ch = i => String(i.channel).toLowerCase();\nconst dup = all.find(i => ch(i) === 'newsletter' && String(i.title).includes(week));\nif (dup) return [{ json: { go: false, week, text: `*Newsletter ${week}*: skipped, the calendar already has it (#${dup.id}, ${dup.status}).` } }];\nconst SKIP = ['newsletter', 'review_reply', 'email'];\nconst since = now.getTime() - 7 * 864e5;\nconst pub = all.filter(i => i.status === 'published' && Date.parse(i.published_at || '') >= since)\n  .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));\nconst blog = all.filter(i => i.status === 'approved' && ch(i) === 'blog');\nconst seen = new Set();\n// Blog posts first (the long pieces), then the newest social posts; at most 8 for a small model.\nconst picked = [...pub.filter(i => ch(i) === 'blog'), ...blog, ...pub].filter(i => !SKIP.includes(ch(i)) && !seen.has(i.id) && seen.add(i.id)).slice(0, 8);\nif (picked.length < 2) return [{ json: { go: false, week,\n  text: `*Newsletter ${week}*: skipped, only ${picked.length} item${picked.length === 1 ? '' : 's'} published this week (needs 2).` } }];\nconst urlsIn = s => (String(s).match(/https?:\\/\\/\\S+/g) || []).map(u => u.replace(/[).,!?]+$/, ''));\nconst items = picked.map(i => {\n  const u = urlsIn(i.body);\n  // Blog: the live post (external_url) once published; a CMS draft URL is not public.\n  const link = ch(i) === 'blog'\n    ? (i.status === 'published' ? i.external_url || i.link : i.link) || u[0] || ''\n    : i.short_url || i.link || i.external_url || u[0] || '';\n  const text = String(i.body).replace(/https?:\\/\\/\\S+/g, '').replace(/\\s+/g, ' ').trim().slice(0, 500);\n  return { id: i.id, title: i.title, channel: ch(i), link, text };\n});\nconst items_text = items.map((i, n) => `${n + 1}. [${i.channel}] ${i.title}\\n   link: ${i.link || '(none)'}\\n   text: ${i.text}`).join('\\n');\nconst links = [...new Set(items.map(i => i.link).filter(Boolean))];\nreturn [{ json: { go: true, week, items, items_text, links } }];\n"
+      }
+    },
+    {
+      "id": "c4541be1-38de-5e4f-8ba0-4e1bd3546165",
+      "name": "Enough items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d45bc3d0-db94-529f-997a-e15c1685e9e8",
+              "leftValue": "={{ $json.go }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2f679dd3-bc4e-5019-bd7b-4865336e2d7f",
+      "name": "Write issue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'newsletter_issue', vars: { week: $json.week, items: $json.items_text, audience: $env.NEWSLETTER_AUDIENCE || null } }) }}"
+      }
+    },
+    {
+      "id": "b647f44d-36e2-5446-919c-d87c9df10ccf",
+      "name": "Build issue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Links come only from the items: any other URL the model wrote is removed and noted.\nconst p = $('This week').first().json;\nconst o = $input.first().json.output;\nconst allowed = new Set(p.links), warnings = [];\nconst clean = s => String(s || '').replace(/https?:\\/\\/[^\\s)\\]]+/g, u => {\n  if (allowed.has(u.replace(/[.,!?]+$/, ''))) return u;\n  warnings.push(`removed a link not in the items: ${u}`); return '';\n}).replace(/[ \\t]{2,}/g, ' ').trim();\nconst sections = (o.sections || []).map(s => {\n  let link = String(s.link || '').trim();\n  if (link && !allowed.has(link)) { warnings.push(`removed a section link not in the items: ${link}`); link = ''; }\n  return { title: clean(s.title), summary: clean(s.summary), link };\n}).filter(s => s.title && s.summary);\nlet cta = String(o.cta_url || '').trim();\nif (cta && !allowed.has(cta)) { warnings.push(`removed a CTA link not in the items: ${cta}`); cta = ''; }\nif (!cta) cta = sections.map(s => s.link).find(Boolean) || '';\nconst markdown = [clean(o.intro), ...sections.map(s => `## ${s.title}\\n\\n${s.summary}${s.link ? `\\n\\n[Read more](${s.link})` : ''}`)].join('\\n\\n');\nreturn [{ json: { subject: o.subject, preheader: o.preheader, cta_text: o.cta_text, cta_url: /^https?:\\/\\//.test(cta) ? cta : '',\n  markdown, sections: sections.length, warnings } }];\n"
+      }
+    },
+    {
+      "id": "cd817196-a61d-507c-99ff-8fa4d081fe28",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.markdown }}",
+            "channel": "email",
+            "ref": "={{ $('This week').first().json.week }}",
+            "rewrite": "no",
+            "context": "={{ $('This week').first().json.items_text }}",
+            "links": "={{ $('This week').first().json.links.join(' ') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rewrite",
+              "displayName": "rewrite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "04121cc9-dd7e-51ea-bfdb-dfbc24587adb",
+      "name": "Render HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EMAIL_RENDER_URL }}/render",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ subject: $('Build issue').first().json.subject, preheader: $('Build issue').first().json.preheader, body_markdown: $('Quality gate').first().json.text, cta_text: $('Build issue').first().json.cta_url ? $('Build issue').first().json.cta_text : null, cta_url: $('Build issue').first().json.cta_url || null }) }}"
+      }
+    },
+    {
+      "id": "da0ac568-64a3-51f8-a610-2a28bb8b9bf8",
+      "name": "Listmonk draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $env.NEWSLETTER_URL ? 'POST' : 'GET' }}",
+        "url": "={{ $env.NEWSLETTER_URL ? $env.NEWSLETTER_URL.replace(/\\/+$/, '') + '/campaigns' : $env.CALENDAR_URL + '/health' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'Newsletter ' + $('This week').first().json.week, subject: $('Build issue').first().json.subject, preheader: $('Build issue').first().json.preheader, body_html: $json.html, body_text: $json.text }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6328c002-c23d-5008-8138-eeaf7d52145a",
+      "name": "Calendar item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Calendar item for the issue (channel newsletter, never sent by the publisher 39): in review\n// when the quality gate passed, else draft. Notes say where the Listmonk draft is.\nconst p = $('This week').first().json, b = $('Build issue').first().json, gate = $('Quality gate').first().json;\nconst r = $input.first().json;\nconst res = r.body && typeof r.body === 'object' ? r.body : {};\nconst okHttp = r.statusCode >= 200 && r.statusCode < 300;\nlet note, url = null;\nif (!$env.NEWSLETTER_URL) note = 'NEWSLETTER_URL not set: copy this issue into your email tool by hand';\nelse if (okHttp && res.status === 'dry_run') note = 'Listmonk dry run (listmonk-bridge DRY_RUN=true): no campaign created';\nelse if (okHttp) { url = res.url || null; note = `Listmonk draft campaign: ${url || '#' + res.campaign_id}`; }\nelse note = `Listmonk error ${r.statusCode || ''}: ${JSON.stringify(res.detail ?? res.message ?? r.error ?? r.body ?? '').slice(0, 300)}`;\nconst notes = [note, `from items ${p.items.map(i => '#' + i.id).join(', ')}`, ...b.warnings,\n  ...(gate.problems || []).map(x => `needs a human: ${x}`)].join('\\n');\nreturn [{ json: { listmonk_note: note, listmonk_url: url, item: {\n  title: `Newsletter ${p.week}: ${b.subject}`.slice(0, 200), channel: 'newsletter',\n  body: `Subject: ${b.subject}\\nPreheader: ${b.preheader}\\n\\n${gate.text}`,\n  status: gate.ok ? 'in_review' : 'draft', link: b.cta_url || null, notes } } }];\n"
+      }
+    },
+    {
+      "id": "3df599c4-ae01-5f1d-a18e-7ffc4e7a469b",
+      "name": "Save to calendar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.item) }}"
+      }
+    },
+    {
+      "id": "4fd9ca1b-9046-5e9b-8ee3-e36b6fe188ee",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const p = $('This week').first().json, c = $('Calendar item').first().json, s = $input.first().json;\nreturn [{ json: { text: `*Newsletter ${p.week}*: ${p.items.length} items → calendar #${s.id} (${s.status}), \"${$('Build issue').first().json.subject}\". ${c.listmonk_note}.`,\n  item_id: s.id, status: s.status, listmonk: c.listmonk_note, listmonk_response: $('Listmonk draft').first().json.body ?? null } }];\n"
+      }
+    },
+    {
+      "id": "b72b702c-d377-5bc6-b071-3fce95fea913",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        480
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no destination is configured.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "8b4b2006-7e02-546e-b5d9-c16cce08b1f2",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        480
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, !!item.json.item_id);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "2dc4b001-86bc-55e8-9313-d5f73e821f8b",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fridays 10:00": {
+      "main": [
+        [
+          {
+            "node": "Calendar items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar items": {
+      "main": [
+        [
+          {
+            "node": "This week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "This week": {
+      "main": [
+        [
+          {
+            "node": "Enough items?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enough items?": {
+      "main": [
+        [
+          {
+            "node": "Write issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write issue": {
+      "main": [
+        [
+          {
+            "node": "Build issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build issue": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Render HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render HTML": {
+      "main": [
+        [
+          {
+            "node": "Listmonk draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listmonk draft": {
+      "main": [
+        [
+          {
+            "node": "Calendar item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar item": {
+      "main": [
+        [
+          {
+            "node": "Save to calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to calendar": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

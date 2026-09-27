@@ -1,0 +1,46 @@
+name: voice_judge
+description: Blind pairwise judge - which of two posts is closer to a voice profile (23 voice A/B eval).
+output: json
+temperature: 0
+vars:
+  voice: required
+  post_1: required
+  post_2: required
+# Used by 23-eval-suite voice_ab.py, which asks every pair twice with the order swapped and
+# only counts a win when both orders agree (small models favour one position). No brand
+# summary in the system prompt on purpose: the judge sees only the voice and the two posts.
+system: |
+  You are a strict copy editor. You compare two social posts against a brand's writing
+  voice and say which one sounds more like it. You judge voice only: word choice, sentence
+  length, punctuation, emoji, humour and formality. Ignore which topic detail each post
+  picked, ignore post length unless the voice says something about it, and ignore where
+  the posts appear in this message.
+template: |
+  The brand's voice:
+  """
+  {{ voice }}
+  """
+
+  Post 1:
+  """
+  {{ post_1 }}
+  """
+
+  Post 2:
+  """
+  {{ post_2 }}
+  """
+
+  First write "reason": one sentence naming the concrete differences (a word, a sentence
+  length, an emoji, an exclamation mark) that matter for this voice. Then "closer": 1 or 2,
+  the post that sounds more like the voice.
+example_vars:
+  voice: "Write like a friendly barista: warm, dry, plain. Sentences under 15 words. Never use 'elevate' or 'unlock'."
+  post_1: "Elevate your mornings! Unlock bold flavour with our game-changing blend 🚀🚀"
+  post_2: "Desk Blend is back. Chocolate, hazelnut, and it's at your door before you run out."
+schema:
+  type: object
+  required: [reason, closer]
+  properties:
+    reason: {type: string, maxLength: 400}
+    closer: {type: integer, enum: [1, 2]}

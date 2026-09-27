@@ -1,0 +1,87 @@
+name: pillar_atoms
+description: Break one pillar (essay, transcript, guide) into 15-30 self-contained atoms (claim, story, faq, tip, stat, objection, quote) for the content engine (61), as JSON.
+output: json
+# Low temperature: this is extraction from the source, not creative writing.
+temperature: 0.3
+vars:
+  pillar_title: required
+  brief: required
+  audience: required
+  source_text: optional
+  facts: optional
+  n: optional
+system: |
+  You are a content strategist for the brand below. You break one long piece of content into
+  small, reusable ideas ("atoms"). Each atom will later become its own post, so it must make
+  sense on its own. You extract; you never invent facts, numbers, customers or quotes.
+
+  BRAND
+  {{ brand }}
+template: |
+  Pillar: {{ pillar_title }}
+  What it is about: {{ brief }}
+  Audience: {{ audience }}
+  {% if source_text %}
+
+  SOURCE (the pillar itself; every atom must come from it):
+  {{ source_text }}
+  {% endif %}
+
+  {% if facts %}
+  Approved facts about our products, prices and policies. These are the ONLY such facts you
+  may state; if a detail is not here or in the source, do not state it.
+  Do not copy the [f..] labels into "text".
+  {{ facts }}
+
+  {% endif %}
+  No numbers, dates, percentages or statistics unless they appear in the approved facts, the brand profile, the source or the details above.
+
+  Write about {{ n or 28 }} atoms (at least 15, at most 30). Each atom:
+  - "text": ONE idea in at most 280 characters, specific to this pillar (a concrete detail,
+    example or step), understandable without the rest of the pillar. No hashtags, no emojis,
+    no "In this article".
+  - "kind": one of
+      claim     = a point the pillar argues
+      story     = a short concrete moment or example from the source
+      faq       = a question the audience asks, followed by the direct answer
+      tip       = one practical step the reader can take
+      stat      = a number, ONLY if it appears word for word in the source or the facts
+      objection = a doubt a buyer has, followed by the honest answer
+      quote     = a sentence copied EXACTLY from the source, in quotation marks, with who said it
+  - "promo": true only if the atom sells our product or offer; most atoms teach, not sell.
+    At most one atom in five may be promo.
+  - "evidence": the fact label (like "f3") or a short exact quote from the source that the
+    atom rests on; null if it rests on nothing specific.
+  faq and objection atoms MUST contain the answer in the same "text", after the question. An faq
+  or objection whose text ends with "?" is wrong and will be thrown away. Shape:
+    faq:       "Can I pause my deliveries? Yes: skip or pause any delivery from your account page, with no fee."
+    objection: "Isn't a subscription more expensive than the supermarket? Per cup it's close, and the beans were roasted days ago, not months."
+  (Those two only show the SHAPE: take the content from the source and the facts, not from them.)
+  Use at least 4 different kinds. Do not repeat an idea in other words: every atom must say
+  something the others do not.
+example_vars:
+  pillar_title: Why remote teams need a coffee ritual
+  brief: An essay on how a shared weekly coffee break keeps remote teams connected
+  audience: people-ops leads at remote companies
+  source_text: |
+    Remote teams lose the small talk that happens by the office kitchen. A fixed weekly coffee
+    call brings some of it back: same time, cameras on, no agenda. Teams that ship the same
+    coffee to everyone say the shared taste gives them something easy to talk about.
+schema:
+  type: object
+  required: [atoms]
+  properties:
+    atoms:
+      type: array
+      minItems: 15
+      maxItems: 30
+      items:
+        type: object
+        required: [kind, text, promo, evidence]
+        properties:
+          kind:
+            type: string
+            enum: [claim, story, faq, tip, stat, objection, quote]
+          text: {type: string, minLength: 20, maxLength: 280}
+          promo: {type: boolean}
+          evidence: {type: [string, "null"], maxLength: 400}

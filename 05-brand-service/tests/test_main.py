@@ -1,8 +1,10 @@
+import json
 import os
 import shutil
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 
 from app.main import SUMMARY_MAX, app, build_summary
@@ -175,3 +177,126 @@ def test_unknown_domains_flagged_brand_and_given_links_allowed(brand):
 
 def main_brand_website():
     return client.get("/profile").json().get("website") or "https://northwind.example.com"
+
+
+# --- voice profile ---
+
+VOICE = {
+    "summary": "Write like a friendly barista: warm, dry, plain words, no hype.",
+    "do": ["Sentences under 15 words", "Use contractions (we're, you'll)"],
+    "dont": ["Never use more than one exclamation mark", "No puns on brew or bean"],
+    "words_we_use": ["fresh", "roasted", "your desk"],
+    "words_we_avoid": ["elevate", "unlock", "seamless"],
+    "sentence_style": "Short and plain, mostly under 12 words.",
+    "sample_lines": ["Tuesday is decaf day. The street smells like toast.",
+                     "It turns up, and it's good.", "Roasted this week. At your desk by Friday."],
+}
+
+
+@pytest.fixture(autouse=True)
+def voice_path(tmp_path, monkeypatch):
+    path = tmp_path / "voice.json"
+    monkeypatch.setenv("VOICE_FILE", str(path))
+    monkeypatch.delenv("INTERNAL_API_KEY", raising=False)
+    return path
+
+
+def test_voice_questions_are_ten():
+    qs = client.get("/voice/questions").json()["questions"]
+    assert len(qs) == 10 and all(q.endswith("?") or q.endswith(".") for q in qs)
+
+
+def test_voice_put_get_delete_roundtrip(voice_path):
+    assert client.get("/voice").status_code == 404
+    r = client.put("/voice", json=VOICE)
+    assert r.status_code == 200
+    assert json.loads(voice_path.read_text())["summary"] == VOICE["summary"]
+    assert client.get("/voice").json() == VOICE
+    assert client.delete("/voice").json() == {"deleted": True}
+    assert client.get("/voice").status_code == 404
+    assert client.delete("/voice").json() == {"deleted": False}
+
+
+def test_voice_write_is_atomic_leaves_no_temp_files(voice_path):
+    client.put("/voice", json=VOICE)
+    client.put("/voice", json=VOICE | {"summary": "Write like a second version."})
+    assert [p.name for p in voice_path.parent.iterdir() if p.name.startswith(".voice-")] == []
+    assert client.get("/voice").json()["summary"] == "Write like a second version."
+
+
+def test_voice_put_and_delete_need_key(monkeypatch):
+    monkeypatch.setenv("INTERNAL_API_KEY", "k-test")
+    assert client.put("/voice", json=VOICE).status_code == 401
+    assert client.put("/voice", json=VOICE, headers={"X-API-Key": "wrong"}).status_code == 401
+    assert client.delete("/voice").status_code == 401
+    assert client.put("/voice", json=VOICE, headers={"X-API-Key": "k-test"}).status_code == 200
+    assert client.get("/voice").status_code == 200  # reading needs no key, like /profile
+    assert client.delete("/voice", headers={"X-API-Key": "k-test"}).status_code == 200
+
+
+@pytest.mark.parametrize("body", [
+    "not json",
+    {"do": ["x"]},                                         # no summary
+    VOICE | {"summary": "x" * 301},
+    VOICE | {"do": [f"rule {i}" for i in range(7)]},
+    VOICE | {"words_we_avoid": "elevate"},                 # not a list
+    VOICE | {"sample_lines": ["x" * 201]},
+])
+def test_voice_bad_body_is_422(body, voice_path):
+    kw = {"content": body, "headers": {"content-type": "application/json"}} if isinstance(body, str) else {"json": body}
+    assert client.put("/voice", **kw).status_code == 422
+    assert not voice_path.exists()
+
+
+def test_corrupt_voice_file_is_ignored(voice_path):
+    voice_path.write_text("{broken")
+    assert client.get("/voice").status_code == 404
+    assert "Voice:" not in client.get("/profile/summary").json()["summary"]
+
+
+def test_summary_puts_voice_after_hard_rules_before_descriptive_parts():
+    before = client.get("/profile/summary").json()["summary"]
+    assert "Voice:" not in before
+    client.put("/voice", json=VOICE)
+    s = client.get("/profile/summary").json()["summary"]
+    assert len(s) <= SUMMARY_MAX
+    i = s.index
+    assert i("Never say:") < i("Emoji:") < i("Voice:") < i("Voice do:") < i("Voice don't:") \
+        < i("Avoid words: elevate, unlock, seamless") < i("Hashtags:") < i("Key messages:")
+
+
+def test_summary_voice_survives_the_cut_and_samples_are_dropped_first(brand):
+    brand.write_text("name: Big\nbanned_phrases: [cheap]\nkey_messages:\n"
+                     + "".join(f"  - message {i} " + "x" * 80 + "\n" for i in range(50)))
+    client.put("/voice", json=VOICE)
+    s = client.get("/profile/summary").json()["summary"]
+    assert len(s) <= SUMMARY_MAX and s.endswith("...")
+    assert "Voice don't: Never use more than one exclamation mark" in s
+    assert "Avoid words: elevate, unlock, seamless" in s
+    assert "Sounds like:" not in s and "Sentences:" not in s
+
+
+def test_summary_adds_voice_extras_only_while_they_fit():
+    b = yaml.safe_load(EXAMPLE.read_text())
+    small = {"summary": "Write plainly.", "sentence_style": "Under 12 words.",
+             "sample_lines": ["One.", "Two."]}
+    s = build_summary(b, small)
+    assert s.endswith("\nSentences: Under 12 words.") and "Sounds like" not in s   # samples never sent to writers
+    assert "Products:" in s and len(s) <= SUMMARY_MAX
+    big = small | {"words_we_use": ["w" * 90] * 10}
+    s = build_summary(b, big)
+    assert len(s) <= SUMMARY_MAX and not s.endswith("...")
+    assert "Sentences: Under 12 words." in s  # the extra that fits is kept
+    assert s.count("w" * 90) < 10              # the one that doesn't fit is left out, not cut
+
+
+def test_check_flags_avoid_words_as_warn():
+    body = client.post("/check", json={"text": "Elevate your mornings with our seamless box."}).json()
+    assert body["ok"] is True  # nothing flagged before a voice exists
+    client.put("/voice", json=VOICE)
+    body = client.post("/check", json={"text": "Elevate your mornings with our seamless box."}).json()
+    avoid = [v for v in body["violations"] if v["rule"] == "avoid_word"]
+    assert {v["match"] for v in avoid} == {"Elevate", "seamless"}
+    assert {v["severity"] for v in avoid} == {"warn"} and body["ok"] is True
+    body = client.post("/check", json={"text": "Unlocked doors, unlocking nothing."}).json()
+    assert "avoid_word" not in rules(body)  # whole words only

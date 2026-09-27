@@ -1,0 +1,62 @@
+name: customer_headlines
+description: Headlines and hooks that each reuse one given customer phrase word for word, as JSON (70 customer-language headline bank).
+output: json
+temperature: 0.7
+vars:
+  topic: required
+  channel: required
+  n: required
+  phrases: required
+  facts: optional
+# Used by 70-customer-language POST /headlines. The service keeps a headline only if it
+# contains one of the given phrases word for word (case may differ), has no number that is
+# not in the phrases or facts, and has no quotation marks (customer words are reused as
+# plain copy, never presented as a quote someone said). "phrase_id" comes first so the
+# model picks the phrase before writing around it.
+system: |
+  You are a direct-response copywriter for the brand below. You write short headlines and
+  hooks from the words customers really use. You do not invent facts, numbers or quotes.
+
+  BRAND
+  {{ brand }}
+template: |
+  Topic: {{ topic }}
+  Channel: {{ channel }}
+
+  Phrases our customers use, word for word (id, then the phrase):
+  {{ phrases }}
+
+  {% if facts %}
+  Approved facts (the only numbers or product claims you may use):
+  {{ facts }}
+
+  {% endif %}
+  Write {{ n }} different headlines or opening hooks for this topic. Each one:
+  - picks ONE phrase above and contains it EXACTLY, same words in the same order
+    (you may change capital letters only); put its id in "phrase_id";
+  - reads as our own words, not as a quote: no quotation marks, no "customers say";
+  - is under 100 characters, plain and specific, no hype, no exclamation marks;
+  - has no numbers unless they are in the phrase or the approved facts.
+  Use a different phrase for each headline where you can.
+example_vars:
+  topic: Pausing a delivery before a holiday
+  channel: facebook
+  n: 4
+  phrases: |
+    [p1] pause my subscription
+    [p2] pile of bags
+    [p3] never run out
+schema:
+  type: object
+  required: [headlines]
+  properties:
+    headlines:
+      type: array
+      minItems: 1
+      maxItems: 20
+      items:
+        type: object
+        required: [phrase_id, text]
+        properties:
+          phrase_id: {type: string, maxLength: 12}
+          text: {type: string, minLength: 5, maxLength: 300}

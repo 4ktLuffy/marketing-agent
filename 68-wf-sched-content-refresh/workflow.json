@@ -1,0 +1,1035 @@
+{
+  "id": "mktWf68ContRefre",
+  "name": "68 · Schedule · Content refresh",
+  "nodes": [
+    {
+      "id": "66467686-1e21-5ed2-90f0-edfabc7bdb81",
+      "name": "Mondays 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7c97823f-57d4-5803-a178-1e9ddc6e7bba",
+      "name": "GSC health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GSC_URL ? $env.GSC_URL.replace(/\\/+$/, '') + '/health' : $env.CALENDAR_URL + '/health' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "b6bc8380-368d-5bb5-8063-a6ca51953c32",
+      "name": "Configured?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Full-response HTTP nodes: {statusCode, body}. A list body can arrive as [list].\nconst listOf = r => { const raw = [].concat((r || {}).body ?? []); return (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(x => x && typeof x === 'object'); };\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\n\nconst r = $input.first().json;\nconst b = r.body && typeof r.body === 'object' ? r.body : {};\n// Nothing to do without Search Console: finish with a message, no error, no notification.\nif (!$env.GSC_URL) return [{ json: { go: false, notify: false, text: '*Content refresh*: GSC_URL is not set, so there is no Search Console data. Nothing to do.' } }];\nif (b.configured !== true) return [{ json: { go: false, notify: false,\n  text: `*Content refresh*: gsc-sync (67) is not configured (${(b.config_errors || []).join('; ') || errText(r) || 'no answer from ' + $env.GSC_URL}). See 67-gsc-sync/README.md. Nothing to do.` } }];\nreturn [{ json: { go: true, site: b.site } }];\n"
+      }
+    },
+    {
+      "id": "347d3011-b1ff-5757-9e5c-07b7ac887ac9",
+      "name": "GSC ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8e1a1d69-11f5-51c5-ae49-f72e21c7e0da",
+              "leftValue": "={{ $json.go }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8c1ce59a-c21b-5269-a96a-54cd3d2b1148",
+      "name": "Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GSC_URL.replace(/\\/+$/, '') }}/sync",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ days: 28 }) }}"
+      }
+    },
+    {
+      "id": "11a5055f-3f7c-52bb-bcb1-ebad51d78c48",
+      "name": "Declining pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GSC_URL.replace(/\\/+$/, '') }}/pages/declining",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "min_clicks",
+              "value": "={{ $env.REFRESH_MIN_CLICKS || 20 }}"
+            },
+            {
+              "name": "drop",
+              "value": "={{ $env.REFRESH_MIN_DROP || 0.3 }}"
+            },
+            {
+              "name": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f269d0e0-3b55-50f2-a5e2-3b703affafd2",
+      "name": "Approved facts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BRAND_URL }}/facts",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "42cb8e0a-45dd-5aa9-92f9-10e81f579dea",
+      "name": "Blog items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "blog"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ca796920-3a93-57b1-8f71-7d2713ace78a",
+      "name": "Pick pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Full-response HTTP nodes: {statusCode, body}. A list body can arrive as [list].\nconst listOf = r => { const raw = [].concat((r || {}).body ?? []); return (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(x => x && typeof x === 'object'); };\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\n\nconst sync = $('Sync').first().json;\nconst dec = $('Declining pages').first().json;\nconst items = listOf($input.first().json);\nconst CAP = Math.floor(num($env.REFRESH_PER_WEEK, 3));\nconst notes = [];\nif (!ok(sync)) notes.push(`sync failed (${sync.statusCode || 'no response'}: ${errText(sync)}); used the last good sync`);\nif (!ok(dec) || !Array.isArray((dec.body || {}).pages)) return [{ json: { pick: false, notify: true,\n  text: `*Content refresh*: no declining-pages data from gsc-sync (${dec.statusCode || 'no response'}: ${errText(dec)}).`, notes } }];\n// A page refreshed in the last 60 days (calendar note \"refresh of <url> (\") is left alone:\n// its new version needs time to be re-crawled and measured.\nconst now = Date.now(), recent = new Map();\nlet thisWeek = 0;\nfor (const i of items) {\n  const age = (now - Date.parse(i.created_at || '')) / 864e5;\n  const urls = [...String(i.notes || '').matchAll(/refresh of (\\S+) \\(/g)].map(m => m[1]);\n  if (!urls.length) continue;\n  if (age <= 7) thisWeek++;\n  if (age <= 60) for (const u of urls) if (!recent.has(u)) recent.set(u, i.id);\n}\nconst pages = dec.body.pages;\nconst skipped = pages.filter(p => recent.has(p.page));\nfor (const p of skipped) notes.push(`${p.page}: refreshed in the last 60 days (calendar #${recent.get(p.page)})`);\nconst left = Math.max(0, CAP - thisWeek);\nconst todo = pages.filter(p => !recent.has(p.page));\nconst picked = todo.slice(0, left);\nif (todo.length > picked.length) notes.push(`${todo.length - picked.length} more declining page(s) wait for next week (REFRESH_PER_WEEK=${CAP}, ${thisWeek} refreshed in the last 7 days)`);\nif (picked.length) return picked.map(p => ({ json: { pick: true, page: p.page,\n  clicks_before: p.previous.clicks, clicks_now: p.current.clicks, drop_pct: Math.round(p.drop * 100),\n  declining_queries: p.top_queries || [], notes } }));\nreturn [{ json: { pick: false, notify: notes.length > 0, notes, text: [\n  `*Content refresh*: nothing to refresh this week (${pages.length} declining page(s) with at least ${dec.body.min_clicks} clicks before and a ${Math.round(dec.body.drop * 100)}% drop).`,\n  ...notes.map(n => `- ${n}`)].join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "668f94e7-bcfb-5522-8575-2b01e2c08739",
+      "name": "Any pages?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0f27933-4d98-55f0-a336-09b76999ac03",
+              "leftValue": "={{ $json.pick }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "255d7c50-4d62-5f5b-bc68-f61503898c4d",
+      "name": "Loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "d8d4b9a8-7291-5059-abb7-a6df5dac5213",
+      "name": "Extract page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EXTRACTOR_URL }}/extract",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json.page }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "20d34a03-0068-5bff-b34a-34f1ec3beb04",
+      "name": "Page queries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GSC_URL.replace(/\\/+$/, '') }}/pages/{{ encodeURIComponent($('Loop').first(1).json.page) }}/queries",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "window",
+              "value": "previous"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "29f22805-a5a8-50cf-833e-808e29035d62",
+      "name": "Refresh vars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Full-response HTTP nodes: {statusCode, body}. A list body can arrive as [list].\nconst listOf = r => { const raw = [].concat((r || {}).body ?? []); return (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(x => x && typeof x === 'object'); };\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\n\nconst p = $('Loop').first(1).json;          // loop output 1 = the page of this round\nconst ex = $('Extract page').first().json;\nconst pq = $input.first().json;\nconst page = ok(ex) && ex.body && typeof ex.body === 'object' ? ex.body : null;\nif (!page || !String(page.text || '').trim())\n  return [{ json: { ok: false, page: p.page, error: `could not read the page (${ex.statusCode || 'no response'}: ${errText(ex)})` } }];\n// The page's top queries in the previous window (what it used to win), current numbers beside.\nconst src = ok(pq) && Array.isArray((pq.body || {}).queries) && pq.body.queries.length ? pq.body.queries : p.declining_queries;\nconst top_queries = (src || []).slice(0, 10).map(q => ({ query: q.query,\n  clicks_before: q.previous.clicks, clicks_now: q.current.clicks,\n  impressions_before: q.previous.impressions, impressions_now: q.current.impressions,\n  position_before: q.previous.position, position_now: q.current.position,\n  // Differences worked out here: the model's own arithmetic (\"lost 21 clicks\") failed the number check.\n  clicks_lost: Math.max(0, q.previous.clicks - q.current.clicks),\n  places_down: q.previous.position != null && q.current.position != null && q.current.position > q.previous.position\n    ? Math.round((q.current.position - q.previous.position) * 10) / 10 : null }));\nconst title = String(page.title || '').trim() || p.page;\nconst vars = { page_url: p.page, page_title: title, page_text: String(page.text).slice(0, 12000), top_queries,\n  clicks_now: p.clicks_now, clicks_before: p.clicks_before, clicks_lost: p.clicks_before - p.clicks_now, drop_pct: p.drop_pct };\nreturn [{ json: { ok: true, page: p.page, title, vars } }];\n"
+      }
+    },
+    {
+      "id": "b9cd3a4b-5dd2-5557-91ff-d6662dfcc911",
+      "name": "Page read?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ff7301e9-e01c-5954-8840-e21e2043663d",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "27d6b582-c563-51c2-8f59-3555b07d6094",
+      "name": "Draft refresh",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'content_refresh', vars: $json.vars }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "4d12d7a4-bfdb-562b-afbf-b1f9dd60504e",
+      "name": "Check changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Full-response HTTP nodes: {statusCode, body}. A list body can arrive as [list].\nconst listOf = r => { const raw = [].concat((r || {}).body ?? []); return (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(x => x && typeof x === 'object'); };\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\n\n// A small model invents numbers and \"facts\". Checked here, not trusted:\n// - every number in a change's \"why\" and \"what\" must appear in the input (GSC numbers, page\n//   text, approved facts; thousands separators ignored), and a \"why\" must cite a query or a number;\n// - update_fact must name an approved fact label (05 /facts) or it is dropped;\n// - an FAQ answer with an unknown number is dropped; a title/meta with one keeps the old text.\nconst v = $('Refresh vars').first().json;\nconst g = $input.first().json;\nconst o = g && g.output && typeof g.output === 'object' ? g.output : null;\nif (!o) return [{ json: { save: false, page: v.page, error: `no refresh plan from the model (${errText(g) || 'gateway error'})` } }];\nconst fr = $('Approved facts').first().json;\nconst facts = Array.isArray((fr.body || {}).facts) ? fr.body.facts : [];\nconst factById = new Map(facts.map(f => [String(f.id), String(f.text)]));\nconst strip = s => String(s || '').replace(/\\[?\\bf\\d+\\b\\]?/gi, ' ').replace(/\\bH[1-6]\\b/g, ' ');\nconst nums = s => (strip(s).replace(/(\\d),(?=\\d{3}\\b)/g, '$1').match(/\\d+(?:\\.\\d+)?/g) || []).map(Number);\nconst x = v.vars;\nconst known = new Set([...nums(JSON.stringify(x.top_queries)), ...nums([x.clicks_now, x.clicks_before, x.clicks_lost, x.drop_pct].join(' ')),\n  ...nums(x.page_text), ...nums(x.page_title), ...nums(facts.map(f => f.text).join(' ')), new Date().getFullYear()]);\nconst unknown = s => nums(s).filter(n => !known.has(n));\nconst queries = x.top_queries.map(q => String(q.query).toLowerCase());\nconst citesQuery = s => queries.some(q => String(s).toLowerCase().includes(q));\n// The model sometimes copies the [f3] labels into page copy; they are not for readers.\nconst unlabel = s => String(s || '').replace(/\\s*\\[f\\d+\\]/g, '').trim();\nconst kept = [], dropped = [], seen = new Set();\nfor (const c of Array.isArray(o.changes) ? o.changes : []) {\n  const label = String(c.fact || '').replace(/[\\[\\]\\s]/g, '');\n  const why = String(c.why || '').trim(), what = unlabel(c.what);\n  const reason = !what || !why ? 'empty'\n    : seen.has(what.toLowerCase()) ? 'duplicate'\n    : c.type === 'update_fact' && !factById.has(label) ? `update_fact without an approved fact label (${label || 'none'})`\n    : unknown(why).length ? `number in why not in the input (${unknown(why).join(', ')})`\n    : !nums(why).length && !citesQuery(why) ? 'why cites no query or number'\n    : unknown(what).length ? `number in what not in the page, data or facts (${unknown(what).join(', ')})` : '';\n  if (reason) { dropped.push({ type: c.type, where: c.where, reason }); continue; }\n  seen.add(what.toLowerCase());\n  kept.push({ type: c.type, where: String(c.where || '').replace(/\\s+/g, ' ').trim(), what, why,\n    fact: c.type === 'update_fact' ? { id: label, text: factById.get(label) } : null });\n}\nconst warnings = [];\nconst faq = (Array.isArray(o.faq) ? o.faq : []).filter(f => {\n  const bad = unknown(`${f.q} ${f.a}`);\n  if (bad.length) warnings.push(`FAQ \"${String(f.q).slice(0, 60)}\" dropped: number not in the input (${bad.join(', ')})`);\n  return f.q && f.a && !bad.length;\n}).map(f => ({ q: unlabel(f.q), a: unlabel(f.a) })).slice(0, 4);\nlet newTitle = String(o.new_title || '').trim(), newMeta = String(o.new_meta || '').trim();\nif (unknown(newTitle).length) { warnings.push(`new title \"${newTitle}\" had a number not in the input; kept the current title`); newTitle = ''; }\nif (unknown(newMeta).length) { warnings.push('new meta description had a number not in the input; left out'); newMeta = ''; }\nif (!kept.length) return [{ json: { save: false, page: v.page, kept: 0, dropped,\n  error: `every suggested change was dropped by the checks (${dropped.map(d => d.reason).join('; ').slice(0, 300)})` } }];\nconst LABEL = { add_section: 'Add a section', rewrite: 'Rewrite', update_fact: 'Update a fact', remove: 'Remove', add_faq: 'Add an FAQ' };\nconst fmt = n => n === null || n === undefined ? '–' : n;\nconst body = [\n  `Refresh plan for ${v.page}`,\n  `Google clicks: ${x.clicks_before} → ${x.clicks_now} (−${x.drop_pct}%), previous 28 days vs last 28 days.`,\n  '', `**Diagnosis:** ${String(o.diagnosis || '').trim()}`,\n  '', `**New title**${newTitle ? ` (${newTitle.length} chars): ${newTitle}` : `: keep \"${v.title}\"`}`,\n  newMeta ? `**New meta description** (${newMeta.length} chars): ${newMeta}` : '**New meta description:** none suggested',\n  '', '## Changes', '',\n  ...kept.map((c, i) => [`${i + 1}. **${LABEL[c.type] || c.type}** — where: ${c.where}`,\n    `   ${c.what.replace(/\\n+/g, ' ')}`,\n    ...(c.fact ? [`   Approved fact [${c.fact.id}]: ${c.fact.text}`] : []),\n    `   _Why:_ ${c.why}`].join('\\n')),\n  ...(faq.length ? ['', '## FAQ (answer first)', '', ...faq.map(f => `**${String(f.q).trim()}**\\n${String(f.a).trim()}\\n`)] : []),\n  '', '## Queries the page used to win (clicks, position: before → now)', '',\n  ...x.top_queries.map(q => `- \"${q.query}\": clicks ${q.clicks_before} → ${q.clicks_now}, impressions ${q.impressions_before} → ${q.impressions_now}, position ${fmt(q.position_before)} → ${fmt(q.position_now)}`),\n  ...(dropped.length || warnings.length ? ['', `_Checks: ${dropped.length} suggested change(s) dropped${dropped.length ? ` (${dropped.map(d => `${d.type}: ${d.reason}`).join('; ')})` : ''}${warnings.length ? '; ' + warnings.join('; ') : ''}._`] : []),\n].join('\\n');\n// The quality gate sees only the words meant for the page; the page and the query data are\n// its evidence, so a claim the page already makes is not flagged.\nconst gate_text = [newTitle, newMeta, ...kept.filter(c => c.type !== 'remove').map(c => c.what),\n  ...faq.map(f => `${f.q} ${f.a}`)].filter(Boolean).join('\\n\\n');\nconst context = `Current page text:\\n${x.page_text}\\n\\nSearch Console queries:\\n` +\n  x.top_queries.map(q => `${q.query}: clicks ${q.clicks_before} → ${q.clicks_now}`).join('\\n');\nreturn [{ json: { save: true, page: v.page, title: `Refresh: ${v.title}`.slice(0, 200), body, gate_text, context,\n  note: `refresh of ${v.page} (clicks ${x.clicks_before} → ${x.clicks_now})`, kept: kept.length, dropped: dropped.length } }];\n"
+      }
+    },
+    {
+      "id": "c4cab0fb-be27-5e81-9706-610e8e9eacdb",
+      "name": "Has plan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4080,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bb065d13-ab2c-5a59-8452-25ac8c2f1427",
+              "leftValue": "={{ $json.save }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6a8fd375-7493-5231-aa0b-eddba4fdf38c",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4320,
+        200
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.gate_text }}",
+            "channel": "blog",
+            "context": "={{ $json.context }}",
+            "ref": "={{ $json.page }}",
+            "rewrite": "no",
+            "links": "={{ $json.page }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rewrite",
+              "displayName": "rewrite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "3711379a-e519-545d-a03a-4c672a8e2bd0",
+      "name": "After gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Has plan?').first().json;\nconst g = $input.first().json;\nconst problems = Array.isArray(g.problems) ? g.problems : ['quality gate gave no result'];\nreturn [{ json: { ...d, status: problems.length ? 'draft' : 'in_review',\n  notes: [d.note, problems.length ? `Quality gate: ${problems.join('; ')}` : ''].filter(Boolean).join(' | ') } }];\n"
+      }
+    },
+    {
+      "id": "1086bf76-b01e-5ccb-a5c9-3ac48fd32355",
+      "name": "Save item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, channel: 'blog_refresh', body: $json.body, status: $json.status, link: $json.page, notes: $json.notes }) }}"
+      }
+    },
+    {
+      "id": "58c9abaf-6a95-5b67-b755-196540d7a2c9",
+      "name": "Record saved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $('After gate').first().json, s = $input.first().json;\nreturn [{ json: { page: d.page, item_id: s.id, status: s.status, kept: d.kept, dropped: d.dropped } }];\n"
+      }
+    },
+    {
+      "id": "6a2a6f54-184b-5099-bf4a-6cecf02f8586",
+      "name": "Record skipped",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { page: j.page, error: j.error } }];\n"
+      }
+    },
+    {
+      "id": "8db0fb5c-d51e-594d-87f6-abcb4650aea4",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst saved = rows.filter(r => r.item_id), failed = rows.filter(r => !r.item_id);\nlet notes = [];\ntry { notes = $('Pick pages').first().json.notes || []; } catch (e) {}\nreturn [{ json: { notify: true, saved: saved.length, failed: failed.length, items: rows, text: [\n  `*Content refresh*: ${saved.length} refresh plan${saved.length === 1 ? '' : 's'} saved to the calendar (channel blog). ` +\n  'Edit the page in your CMS from the plan; nothing on the site is changed automatically.',\n  ...saved.map(r => `- ${r.page} → calendar #${r.item_id} (${r.status}): ${r.kept} change(s) kept, ${r.dropped} dropped`),\n  ...failed.map(r => `- ${r.page}: not refreshed, ${r.error}`),\n  ...notes.map(n => `- ${n}`),\n].join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "8291ae14-9b27-5a6b-b81c-1b4a5e3fb688",
+      "name": "Report?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Not configured or a quiet week: no notification.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all().filter(i => i.json.notify) : [];\n"
+      }
+    },
+    {
+      "id": "cb47fc2a-04ae-5cf3-888b-429bec099974",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5040,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, item.json.saved > 0);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "4ec3d0fa-817c-535d-af81-d85537ddb555",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5280,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mondays 07:00": {
+      "main": [
+        [
+          {
+            "node": "GSC health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSC health": {
+      "main": [
+        [
+          {
+            "node": "Configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configured?": {
+      "main": [
+        [
+          {
+            "node": "GSC ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GSC ready?": {
+      "main": [
+        [
+          {
+            "node": "Sync",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync": {
+      "main": [
+        [
+          {
+            "node": "Declining pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Declining pages": {
+      "main": [
+        [
+          {
+            "node": "Approved facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved facts": {
+      "main": [
+        [
+          {
+            "node": "Blog items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog items": {
+      "main": [
+        [
+          {
+            "node": "Pick pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick pages": {
+      "main": [
+        [
+          {
+            "node": "Any pages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any pages?": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract page": {
+      "main": [
+        [
+          {
+            "node": "Page queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page queries": {
+      "main": [
+        [
+          {
+            "node": "Refresh vars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh vars": {
+      "main": [
+        [
+          {
+            "node": "Page read?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page read?": {
+      "main": [
+        [
+          {
+            "node": "Draft refresh",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft refresh": {
+      "main": [
+        [
+          {
+            "node": "Check changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check changes": {
+      "main": [
+        [
+          {
+            "node": "Has plan?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has plan?": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "After gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "After gate": {
+      "main": [
+        [
+          {
+            "node": "Save item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save item": {
+      "main": [
+        [
+          {
+            "node": "Record saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record saved": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record skipped": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

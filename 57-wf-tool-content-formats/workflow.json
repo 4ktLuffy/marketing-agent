@@ -297,12 +297,98 @@
       }
     },
     {
+      "id": "bce703a5-917f-57d2-bd76-539de8b1d5d7",
+      "name": "Brand profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BRAND_URL }}/profile",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5ff790e3-fd0b-5a69-ac0f-0ad92ab6e801",
+      "name": "Video request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// A video_script draft gets a preview MP4 from 71 (POST $VIDEO_URL/render). Other formats,\n// or no VIDEO_URL, make a harmless GET /health instead so the item still passes through.\nfunction videoRequest(script) {\n  if (!$env.VIDEO_URL || !script || typeof script !== 'object') {\n    return { skip: true, method: 'GET', url: `${$env.VIDEO_URL || $env.CALENDAR_URL}/health`, body: '{}' };\n  }\n  const b = ($('Brand profile').first().json || {}).body;\n  const brand = b && typeof b === 'object' ? b : {};\n  const name = String(brand.name || '').trim().slice(0, 40);\n  const accent = /^#[0-9a-fA-F]{6}$/.test(String(brand.accent_color || '')) ? brand.accent_color : null;\n  const logo = name.split(/\\s+/).map(w => (w.match(/[\\p{L}\\p{N}]/u) || [''])[0]).join('').slice(0, 3).toUpperCase();\n  const voice = String($env.VIDEO_VOICE || '').trim();   // empty: the service's TTS_BACKEND\n  return { skip: false, method: 'POST', url: `${$env.VIDEO_URL}/render`, body: JSON.stringify({\n    script, brand: { name: name || null, accent, logo_text: logo || null },\n    ...(voice ? { voice: { backend: voice } } : {}) }) };\n}\n\nconst p = $('Prepare').first().json;\nreturn [{ json: videoRequest(p.format === 'video_script' ? $('Write').first().json.output : null) }];\n"
+      }
+    },
+    {
+      "id": "502ca624-3940-5e20-be9f-3909402754e5",
+      "name": "Render video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "81a65c60-8851-57db-bc2d-b3a6df54b38f",
+      "name": "Attach video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function videoResult(req, res) {\n  if (!req || req.skip) return { video_url: null, poster_url: null, video_note: null };\n  const b = res && res.body;\n  const http = u => typeof u === 'string' && /^https?:\\/\\/\\S+$/.test(u) && u.length <= 2000;\n  if (res && res.statusCode === 201 && b && http(b.url)) {\n    return { video_url: b.url, poster_url: http(b.poster_url) ? b.poster_url : null,\n      video_note: `video preview: ${b.url} (${b.duration_s} s)` };\n  }\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const err = res && res.error;\n  const why = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d)\n    : err ? (typeof err === 'string' ? err : err.message || JSON.stringify(err)) : 'no answer';\n  const code = res && res.statusCode ? `HTTP ${res.statusCode}: ` : '';\n  return { video_url: null, poster_url: null,\n    video_note: `video not rendered: ${(code + String(why)).replace(/\\s+/g, ' ').trim().slice(0, 300)}` };\n}\n\nconst a = $('Assemble').first().json;\nconst v = videoResult($('Video request').first().json, $input.first().json);\nreturn [{ json: { ...a, ...v, image_url: v.poster_url,\n  notes: [a.notes, v.video_note].filter(Boolean).join(' | ') || null } }];\n"
+      }
+    },
+    {
       "id": "95e91c67-0e3e-50a5-a057-e63ad11075b0",
       "name": "Save draft",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
+        3360,
         300
       ],
       "parameters": {
@@ -320,7 +406,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: $json.title, channel: $json.channel, body: $json.body, status: $json.status, notes: $json.notes }) }}"
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, channel: $json.channel, body: $json.body, status: $json.status, notes: $json.notes, video_url: $json.video_url, image_url: $json.image_url }) }}"
       }
     },
     {
@@ -329,11 +415,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
+        3600,
         300
       ],
       "parameters": {
-        "jsCode": "const a = $('Assemble').first().json;\nconst s = $input.first().json;\nconst label = { video: 'Video script', landing_page: 'Landing page', email_sequence: 'Email sequence' }[a.channel];\nconst notes = [];\nif (a.fixed.length) notes.push(`auto-fixed: ${a.fixed.join('; ')}`);\nif (a.problems.length) notes.push(`needs a human: ${a.problems.join('; ')}`);\nif (a.warnings.length) notes.push(`warnings: ${[...new Set(a.warnings)].join('; ')}`);\nreturn [{ json: { result: [\n  `${label} saved to the content calendar as #${s.id} (${s.status}).`,\n  notes.length ? `_${notes.join(' · ')}_` : '', '', a.body, '',\n  s.status === 'in_review' ? 'It is waiting in the approval form; nothing is published until approved.'\n    : 'Saved as a draft because the quality gate found problems a person should fix.',\n].filter((x, i) => i !== 1 || x).join('\\n') } }];\n"
+        "jsCode": "const a = $('Assemble').first().json;\nconst v = $('Attach video').first().json;\nconst s = $input.first().json;\nconst label = { video: 'Video script', landing_page: 'Landing page', email_sequence: 'Email sequence' }[a.channel];\nconst notes = [];\nif (a.fixed.length) notes.push(`auto-fixed: ${a.fixed.join('; ')}`);\nif (a.problems.length) notes.push(`needs a human: ${a.problems.join('; ')}`);\nif (a.warnings.length) notes.push(`warnings: ${[...new Set(a.warnings)].join('; ')}`);\nif (v.video_note) notes.push(v.video_note);\nreturn [{ json: { result: [\n  `${label} saved to the content calendar as #${s.id} (${s.status}).`,\n  notes.length ? `_${notes.join(' · ')}_` : '', '', a.body, '',\n  s.status === 'in_review' ? 'It is waiting in the approval form; nothing is published until approved.'\n    : 'Saved as a draft because the quality gate found problems a person should fix.',\n].filter((x, i) => i !== 1 || x).join('\\n') } }];\n"
       }
     }
   ],
@@ -445,6 +531,50 @@
       ]
     },
     "Assemble": {
+      "main": [
+        [
+          {
+            "node": "Brand profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand profile": {
+      "main": [
+        [
+          {
+            "node": "Video request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video request": {
+      "main": [
+        [
+          {
+            "node": "Render video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render video": {
+      "main": [
+        [
+          {
+            "node": "Attach video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach video": {
       "main": [
         [
           {

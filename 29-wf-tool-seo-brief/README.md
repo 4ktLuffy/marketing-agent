@@ -1,8 +1,8 @@
 # 29 · SEO brief
 
-Deploy **29 of 60** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **29 of 71** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
-Builds an SEO content brief from real autocomplete searches (10) and, if you give one, an audit of a competitor page (12).
+Builds an SEO content brief from real autocomplete searches (10) and, if you give one, an audit of a competitor page (12). The brief's prose (titles, meta description, outline, FAQ answers) is then fact-checked by the claim checker (44) against the approved facts and the inputs (keyword, audience; not the audited page, which may be a competitor's). Nothing is removed: if any statement is unsupported, the brief starts with a one-line warning and ends with a `## Claims to check before writing` list (each statement and why). If the checker is down, the brief says it was not checked.
 
 ## Where to deploy
 
@@ -31,7 +31,7 @@ Its workflow id is fixed (`mktWf29SeoBrief0`), because other workflows call it b
 | `competitor_url` | optional page that ranks today |
 | `audience` | optional |
 
-**Returns:** `{result}`: markdown brief (intent, titles, meta, outline, FAQs)
+**Returns:** `{result}`: markdown brief (intent, titles, meta, outline, FAQs; plus the claims to check, if any)
 
 **Called by:** the chat agent (24), tool `seo_brief`
 
@@ -40,6 +40,7 @@ Its workflow id is fixed (`mktWf29SeoBrief0`), because other workflows call it b
 - `03-llm-gateway`
 - `10-keyword-suggest`
 - `12-seo-auditor`
+- `44-claim-checker`
 
 Service URLs come from env vars on the n8n container (`GATEWAY_URL`, `CALENDAR_URL`, …),
 which `01-marketing-stack` sets. `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set so

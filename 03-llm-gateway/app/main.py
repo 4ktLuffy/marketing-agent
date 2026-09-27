@@ -132,6 +132,64 @@ def facts_text() -> str:
     return _facts_cache["text"]
 
 
+# ---------- brand emoji policy, applied in code to every output
+# Models ignore "only these emoji, max 2" in the prompt (4 of 7 misses in the thread/carousel
+# eval were emoji; the voice A/B had 2-6 brand errors per 10 posts). The rule is mechanical,
+# so the gateway enforces it on every string of every output instead of asking again.
+_PICTO = "[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\u231A-\u23FF]"
+_MOD = "(?:\uFE0F)?(?:[\U0001F3FB-\U0001F3FF])?"
+EMOJI_RE = re.compile(rf"[\U0001F1E6-\U0001F1FF]{{2}}|{_PICTO}{_MOD}(?:\u200D{_PICTO}{_MOD})*")
+EMOJI_POLICY_SKIP = {p.strip() for p in os.getenv(
+    "EMOJI_POLICY_SKIP", "claim_details,detail_check,voice_judge,reflect_rule").split(",") if p.strip()}
+_policy_cache: dict = {"at": None, "policy": None}
+
+
+def _novs(e: str) -> str:
+    return e.replace("\ufe0f", "").replace("\ufe0e", "")
+
+
+def emoji_policy() -> dict | None:
+    """{"allowed": set | None, "max": int | None} from 05 /profile, cached like the summary."""
+    if not BRAND_URL:
+        return None
+    now = time.monotonic()
+    if _policy_cache["at"] is not None and now - _policy_cache["at"] < BRAND_TTL:
+        return _policy_cache["policy"]
+    try:
+        r = httpx.get(f"{BRAND_URL}/profile", timeout=5)
+        r.raise_for_status()
+        pol = r.json().get("emoji_policy") or {}
+        allowed = {_novs(e) for e in pol.get("allowed") or []} or None
+        mx = pol.get("max_per_post")
+        _policy_cache.update(at=now, policy={"allowed": allowed, "max": int(mx) if mx is not None else None})
+    except Exception as exc:  # noqa: BLE001 - no policy only means no clean-up, never a failed run
+        log.warning("brand-service profile unavailable (emoji policy): %s", exc)
+    return _policy_cache["policy"]
+
+
+def apply_emoji_policy(value, policy: dict, removed: list):
+    """Every string: drop emoji outside the allowed set, then keep at most `max` per string."""
+    if isinstance(value, dict):
+        return {k: apply_emoji_policy(v, policy, removed) for k, v in value.items()}
+    if isinstance(value, list):
+        return [apply_emoji_policy(v, policy, removed) for v in value]
+    if not isinstance(value, str) or not EMOJI_RE.search(value):
+        return value
+    kept = 0
+
+    def keep(m):
+        nonlocal kept
+        e = m.group(0)
+        if (policy["allowed"] is not None and _novs(e) not in policy["allowed"]) or \
+                (policy["max"] is not None and kept >= policy["max"]):
+            removed.append(e)
+            return ""
+        kept += 1
+        return e
+    out = EMOJI_RE.sub(keep, value)
+    return re.sub(r"[ \t]{2,}", " ", re.sub(r"[ \t]+([.,!?;:])", r"\1", out)).strip() if out != value else value
+
+
 def brand_text() -> str:
     return "\n\n".join(part for part in (brand_summary(), learning_summary()) if part)
 
@@ -317,6 +375,10 @@ def run(req: RunRequest):
             output, problem = TEXT_FENCE_RE.sub(r"\1", raw).strip(), None
 
         if problem is None:
+            removed: list = []
+            policy = emoji_policy() if prompt.name not in EMOJI_POLICY_SKIP else None
+            if policy and (policy["allowed"] is not None or policy["max"] is not None):
+                output = apply_emoji_policy(output, policy, removed)
             # One line per call, so token spend on a hosted provider can be summed from the logs.
             log.info("prompt=%s model=%s attempts=%d prompt_tokens=%d completion_tokens=%d",
                      prompt.name, model, attempt, usage["prompt_tokens"], usage["completion_tokens"])
@@ -327,6 +389,7 @@ def run(req: RunRequest):
                 "attempts": attempt,
                 "duration_ms": int((time.monotonic() - started) * 1000),
                 "usage": usage,
+                **({"emoji_removed": removed} if removed else {}),
             }
         log.info("prompt=%s attempt=%d rejected: %s", prompt.name, attempt, problem)
         # Show the model its own answer and what was wrong with it.

@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 60 deploys (01–44 below, 45–53 in Phase 2, 54–60 in Phase 3).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 71 deploys (01–44 below, 45–53 in Phase 2, 54–71 in Phase 3).
 
 ## What the agent does
 
@@ -16,9 +16,10 @@ Every folder in `marketing-agent/` is one deploy = one GitHub repo. 60 deploys (
 | "Keyword ideas for 'coffee subscription'" | Chat agent → autocomplete scrape → LLM clusters by intent |
 | Every morning 08:00 | RSS + HN/Reddit mentions → trend digest |
 | Every 6 h | Competitor pages diffed → change summary |
-| Every 15 min | Approved + due calendar items → published |
+| Every 15 min | Approved + due calendar items → published (blog → CMS bridge as a draft, social → publish webhook) |
 | Monday 07:00 | Next week's content plan drafted into calendar |
-| Monday 09:00 | KPIs from analytics → HTML weekly report |
+| Monday 09:00 | KPIs, clicks, hooks, campaigns, pillars → HTML weekly report with one next action per channel |
+| Friday 10:00 | This week's published items → newsletter issue → Listmonk draft campaign (66) |
 
 Nothing is published without a human moving it to `approved` (approval form, deploy 38).
 
@@ -201,6 +202,7 @@ All bodies are JSON unless stated.
 - `POST /items/{id}/status` 🔑 `{"status","note"?}` (transitions below)
 - `GET /due?now=ISO` → approved items with `scheduled_at <= now`
 - `POST /items/{id}/published` 🔑 `{"external_url"?}`
+- `POST /items/{id}/notes` 🔑 `{"note","external_url"?}` appends a line to `notes` in any status (39: "sent to CMS as draft")
 - item = `{"id","title","channel","body","status","scheduled_at","published_at","campaign","link","external_url","notes","created_at","updated_at"}`
 - transitions: `idea→draft`, `draft→in_review|rejected`, `in_review→approved|draft|rejected`, `approved→published|draft`, `rejected→draft`
 
@@ -370,3 +372,38 @@ The publisher (39) posts approved items to `PUBLISH_WEBHOOK_URL`; point that at 
 
 **03 llm-gateway (additive):** injects `facts` (numbered lines from 05 `GET /facts`, cached 60 s)
 alongside `brand`, so writing prompts can list the only claims they may make.
+
+## Content engine (61)
+One pillar → a month of planned, varied slots. Design and sources: `_dev/research/content-volume.md` §4.
+The service plans in code and gates novelty; it never writes or publishes. n8n env `ENGINE_URL=http://content-engine:8000`.
+Details, shapes and the workflow contract: `61-content-engine/README.md`.
+- `POST /pillars` 🔑 `{title, brief, audience, source_text?, source_url?, channels[], month: YYYY-MM, promo_max: 0.2}` → 201.
+  Channels: linkedin|x|instagram|facebook|threads|mastodon|blog|email|video. `GET /pillars?month=&status=` · `GET /pillars/{id}`
+- `POST /pillars/{id}/atoms` 🔑 `{atoms:[{kind: claim|story|faq|tip|stat|objection|quote, text, verified, evidence?, promo?}]}` → 201
+  `{added, ids, skipped, verified_total, min_atoms}` (same text case/space-insensitive → skipped). `GET /pillars/{id}/atoms?verified=`
+- `POST /pillars/{id}/plan` 🔑 `{start_date? (default 1st of month), weeks: 4 (1–8), cadence?: {channel: 0–7/week}, seed? (default pillar id)}` →
+  `{requested, planned, kept_drafted, unfilled: {channel: n}, slots[]}`. 422 when verified atoms < `MIN_ATOMS` (12); 409 when paused.
+  Slot: `{id, pillar_id, date, time_utc, channel, format: post|thread|carousel_text|blog|email|video_script, atom_id,
+  hook_style, status: planned|drafted|dropped, calendar_item_id, reason, atom:{kind,text,evidence,promo}}`.
+  Rules: slots per channel = cadence × weeks (default linkedin 3, x 7, instagram/facebook/threads/mastodon 3, blog 1,
+  email 1, video 2 per week); ≤ 1 per channel per day, weekdays first; each atom on ≤ 3 channels, never twice on one
+  channel, a different hook each time; promo ≤ floor(promo_max × channel slots); deterministic per seed; re-plan
+  replaces only `planned` slots (drafted ones are kept and counted). Shortfall is reported in `unfilled`.
+- `GET /pillars/{id}/slots?status=&channel=` · `GET /slots/{id}` · `POST /slots/{id}/status` 🔑 `{status: planned|drafted|dropped,
+  calendar_item_id?, reason?}` (planned→drafted|dropped, drafted→dropped; same status = update fields only; else 409)
+- `POST /novelty/register` 🔑 `{item_id, channel, text, created_at?}` (upsert on item_id) ·
+  `POST /novelty/check` `{text, channel, exclude_item_id?, any_channel: false}` → `{novel, reasons[], closest:{item_id,
+  channel, score_ngram, score_embed}, compared, embedding_checked}`. Not novel when word-5-gram Jaccard ≥ `NGRAM_MAX` (0.30),
+  or the first 8 normalized words match, or Ollama `/api/embed` cosine ≥ `EMBED_MAX` (0.85); same channel, last
+  `NOVELTY_DAYS` (90). Ollama down → embedding skipped, `embedding_checked: false`.
+- `POST /pillars/{id}/outcomes` 🔑 `{item_id, decision: approved|edited|rejected}` (first decision per item counts) ·
+  `GET /pillars/{id}/health` → `{decided, approved_clean_rate, rejected_rate, paused, reason, ...}`. After ≥ `MIN_DECISIONS`
+  (10) since the last resume: pause when rejected_rate > 0.25 or approved_clean_rate < 0.5. `POST /pillars/{id}/resume` 🔑.
+- Workflows: **64** `plan_content_month` (chat tool): pillar → `pillar_atoms` → drop faq/objection ending "?" → 44
+  `/verify` per atom (one at a time) → atoms → plan → one calendar `idea` per slot (notes `engine pillar #P slot #S atom #A
+  (<kind>)`, slot keeps `planned` + `calendar_item_id`). **65** daily 06:00: planned slots of active pillars within
+  `ENGINE_LOOKAHEAD_DAYS` (7), ≤ `ENGINE_DRAFTS_PER_RUN` (12), one at a time → prompt by format → `/novelty/check` (1 retry
+  with another hook, then slot dropped) → 35 → card (17) → PATCH the idea item → draft/in_review → `/novelty/register` →
+  slot drafted. **38** posts each decision on an engine item to `/outcomes`; **40** adds no idea on a channel+day that has
+  an engine item.
+- 04 prompt `pillar_atoms` {pillar_title, brief, audience, source_text?, facts?, n=24} → `{atoms:[{kind, text ≤ 280, promo, evidence}]}` (15–30).

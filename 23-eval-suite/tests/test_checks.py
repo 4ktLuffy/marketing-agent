@@ -72,3 +72,29 @@ def test_equals():
 def test_numbers_from_input_reads_lists_and_thousands():
     services = SERVICES | {"brand_summary": "Ships every 1, 2 or 4 weeks. 10,000 subscribers."}
     assert run_check({"type": "numbers_from_input", "path": ""}, "every 1,2 or 4 weeks, 10,000 fans", {}, services)[0]
+
+
+def test_select_by_index():
+    out = {"slides": [{"title": "a"}, {"title": "b"}, {"title": "c"}]}
+    assert select(out, "slides[0].title") == ["a"]
+    assert select(out, "slides[-1].title") == ["c"]
+    assert select(out, "slides[-1]") == [{"title": "c"}]
+    assert select(out, "slides[5]") == []
+
+
+def test_no_numbering_flags_model_numbered_parts():
+    check = {"type": "no_numbering", "path": "posts[*]"}
+    for numbered in ("1/ Coffee rituals matter", "2. Then brew", "(3) done", "Slide 4: tips", "last one 5/5",
+                     "1) first", "Tweet 2 - more"):
+        assert not run_check(check, {"posts": ["Fine opener", numbered]}, {}, SERVICES)[0], numbered
+    ok, _ = run_check(check, {"posts": ["Ever wondered why?", "We roast 48 hours before shipping.", "1.5 kg per box", "Try it today"]},
+                      {}, SERVICES)
+    assert ok
+
+
+def test_cta_like_needs_an_action():
+    check = {"type": "cta_like", "path": "slides[-1]"}
+    assert run_check(check, {"slides": [{"title": "x"}, {"title": "Start your box", "body": "Pause any time."}]}, {}, SERVICES)[0]
+    assert run_check(check, {"slides": [{"title": "More", "body": "See https://example.com"}]}, {}, SERVICES)[0]
+    ok, detail = run_check(check, {"slides": [{"title": "Good coffee", "body": "It tastes great."}]}, {}, SERVICES)
+    assert not ok and "no call to action" in detail

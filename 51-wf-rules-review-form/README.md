@@ -1,6 +1,6 @@
 # 51 · Review learned rules
 
-Deploy **51 of 60** of the local-LLM marketing agent. This deploy is an n8n form workflow.
+Deploy **51 of 71** of the local-LLM marketing agent. This deploy is an n8n form workflow.
 
 A web form listing the writing rules the learning service proposed. Keep a rule and it is added to every writing prompt from then on (via the gateway, 03); reject it and it is never proposed again.
 

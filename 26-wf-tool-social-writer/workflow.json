@@ -49,12 +49,36 @@
       }
     },
     {
+      "id": "64c9a109-e0eb-51bc-be55-067ab6a59a1f",
+      "name": "Brand profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BRAND_URL }}/profile",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
       "id": "ca32fd17-8512-57a5-98f5-fbac317440ce",
       "name": "Hook preferences",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        480,
+        720,
         300
       ],
       "parameters": {
@@ -87,7 +111,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        720,
+        960,
         300
       ],
       "parameters": {
@@ -119,7 +143,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        960,
+        1200,
         300
       ],
       "parameters": {
@@ -148,7 +172,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        1440,
         300
       ],
       "parameters": {
@@ -161,7 +185,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1440,
+        1680,
         300
       ],
       "parameters": {
@@ -185,7 +209,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
+        1920,
         300
       ],
       "parameters": {
@@ -199,7 +223,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1920,
+        2160,
         300
       ],
       "parameters": {
@@ -269,12 +293,76 @@
       }
     },
     {
+      "id": "a60d31dd-971e-5b88-9f16-8ab52db764b4",
+      "name": "Card request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Image-friendly channels get a title card from 17 (17 picks the size from the channel:\n// square for instagram/facebook/threads, og for linkedin/x). Other channels, or no\n// CARDS_URL, make a harmless GET /health instead so every item still passes through.\nconst CARD_CHANNELS = ['instagram', 'facebook', 'threads', 'linkedin', 'x'];\nfunction cardRequest(channel, title) {\n  const b = ($('Brand profile').first().json || {}).body;\n  const brand = b && typeof b === 'object' ? b : {};\n  // First line without links, hashtags or emoji (the card font has no emoji glyphs), cut to\n  // its first sentence when that is long enough to stand alone.\n  const first = String(title || '').split('\\n')\n    .map(l => l.replace(/https?:\\/\\/\\S+/g, '').replace(/(^|\\s)#[\\p{L}\\p{N}_]+/gu, '$1')\n      .replace(/[\\p{Extended_Pictographic}\\u{FE0F}\\u{200D}\\u{20E3}]/gu, '').replace(/\\s+/g, ' ').trim())\n    .find(l => /[\\p{L}\\p{N}]/u.test(l)) || '';\n  const sentence = (first.match(/^.*?[.!?](?=\\s|$)/) || [first])[0];\n  const line = sentence.length >= 20 ? sentence : first;\n  const t = line.length > 140 ? line.slice(0, 139).replace(/\\s+\\S*$/, '') + '…' : line;\n  if (!$env.CARDS_URL || !CARD_CHANNELS.includes(channel) || !t) {\n    return { skip: true, method: 'GET', url: `${$env.CARDS_URL || $env.CALENDAR_URL}/health`, body: '{}' };\n  }\n  const accent = /^#[0-9a-fA-F]{6}$/.test(String(brand.accent_color || '')) ? brand.accent_color : null;\n  return { skip: false, method: 'POST', url: `${$env.CARDS_URL}/cards`, body: JSON.stringify({\n    title: t, brand: brand.name ? String(brand.name).slice(0, 40) : null, channel, accent }) };\n}\n\nreturn { json: { ...cardRequest($json.channel, $json.text), post: $json } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "7a4efc18-674d-519c-8ddc-616e66f1bf19",
+      "name": "Image card",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "1cdba3c8-bd1d-56cb-8701-91051873e141",
+      "name": "Attach image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function imageUrlOf(req, res) {\n  return !req.skip && res && res.statusCode === 201 && res.body && typeof res.body.url === 'string' ? res.body.url : null;\n}\nconst NO_IMAGE_IG = 'No image: the title card (17-image-cards) could not be made, and Instagram cannot be published without one. Add an image_url before approving.';\n\nconst req = $('Card request').item.json;\nconst g = req.post;\nconst image_url = imageUrlOf(req, $json);\nconst notes = [g.problems.length ? 'Quality gate: ' + g.problems.join('; ') : null,\n  !image_url && g.channel === 'instagram' ? NO_IMAGE_IG : null].filter(Boolean).join('\\n') || null;\nreturn { json: { ...g, image_url, notes } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
       "id": "f0496344-9b80-5689-baa9-337d2419641c",
       "name": "Save drafts",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2160,
+        3120,
         300
       ],
       "parameters": {
@@ -292,7 +380,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: ($('Prepare').first().json.topic + ' (' + $json.channel + ')').slice(0, 120), channel: $json.channel, body: $json.text, hook_style: ((($('Write posts').first().json.output || {}).posts || []).find(x => String(x.channel || '').trim().toLowerCase() === $json.channel) || {}).hook_style || null, status: $json.ok ? 'in_review' : 'draft', campaign: $('Prepare').first().json.campaign, link: $('Prepare').first().json.link || null, notes: $json.problems.length ? 'Quality gate: ' + $json.problems.join('; ') : null }) }}"
+        "jsonBody": "={{ JSON.stringify({ title: ($('Prepare').first().json.topic + ' (' + $json.channel + ')').slice(0, 120), channel: $json.channel, body: $json.text, hook_style: ((($('Write posts').first().json.output || {}).posts || []).find(x => String(x.channel || '').trim().toLowerCase() === $json.channel) || {}).hook_style || null, status: $json.ok ? 'in_review' : 'draft', campaign: $('Prepare').first().json.campaign, link: $('Prepare').first().json.link || null, image_url: $json.image_url, notes: $json.notes }) }}"
       }
     },
     {
@@ -301,11 +389,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2400,
+        3360,
         300
       ],
       "parameters": {
-        "jsCode": "const gate = $('Quality gate').all();\nconst parts = $input.all().map((saved, i) => {\n  const g = gate[i].json;\n  const s = saved.json;\n  const head = `### ${g.channel} — calendar #${s.id} (${s.status})`;\n  const notes = [];\n  if (g.rewritten) notes.push(`auto-fixed: ${g.fixed.join('; ')}`);\n  if (g.problems.length) notes.push(`needs a human: ${g.problems.join('; ')}`);\n  if (g.warnings.length) notes.push(`warnings: ${g.warnings.join('; ')}`);\n  return [head, g.text, notes.length ? `_${notes.join(' · ')}_` : ''].filter(Boolean).join('\\n\\n');\n});\nparts.push(\"Items marked in_review are waiting in the approval form; nothing is published until approved.\");\nreturn [{ json: { result: parts.join('\\n\\n') } }];\n"
+        "jsCode": "const gate = $('Quality gate').all();\nconst parts = $input.all().map((saved, i) => {\n  const g = gate[i].json;\n  const s = saved.json;\n  const head = `### ${g.channel} — calendar #${s.id} (${s.status})`;\n  const notes = [];\n  if (g.rewritten) notes.push(`auto-fixed: ${g.fixed.join('; ')}`);\n  if (g.problems.length) notes.push(`needs a human: ${g.problems.join('; ')}`);\n  if (s.image_url) notes.push(`image: ${s.image_url}`);\n  else if (g.channel === 'instagram') notes.push('no image: Instagram cannot be published without one');\n  if (g.warnings.length) notes.push(`warnings: ${g.warnings.join('; ')}`);\n  return [head, g.text, notes.length ? `_${notes.join(' · ')}_` : ''].filter(Boolean).join('\\n\\n');\n});\nparts.push(\"Items marked in_review are waiting in the approval form; nothing is published until approved.\");\nreturn [{ json: { result: parts.join('\\n\\n') } }];\n"
       }
     }
   ],
@@ -322,6 +410,17 @@
       ]
     },
     "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Brand profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand profile": {
       "main": [
         [
           {
@@ -399,6 +498,39 @@
       ]
     },
     "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "Card request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Card request": {
+      "main": [
+        [
+          {
+            "node": "Image card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image card": {
+      "main": [
+        [
+          {
+            "node": "Attach image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach image": {
       "main": [
         [
           {

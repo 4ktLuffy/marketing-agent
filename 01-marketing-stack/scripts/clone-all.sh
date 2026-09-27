@@ -26,6 +26,17 @@ repos=(
   58-review-hub
   59-wf-sched-winner-recycler
   60-wf-sched-review-replies
+  61-content-engine
+  62-cms-bridge
+  63-listmonk-bridge
+  64-wf-tool-content-engine
+  65-wf-sched-engine-drafter
+  66-wf-sched-newsletter
+  67-gsc-sync
+  68-wf-sched-content-refresh
+  69-wf-sched-seo-opportunities
+  70-customer-language
+  71-video-assembly
 )
 for r in "${repos[@]}"; do
   if [ -d "$r" ]; then echo "skip $r (exists)"; continue; fi

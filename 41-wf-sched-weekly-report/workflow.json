@@ -97,12 +97,286 @@
       }
     },
     {
+      "id": "eb33bbec-868b-5577-875c-f820d2496919",
+      "name": "Clicks by channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/insights",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "7"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "be20eaf9-3532-599d-9a92-cab879f96ae4",
+      "name": "Winning hooks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/insights/hooks",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "90"
+            },
+            {
+              "name": "explore",
+              "value": "0"
+            },
+            {
+              "name": "seed",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "826ffd5e-d275-5add-a7db-750c347afe35",
+      "name": "Active campaigns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CAMPAIGNS_URL }}/campaigns",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "active"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c50a2401-decf-588b-a897-fa299e4015ac",
+      "name": "One per campaign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body;\nconst list = (Array.isArray(b) ? b : []).filter(c => c && c.id).slice(0, 10);\nconst base = $env.CAMPAIGNS_URL;\nreturn list.length ? list.map(c => ({ json: { url: `${base}/campaigns/${c.id}/scorecard` } }))\n                   : [{ json: { url: `${base}/health`, noop: true } }];\n"
+      }
+    },
+    {
+      "id": "5b33af33-3762-5f15-bd16-e20a767a1183",
+      "name": "Scorecards",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "1bf01e8f-fab4-5ef5-b01c-842dcdb6a29f",
+      "name": "Collect scorecards",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const cards = $input.all().map(i => i.json.body).filter(b => b && typeof b === 'object' && b.campaign);\nreturn [{ json: { scorecards: cards.map(c => ({ campaign: c.campaign.name, elapsed_pct: c.elapsed_pct,\n  kpis: (c.kpis || []).map(k => ({ metric: k.metric, target: k.target_value, actual: k.actual_value,\n    progress_pct: k.progress_pct, state: k.state })) })) } }];\n"
+      }
+    },
+    {
+      "id": "de5f8aec-cf95-5488-ae42-a97281d364fb",
+      "name": "Pillars",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ENGINE_URL ? $env.ENGINE_URL + '/pillars?status=active' : $env.CAMPAIGNS_URL + '/health' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "b56f9c53-407f-5145-aee6-ce31a8ca8c30",
+      "name": "One per pillar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body;\nconst list = $env.ENGINE_URL && Array.isArray(b) ? b.filter(p => p && p.id).slice(0, 10) : [];\nreturn list.length ? list.map(p => ({ json: { url: `${$env.ENGINE_URL}/pillars/${p.id}/health`, title: p.title } }))\n                   : [{ json: { url: `${$env.CAMPAIGNS_URL}/health`, noop: true } }];\n"
+      }
+    },
+    {
+      "id": "f632be06-d508-5c93-92f6-e297d47d5e5a",
+      "name": "Pillar health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "551d8daf-4ecd-54a8-a966-bf14a730da11",
+      "name": "Action data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// One compact JSON for the weekly_actions prompt. Every part is optional: a source that\n// failed (or is not configured) is left out, never invented.\nconst lw = $('Last week').first().json;\nconst body = n => { try { const b = $(n).first().json.body; return b && typeof b === 'object' ? b : null; } catch (e) { return null; } };\nconst data = {};\nconst k = $('KPIs').first().json;\nif (k && k.totals) {\n  data.kpis = { totals: k.totals, delta_pct: k.delta_pct || null,\n    by_channel: (k.by_channel || []).map(c => ({ channel: c.channel, sessions: c.sessions, clicks: c.clicks,\n      conversions: c.conversions, cvr: c.cvr })) };\n}\nconst ins = body('Clicks by channel');\nif (ins && ((ins.by_channel || []).length || (ins.top_posts || []).length)) {\n  data.clicks = { days: 7, by_channel: ins.by_channel || [],\n    top_posts: (ins.top_posts || []).slice(0, 5).map(p => ({ title: p.title, channel: p.channel, clicks: p.clicks })) };\n}\nconst hk = body('Winning hooks');\nif (hk && Array.isArray(hk.styles)) {\n  const used = hk.styles.filter(s => s.posts > 0)\n    .map(s => ({ hook_style: s.hook_style, posts: s.posts, clicks: s.clicks, clicks_per_post: s.clicks_per_post }));\n  if (used.length) data.hooks = { days: 90, styles: used };\n}\nconst cards = $('Collect scorecards').first().json.scorecards || [];\nif (cards.length) data.campaigns = cards;\nconst titles = $('One per pillar').all().map(i => i.json.title);\nconst pillars = $('Pillar health').all().map((i, n) => ({ b: i.json.body, title: titles[n] }))\n  .filter(x => x.b && typeof x.b === 'object' && x.b.pillar_id)\n  .map(({ b, title }) => ({ pillar: title, decided: b.decided, approved: b.approved, edited: b.edited, rejected: b.rejected,\n    approved_clean_rate: b.approved_clean_rate, rejected_rate: b.rejected_rate, paused: b.paused, reason: b.reason || null }));\nif (pillars.length) data.pillars = pillars;\n// Comparisons worked out in code. The 7B model combined real numbers into wrong statements\n// (\"sessions decreased by 1,015 to 1,855\"); with finished sentences it only has to quote.\nconst facts = [];\nconst fmt = n => typeof n === 'number' ? (Number.isInteger(n) ? n.toLocaleString('en-US') : String(Math.round(n * 1000) / 1000)) : String(n);\nif (k && k.totals) {\n  const prev = (k.previous || {}).totals || {};\n  for (const [m, v] of Object.entries(k.totals)) {\n    if (typeof v !== 'number') continue;\n    const d = (k.delta_pct || {})[m];\n    facts.push(`${m}: ${fmt(v)} last week` + (typeof prev[m] === 'number' ? `, ${fmt(prev[m])} the week before` : '')\n      + (typeof d === 'number' ? ` (${d > 0 ? '+' : ''}${fmt(d)}%)` : ''));\n  }\n}\nfor (const c of (data.clicks || {}).by_channel || []) facts.push(`${c.channel}: ${fmt(c.clicks)} tracked clicks from ${fmt(c.posts)} posts last week`);\nfor (const h of (data.hooks || {}).styles || []) facts.push(`hook \"${h.hook_style}\": ${fmt(h.clicks_per_post)} clicks per post over ${fmt(h.posts)} posts (90 days)`);\nif (facts.length) data.facts = facts;\nreturn [{ json: { data: JSON.stringify(data), period: `${lw.from} to ${lw.to}`, parts: Object.keys(data) } }];\n"
+      }
+    },
+    {
+      "id": "0cc29119-772a-5d91-8dd2-309c281209f3",
+      "name": "Next actions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'weekly_actions', vars: { data: $json.data, period: $json.period } }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5b934446-8e3f-5a16-b2ef-2ffb1c8f98f1",
+      "name": "Check actions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Numbers are the part a small model invents. Every number in an action's \"why\" must appear\n// in the data it was given (thousands separators and the sign are ignored), or the action is\n// dropped; an action without any number is dropped too. At most one action per channel.\n// Headline and what-changed lines with a number that is not in the data are removed.\nconst src = $('Action data').first().json;\nconst nums = s => (String(s).replace(/(\\d),(?=\\d{3}\\b)/g, '$1').match(/\\d+(?:\\.\\d+)?/g) || []).map(Number);\nconst known = new Set(nums(src.data + ' ' + src.period));\nconst supported = s => nums(s).every(x => known.has(x));\nconst g = $input.first().json;\nconst o = g && g.output && typeof g.output === 'object' ? g.output : null;\nif (!o) {\n  const why = (g && g.error && (g.error.message || g.error)) || 'no output';\n  return [{ json: { markdown: '', actions: [], dropped: [], note: `next actions skipped: ${String(why).slice(0, 200)}` } }];\n}\nconst dropped = [], seen = new Set(), actions = [];\nfor (const a of Array.isArray(o.actions) ? o.actions : []) {\n  const ch = String(a.channel || '').trim(), key = ch.toLowerCase();\n  const reason = !ch || !a.action ? 'empty'\n    : !nums(a.why).length ? 'why cites no number'\n    : !supported(a.why) ? `number not in the data (${nums(a.why).filter(x => !known.has(x)).join(', ')})`\n    : seen.has(key) ? 'second action for the channel' : '';\n  if (reason) { dropped.push({ ...a, reason }); continue; }\n  seen.add(key);\n  actions.push({ channel: ch, action: String(a.action).slice(0, 140), why: String(a.why) });\n}\nconst changed = (Array.isArray(o.what_changed) ? o.what_changed : []).filter(supported).slice(0, 4);\nconst headline = o.headline && supported(o.headline) ? o.headline : '';\n// Blocks separated by a blank line, so the two lists render as two lists.\nconst md = ['### Next actions',\n  headline ? `**${headline}**` : '',\n  changed.length ? ['What changed:', '', ...changed.map(c => `- ${c}`)].join('\\n') : '',\n  ['One next action per channel:', '',\n   ...(actions.length ? actions.map(a => `- **${a.channel}**: ${a.action.replace(/\\.$/, '')}. _Why:_ ${a.why}`)\n                      : ['- None this week: no suggestion was backed by a number in the data.'])].join('\\n'),\n  dropped.length ? `_${dropped.length} suggestion${dropped.length === 1 ? ' was' : 's were'} dropped: ${dropped.map(d => `${d.channel || '?'} (${d.reason})`).join('; ')}._` : '',\n].filter(Boolean).join('\\n\\n');\nreturn [{ json: { markdown: md, headline, what_changed: changed, actions, dropped, parts: src.parts } }];\n"
+      }
+    },
+    {
       "id": "7869eea3-71cd-54f6-98c4-19a0dbbb0349",
       "name": "Render report",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        960,
+        3840,
         300
       ],
       "parameters": {
@@ -111,7 +385,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: 'Weekly marketing report', period: { from: $('Last week').first().json.from, to: $('Last week').first().json.to }, kpis: $('KPIs').first().json, highlights_markdown: $json.output }) }}"
+        "jsonBody": "={{ JSON.stringify({ title: 'Weekly marketing report', period: { from: $('Last week').first().json.from, to: $('Last week').first().json.to }, kpis: $('KPIs').first().json, highlights_markdown: [$('Highlights').first().json.output, $json.markdown].filter(Boolean).join('\\n\\n') }) }}"
       }
     },
     {
@@ -120,11 +394,24 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        4080,
         300
       ],
       "parameters": {
-        "jsCode": "// Skip notifying when no webhook is configured.\nreturn $env.NOTIFY_WEBHOOK_URL ? $input.all() : [];\n"
+        "jsCode": "// Skip notifying when no destination is configured.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "bd093d57-962d-5f80-ba05-17deb3e14f42",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest($('Render report').first().json.markdown.slice(0, 3500), $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
       }
     },
     {
@@ -133,16 +420,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1440,
+        4560,
         300
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.NOTIFY_WEBHOOK_URL }}",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $('Render report').first().json.markdown.slice(0, 3500), content: $('Render report').first().json.markdown.slice(0, 3500) }) }}"
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
       },
       "onError": "continueRegularOutput"
     },
@@ -152,7 +439,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
+        4560,
         480
       ],
       "parameters": {
@@ -165,7 +452,7 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        1680,
+        4800,
         480
       ],
       "parameters": {
@@ -179,6 +466,17 @@
     }
   ],
   "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Mondays 09:00": {
       "main": [
         [
@@ -216,6 +514,138 @@
       "main": [
         [
           {
+            "node": "Clicks by channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clicks by channel": {
+      "main": [
+        [
+          {
+            "node": "Winning hooks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Winning hooks": {
+      "main": [
+        [
+          {
+            "node": "Active campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Active campaigns": {
+      "main": [
+        [
+          {
+            "node": "One per campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One per campaign": {
+      "main": [
+        [
+          {
+            "node": "Scorecards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scorecards": {
+      "main": [
+        [
+          {
+            "node": "Collect scorecards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect scorecards": {
+      "main": [
+        [
+          {
+            "node": "Pillars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pillars": {
+      "main": [
+        [
+          {
+            "node": "One per pillar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One per pillar": {
+      "main": [
+        [
+          {
+            "node": "Pillar health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pillar health": {
+      "main": [
+        [
+          {
+            "node": "Action data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action data": {
+      "main": [
+        [
+          {
+            "node": "Next actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next actions": {
+      "main": [
+        [
+          {
+            "node": "Check actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check actions": {
+      "main": [
+        [
+          {
             "node": "Render report",
             "type": "main",
             "index": 0
@@ -243,7 +673,7 @@
       "main": [
         [
           {
-            "node": "Notify",
+            "node": "Notify format",
             "type": "main",
             "index": 0
           }

@@ -1,0 +1,18 @@
+# Voice-of-customer A/B, second topic set (python -m evalsuite.voc_ab --cases cases/voc/voc_ab_v2.yaml).
+# Written 2026-09-27 BEFORE the first open_with run, after the 10 topics in voc_ab.yaml had
+# been used to look at /relevant and the writer (so those are "seen"). These 8 are held
+# out: do not tune social_posts / voc_judge / 70 ranking on them; add a new file instead.
+# Same data and settings as voc_ab.yaml.
+brand: Northwind Roasters (05 config/brand.yaml)
+samples: ../70-customer-language/samples/northwind_sources.json
+ignore_phrases: [Desk Blend, Team Box, Single-Origin Rotation, Swiss Water decaf]
+k: 8
+topics:
+  - {id: gift_subscription, channel: instagram, topic: "Giving a coffee subscription as a gift"}
+  - {id: switch_after_signup, channel: x, topic: "Switching your grind or roast after you have subscribed"}
+  - {id: storing_beans, channel: threads, topic: "How to store beans so the last cup tastes like the first"}
+  - {id: office_restock, channel: linkedin, topic: "Keeping the office kitchen stocked without anyone having to remember"}
+  - {id: cancel_anytime, channel: facebook, topic: "What happens when you cancel your subscription"}
+  - {id: cold_brew, channel: instagram, topic: "Making cold brew at home with whole beans"}
+  - {id: box_frequency, channel: mastodon, topic: "Changing how often your box arrives"}
+  - {id: cheap_drip_machine, channel: x, topic: "Getting better coffee out of a cheap drip machine"}

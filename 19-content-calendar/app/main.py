@@ -15,7 +15,9 @@ app = FastAPI(title="content-calendar")
 STATUSES = ("idea", "draft", "in_review", "approved", "rejected", "published")
 INITIAL_STATUSES = ("idea", "draft", "in_review")
 TRANSITIONS = {
-    "idea": ["draft"],
+    # idea -> rejected: an idea that will not be written (e.g. the content engine re-planned
+    # its slot away), kept with a note instead of deleted.
+    "idea": ["draft", "rejected"],
     "draft": ["in_review", "rejected"],
     "in_review": ["approved", "draft", "rejected"],
     "approved": ["published", "draft"],
@@ -23,12 +25,12 @@ TRANSITIONS = {
     "published": [],
 }
 # Once a human approved an item, its content is frozen: move it back to draft to edit.
-CONTENT_FIELDS = {"title", "channel", "body", "link", "hook_style"}
+CONTENT_FIELDS = {"title", "channel", "body", "link", "hook_style", "image_url", "video_url"}
 FROZEN_STATUSES = {"approved", "published"}
 COLUMNS = (
     "id", "title", "channel", "body", "status", "scheduled_at", "published_at",
     "campaign", "link", "external_url", "notes", "created_at", "updated_at",
-    "campaign_id", "short_url", "hook_style",
+    "campaign_id", "short_url", "hook_style", "image_url", "video_url",
 )
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS items (
@@ -47,13 +49,16 @@ CREATE TABLE IF NOT EXISTS items (
     updated_at TEXT NOT NULL,
     campaign_id INTEGER,
     short_url TEXT,
-    hook_style TEXT
+    hook_style TEXT,
+    image_url TEXT,
+    video_url TEXT
 );
 CREATE INDEX IF NOT EXISTS items_status_scheduled ON items (status, scheduled_at);
 """
 # Columns added after the first release. A database created by an older version gets
 # them via ALTER TABLE ADD COLUMN on first use; existing rows read them as NULL.
-ADDED_COLUMNS = {"campaign_id": "INTEGER", "short_url": "TEXT", "hook_style": "TEXT"}
+ADDED_COLUMNS = {"campaign_id": "INTEGER", "short_url": "TEXT", "hook_style": "TEXT", "image_url": "TEXT",
+                 "video_url": "TEXT"}
 INDEXES = "CREATE INDEX IF NOT EXISTS items_campaign_id ON items (campaign_id);"
 _migrate_lock = threading.Lock()
 _migrated: set[str] = set()
@@ -201,6 +206,30 @@ def _hook_or_none(v):
     return v or None
 
 
+def _http_url_or_none(v, field: str):
+    """An http(s) URL of at most 2000 characters; blank means none."""
+    if v is None:
+        return None
+    v = v.strip()
+    if not v:
+        return None
+    if len(v) > 2000:
+        raise ValueError(f"{field} is at most 2000 characters")
+    if not re.match(r"^https?://[^\s/]+[^\s]*$", v):
+        raise ValueError(f"{field} must be an http(s) URL")
+    return v
+
+
+def _image_url_or_none(v):
+    """Image for the post (e.g. a card from 17-image-cards)."""
+    return _http_url_or_none(v, "image_url")
+
+
+def _video_url_or_none(v):
+    """Video for the post (e.g. an MP4 from 71-video-assembly)."""
+    return _http_url_or_none(v, "video_url")
+
+
 class NewItem(BaseModel):
     title: str
     channel: str
@@ -212,11 +241,23 @@ class NewItem(BaseModel):
     link: str | None = None
     notes: str | None = None
     hook_style: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
 
     @field_validator("hook_style")
     @classmethod
     def hook(cls, v):
         return _hook_or_none(v)
+
+    @field_validator("image_url")
+    @classmethod
+    def image(cls, v):
+        return _image_url_or_none(v)
+
+    @field_validator("video_url")
+    @classmethod
+    def video(cls, v):
+        return _video_url_or_none(v)
 
     @field_validator("title", "channel", "body")
     @classmethod
@@ -250,6 +291,8 @@ class ItemPatch(BaseModel):
     link: str | None = None
     notes: str | None = None
     hook_style: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
 
     @field_validator("scheduled_at")
     @classmethod
@@ -261,6 +304,16 @@ class ItemPatch(BaseModel):
     def hook(cls, v):
         return _hook_or_none(v)
 
+    @field_validator("image_url")
+    @classmethod
+    def image(cls, v):
+        return _image_url_or_none(v)
+
+    @field_validator("video_url")
+    @classmethod
+    def video(cls, v):
+        return _video_url_or_none(v)
+
 
 class StatusChange(BaseModel):
     status: str
@@ -270,6 +323,32 @@ class StatusChange(BaseModel):
 class Published(BaseModel):
     external_url: str | None = None
     short_url: str | None = None
+
+
+class NoteLine(BaseModel):
+    """One line appended to `notes`, in any status (e.g. "sent to CMS as draft: <url>")."""
+    note: str
+    external_url: str | None = None
+
+    @field_validator("note")
+    @classmethod
+    def note_text(cls, v: str) -> str:
+        v = " ".join(v.split())  # one line: notes are read line by line
+        if not v:
+            raise ValueError("must not be empty")
+        if len(v) > 1000:
+            raise ValueError("note is at most 1000 characters")
+        return v
+
+    @field_validator("external_url")
+    @classmethod
+    def ext_url(cls, v):
+        if v is None or not v.strip():
+            return None
+        v = v.strip()
+        if len(v) > 2000 or not re.match(r"^https?://[^\s/]+[^\s]*$", v):
+            raise ValueError("external_url must be an http(s) URL of at most 2000 characters")
+        return v
 
 
 # ---------- endpoints
@@ -286,10 +365,10 @@ def create_item(req: NewItem):
     with db() as conn:
         cur = conn.execute(
             "INSERT INTO items (title, channel, body, status, scheduled_at, campaign,"
-            " campaign_id, link, notes, hook_style, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " campaign_id, link, notes, hook_style, image_url, video_url, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (req.title, req.channel, req.body, req.status, req.scheduled_at, req.campaign,
-             req.campaign_id, req.link, req.notes, req.hook_style, ts, ts),
+             req.campaign_id, req.link, req.notes, req.hook_style, req.image_url, req.video_url, ts, ts),
         )
         return get_or_404(conn, cur.lastrowid)
 
@@ -401,6 +480,19 @@ def mark_published(item_id: int, req: Published | None = None, x_approver_key: s
             fields["external_url"] = req.external_url
         if req and req.short_url:
             fields["short_url"] = req.short_url
+        return update(conn, item_id, fields)
+
+
+@app.post("/items/{item_id}/notes", dependencies=[Depends(require_key)])
+def add_note(item_id: int, req: NoteLine):
+    """Append a timestamped line to notes without changing the status (the publisher records
+    "sent to CMS as draft" here, so an approved blog item is not sent again). Optionally sets
+    external_url. Content stays frozen; notes and external_url are not content."""
+    with db() as conn:
+        item = get_or_404(conn, item_id)
+        fields = {"notes": append_note(item["notes"], f"[{now_utc()}] {req.note}")}
+        if req.external_url:
+            fields["external_url"] = req.external_url
         return update(conn, item_id, fields)
 
 

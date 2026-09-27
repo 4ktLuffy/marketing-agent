@@ -1,11 +1,15 @@
 """Image cards: branded social/OG images rendered with Pillow."""
+import hmac
 import io
 import os
+import re
+import secrets
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI
-from fastapi.responses import Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, Response
 from PIL import Image, ImageDraw, ImageFont
 from pydantic import BaseModel, Field, field_validator
 
@@ -18,6 +22,16 @@ THEMES = {
 }
 DEJAVU_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 DEJAVU = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+# Channel -> card size for POST /cards when no size is given. Feeds are square on the
+# Meta networks, link previews are OG-shaped on LinkedIn and X, vertical video is story.
+CHANNEL_SIZES = {
+    "instagram": "square", "threads": "square", "facebook": "square",
+    "linkedin": "og", "x": "og", "twitter": "og",
+    "story": "story", "reels": "story", "tiktok": "story", "shorts": "story", "video": "story",
+}
+# Stored card ids: 32 lower-case hex characters (128 random bits). Nothing else is ever
+# turned into a file path.
+CARD_ID = re.compile(r"[0-9a-f]{32}")
 
 
 class CardRequest(BaseModel):
@@ -26,6 +40,7 @@ class CardRequest(BaseModel):
     brand: str | None = Field(None, max_length=40)
     size: Literal["og", "square", "story"] = "og"
     theme: Literal["light", "dark"] = "light"
+    accent: str | None = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
 
     @field_validator("title")
     @classmethod
@@ -96,7 +111,9 @@ def fit_title(title: str, width: int, height: int, max_size: int, min_size: int)
 
 def render(req: CardRequest) -> bytes:
     w, h = SIZES[req.size]
-    colors = THEMES[req.theme]
+    colors = dict(THEMES[req.theme])
+    if req.accent:
+        colors["accent"] = req.accent
     img = Image.new("RGB", (w, h), colors["bg"])
     draw = ImageDraw.Draw(img)
 
@@ -151,3 +168,55 @@ def health():
 @app.post("/card", response_class=Response, responses={200: {"content": {"image/png": {}}}})
 def card(req: CardRequest):
     return Response(render(req), media_type="image/png")
+
+
+# ---------- stored cards (POST /cards, GET /cards/{id}.png)
+
+
+class StoredCardRequest(CardRequest):
+    channel: str | None = Field(None, max_length=40)
+
+
+def require_key(x_api_key: str | None = Header(default=None)):
+    expected = os.environ.get("INTERNAL_API_KEY")
+    if not expected:
+        raise HTTPException(503, "INTERNAL_API_KEY is not configured on this service")
+    if not x_api_key or not hmac.compare_digest(x_api_key, expected):
+        raise HTTPException(401, "missing or wrong X-API-Key")
+
+
+def data_dir() -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data/cards"))
+
+
+def public_base(request: Request) -> str:
+    return (os.environ.get("PUBLIC_BASE_URL") or str(request.base_url)).strip().rstrip("/")
+
+
+@app.post("/cards", status_code=201, dependencies=[Depends(require_key)])
+def create_card(req: StoredCardRequest, request: Request):
+    """Render a card, keep it under DATA_DIR and return a URL anyone with the link can load."""
+    if "size" not in req.model_fields_set and req.channel:
+        req.size = CHANNEL_SIZES.get(req.channel.strip().lower(), "og")
+    png = render(req)
+    folder = data_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    card_id = secrets.token_hex(16)
+    tmp = folder / f".{card_id}.tmp"
+    tmp.write_bytes(png)
+    os.replace(tmp, folder / f"{card_id}.png")  # never serve a half-written file
+    w, h = SIZES[req.size]
+    return {"id": card_id, "url": f"{public_base(request)}/cards/{card_id}.png",
+            "width": w, "height": h, "size": req.size}
+
+
+@app.get("/cards/{card_id}.png", response_class=FileResponse,
+         responses={200: {"content": {"image/png": {}}}})
+def get_card(card_id: str):
+    if not CARD_ID.fullmatch(card_id):
+        raise HTTPException(404, "card not found")
+    path = data_dir() / f"{card_id}.png"
+    if not path.is_file():
+        raise HTTPException(404, "card not found")
+    return FileResponse(path, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=31536000, immutable"})

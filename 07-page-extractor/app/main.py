@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, model_validator
 
+from app import youtube
 from app.net import BlockedURL, FetchError, fetch
 
 app = FastAPI(title="page-extractor")
@@ -89,6 +90,19 @@ def health():
 def extract_endpoint(req: ExtractRequest):
     if req.html is not None:
         return extract(BeautifulSoup(req.html, "html.parser"), None)
+    try:
+        vid = youtube.video_id(req.url)
+    except youtube.BadVideoURL as exc:
+        raise HTTPException(422, str(exc))
+    except youtube.NotYouTube:
+        vid = None
+    if vid:
+        try:
+            return youtube.extract_video(vid, MAX_TEXT)
+        except youtube.TranscriptUnavailable as exc:
+            raise HTTPException(422, str(exc))
+        except youtube.TranscriptFetchError as exc:
+            raise HTTPException(502, str(exc))
     try:
         page = fetch(req.url.strip())
     except BlockedURL as exc:

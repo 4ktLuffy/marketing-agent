@@ -18,6 +18,7 @@ DEFAULT_SERVICES = [
     "platform-rules", "utm-builder", "link-shortener", "image-cards", "email-renderer",
     "content-calendar", "analytics-ingest", "report-builder", "claim-checker",
     "campaign-service", "learning-service", "llm-gateway-verifier", "review-hub",
+    "cms-bridge", "content-engine", "gsc-sync", "customer-language", "video-assembly",
 ]
 
 

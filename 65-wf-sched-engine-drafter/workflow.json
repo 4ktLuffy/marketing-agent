@@ -1,0 +1,1608 @@
+{
+  "id": "mktWf65EngDraft0",
+  "name": "65 · Schedule · Engine drafter",
+  "nodes": [
+    {
+      "id": "a0a7ab2a-87a5-5eb8-8840-468b854ebe22",
+      "name": "Daily 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fcc98410-cdfd-5e2a-9a09-2eb0a7e9b331",
+      "name": "Active pillars",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ENGINE_URL }}/pillars",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "active"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "08f44463-0ea3-5f46-bee8-20f35611fa29",
+      "name": "Idea items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "idea"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7886dd88-215e-595e-ad9a-4a1a49067a8b",
+      "name": "Brand profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BRAND_URL }}/profile",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "7716e342-a897-58e2-bcc3-b84af7bf4b24",
+      "name": "Slot requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const raw = [].concat($('Active pillars').first().json.body ?? []);\nconst pillars = (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(p => p && p.id && p.status === 'active');\nif (!pillars.length) return [{ json: { url: `${$env.ENGINE_URL}/health` } }];\nreturn pillars.map(p => ({ json: { url: `${$env.ENGINE_URL}/pillars/${p.id}/slots?status=planned` } }));\n"
+      }
+    },
+    {
+      "id": "4ea128dd-7132-56d3-88b3-53a09a1fa729",
+      "name": "Planned slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "bdad1449-30be-5bc7-ac35-d7751d74ca62",
+      "name": "Pick slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const num = (v, d) => { const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) || n < 0 ? d : n; };\nconst CAP = Math.floor(num($env.ENGINE_DRAFTS_PER_RUN, 12));\nconst AHEAD = num($env.ENGINE_LOOKAHEAD_DAYS, 7);\nconst list = r => { const raw = [].concat((r || {}).body ?? []); return (raw.length === 1 && Array.isArray(raw[0]) ? raw[0] : raw).filter(x => x && x.id); };\n// Paused pillars (the stop rule in 61) are not listed as active, so their slots wait.\nconst pillars = Object.fromEntries(list($('Active pillars').first().json).filter(p => p.status === 'active').map(p => [p.id, p]));\nconst ideas = new Map(list($('Idea items').first().json).map(i => [i.id, i]));\nconst today = new Date().toISOString().slice(0, 10);\nconst until = new Date(Date.now() + AHEAD * 864e5).toISOString().slice(0, 10);\nconst slots = $input.all().flatMap(r => Array.isArray(r.json.body) ? r.json.body : [])\n  .filter(s => s && s.status === 'planned' && pillars[s.pillar_id])\n  .sort((a, b) => a.date.localeCompare(b.date) || a.time_utc.localeCompare(b.time_utc) || a.id - b.id);\nconst notes = [], ready = [];\nconst past = slots.filter(s => s.date < today).length;\nif (past) notes.push(`${past} planned slot${past === 1 ? ' is' : 's are'} already past their date and were not drafted`);\nconst noItem = [];\nfor (const s of slots.filter(s => s.date >= today && s.date <= until)) {\n  const it = ideas.get(s.calendar_item_id);\n  if (!s.calendar_item_id) { noItem.push(s.id); continue; }\n  if (!it) { notes.push(`slot #${s.id}: calendar item #${s.calendar_item_id} is no longer an idea, skipped`); continue; }\n  ready.push({ slot: s, item: it, pillar: pillars[s.pillar_id] });\n}\nif (noItem.length) notes.push(`${noItem.length} slot(s) have no calendar item (not planned by plan_content_month), e.g. #${noItem.slice(0, 5).join(', #')}`);\nconst picked = ready.slice(0, CAP);\nif (ready.length > picked.length) notes.push(`${ready.length - picked.length} more slots in the next ${AHEAD} days wait for the next run (ENGINE_DRAFTS_PER_RUN=${CAP})`);\nif (picked.length) return picked.map(x => ({ json: { pick: true, ...x, notes } }));\nreturn [{ json: { pick: false, notes } }];\n"
+      }
+    },
+    {
+      "id": "491b57ae-b3f8-5e80-a399-c5892a555459",
+      "name": "Anything to draft?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8895c221-1f14-530c-9c9b-fc9f01194cf6",
+              "leftValue": "={{ $json.pick }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7a6b7d25-cbe5-505a-bae2-589e488a660a",
+      "name": "Nothing to draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        620
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();   // no notification for a quiet day\n"
+      }
+    },
+    {
+      "id": "c5cd9793-515b-5d0c-90b9-533dc73cf64f",
+      "name": "Loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "9f1ee882-7f61-50a8-bcb4-d88bdc32dde9",
+      "name": "Examples",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        520
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.LEARNING_URL }}/examples",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.slot.channel }}"
+            },
+            {
+              "name": "k",
+              "value": "2"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "50815dc5-52a5-5e38-b183-c643721a0ded",
+      "name": "Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        520
+      ],
+      "parameters": {
+        "jsCode": "// Reached from Examples (first attempt) or from \"Retry?\" (the draft was too close to an\n// earlier post on the channel: one more try with a different hook).\nconst cur = $('Loop').first(1).json;     // loop output 1 = the slot drafted in this round\nconst inp = $input.first().json;\nconst retry = inp.retry === true;\nconst s = cur.slot, pl = cur.pillar || {}, atom = s.atom || {};\nconst hook = retry ? inp.next_hook : s.hook_style;\nconst exRaw = ($('Examples').first().json || {}).body;\nconst examples = (Array.isArray(exRaw) ? exRaw : []).filter(e => e && e.text).map(e => `- ${e.text}`).join('\\n') || null;\n// The atom was verified against the pillar (64), so it and its evidence are the facts.\nconst facts = [`Idea: ${atom.text}`, atom.evidence ? `Source: ${atom.evidence}` : '',\n  `Pillar: ${pl.title}. ${pl.brief || ''}`].filter(Boolean).join('\\n');\nconst opening = `Open with a ${String(hook).replace('_', ' ')} hook.`;\nlet request, gateChannel = s.channel, rewrite = '';\nif (s.format === 'blog') {\n  request = { prompt: 'blog_post', vars: { topic: atom.text, audience: pl.audience || null, context: `${facts}\\n${opening}`, length_words: 700 } };\n} else if (s.format === 'email') {\n  request = { prompt: 'email_newsletter', vars: { topic: atom.text, audience: pl.audience || null, context: `${facts}\\n${opening}` } };\n} else if (s.format === 'video_script') {\n  // Structured: the gate only reports (a rewrite merged a script's parts, night 5).\n  request = { prompt: 'video_script', vars: { topic: atom.text, audience: pl.audience || null, context: `${facts}\\n${opening}` } };\n  gateChannel = 'video'; rewrite = 'no';\n} else if (s.format === 'thread') {\n  // Own prompt: asked through social_posts with a format note, the 7B model wrote one post\n  // (0/9 threads with 3+ parts in the eval, 23 threads_carousels). Code numbers the parts.\n  request = { prompt: 'x_thread', vars: { topic: atom.text, audience: pl.audience || null, context: facts, examples, prefer_hooks: hook } };\n  // 14 has no thread limit: the whole thread would fail x's 280 characters. After Gate checks each part.\n  // Report-only: in the e2e test a gate rewrite (for too many emoji) merged the 4 parts into one.\n  gateChannel = 'x_thread'; rewrite = 'no';\n} else if (s.format === 'carousel_text') {\n  request = { prompt: 'carousel_text', vars: { topic: atom.text, channel: s.channel, audience: pl.audience || null,\n    context: facts, examples, prefer_hooks: hook } };\n  rewrite = 'no';   // structured like a video script: a rewrite would merge the slides; the gate reports\n} else {\n  request = { prompt: 'social_posts', vars: { topic: atom.text,\n    channels: s.channel, context: facts, campaign: `engine-p${s.pillar_id}`, examples, prefer_hooks: hook } };\n}\nreturn [{ json: { slot_id: s.id, item_id: cur.item.id, pillar_id: s.pillar_id, channel: s.channel, format: s.format,\n  hook, attempt: retry ? 2 : 1, first_reasons: retry ? inp.reasons : [], gateChannel, rewrite, facts, request } }];\n"
+      }
+    },
+    {
+      "id": "a0046b23-2dbb-5c33-8052-8851b187aa42",
+      "name": "Write",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "79fcfa17-ee87-5fdf-a646-6d4a40961ba9",
+      "name": "Draft text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const errText = j => { j = j || {}; const e = j.error ?? j.detail ?? j.body?.detail; return e == null ? '' : String(typeof e === 'object' ? e.message || JSON.stringify(e) : e).slice(0, 200); };\n\nconst r = $('Request').first().json;\nconst res = $input.first().json || {};\nconst out = res.output;\nlet text = '', prefix = '', suffix = '', title = '', error = '', slides = null, gateText = null, script = null;\nconst tag = h => '#' + String(h).replace(/^#/, '').replace(/\\s+/g, '');\ntry {\n  if (out == null) throw new Error(errText(res) || 'no answer from the gateway');\n  if (r.format === 'blog') {\n    text = String(out).trim();\n    title = ((text.match(/^#\\s+(.+)$/m) || [])[1] || '').trim();\n  } else if (r.format === 'email') {\n    prefix = `Subject: ${out.subject}\\nPreheader: ${out.preheader}\\n\\n`;\n    text = String(out.body_markdown || '').trim();\n    title = `Email: ${out.subject}`;\n  } else if (r.format === 'video_script') {\n    const lines = [`Hook: ${out.hook.spoken}`, `On screen: ${out.hook.on_screen}`, ''];\n    for (const b of out.beats) lines.push(`Say: ${b.spoken}`, `On screen: ${b.on_screen}`, '');\n    lines.push(`Close: ${out.cta}`, '', `Caption: ${out.caption}`, (out.hashtags || []).map(tag).join(' '));\n    text = lines.join('\\n').trim();\n    suffix = ['', '', `Estimated length: ${out.estimated_seconds} s`, 'Shot list:',\n      ...out.beats.map((b, i) => `- beat ${i + 1}: ${b.shot}`)].join('\\n');\n    title = `Video script: ${out.hook.spoken}`;\n    script = out;   // rendered as a preview MP4 by 71 after the gate\n  } else if (r.format === 'thread') {\n    // The model does not number the posts (the prompt says so); strip any \"1/\" it added anyway.\n    const parts = (out.posts || []).map(p => String(p || '').replace(/^\\s*(\\(?\\d+\\s*[\\/.)](?!\\d)|\\d+\\s*\\/\\s*\\d+)\\s*/, '').trim()).filter(Boolean);\n    if (parts.length < 2) throw new Error(`thread has ${parts.length} post(s)`);\n    text = parts.map((p, i) => `${i + 1}/${parts.length} ${p}`).join('\\n\\n');\n    gateText = parts.join('\\n\\n');   // the claim checker should not read \"1/3\" as part of a claim\n    title = `Thread: ${parts[0]}`;\n  } else if (r.format === 'carousel_text') {\n    const sl = (out.slides || []).filter(s => s && String(s.title || '').trim());\n    if (sl.length < 3) throw new Error(`carousel has ${sl.length} slide(s)`);\n    const clean = t => String(t || '').replace(/^\\s*(slide\\s*)?\\d+\\s*[:.)\\-–—]\\s*/i, '').trim();\n    // The last slide must ask for the action. The 7B model fills \"cta\" reliably but often ends\n    // the slides on a benefit (eval 23 threads_carousels: last slide a CTA in 4 of 9 runs, the\n    // cta field in 9 of 9), so code adds the cta as the last slide when it is missing.\n    const cta = String(out.cta || '').trim();\n    const CTA = /\\b(follow|save|share|comment|subscribe|order|shop|try|start|get|grab|visit|check|join|sign up|book|tell|dm|message|reply|click|tap|learn|read|explore|discover|pick|choose|buy|head|link in bio|bio)\\b|https?:\\/\\//i;\n    const last = sl[sl.length - 1];\n    if (cta && !CTA.test(`${last.title} ${last.body}`)) {\n      const slide = { title: cta.length <= 40 ? cta : 'Your next step', body: cta.length <= 40 ? '' : cta.slice(0, 160) };\n      if (sl.length < 8) sl.push(slide); else sl[sl.length - 1] = slide;\n    }\n    text = [...sl.map((s, i) => `Slide ${i + 1} — ${clean(s.title)}\\n${String(s.body || '').trim()}`.trim()),\n      `Caption: ${String(out.caption || '').trim()}`].join('\\n\\n');\n    title = `Carousel: ${clean(sl[0].title)}`;\n    slides = sl.map(s => clean(s.title));   // one title card per slide (17)\n    // The gate checks the words, without the \"Slide k —\" labels (the claim checker read\n    // \"Slide 3 — Skip or pause\" as a claim).\n    gateText = [...sl.map(s => `${clean(s.title)}. ${String(s.body || '').trim()}`.trim()), String(out.caption || '').trim()].join('\\n');\n  } else {\n    const posts = out.posts || [];\n    const post = posts.find(p => String(p.channel || '').trim().toLowerCase() === r.channel) || posts[0];\n    if (!post || !String(post.text || '').trim()) throw new Error(`no ${r.channel} post in the answer`);\n    text = String(post.text).trim();\n  }\n  if (!text) throw new Error('empty draft');\n} catch (e) { error = String(e.message || e).slice(0, 200); }\nif (!title) title = text.split('\\n').map(l => l.replace(/^#+\\s*/, '').trim()).find(l => /[\\p{L}\\p{N}]/u.test(l)) || '';\nreturn [{ json: { ...r, text, prefix, suffix, title: title.slice(0, 120), error, slides, script, gateText: gateText || text } }];\n"
+      }
+    },
+    {
+      "id": "628ae151-e966-5475-bcaf-eaa3b7c9d876",
+      "name": "Novelty check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/novelty/check",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text || '(no draft)', channel: $json.channel, exclude_item_id: $json.item_id }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c6e4538c-f5db-5a29-8aad-0b66fff6190d",
+      "name": "Judge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const errText = j => { j = j || {}; const e = j.error ?? j.detail ?? j.body?.detail; return e == null ? '' : String(typeof e === 'object' ? e.message || JSON.stringify(e) : e).slice(0, 200); };\n\nconst d = $('Draft text').first().json;\nconst n = $input.first().json || {};\nconst HOOKS = ['question', 'fact_led', 'story', 'how_to', 'benefit', 'contrarian'];\nif (d.error) return [{ json: { ...d, route: 'error' } }];\nif (typeof n.novel !== 'boolean')\n  return [{ json: { ...d, route: 'gate', novelty_note: `novelty NOT checked (${errText(n) || 'engine unavailable'})` } }];\nif (n.novel) return [{ json: { ...d, route: 'gate', novelty_note: n.embedding_checked ? '' : 'novelty checked without embeddings (weaker check)' } }];\nconst reasons = (n.reasons || []).map(String);\nif (d.attempt === 1) {\n  // A different hook, as far from the planned one as the list allows.\n  const i = Math.max(0, HOOKS.indexOf(d.hook));\n  return [{ json: { route: 'retry', retry: true, next_hook: HOOKS[(i + 3) % HOOKS.length], reasons } }];\n}\nreturn [{ json: { ...d, route: 'drop', reasons: [...(d.first_reasons || []), ...reasons] } }];\n"
+      }
+    },
+    {
+      "id": "5ee32675-0312-53fd-b2c3-a0577705d611",
+      "name": "Retry?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3600,
+        520
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e6b0be38-7278-5cca-90e0-63e28dd01be6",
+              "leftValue": "={{ $json.route === 'retry' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dd2ed45f-0b4d-5cdc-b581-52a2787ca9ed",
+      "name": "Keep?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3840,
+        620
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b607caf0-881b-579c-ae98-7595b1687143",
+              "leftValue": "={{ $json.route === 'gate' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ad13cde6-076b-576c-861c-5e902ef07cb5",
+      "name": "Dropped?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4080,
+        820
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "09f30998-01c8-511f-b33e-468a466a6896",
+              "leftValue": "={{ $json.route === 'drop' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b4b5208e-9612-5059-9096-2f9ae4db82fb",
+      "name": "Quality gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4080,
+        520
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "mktWf35QualityGa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text": "={{ $json.gateText || $json.text }}",
+            "channel": "={{ $json.gateChannel }}",
+            "context": "={{ $json.facts }}",
+            "ref": "={{ $json.item_id }}",
+            "rewrite": "={{ $json.rewrite }}",
+            "links": ""
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "context",
+              "displayName": "context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ref",
+              "displayName": "ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rewrite",
+              "displayName": "rewrite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "links",
+              "displayName": "links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "624a02b6-68b5-5f00-b5fb-d6a725d0aac6",
+      "name": "After gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        520
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Judge').first().json;\nconst g = $input.first().json || {};\n// Report-only formats keep their own text (the gate may have been given a plain version).\nconst core = d.rewrite !== 'no' && typeof g.text === 'string' && g.text.trim() ? g.text.trim() : d.text;\nconst problems = Array.isArray(g.problems) ? [...g.problems] : ['quality gate gave no result'];\nif (d.format === 'thread') {\n  // Each part of an X thread is its own post: 280 characters, a URL counts as 23.\n  const len = t => t.replace(/https?:\\/\\/\\S+/g, 'x'.repeat(23)).length;\n  const long = core.split(/\\n\\s*\\n/).map(t => t.trim()).filter(t => t && len(t) > 280);\n  if (long.length) problems.push(`${long.length} thread part(s) over 280 characters, e.g. \"${long[0].slice(0, 40)}…\"`);\n}\nreturn [{ json: { ...d, core, body: d.prefix + core + d.suffix, ok: g.ok === true && problems.length === 0, problems,\n  warnings: [...(g.warnings || []), d.novelty_note].filter(Boolean), rewritten: g.rewritten === true } }];\n"
+      }
+    },
+    {
+      "id": "a415a04f-c4ef-5545-8781-399fe70f9138",
+      "name": "Card request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        520
+      ],
+      "parameters": {
+        "jsCode": "// Image-friendly channels get a title card from 17 (17 picks the size from the channel:\n// square for instagram/facebook/threads, og for linkedin/x). Other channels, or no\n// CARDS_URL, make a harmless GET /health instead so every item still passes through.\nconst CARD_CHANNELS = ['instagram', 'facebook', 'threads', 'linkedin', 'x'];\nfunction cardRequest(channel, title) {\n  const b = ($('Brand profile').first().json || {}).body;\n  const brand = b && typeof b === 'object' ? b : {};\n  // First line without links, hashtags or emoji (the card font has no emoji glyphs), cut to\n  // its first sentence when that is long enough to stand alone.\n  const first = String(title || '').split('\\n')\n    .map(l => l.replace(/https?:\\/\\/\\S+/g, '').replace(/(^|\\s)#[\\p{L}\\p{N}_]+/gu, '$1')\n      .replace(/[\\p{Extended_Pictographic}\\u{FE0F}\\u{200D}\\u{20E3}]/gu, '').replace(/\\s+/g, ' ').trim())\n    .find(l => /[\\p{L}\\p{N}]/u.test(l)) || '';\n  const sentence = (first.match(/^.*?[.!?](?=\\s|$)/) || [first])[0];\n  const line = sentence.length >= 20 ? sentence : first;\n  const t = line.length > 140 ? line.slice(0, 139).replace(/\\s+\\S*$/, '') + '…' : line;\n  if (!$env.CARDS_URL || !CARD_CHANNELS.includes(channel) || !t) {\n    return { skip: true, method: 'GET', url: `${$env.CARDS_URL || $env.CALENDAR_URL}/health`, body: '{}' };\n  }\n  const accent = /^#[0-9a-fA-F]{6}$/.test(String(brand.accent_color || '')) ? brand.accent_color : null;\n  return { skip: false, method: 'POST', url: `${$env.CARDS_URL}/cards`, body: JSON.stringify({\n    title: t, brand: brand.name ? String(brand.name).slice(0, 40) : null, channel, accent }) };\n}\n\nconst social = !['blog', 'email', 'video_script'].includes($json.format);\n// A carousel gets one title card per slide (at most 8, one fast call each to 17); the first\n// becomes the item's image_url, the others are listed in the body.\nconst slides = $json.format === 'carousel_text' && Array.isArray($json.slides) ? $json.slides.slice(0, 8) : [];\nif (slides.length) return slides.map((t, i) => ({ json: { ...cardRequest($json.channel, t), post: $json, slide: i + 1 } }));\nreturn [{ json: { ...cardRequest(social ? $json.channel : 'none', $json.core), post: $json } }];\n"
+      }
+    },
+    {
+      "id": "abe9d06f-5eb9-5c62-a6e4-d6afb240d8a2",
+      "name": "Image card",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4800,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "436363f8-6280-559d-bdfc-0d273be4c5f9",
+      "name": "Attach image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5040,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function imageUrlOf(req, res) {\n  return !req.skip && res && res.statusCode === 201 && res.body && typeof res.body.url === 'string' ? res.body.url : null;\n}\nconst NO_IMAGE_IG = 'No image: the title card (17-image-cards) could not be made, and Instagram cannot be published without one. Add an image_url before approving.';\n\nconst reqs = $('Card request').all().map(i => i.json);\nconst res = $input.all().map(i => i.json);\nconst g = reqs[0].post;\nconst urls = reqs.map((q, i) => imageUrlOf(q, res[i]));\nconst image_url = urls[0] || null;\n// Carousel: slide k's card goes in the item's notes (the body stays the publishable text).\n// Fail-soft: a card that could not be made is named, the draft is kept.\nconst cards_note = reqs.length > 1 ? `slide cards (${urls.filter(Boolean).length} of ${urls.length} made): ` +\n  urls.map((u, i) => `slide ${i + 1} ${u || 'not made'}`).join(', ') : null;\nreturn [{ json: { ...g, cards_note, image_url, image_note: !image_url && g.channel === 'instagram' ? NO_IMAGE_IG : null } }];\n"
+      }
+    },
+    {
+      "id": "b3f92e23-4e12-5071-8330-ac0096f6d346",
+      "name": "Video request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5280,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// A video_script draft gets a preview MP4 from 71 (POST $VIDEO_URL/render). Other formats,\n// or no VIDEO_URL, make a harmless GET /health instead so the item still passes through.\nfunction videoRequest(script) {\n  if (!$env.VIDEO_URL || !script || typeof script !== 'object') {\n    return { skip: true, method: 'GET', url: `${$env.VIDEO_URL || $env.CALENDAR_URL}/health`, body: '{}' };\n  }\n  const b = ($('Brand profile').first().json || {}).body;\n  const brand = b && typeof b === 'object' ? b : {};\n  const name = String(brand.name || '').trim().slice(0, 40);\n  const accent = /^#[0-9a-fA-F]{6}$/.test(String(brand.accent_color || '')) ? brand.accent_color : null;\n  const logo = name.split(/\\s+/).map(w => (w.match(/[\\p{L}\\p{N}]/u) || [''])[0]).join('').slice(0, 3).toUpperCase();\n  const voice = String($env.VIDEO_VOICE || '').trim();   // empty: the service's TTS_BACKEND\n  return { skip: false, method: 'POST', url: `${$env.VIDEO_URL}/render`, body: JSON.stringify({\n    script, brand: { name: name || null, accent, logo_text: logo || null },\n    ...(voice ? { voice: { backend: voice } } : {}) }) };\n}\n\nconst g = $input.first().json;\nreturn [{ json: videoRequest(g.format === 'video_script' ? g.script : null) }];\n"
+      }
+    },
+    {
+      "id": "25873ead-9d04-5cbf-a46c-f85d602f6274",
+      "name": "Render video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5520,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "567fde81-f383-5195-8d16-3d5bbd58a2aa",
+      "name": "Attach video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5760,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function videoResult(req, res) {\n  if (!req || req.skip) return { video_url: null, poster_url: null, video_note: null };\n  const b = res && res.body;\n  const http = u => typeof u === 'string' && /^https?:\\/\\/\\S+$/.test(u) && u.length <= 2000;\n  if (res && res.statusCode === 201 && b && http(b.url)) {\n    return { video_url: b.url, poster_url: http(b.poster_url) ? b.poster_url : null,\n      video_note: `video preview: ${b.url} (${b.duration_s} s)` };\n  }\n  const d = b && typeof b === 'object' ? b.detail : b;\n  const err = res && res.error;\n  const why = typeof d === 'string' ? d\n    : Array.isArray(d) ? d.map(x => [].concat((x && x.loc) || []).slice(1).join('.') + ' ' + ((x && x.msg) || '')).join('; ')\n    : d ? JSON.stringify(d)\n    : err ? (typeof err === 'string' ? err : err.message || JSON.stringify(err)) : 'no answer';\n  const code = res && res.statusCode ? `HTTP ${res.statusCode}: ` : '';\n  return { video_url: null, poster_url: null,\n    video_note: `video not rendered: ${(code + String(why)).replace(/\\s+/g, ' ').trim().slice(0, 300)}` };\n}\n\nconst g = $('Attach image').first().json;\nconst v = videoResult($('Video request').first().json, $input.first().json);\nreturn [{ json: { ...g, video_url: v.video_url, video_note: v.video_note,\n  image_url: g.image_url || v.poster_url } }];\n"
+      }
+    },
+    {
+      "id": "8ff05e3d-22a0-54e5-a78e-8bd62ee5432b",
+      "name": "Save ops",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6000,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function rawOps(ops) { return ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }]; }\n\nconst r = $input.first().json;\nconst base = $env.CALENDAR_URL;\nconst id = r.item_id;\nconst patch = { title: r.title || undefined, body: r.body, hook_style: r.hook };\nif (r.image_url) patch.image_url = r.image_url;\nif (r.video_url) patch.video_url = r.video_url;\nconst ops = [{ stage: 1, method: 'PATCH', url: `${base}/items/${id}`, body: patch }];\nconst why = [r.ok ? 'drafted by the engine drafter' : `drafted by the engine; needs a human. Quality gate: ${r.problems.join('; ')}`,\n  r.attempt === 2 ? `second attempt with hook ${r.hook} (the first was too close to an earlier post)` : '',\n  ...r.warnings, r.image_note || '', r.cards_note || '', r.video_note || ''].filter(Boolean).join('. ');\nops.push({ stage: 2, method: 'POST', url: `${base}/items/${id}/status`, body: { status: 'draft', note: why.slice(0, 1500) } });\nif (r.ok) ops.push({ stage: 3, method: 'POST', url: `${base}/items/${id}/status`, body: { status: 'in_review', note: 'passed the quality gate' } });\nreturn rawOps(ops);\n"
+      }
+    },
+    {
+      "id": "f4b65864-44ae-52ad-942c-ff317279b4e9",
+      "name": "Stage 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Save ops').all().map(i => i.json).filter(o => o.stage === 1);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "0a760f95-562e-540d-aea7-1ad4d3d25b1a",
+      "name": "Run stage 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6480,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "3a905a3e-745f-5864-8502-852c7fe5c9a5",
+      "name": "Stage 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6720,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Save ops').all().map(i => i.json).filter(o => o.stage === 2);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "40c89e94-e7fd-5785-99fa-d624ed87a5db",
+      "name": "Run stage 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6960,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5d90523d-7584-5583-bc00-e9ffa7753f01",
+      "name": "Stage 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7200,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function opsToItems(ops, base) {\n  if (!ops.length) return [{ json: { method: 'GET', url: `${base}/health`, body: '{}', noop: true } }];\n  return ops.map(o => ({ json: { ...o, body: JSON.stringify(o.body || {}) } }));\n}\n\nconst ops = $('Save ops').all().map(i => i.json).filter(o => o.stage === 3);\nreturn opsToItems(ops, $env.CALENDAR_URL);\n"
+      }
+    },
+    {
+      "id": "eef34b30-0bf1-5ddc-b12c-69085d4276aa",
+      "name": "Run stage 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7440,
+        300
+      ],
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body || '{}' }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "e96c5cf3-9aed-52c4-8633-290e14b5f91f",
+      "name": "Register novelty",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/novelty/register",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ item_id: $('Attach image').first().json.item_id, channel: $('Attach image').first().json.channel, text: $('Attach image').first().json.core }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "16fc6a6b-598c-52cd-8e5a-4c3b5d440d0b",
+      "name": "Slot drafted",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7920,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/slots/{{ $('Attach image').first().json.slot_id }}/status",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'drafted', calendar_item_id: $('Attach image').first().json.item_id }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d46f5a34-4935-50c4-a09f-7fa9ad49c9bb",
+      "name": "Record drafted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8160,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const a = $('Attach video').first().json;\nconst failed = ['Run stage 1', 'Run stage 2', 'Run stage 3'].flatMap(n => $(n).all())\n  .filter(r => !r.json.noop && r.json.statusCode >= 300).map(r => JSON.stringify((r.json.body || {}).detail || r.json.body).slice(0, 160));\nconst slot = $input.first().json || {};\nconst reg = $('Register novelty').first().json || {};\nconst problems = [...failed, ...(slot.status === 'drafted' ? [] : ['slot not marked drafted in 61']),\n  ...(reg.item_id ? [] : ['text not registered for the novelty check'])];\nreturn [{ json: { result: failed.length ? 'error' : 'drafted', slot_id: a.slot_id, item_id: a.item_id, channel: a.channel,\n  format: a.format, hook: a.hook, attempt: a.attempt, status: a.ok ? 'in_review' : 'draft', image: !!a.image_url,\n  video: a.video_url || null, video_note: a.video_note || null, gate: a.problems, error: problems.join('; ') } }];\n"
+      }
+    },
+    {
+      "id": "ab7d6374-6bf1-56a9-83f0-aebc49434495",
+      "name": "Drop slot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        820
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL }}/slots/{{ $json.slot_id }}/status",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'dropped', reason: ('near-duplicate twice: ' + $json.reasons.join('; ')).slice(0, 1900) }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5630b087-f1bc-56f6-ae5c-d3c9f4b4b953",
+      "name": "Note drop",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4560,
+        820
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.CALENDAR_URL }}/items/{{ $('Judge').first().json.item_id }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ notes: [$('Loop').first(1).json.item.notes, 'engine: slot dropped, the draft was too close to an earlier post twice (' + $('Judge').first().json.reasons.join('; ').slice(0, 300) + ')'].filter(Boolean).join('\\n') }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "2119b5e2-b1fb-5f0a-a084-17470cc141ae",
+      "name": "Record dropped",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        820
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Judge').first().json;\nreturn [{ json: { result: 'dropped', slot_id: d.slot_id, item_id: d.item_id, channel: d.channel, format: d.format,\n  reason: d.reasons.join('; ') || 'not novel' } }];\n"
+      }
+    },
+    {
+      "id": "24c0e839-4077-5d34-bbb4-f78b88252028",
+      "name": "Record error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        1020
+      ],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: { result: 'error', slot_id: d.slot_id, item_id: d.item_id, channel: d.channel, format: d.format,\n  error: d.error || 'unexpected route' } }];   // the slot stays planned: retried next run\n"
+      }
+    },
+    {
+      "id": "f8d2eebd-05ca-5a3a-9a90-aaebfd4fc46c",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8400,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst notes = $('Pick slots').first().json.notes || [];\nconst drafted = rows.filter(r => r.result === 'drafted');\nconst review = drafted.filter(r => r.status === 'in_review').length;\nconst dropped = rows.filter(r => r.result === 'dropped');\nconst errors = rows.filter(r => r.result === 'error');\nconst form = `${String($env.N8N_PUBLIC_URL || 'http://localhost:5678/').replace(/\\/?$/, '/')}form/mkt-content-approval`;\nconst line = r => r.result === 'drafted'\n  ? `- #${r.item_id} ${r.channel} ${r.format} (${r.hook}${r.attempt === 2 ? ', 2nd try' : ''}) → ${r.status}` + (r.gate.length ? `: ${r.gate.join('; ').slice(0, 160)}` : '') + (r.error ? ` ⚠ ${r.error}` : '')\n    + (r.video_note && !r.video ? ` (${r.video_note})` : '')\n  : r.result === 'dropped' ? `- #${r.item_id} ${r.channel} dropped: ${r.reason.slice(0, 160)}`\n  : `- slot #${r.slot_id} (${r.channel}): error, retried next run: ${r.error}`;\nreturn [{ json: { drafted: drafted.length, dropped: dropped.length, errors: errors.length, text: [\n  `*Content engine*: ${drafted.length} drafted (${review} in review, ${drafted.length - review} need a human), ` +\n  `${dropped.length} dropped as near-duplicates, ${errors.length} error${errors.length === 1 ? '' : 's'}. Review them: ${form}`,\n  ...rows.map(line), ...notes.map(n => `- ${n}`),\n].join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "22254122-3c74-5c37-b6e3-9096b8968ce8",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8640,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no destination is configured.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "4624de51-40dd-5560-987d-8979df5f330d",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8880,
+        100
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, item.json.drafted > 0);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "ee1cab74-f6cb-594a-be44-e195fa322f16",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        9120,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 06:00": {
+      "main": [
+        [
+          {
+            "node": "Active pillars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Active pillars": {
+      "main": [
+        [
+          {
+            "node": "Idea items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Idea items": {
+      "main": [
+        [
+          {
+            "node": "Brand profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand profile": {
+      "main": [
+        [
+          {
+            "node": "Slot requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slot requests": {
+      "main": [
+        [
+          {
+            "node": "Planned slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planned slots": {
+      "main": [
+        [
+          {
+            "node": "Pick slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick slots": {
+      "main": [
+        [
+          {
+            "node": "Anything to draft?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything to draft?": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Examples",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Examples": {
+      "main": [
+        [
+          {
+            "node": "Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request": {
+      "main": [
+        [
+          {
+            "node": "Write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write": {
+      "main": [
+        [
+          {
+            "node": "Draft text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft text": {
+      "main": [
+        [
+          {
+            "node": "Novelty check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Novelty check": {
+      "main": [
+        [
+          {
+            "node": "Judge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Judge": {
+      "main": [
+        [
+          {
+            "node": "Retry?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry?": {
+      "main": [
+        [
+          {
+            "node": "Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keep?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep?": {
+      "main": [
+        [
+          {
+            "node": "Quality gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dropped?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dropped?": {
+      "main": [
+        [
+          {
+            "node": "Drop slot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality gate": {
+      "main": [
+        [
+          {
+            "node": "After gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "After gate": {
+      "main": [
+        [
+          {
+            "node": "Card request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Card request": {
+      "main": [
+        [
+          {
+            "node": "Image card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image card": {
+      "main": [
+        [
+          {
+            "node": "Attach image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach image": {
+      "main": [
+        [
+          {
+            "node": "Video request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video request": {
+      "main": [
+        [
+          {
+            "node": "Render video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render video": {
+      "main": [
+        [
+          {
+            "node": "Attach video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach video": {
+      "main": [
+        [
+          {
+            "node": "Save ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save ops": {
+      "main": [
+        [
+          {
+            "node": "Stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 1": {
+      "main": [
+        [
+          {
+            "node": "Run stage 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 1": {
+      "main": [
+        [
+          {
+            "node": "Stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 2": {
+      "main": [
+        [
+          {
+            "node": "Run stage 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 2": {
+      "main": [
+        [
+          {
+            "node": "Stage 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stage 3": {
+      "main": [
+        [
+          {
+            "node": "Run stage 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run stage 3": {
+      "main": [
+        [
+          {
+            "node": "Register novelty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register novelty": {
+      "main": [
+        [
+          {
+            "node": "Slot drafted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slot drafted": {
+      "main": [
+        [
+          {
+            "node": "Record drafted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drop slot": {
+      "main": [
+        [
+          {
+            "node": "Note drop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Note drop": {
+      "main": [
+        [
+          {
+            "node": "Record dropped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record drafted": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record dropped": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record error": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}
