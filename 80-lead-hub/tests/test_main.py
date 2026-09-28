@@ -10,7 +10,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app import enrich, main, scoring
+from app import enrich, main, safe_http, scoring
 
 KEY = "test-key"
 H = {"X-API-Key": KEY}
@@ -41,7 +41,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setenv("ENRICH_DELAY_S", "0")
     monkeypatch.setenv("DRY_RUN", "true")
     monkeypatch.setenv("WEBHOOK_SECRETS", "tally=tally-secret,typeform=tf-secret,n8n=n8n-secret")
-    monkeypatch.setattr(enrich, "resolve", lambda host: ["93.184.215.14"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["93.184.215.14"])
 
 
 client = TestClient(main.app)
@@ -235,7 +235,7 @@ def test_redirect_off_domain_is_discarded(services):
 
 
 def test_private_address_refused_by_hub(services, monkeypatch):
-    monkeypatch.setattr(enrich, "resolve", lambda host: ["10.0.0.7"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["10.0.0.7"])
     d = detail(post_lead().json()["id"])
     assert d["enrich_status"] == "failed" and "public address" in d["enrichment"]["error"]
 

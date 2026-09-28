@@ -85,7 +85,8 @@ def main(argv=None) -> int:
 
     services = {"brand": a.brand.rstrip("/"), "rules": a.rules.rstrip("/"), "brand_summary": ""}
     try:
-        services["brand_summary"] = httpx.get(f"{services['brand']}/profile/summary", timeout=10).json()["summary"]
+        services["brand_summary"] = httpx.get(f"{services['brand']}/profile/summary", timeout=10,
+                                                headers={"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {}).json()["summary"]
     except (httpx.HTTPError, KeyError, ValueError):
         print("warning: brand summary unavailable; numbers_from_input will only see case vars")
     cases = load_cases(a.only, a.cases)

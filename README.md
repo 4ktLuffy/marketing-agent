@@ -19,26 +19,38 @@ configuration, how to test). They also work as separate repos.
 | `01`–`04` | Docker stack, Ollama models, LLM gateway, prompt library |
 | `05`–`22`, `44`–`46` | Python services (FastAPI): brand, knowledge base, research, content tools, calendar, analytics, fact checker, campaigns, learning |
 | `23` | Eval suite: writing quality, fact-checker accuracy, tool selection |
-| `24`–`43`, `47`–`53`, `56`, `57`, `59`, `60`, `64`–`66`, `68`, `69`, `74`–`77`, `81`, `83` | n8n workflows: chat agent, its tools, schedules, forms, content engine, newsletter, refresh, SEO, experiments, clips, competitors |
-| `54`, `55`, `58`, `61`–`63`, `67`, `70`, `71`, `73`, `78`–`80`, `82` | Postiz bridge, Umami sync, review hub, content engine, CMS bridge (WordPress/Ghost), Listmonk bridge, Search Console sync, customer-language engine, video assembly, clip finder, ad library + competitor registry, site assistant, lead hub, AI visibility (GEO) tracker (all bridges dry run by default) |
-| `72` | Control room: mobile web app to review, schedule and watch performance |
+| `24`–`43`, `47`–`53`, `56`, `57`, `59`, `60`, `64`–`66`, `68`, `69`, `74`–`77`, `81`, `83`, `85` | n8n workflows: chat agent, its tools, schedules, forms, content engine, newsletter, refresh, SEO, experiments, clips, competitors, monthly client report |
+| `54`, `55`, `58`, `61`–`63`, `67`, `70`, `71`, `73`, `78`–`80`, `82`, `84`, `86`, `87` | Postiz bridge, Umami sync, review hub, content engine, CMS bridge (WordPress/Ghost), Listmonk bridge, Search Console sync, customer-language engine, video assembly, clip finder, ad library + competitor registry, site assistant, lead hub, AI visibility (GEO) tracker, paid-ads reporting, lifecycle email flows with a holdout, product feed titles for Merchant Center (read-only or dry run; all bridges dry run by default) |
+| `72` | Control room: mobile web app to review, schedule, watch performance, and see what the agent is doing (Activity: running calls, timeline, models, abilities) |
+| `tools/workflow-generator` | The Python that generates every n8n `workflow.json` (edit there, not in the JSON; CI checks they match) |
 
-## Quick start
+## Install
+
+One person, one afternoon: [01-marketing-stack/INSTALL.md](01-marketing-stack/INSTALL.md) is the
+checklist. The short version:
 
 ```bash
-./02-ollama-models/scripts/setup.sh           # local models
-cd 01-marketing-stack
-cp .env.example .env                           # fill the 3 secrets
-./scripts/preflight.sh                         # fix every FAIL
-docker compose up -d --build
-./scripts/import-n8n.sh                        # after creating the n8n owner account
-./scripts/smoke-test.sh
+# Needs Docker and Ollama (https://ollama.com/download) installed and running.
+./02-ollama-models/scripts/setup.sh                          # download the local models (about 5.5 GB)
+./01-marketing-stack/scripts/install.sh --profile core       # secrets, build, start, n8n owner, workflows, final check
 ```
 
-Replace the example brand (*Northwind Roasters*, a fictional coffee subscription) in
-`05-brand-service/config/brand.yaml` before real use.
+Profiles: **core** (the agent, 26 containers), **growth** (+ content engine, publishing bridges,
+SEO/analytics sync, experiments, reviews, video, clips, paid-ads reporting, email flows; 38) and **full**
+(+ competitor ads, site assistant, lead hub, AI visibility; 43). Re-running the installer is safe
+and is also how you change profile or apply `.env` changes.
+
+Installed? Replace the example brand (*Northwind Roasters*, a fictional coffee subscription) in
+the control room's **Brand setup**, then follow [PILOT.md](PILOT.md) for the first weeks.
 
 ## CI
 
-`.github/workflows/ci.yml` runs every deploy's tests, validates all n8n workflows and the
-compose file, and shellchecks the scripts.
+`.github/workflows/ci.yml` runs every deploy's tests, validates all n8n workflows, regenerates them
+with `tools/workflow-generator` and fails if anything differs, validates the compose file for each
+profile, and shellchecks the scripts.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE). Each numbered deploy folder carries the same `LICENSE`, so it stays
+licensed when pushed as its own repo. Vendored third-party files keep their own licences
+(`72-control-room/app/static/vendor/`: htmx 0BSD, FullCalendar and Chart.js MIT).

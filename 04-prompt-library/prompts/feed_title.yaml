@@ -1,0 +1,52 @@
+name: feed_title
+description: Product feed (87) — a better Google Shopping title (and optionally description) for one product, using only the words and numbers in its own row. Checked in code afterwards.
+output: json
+temperature: 0.2
+vars:
+  product: required
+  with_description: optional
+# Used by 87 feed-optimizer, one product per call. `product` is that product's own fields only
+# (no price, id, gtin or links). 87 rejects a title or description that has a number, colour,
+# material, size, gender, claim or brand the row does not have, promotional text, ALL CAPS or
+# more than 150 characters, and then uses its rule-based title instead. No brand here on purpose:
+# the product's brand is in its row, and the shop's brand voice has no place in a feed title.
+system: |
+  You improve product titles for Google Shopping. You only reorder, clean and combine what the
+  product data already says. You never add a fact: no colour, material, size, number, quantity,
+  feature, compatibility, certification or brand that the data does not state word for word.
+  If the data is sparse, the title stays short. Plain words, no hype.
+template: |
+  Product data (JSON; every value comes from the shop's feed):
+  {{ product }}
+
+  Write a title for this product, following Google's title guidance:
+  - Put the most useful words first: the brand (if the data has one), then what the product is,
+    then the key attributes the data has, such as gender, colour, size, material, pattern.
+    The first 70 characters matter most, because longer titles are cut off.
+  - At most 150 characters. Title case or sentence case, never ALL CAPS.
+  - Use only words and numbers that appear in the product data. If the colour, size or material
+    field is filled, use that value, even if the old title says something else.
+  - No promotional text: no "free shipping", "best", "sale", "% off", "buy now", no prices,
+    no exclamation marks, no emojis or symbols.
+  - Do not use another brand, not even as "for" or "compatible with", unless the data names it.
+  {% if with_description %}
+
+  Also write a description: plain text, no HTML, no links, 2 to 5 sentences, at most 1000
+  characters. Say what the product is and what the data says about it (material, size, use).
+  Same rules: only facts from the product data, no promotional text, no claims the data does
+  not make.
+  {% else %}
+
+  Leave description as an empty string.
+  {% endif %}
+
+  Return JSON: {"title": "...", "description": "..."}
+example_vars:
+  product: '{"title": "OXFORD SHIRT BLUE - FREE SHIPPING", "description": "Button-down collar shirt in cotton.", "brand": "Harbour Lane", "color": "Navy", "size": "M", "material": "Cotton", "gender": "male", "product_type": "Apparel > Shirts"}'
+  with_description: "yes"
+schema:
+  type: object
+  required: [title, description]
+  properties:
+    title: {type: string, minLength: 3, maxLength: 150}
+    description: {type: string, maxLength: 5000}

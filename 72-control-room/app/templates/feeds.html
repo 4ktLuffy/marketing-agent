@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Product feed{% endblock %}
+{% block main %}
+<h1>Product feed</h1>
+<p class="small muted">Better titles for your Google Merchant Center feed (87). Each upload is a batch. The model's titles are checked against each product's own data; rejected ones get a rule-based title. Approve on 87 with the approver key, then download here and upload the file to Merchant Center yourself.</p>
+{% if not_installed %}<p class="muted">The feed optimizer (87) isn't installed. Install the full profile to improve your product titles.</p>{% endif %}
+{% if error %}<p class="alert danger">{{ error }}</p>{% endif %}
+{% for b in batches %}
+<section class="panel">
+  <h2>{{ b.name }} <span class="chip">{{ (b.created_at or '')[:10] }}</span> <span class="chip">{{ b.format }}</span></h2>
+  <p class="small">{{ b.products }} products · {{ b.proposed }} with a proposed change · {{ b.pending }} waiting for a proposal · <b>{{ b.approved }} approved</b></p>
+  {% set rej = b.rejected or {} %}
+  <p class="small muted">Model titles kept {{ (b.titles or {}).model or 0 }}, rejected {{ rej.titles or 0 }}{% if rej.descriptions %}, descriptions rejected {{ rej.descriptions }}{% endif %}{% if rej.reasons %} ({% for k, v in rej.reasons.items() %}{{ k }} {{ v }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif %}{% if b.errors %} · {{ b.errors }} model errors{% endif %}</p>
+  <div class="chips">
+    <a class="chip" href="/feeds/{{ b.id }}/export.{{ b.format }}">Full feed ({{ b.format }})</a>
+    <a class="chip" href="/feeds/{{ b.id }}/supplemental.{{ b.format }}">Supplemental feed ({{ b.format }})</a>
+  </div>
+</section>
+{% else %}
+{% if not error and not not_installed %}<p class="muted">No uploads yet. Upload a feed file to 87: <code>POST /batches</code> (see its README).</p>{% endif %}
+{% endfor %}
+{% endblock %}

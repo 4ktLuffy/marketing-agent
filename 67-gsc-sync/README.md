@@ -1,6 +1,6 @@
 # gsc-sync
 
-Deploy **67 of 83** of the local-LLM marketing agent. It reads your Google Search Console
+Deploy **67 of 87** of the local-LLM marketing agent. It reads your Google Search Console
 clicks, impressions, CTR and average position per page and per query for two consecutive
 windows: the last N days and the N days before. It keeps them in SQLite and answers two
 questions:
@@ -56,7 +56,7 @@ If step 1 or 4 is missing, `/sync` returns `502`. The message says which step to
 
 ```bash
 docker build -t gsc-sync .
-docker run --rm -p 8167:8000 --network marketing --env-file .env \
+docker run --rm -p 8167:8000 --network marketing-agent_marketing --env-file .env \
   -v "$PWD/secrets:/secrets:ro" -v gsc-data:/data gsc-sync
 ```
 

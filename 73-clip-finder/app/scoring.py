@@ -46,11 +46,11 @@ def window_block(batch: list[Window]) -> str:
     return "\n\n".join(parts)
 
 
-def run_prompt(vars_: dict, timeout: float) -> dict:
+def run_prompt(vars_: dict, timeout: float, prompt: str = PROMPT) -> dict:
     try:
         with httpx.Client(timeout=timeout, trust_env=False) as client:
-            r = client.post(f"{gateway_url()}/v1/run", json={"prompt": PROMPT, "vars": vars_},
-                            headers=key_headers())
+            r = client.post(f"{gateway_url()}/v1/run", json={"prompt": prompt, "vars": vars_},
+                            headers={**key_headers(), "X-Caller": "73 clip finder"})
     except httpx.HTTPError as exc:
         raise ScoringFailed(f"gateway unreachable: {type(exc).__name__}")
     if r.status_code != 200:
@@ -101,18 +101,23 @@ def apply(batch: list[Window], output: dict) -> int:
             continue
         w.scores = scores
         w.score = round(10 * sum(WEIGHTS[k] * v for k, v in scores.items()), 1)
-        hook = " ".join(str(item.get("hook_line") or "").split()).strip("\"'“”")
-        w.hook = _words_upto(hook, HOOK_MAX) if hook and _norm(hook) and _norm(hook) in _norm(w.text) else None
-        if not w.hook:
-            w.hook = _opening_words(w, HOOK_MAX)
-        title = " ".join(str(item.get("title") or "").split()).strip("\"'“”")[:TITLE_MAX]
-        numbers = re.findall(r"\d+", title)
-        if not title or any(n not in w.text for n in numbers):
-            title = _opening_words(w, 50)
-        w.title = title
-        w.reason = " ".join(str(item.get("reason") or "").split())[:300] or None
+        set_texts(w, item)
         done += 1
     return done
+
+
+def set_texts(w: Window, item: dict) -> None:
+    """Title, hook line and reason from a model answer, checked against the window's words."""
+    hook = " ".join(str(item.get("hook_line") or "").split()).strip("\"'“”")
+    w.hook = _words_upto(hook, HOOK_MAX) if hook and _norm(hook) and _norm(hook) in _norm(w.text) else None
+    if not w.hook:
+        w.hook = _opening_words(w, HOOK_MAX)
+    title = " ".join(str(item.get("title") or "").split()).strip("\"'“”")[:TITLE_MAX]
+    numbers = re.findall(r"\d+", title)
+    if not title or any(n not in w.text for n in numbers):
+        title = _opening_words(w, 50)
+    w.title = title
+    w.reason = " ".join(str(item.get("reason") or "").split())[:300] or None
 
 
 def score(windows: list[Window], batch_size: int, timeout: float, language: str | None = None,

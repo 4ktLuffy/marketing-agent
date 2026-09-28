@@ -287,6 +287,20 @@ def list_watches(tag: str | None = None):
         return [watch_json(r) for r in rows]
 
 
+@app.get("/snapshots", dependencies=[Depends(require_key)])
+def list_snapshots(tag: str | None = None):
+    """The stored text of every checked watch (only those with that exact `tag` if given):
+    what the page said at its last check. Read by 78's positioning map."""
+    sql = f"SELECT {PUBLIC_COLS}, snapshot FROM watches WHERE snapshot IS NOT NULL"
+    args: tuple = ()
+    if tag is not None:
+        sql, args = sql + " AND tag = ?", (tag,)
+    with closing(db()) as conn:
+        rows = conn.execute(sql + " ORDER BY id", args).fetchall()
+    return [{"id": r["id"], "url": r["url"], "label": r["label"], "tag": r["tag"],
+             "last_checked_at": r["last_checked_at"], "text": r["snapshot"]} for r in rows]
+
+
 @app.delete("/watches/{watch_id}", status_code=204, dependencies=[Depends(require_key)])
 def delete_watch(watch_id: int):
     with closing(db()) as conn, conn:

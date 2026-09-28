@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
 # Run BEFORE `docker compose up`. Checks everything that commonly breaks a first deploy.
 # Prints PASS / WARN / FAIL per check; exits 1 if anything FAILs. Changes nothing.
+# One client of several: MKT_CLIENT=<slug> (or --client <slug>) checks .env.<slug> and its ports.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
-
-# Read .env like docker compose does (KEY=VALUE, values may contain spaces); never execute it.
-load_env() {
-  [ -f .env ] || return 0
-  while IFS= read -r line || [ -n "$line" ]; do
-    [[ "$line" =~ ^[[:space:]]*# || "$line" != *=* ]] && continue
-    key="${line%%=*}"; val="${line#*=}"
-    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$key=$val"
-  done < .env
-}
+[ "${1:-}" = --client ] && export MKT_CLIENT="${2:-}"
+# shellcheck source=client.sh
+. scripts/client.sh   # load_env, compose, env_file, host_port
+ENV_FILE="$(env_file)"
 
 fails=0
 pass() { printf '  PASS  %s\n' "$1"; }
@@ -29,9 +24,11 @@ else
   docker compose version >/dev/null 2>&1 && pass "docker compose available" || fail "docker compose plugin missing"
 fi
 
-echo "== .env"
-if [ ! -f .env ]; then
-  fail ".env missing: cp .env.example .env and fill it in"
+echo "== $ENV_FILE"
+if [ -n "${MKT_CLIENT:-}" ] && ! valid_client "$MKT_CLIENT"; then
+  fail "client '$MKT_CLIENT' is not a valid name (a-z first, then a-z, 0-9, '-')"
+elif [ ! -f "$ENV_FILE" ]; then
+  fail "$ENV_FILE missing: run scripts/install.sh${MKT_CLIENT:+ --client $MKT_CLIENT} (or cp .env.example .env and fill it in)"
 else
   load_env
   for v in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD CONTROL_PASSWORD CONTROL_ROOM_KEY; do
@@ -61,8 +58,9 @@ for r in $(sed -n '/^repos=(/,/^)/p' scripts/clone-all.sh | grep -oE '[0-9]{2}-[
   [ -d "../$r" ] || { fail "../$r missing (scripts/clone-all.sh <github-user>)"; missing=1; }
 done
 [ "$missing" = 0 ] && pass "all deploy folders present"
-[ -f ../05-brand-service/config/brand.yaml ] && grep -q "Northwind Roasters" ../05-brand-service/config/brand.yaml \
-  && warn "05-brand-service/config/brand.yaml is still the example brand (Northwind Roasters)"
+brand_yaml="${BRAND_CONFIG_DIR:-../05-brand-service/config}/brand.yaml"
+[ -f "$brand_yaml" ] && grep -q "Northwind Roasters" "$brand_yaml" \
+  && warn "${brand_yaml#../} is still the example brand (Northwind Roasters; edits in the control room's brand setup override it)"
 
 echo "== Ollama"
 url="${OLLAMA_URL:-http://host.docker.internal:11434}"
@@ -95,11 +93,13 @@ if [ "${LLM_PROVIDER:-ollama}" = "openai" ] || [ "${VERIFIER_PROVIDER:-ollama}" 
 fi
 
 echo "== Compose file"
-if docker compose config -q >/dev/null 2>&1; then pass "docker-compose.yml valid"; else fail "docker compose config reports an error"; fi
+if compose config -q >/dev/null 2>&1; then pass "docker-compose.yml valid"; else fail "docker compose config reports an error"; fi
 
 echo "== Ports (bound to 127.0.0.1)"
 busy=""
-for p in 5678 8103 8105 8106 8107 8108 8109 8110 8111 8112 8113 8114 8115 8116 8117 8118 8119 8120 8121 8122 8144 8145 8146 8147 8154 8155 8158 8161 8162 8163 8167 8170 8171 8172 8173 8178 8179 8180 8182; do
+ports="$(n8n_port)"
+for nn in $SERVICE_PORT_NUMBERS; do ports="$ports $(host_port "$nn")"; done
+for p in $ports; do
   if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then busy="$busy $p"; fi
 done
 [ -z "$busy" ] && pass "all ports free" || warn "already in use:$busy (fine if it's this stack already running)"

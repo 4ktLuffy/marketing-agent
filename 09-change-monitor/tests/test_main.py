@@ -3,7 +3,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app import net
+from app import net, safe_http
 from app.main import app
 
 client = TestClient(app)
@@ -20,7 +20,7 @@ def env(monkeypatch, tmp_path):
     monkeypatch.setenv("DB_PATH", str(tmp_path / "monitor.sqlite"))
     monkeypatch.setenv("INTERNAL_API_KEY", "test-key")
     monkeypatch.delenv("ALLOW_PRIVATE_URLS", raising=False)
-    monkeypatch.setattr(net, "resolve", lambda host: ["10.0.0.9"] if host == "internal.test" else ["93.184.215.14"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["10.0.0.9"] if host == "internal.test" else ["93.184.215.14"])
 
 
 def add(url="https://example.com/pricing", label="Acme pricing"):
@@ -380,3 +380,20 @@ def test_selected_lines_xml_declaration_with_header_charset():
     from app.main import selected_lines
     html = b'<?xml version="1.0" encoding="utf-8"?><html><body><h1>Pro</h1></body></html>'
     assert selected_lines(html, "utf-8", "h1", None) == ["Pro"]
+
+
+@respx.mock
+def test_snapshots_need_key_and_list_checked_text_by_tag():
+    respx.get("https://example.com/pricing").mock(return_value=httpx.Response(200, html=V1))
+    assert client.get("/snapshots").status_code == 401
+    a = client.post("/watches", json={"url": "https://example.com/pricing", "label": "Acme · pricing",
+                                      "tag": "competitor:1"}, headers=KEY).json()
+    add()  # untagged
+    assert client.get("/snapshots", headers=KEY).json() == []  # nothing checked yet: no text
+    client.post("/check", headers=KEY)
+    tagged = client.get("/snapshots", params={"tag": "competitor:1"}, headers=KEY).json()
+    assert [s["id"] for s in tagged] == [a["id"]]
+    assert tagged[0]["text"] == "Pricing\nStarter $10 per month\nPro $30 per month"
+    assert tagged[0]["label"] == "Acme · pricing" and tagged[0]["last_checked_at"]
+    assert len(client.get("/snapshots", headers=KEY).json()) == 2
+    assert client.get("/snapshots", params={"tag": "nope"}, headers=KEY).json() == []

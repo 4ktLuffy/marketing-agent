@@ -18,9 +18,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 ARG PIPER_VOICE_BASE=https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0
 ARG PIPER_VOICE_PATH=en/en_US/lessac/medium
 ARG PIPER_VOICE_NAME=en_US-lessac-medium
-ADD ${PIPER_VOICE_BASE}/${PIPER_VOICE_PATH}/${PIPER_VOICE_NAME}.onnx /voices/${PIPER_VOICE_NAME}.onnx
-ADD ${PIPER_VOICE_BASE}/${PIPER_VOICE_PATH}/${PIPER_VOICE_NAME}.onnx.json /voices/${PIPER_VOICE_NAME}.onnx.json
-RUN chmod 644 /voices/*
+# One layer (ADD + `RUN chmod` stored the 63 MB voice twice; ADD --chmod needs BuildKit).
+RUN set -e; mkdir -p /voices; \
+  for f in "${PIPER_VOICE_NAME}.onnx" "${PIPER_VOICE_NAME}.onnx.json"; do \
+    python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+      "${PIPER_VOICE_BASE}/${PIPER_VOICE_PATH}/$f" "/voices/$f"; \
+  done; \
+  chmod 644 /voices/*
 ENV PIPER_VOICE=/voices/${PIPER_VOICE_NAME}.onnx TTS_BACKEND=piper DATA_DIR=/data
 
 COPY app ./app

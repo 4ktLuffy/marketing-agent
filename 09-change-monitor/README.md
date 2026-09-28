@@ -1,6 +1,6 @@
 # change-monitor
 
-Deploy **09 of 83** of the local-LLM marketing agent. It watches competitor pages (pricing,
+Deploy **09 of 87** of the local-LLM marketing agent. It watches competitor pages (pricing,
 features, landing pages) and, on each check, reports which ones changed with a line diff of
 their visible text. The competitor-watch schedule (37) runs `/check` every 6 hours and has the
 LLM summarise the diffs. It uses no LLM.
@@ -36,6 +36,7 @@ INTERNAL_API_KEY=change-me DB_PATH=./data/monitor.sqlite uvicorn app.main:app --
 | GET | `/health` | — | `{"status":"ok"}` |
 | POST | `/watches` 🔑 | `{"url","label"?,"css"?,"xpath"?,"include_filters"?,"ignore_patterns"?,"trigger_text"?,"tag"?}` | `201` watch (below) |
 | GET | `/watches` | query `tag`? | `[watch]`, only those with that exact `tag` if given |
+| GET | `/snapshots` 🔑 | query `tag`? | `[{"id","url","label","tag","last_checked_at","text"}]`: each checked watch's stored text (its last check), only that `tag` if given. 78's positioning map reads it. |
 | DELETE | `/watches/{id}` 🔑 | — | `204`, or `404` |
 | POST | `/check` 🔑 | — | `{"changed":[{"id","url","label","diff","added_words","removed_words","trigger"?}],"unchanged","errors":[{"id","url","error"}]}` |
 
@@ -124,7 +125,7 @@ every fetch, including each redirect hop. Fetching: 15 s timeout, up to 5 redire
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `INTERNAL_API_KEY` | — | Required for `POST`/`DELETE /watches` and `POST /check`. Unset = those return `503`. |
+| `INTERNAL_API_KEY` | — | Required for `POST`/`DELETE /watches`, `POST /check` and `GET /snapshots`. Unset = those return `503`. |
 | `DB_PATH` | `/data/monitor.sqlite` | SQLite file with watches and snapshots. |
 | `ALLOW_PRIVATE_URLS` | `false` | `true` allows private and loopback addresses. Only for trusted local testing. |
 

@@ -1,6 +1,6 @@
 # 74 · Experiment manager
 
-Deploy **74 of 83** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **74 of 87** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Monday the agent proposes at most 2 marketing experiments and saves them as `proposed` in the campaign service (45) for a person to approve in the experiments form (76); your webhook gets the approval link. The LLM (prompt `experiment_proposals`) sees the hook styles' clicks per post (45 `/insights/hooks`), clicks per channel (45 `/insights`), and every earlier experiment, including the ones that found **no practical difference** so it does not re-test them (45 also refuses those with 409). Code keeps a proposal only if its variable, channel and two values are valid, the arms differ, it is not already running or answered, and its `evidence` cites only numbers that appear in the data. An experiment is ONE variable (hook_style, format, cta, length or time), two arms, one channel, measured as clicks per post within 72 h of publishing. It stops early when 2 proposals already wait for a person (`EXPERIMENT_MAX_PROPOSED`). The model never decides a result: 45 does, in code (workflow 75).
 

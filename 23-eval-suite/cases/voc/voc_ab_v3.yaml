@@ -1,0 +1,19 @@
+# Voice-of-customer A/B, third topic set (python -m evalsuite.voc_ab --cases cases/voc/voc_ab_v3.yaml).
+# Written 2026-09-28 BEFORE the bolted_on / invented-customer checks and the new open_with
+# prompt wording existed, and before any run on it. v1 (voc_ab.yaml) and v2 (voc_ab_v2.yaml)
+# topics were used to look at bolted-on openings, so they are "seen". These 8 are held out:
+# do not tune social_posts / voc_judge / 70 ranking / the placement checks on them; add a new
+# file instead. Same data and settings as voc_ab.yaml.
+brand: Northwind Roasters (05 config/brand.yaml)
+samples: ../70-customer-language/samples/northwind_sources.json
+ignore_phrases: [Desk Blend, Team Box, Single-Origin Rotation, Swiss Water decaf]
+k: 8
+topics:
+  - {id: returns_unopened, channel: facebook, topic: "Returning an unopened bag you did not like"}
+  - {id: new_starter_box, channel: instagram, topic: "What to expect in your first box as a new subscriber"}
+  - {id: french_press_steps, channel: threads, topic: "A simple French press routine for a busy morning"}
+  - {id: light_vs_medium, channel: x, topic: "Light roast or medium roast: which one suits your desk"}
+  - {id: team_onboarding, channel: linkedin, topic: "Adding a new hire to your team's coffee deliveries"}
+  - {id: flat_supermarket, channel: mastodon, topic: "Why supermarket beans taste flat after a week or two"}
+  - {id: roast_date_label, channel: x, topic: "How to read the roast date on your bag"}
+  - {id: monday_restart, channel: facebook, topic: "Starting the work week with a proper cup instead of instant"}

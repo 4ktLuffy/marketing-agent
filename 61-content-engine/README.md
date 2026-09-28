@@ -1,6 +1,6 @@
 # content-engine
 
-Deploy **61 of 83** of the local-LLM marketing agent. It turns **one substantial pillar**
+Deploy **61 of 87** of the local-LLM marketing agent. It turns **one substantial pillar**
 (an essay, a guide, a talk transcript) into **a month of varied posts** without drifting
 into spam. The design and the research behind every number are in
 `_dev/research/content-volume.md` (section 4, stages A, B, D2/D3 and E). The service does four things:

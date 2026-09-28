@@ -1,6 +1,6 @@
 # learning-service
 
-Deploy **46 of 83** of the local-LLM marketing agent. It learns from the reviewer. Every
+Deploy **46 of 87** of the local-LLM marketing agent. It learns from the reviewer. Every
 approval, edit and rejection is recorded as an event. The service turns those events into
 two things the writers use:
 
@@ -46,7 +46,7 @@ INTERNAL_API_KEY=change-me DB_PATH=./learning.sqlite GATEWAY_URL=http://localhos
 | POST | `/events` 🔑 | `{"item_id","channel","campaign_id"?,"decision","draft","final"?,"reason"?,"reviewer"?}` | event, `201` |
 | GET | `/events` | `?decision=&since=ISO` | `[event]`, oldest first |
 | GET | `/items/{item_id}/attempts` | — | `{"item_id","rejections"}` |
-| GET | `/examples` | `?channel=&k=3` (k 1–10) | `[{"text","channel","decision"}]` |
+| GET | `/examples` | `?channel=&k=3&by=approval` (k 1–10; `by` = `approval` \| `performance`) | `[{"text","channel","decision"}]`; with `by=performance` also `"item_id","basis"` and, for performers, `"clicks","hook_style"`; headers `X-Examples-Basis`, `X-Examples-Note` |
 | POST | `/reflect` 🔑 | `{"since_days":7,"max_events":20}` (body optional) | `{"created":[rule],"reflected":n,"errors":[{"event_id","error"}]}` |
 | GET | `/rules` | `?status=pending\|active\|rejected\|provisional\|retired` | `[rule]` |
 | GET | `/rules/review` | — | `[rule]`: pending rules and replicated provisional ones (form 51) |
@@ -77,6 +77,32 @@ curl -s localhost:8146/rules/summary
   newest first. An `approved` text is its `final`, or its `draft` when no `final` was
   sent. `edited` events without a `final` and all `rejected` events are left out. The
   `channel` filter ignores case.
+- **Examples by performance** (`by=performance`, used by writers 26, 48 and 65): the
+  approved posts that earned clearly more clicks than a typical post of their channel
+  (research: learning from performance data, `_dev/research/ai-marketing-wins.md` #2).
+  46 reads `GET {CAMPAIGNS_URL}/insights/posts?days=PERF_MAX_AGE_DAYS&channel=` (45: every
+  tracked post, its clicks from the short links, hook style and date) and keeps a post
+  only if a reviewer approved or edited it here and it shows **evidence**
+  (`app/performance.py`):
+  - it is `PERF_SETTLE_DAYS`..`PERF_MAX_AGE_DAYS` old, its channel has at least
+    `PERF_MIN_POSTS` such posts, and it has at least `PERF_MIN_CLICKS` clicks;
+  - P(clicks this high | a typical post) ≤ `PERF_ALPHA` / n, with a typical post
+    negative-binomial with the median and the MAD-based variance of the channel's other
+    posts (Poisson when they are not overdispersed); n = posts in the channel.
+
+  Passing posts are ranked by clicks × 0.5^(age / `PERF_HALF_LIFE_DAYS`), then at most one
+  per hook style and none whose words overlap a chosen one by `PERF_DUP_JACCARD` or more
+  (calendar items carry no atom id; near-identical text stands in for "same idea"). The
+  remaining slots are filled with the approval examples above (`basis: "approval"`). If
+  45 is down, slow or nothing passes, all k are approval examples; `X-Examples-Basis` is
+  `performance`, `mixed` or `approval` and `X-Examples-Note` says why.
+  Simulation (20 posts per channel, 400 runs, `python -m tests.test_performance`): with
+  all posts equally good it names a "winner" in 4 % of runs (naive "most clicks": 100 %)
+  and two independent looks agree 93 % of the time (naive 6 %); when 3 posts truly get
+  3× the clicks it names them in 95 % of runs with precision 1.00, about as stable as
+  the naive pick (0.55 vs 0.56). With overdispersed clicks (Gamma-Poisson, shape 2) it is
+  weaker: 41 % false winners in the all-equal world, precision 0.81 vs 0.66 naive. No
+  evaluation on real posts yet: there is no click data to replay.
 - **Reflect.** It takes `edited` and `rejected` events from the last `since_days` that have
   not been reflected yet, oldest first, at most `max_events`. For each one it calls
   `POST {GATEWAY_URL}/v1/run` with
@@ -118,6 +144,11 @@ curl -s localhost:8146/rules/summary
 | `DB_PATH` | `/data/learning.sqlite` | SQLite file |
 | `GATEWAY_URL` | `http://llm-gateway:8000` | LLM gateway (deploy 03), used by `/reflect` |
 | `GATEWAY_TIMEOUT` | `300` | seconds per gateway call |
+| `CAMPAIGNS_URL` | `http://campaign-service:8000` | 45, read by `/examples?by=performance` |
+| `CAMPAIGNS_TIMEOUT` | `8` | seconds for that call; on timeout the examples fall back to approval |
+| `PERF_MIN_CLICKS`, `PERF_MIN_POSTS`, `PERF_ALPHA` | `5`, `5`, `0.1` | evidence rule |
+| `PERF_SETTLE_DAYS`, `PERF_MAX_AGE_DAYS`, `PERF_HALF_LIFE_DAYS` | `2`, `90`, `45` | post age window and recency decay |
+| `PERF_DUP_JACCARD` | `0.5` | word overlap that counts as the same idea |
 
 ## CI
 

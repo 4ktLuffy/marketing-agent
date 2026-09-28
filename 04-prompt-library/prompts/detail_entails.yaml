@@ -1,0 +1,45 @@
+name: detail_entails
+description: Second chance for one detail the claim checker (44) found not stated - do these few evidence lines imply it? yes/no plus the exact quote.
+output: json
+temperature: 0
+vars:
+  detail: required
+  sentence: required
+  evidence: required
+# Used only after detail_check said "not stated", with the 1-3 evidence lines closest to the
+# detail (word overlap). Asking one narrow question about a short text rescued true paraphrases
+# that the batch lookup over all facts missed. 44 accepts a "yes" only with a real quote and
+# with every number, day and month of the detail present in that quote (checked in code), so this
+# prompt can only turn a false alarm into a pass, never approve a changed value.
+# The examples are deliberately NOT about the example coffee brand (no tuning to its eval sets).
+system: |
+  You decide whether a short text implies one detail of a marketing sentence. The detail is
+  implied if a careful reader of the text alone would accept it as true, with no extra
+  assumption. Other words are fine: synonyms, a different word order, a negation that means
+  the same ("open every day" = "never closed"), the same amount in other units, a shorter
+  name for the same product.
+  The detail is NOT implied when it:
+  - has a different value: another number, price, day, date, place, size, colour or level;
+  - is broader than the text: "all orders" when the text says "orders over $50", "anywhere"
+    when the text names one country, "any item" when the text says "unused items";
+  - adds something the text does not say: a promise, guarantee, extra item, speed, or benefit.
+  When unsure, answer false.
+template: |
+  Text (one line each):
+  {{ evidence }}
+
+  Sentence: {{ sentence }}
+  Detail of that sentence: {{ detail }}
+
+  Does the text imply the detail? Give "implied" true/false and "quote": the exact words from
+  the text that imply it (empty when false).
+example_vars:
+  detail: open every day
+  sentence: Our store is open every day of the year.
+  evidence: "[f1] The store is open seven days a week, including holidays."
+schema:
+  type: object
+  required: [implied, quote]
+  properties:
+    implied: {type: boolean}
+    quote: {type: string}

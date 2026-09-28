@@ -1,0 +1,475 @@
+{
+  "id": "mktWf85ClientRep",
+  "name": "85 · Schedule · Monthly client report",
+  "nodes": [
+    {
+      "id": "dadc3f1f-b38a-50cd-89ce-7c40e76d8718",
+      "name": "1st of the month 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 1 * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bce9fd83-fca5-5613-bcd9-4a5cd7271fd4",
+      "name": "Month",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Last calendar month (UTC) and the month before. CLIENT_REPORT_MONTH=YYYY-MM reports that month instead.\nconst MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];\nconst want = String($env.CLIENT_REPORT_MONTH || '').trim();\nconst now = new Date();\nlet y = now.getUTCFullYear(), mo = now.getUTCMonth() - 1;\nif (/^\\d{4}-(0[1-9]|1[0-2])$/.test(want)) { y = Number(want.slice(0, 4)); mo = Number(want.slice(5, 7)) - 1; }\nconst iso = d => d.toISOString().slice(0, 10);\nconst first = new Date(Date.UTC(y, mo, 1)), last = new Date(Date.UTC(y, mo + 1, 0));\nconst pFirst = new Date(Date.UTC(y, mo - 1, 1)), pLast = new Date(Date.UTC(y, mo, 0));\nconst name = d => `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;\nreturn [{ json: { month: iso(first).slice(0, 7), label: name(first), from: iso(first), to: iso(last),\n  prev_from: iso(pFirst), prev_to: iso(pLast), prev_label: name(pFirst), days: last.getUTCDate(),\n  // 45 /insights/posts counts back from today: enough days to cover both months.\n  since_days: Math.max(1, Math.ceil((now.getTime() - pFirst.getTime()) / 864e5) + 1) } }];\n"
+      }
+    },
+    {
+      "id": "e3666ae6-caa7-5aeb-945b-b57ec1c60cb7",
+      "name": "Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const m = $('Month').first().json;\nconst url = v => String($env[v] || '').trim().replace(/\\/+$/, '');\nconst q = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');\nconst cur = { from: m.from, to: m.to, compare: 'false' }, prev = { from: m.prev_from, to: m.prev_to, compare: 'false' };\nconst SPEC = [\n  ['brand', 'BRAND_URL', 'BRAND_URL', '/profile', 'brand profile (05)'],\n  ['kpis', 'ANALYTICS_URL', 'ANALYTICS_URL', `/kpis?${q(cur)}`, 'analytics (20)'],\n  ['kpis_prev', 'ANALYTICS_URL', 'ANALYTICS_URL', `/kpis?${q(prev)}`, 'analytics (20), previous month'],\n  ['umami', 'UMAMI_SYNC_URL', 'ANALYTICS_URL', `/kpis?${q({ ...cur, source: 'umami' })}`, 'Umami visits (55)'],\n  ['umami_prev', 'UMAMI_SYNC_URL', 'ANALYTICS_URL', `/kpis?${q({ ...prev, source: 'umami' })}`, 'Umami visits (55), previous month'],\n  ['gsc', 'GSC_URL', 'ANALYTICS_URL', `/kpis?${q({ ...cur, source: 'gsc' })}`, 'Search Console (67)'],\n  ['gsc_prev', 'GSC_URL', 'ANALYTICS_URL', `/kpis?${q({ ...prev, source: 'gsc' })}`, 'Search Console (67), previous month'],\n  ['posts', 'CAMPAIGNS_URL', 'CAMPAIGNS_URL', `/insights/posts?days=${m.since_days}`, 'tracked posts (45)'],\n  ['campaigns', 'CAMPAIGNS_URL', 'CAMPAIGNS_URL', '/campaigns', 'campaigns (45)'],\n  ['experiments', 'CAMPAIGNS_URL', 'CAMPAIGNS_URL', '/experiments', 'experiments (45)'],\n  ['ads', 'ADS_URL', 'ADS_URL', `/summary?${q({ days: m.days, end: m.to, top: 5 })}`, 'paid ads (84)'],\n  ['items', 'CALENDAR_URL', 'CALENDAR_URL', `/items?${q({ status: 'published,approved' })}`, 'content calendar (19)'],\n  ['existing', 'CALENDAR_URL', 'CALENDAR_URL', `/items?${q({ channel: 'client_report' })}`, 'earlier client reports (19)'],\n];\nconst on = SPEC.filter(([, gate, base]) => url(gate) && url(base));\nconst skipped = SPEC.filter(s => !on.includes(s)).map(([, gate, base, , label]) => `${label}: ${url(gate) ? base : gate} is empty`);\nif (!on.length) return [{ json: { key: 'none', label: 'nothing', url: 'http://127.0.0.1:1/health', skipped } }];\nreturn on.map(([key, , base, path, label]) => ({ json: { key, label, url: url(base) + path, skipped } }));\n"
+      }
+    },
+    {
+      "id": "8de08feb-b724-5531-b8e1-562e9ab04bad",
+      "name": "Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e2136ceb-159b-5d70-ba74-38fe25005adf",
+      "name": "Report data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const m = $('Month').first().json;\nconst src = $('Sources').all().map(i => i.json);\nconst res = $input.all().map(i => i.json || {});\nconst got = {}, failed = [];\nconst skipped = (src[0] || {}).skipped || [];\nsrc.forEach((s, i) => {\n  if (s.key === 'none') return;\n  const r = res[i] || {};\n  if (r.statusCode >= 200 && r.statusCode < 300 && r.body != null && typeof r.body === 'object') got[s.key] = r.body;\n  else failed.push(`${s.label} (${r.statusCode || (r.error ? 'no response' : 'no answer')})`);\n});\nconst listOf = b => Array.isArray(b) ? (b.length === 1 && Array.isArray(b[0]) ? b[0] : b).filter(x => x && typeof x === 'object') : [];\nconst num = v => typeof v === 'number' && isFinite(v) ? v : null;\nconst round = (n, d) => Math.round(n * 10 ** d) / 10 ** d;\nconst int = n => Math.round(n).toLocaleString('en-US');\nconst dec = n => Number.isInteger(n) ? n.toLocaleString('en-US') : round(n, 2).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\nconst CUR = String($env.REPORT_CURRENCY || '').trim();\nconst F = { int, num: dec, money: n => `${CUR}${round(n, 2).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,\n  pct: n => `${round(n * 100, 2).toFixed(2)}%`, x: n => `${dec(n)}x` };\nconst inMonth = (d, from, to) => { const s = String(d || '').slice(0, 10); return s >= from && s <= to; };\n\n// ---- What changed: one row per measure with a value in either month.\nconst rows = [];\nconst row = (group, label, kind, c, p, note) => {\n  c = num(c); p = num(p);\n  if ((c === null || c === 0) && (p === null || p === 0)) return;\n  let change = 'n/a';\n  if (c !== null && p !== null) {\n    if (kind === 'pct') { const d = round((c - p) * 100, 2); change = `${d > 0 ? '+' : ''}${d.toFixed(2)} pts`; }\n    else if (kind === 'x') { const d = round(c - p, 2); change = `${d > 0 ? '+' : ''}${dec(d)}`; }\n    else {\n      const d = c - p, rel = p ? round(d / p * 100, 1) : null;\n      const abs = kind === 'money' ? F.money(Math.abs(d)) : kind === 'int' ? int(Math.abs(d)) : dec(round(Math.abs(d), 2));\n      change = d === 0 ? 'no change' : `${d > 0 ? '+' : '-'}${abs}` + (rel !== null ? ` (${rel > 0 ? '+' : ''}${rel}%)` : ' (new)');\n    }\n  }\n  rows.push({ group, label, value: c === null ? 'n/a' : F[kind](c), previous: p === null ? 'n/a' : F[kind](p), change, note: note || null });\n};\nconst tot = k => (got[k] && got[k].totals) || null;\nconst k0 = tot('kpis'), k1 = tot('kpis_prev');\nif (k0 || k1) {\n  const a = k0 || {}, b = k1 || {};\n  row('Website and channels', 'Sessions', 'int', a.sessions, b.sessions);\n  row('Website and channels', 'Clicks', 'int', a.clicks, b.clicks);\n  row('Website and channels', 'Impressions', 'int', a.impressions, b.impressions);\n  row('Website and channels', 'Conversions', 'num', a.conversions, b.conversions);\n  row('Website and channels', 'Conversion rate', 'pct', a.cvr, b.cvr);\n  row('Website and channels', 'Spend', 'money', a.spend, b.spend);\n  row('Website and channels', 'Cost per conversion', 'money', a.cpa, b.cpa);\n}\nconst u0 = tot('umami'), u1 = tot('umami_prev');\nif (u0 || u1) {\n  row('Website visits (Umami)', 'Visits', 'int', (u0 || {}).sessions, (u1 || {}).sessions);\n  row('Website visits (Umami)', 'Conversions', 'num', (u0 || {}).conversions, (u1 || {}).conversions);\n}\nconst g0 = tot('gsc'), g1 = tot('gsc_prev');\nif (g0 || g1) {\n  row('Google search', 'Clicks from Google search', 'int', (g0 || {}).clicks, (g1 || {}).clicks);\n  row('Google search', 'Impressions in Google search', 'int', (g0 || {}).impressions, (g1 || {}).impressions);\n}\nconst posts = listOf((got.posts || {}).posts);\nif (got.posts) {\n  const cur = posts.filter(p => inMonth(p.posted_at, m.from, m.to)), prev = posts.filter(p => inMonth(p.posted_at, m.prev_from, m.prev_to));\n  const clicks = l => l.reduce((n, p) => n + (num(p.clicks) || 0), 0);\n  row('Tracked posts', 'Posts with a tracked link', 'int', cur.length, prev.length);\n  row('Tracked posts', 'Clicks on those posts (to date)', 'int', clicks(cur), clicks(prev),\n      'counted to today, so the earlier month had more time to collect clicks');\n}\nconst ads = got.ads && got.ads.has_data ? got.ads : null;\nif (ads) {\n  const w = (ads.window || {}).previous || {};\n  for (const t of listOf(ads.total)) {\n    const c = t.current || {}, p = t.previous || {}, cu = t.currency || '';\n    const g = `Paid ads (${cu})`, note = `previous = ${w.start} to ${w.end}, the same number of days before`;\n    const money = (label, kc, kp) => { const c2 = num(kc), p2 = num(kp);\n      if ((c2 || 0) === 0 && (p2 || 0) === 0) return;\n      const d = c2 !== null && p2 !== null ? c2 - p2 : null, rel = d !== null && p2 ? round(d / p2 * 100, 1) : null;\n      rows.push({ group: g, label, value: c2 === null ? 'n/a' : `${dec(round(c2, 2))} ${cu}`, previous: p2 === null ? 'n/a' : `${dec(round(p2, 2))} ${cu}`,\n        change: d === null ? 'n/a' : d === 0 ? 'no change' : `${d > 0 ? '+' : '-'}${dec(round(Math.abs(d), 2))} ${cu}` + (rel !== null ? ` (${rel > 0 ? '+' : ''}${rel}%)` : ' (new)'), note }); };\n    money('Ad spend', c.spend, p.spend);\n    row(g, 'Ad conversions', 'num', c.conversions, p.conversions, note);\n    money('Cost per lead (CPL)', c.cpl, p.cpl);\n    if (num(c.roas) !== null || num(p.roas) !== null) row(g, 'Return on ad spend (ROAS)', 'x', c.roas, p.roas, note);\n  }\n}\n\n// ---- What we did: calendar work shipped in the month, campaigns, experiments. No LLM.\nconst INTERNAL = ['client_report', 'blog_refresh', 'seo_brief', 'competitor_brief', 'visibility_gap', 'positioning', 'lead_reply'];\nconst done = listOf(got.items).filter(i => !INTERNAL.includes(String(i.channel).toLowerCase()))\n  .filter(i => i.status === 'published' ? inMonth(i.published_at, m.from, m.to)\n    : i.status === 'approved' && inMonth(i.scheduled_at || i.updated_at, m.from, m.to));\nconst byCh = {};\nfor (const i of done) (byCh[String(i.channel).toLowerCase()] ||= []).push(i);\nconst chans = Object.entries(byCh).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));\nconst campaigns = listOf(got.campaigns).filter(c => ['active', 'paused', 'completed'].includes(c.status))\n  .filter(c => (!c.start_date || String(c.start_date) <= m.to) && (!c.end_date || String(c.end_date) >= m.from));\nconst exps = listOf(got.experiments);\nconst decided = exps.filter(e => e.status === 'decided' && inMonth(e.decided_at, m.from, m.to));\nconst running = exps.filter(e => e.status === 'running');\nconst verdict = e => e.decision === 'winner' && e.winner && e.loser ? `${e.winner.value} beat ${e.loser.value}`\n  : e.decision === 'no_practical_difference' ? 'no practical difference' : 'inconclusive';\n\nconst work = [];\nif (got.items) work.push(done.length ? `Published or approved in ${m.label}: ${done.length} piece${done.length === 1 ? '' : 's'} (${chans.map(([c, l]) => `${c} ${l.length}`).join(', ')}).`\n  : `Nothing was published or approved in ${m.label}.`);\nfor (const [c, l] of chans) work.push(`${c}: ${l.slice(0, 5).map(i => `\"${String(i.title).slice(0, 90)}\"`).join(', ')}${l.length > 5 ? ` and ${l.length - 5} more` : ''}.`);\nconst kpiText = c => (c.kpis || []).filter(k => num(k.actual_value) !== null)\n  .map(k => `${k.metric} ${dec(k.actual_value)}` + (num(k.target_value) !== null ? ` of a ${dec(k.target_value)} target` : '')).join(', ');\nfor (const c of campaigns.slice(0, 6)) work.push(`Campaign \"${c.name}\" (${c.status}${c.start_date ? `, ${c.start_date} to ${c.end_date || 'open'}` : ''})${kpiText(c) ? `: ${kpiText(c)} so far` : ''}.`);\nfor (const e of decided.slice(0, 4)) work.push(`Experiment on ${e.variable} (${(e.channels || []).join(', ')}): ${verdict(e)}.`);\nif (running.length) work.push(`${running.length} experiment${running.length === 1 ? '' : 's'} still running.`);\n\nconst facts = rows.map(r => `${r.group}, ${r.label}: ${r.value} in ${m.label}, ${r.previous} in ${m.prev_label}, change ${r.change}.`);\nconst brand = String((got.brand || {}).name || $env.CLIENT_NAME || '').trim();\nconst data = JSON.stringify({ client: brand || null, month: m.label, previous_month: m.prev_label, facts, work });\n\n// ---- Markdown the client reads (the summary goes above it after the check).\nconst cell = s => String(s).replace(/\\|/g, '\\\\|').replace(/\\n/g, ' ');\nconst workMd = [`### What we did in ${m.label}`, '',\n  ...(work.length ? work.map(w => `- ${w}`) : ['- No work log available for this month.'])].join('\\n');\nconst notes = [...new Set(rows.filter(r => r.note).map(r => r.note))];\nconst changeMd = [`### What changed: ${m.label} vs ${m.prev_label}`, '',\n  ...(rows.length ? [`| Measure | ${m.label} | ${m.prev_label} | Change |`, '|---|---:|---:|---:|',\n    ...rows.map(r => `| ${cell(r.group + ': ' + r.label)} | ${cell(r.value)} | ${cell(r.previous)} | ${cell(r.change)} |`),\n    ...(notes.length ? ['', ...notes.map(n => `_${n}._`)] : [])]\n    : ['No numbers were available for this month.'])].join('\\n');\n\n// 21 wants 20's /kpis shape for the tiles: the month, the month before, and the change in %.\nlet kpis = null;\nif (k0) {\n  const delta = {};\n  for (const [k, v] of Object.entries(k0)) {\n    const p = (k1 || {})[k];\n    delta[k] = num(v) !== null && num(p) ? round((v - p) / p * 100, 1) : null;\n  }\n  kpis = { period: { from: m.from, to: m.to }, totals: k0, by_channel: (got.kpis.by_channel || []),\n    previous: k1 ? { period: { from: m.prev_from, to: m.prev_to }, ...k1 } : null, delta_pct: k1 ? delta : null };\n}\n// One report per month; a rejected one does not count, so rejecting it and running again rebuilds it.\nconst existing = listOf(got.existing).find(i => String(i.title) === `Client report ${m.label}` && i.status !== 'rejected') || null;\nreturn [{ json: { month: m.month, label: m.label, prev_label: m.prev_label, from: m.from, to: m.to, brand,\n  rows, work, facts, data, work_md: workMd, change_md: changeMd, kpis, existing_id: existing ? existing.id : null,\n  sources_used: Object.keys(got), sources_skipped: skipped, sources_failed: failed } }];\n"
+      }
+    },
+    {
+      "id": "7f00b853-b994-538a-8061-9bfcb2322b35",
+      "name": "Summary draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/v1/run",
+        "options": {
+          "timeout": 300000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "85 Monthly client report"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'client_report_summary', vars: { data: $json.data, month: $json.label, previous_month: $json.prev_label } }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "80e39e8e-2cda-5676-9092-5c0906a60e53",
+      "name": "Check narrative",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Report data').first().json;\nconst g = $input.first().json || {};\nconst nums = s => (String(s).replace(/(\\d),(?=\\d{3}\\b)/g, '$1').match(/\\d+(?:\\.\\d+)?/g) || []).map(Number);\n// ISO dates are checked whole, so the day and month parts of a date never excuse a count.\nconst DATE = /\\b\\d{4}-\\d{2}-\\d{2}\\b/g;\nconst dates = new Set(String(d.data).match(DATE) || []);\nconst known = new Set(nums(String(d.data).replace(DATE, ' ')));\nconst dataText = String(d.data).toLowerCase();\n// Spelled-out counts are numbers too; \"doubled\" or \"twice\" is a computed claim the data never states.\nconst WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, twenty: 20, hundred: 100, thousand: 1000 };\nconst MULT = /\\b(doubl\\w*|tripl\\w*|quadrupl\\w*|halv\\w*|twice|thrice)\\b/i;\nconst unknownNums = s => {\n  const t = String(s).toLowerCase();\n  const out = (t.match(DATE) || []).filter(x => !dates.has(x));\n  out.push(...nums(t.replace(DATE, ' ')).filter(x => !known.has(x)));\n  for (const [w, n] of Object.entries(WORDS)) if (new RegExp(`\\\\b${w}\\\\b`).test(t) && !known.has(n)) out.push(w);\n  const mm = t.match(MULT);\n  if (mm) out.push(mm[1]);\n  // \"2x\" or \"3 times\" is a ratio the model worked out, unless the data states it (ROAS \"2.40x\").\n  for (const x of t.matchAll(/(\\d+(?:\\.\\d+)?)\\s*(?:x|times)(?![\\w-])/g)) if (!dataText.includes(`${x[1]}x`)) out.push(x[0]);\n  return out;\n};\n// A cause stated as a fact. Hedged (\"may have\", \"we can't tell yet\") is fine.\nconst CAUSAL = /(?<![\\w-])(because|due to|thanks to|owing to|as a result|therefore|hence|result(?:s|ed)? in|(?:the )?result of|led to|lead(?:s|ing)? to|caus(?:e|es|ed|ing)|dr(?:ove|ives?|iven|iving)|boost(?:s|ed|ing)?|help(?:s|ed)?|contribut(?:e|es|ed|ing) to|responsible for|attribut\\w*|fuel(?:l?ed|s)?|explains?|which is why)(?![\\w-])/i;\nconst HEDGE = /(?<![\\w-])(may|might|could|possibly|perhaps|likely|probably|can'?t tell|cannot tell|can not tell|unclear|not (?:yet )?clear|too early|hard to say|not sure|don'?t know yet|do not know yet)(?![\\w-])/i;\n// The right number with the wrong direction (\"clicks fell\" when they rose). Conservative: only a\n// sentence that names ONE measure, whose rows all move the same way, with direction words of one\n// kind, and that is not about the future. Most specific names first; each maps to row labels.\nconst MEASURES = [\n  [/cost per (?:lead|conversion)|\\bcpl\\b|\\bcpa\\b/, /^(Cost per lead|Cost per conversion)/],\n  [/\\broas\\b|return on ad spend/, /^Return on ad spend/],\n  [/ad conversions|conversions from ads/, /^Ad conversions$/],\n  [/ad spend|spend on ads|\\bspend\\b|\\bspent\\b/, /^(Ad spend|Spend)$/],\n  [/conversion rate/, /^Conversion rate$/],\n  [/(?:google |search )(?:search )?clicks|clicks from (?:google|search)/, /^Clicks from Google search$/],\n  [/(?:google |search )impressions|impressions in (?:google|search)/, /^Impressions in Google search$/],\n  [/\\bconversions?\\b/, /^(Conversions|Ad conversions)$/],\n  [/\\bclicks?\\b/, /^(Clicks|Clicks from Google search|Clicks on those posts.*)$/],\n  [/\\bimpressions?\\b/, /^(Impressions|Impressions in Google search)$/],\n  [/\\bsessions?\\b/, /^Sessions$/],\n  [/\\bvisits?\\b|\\bvisitors?\\b/, /^Visits$/],\n];\nconst UP = /(?<![\\w-])(rose|risen|rising|grew|grown|growing|increas\\w*|went up|go(?:es)? up|up by|higher|climb\\w*|gain\\w*)(?![\\w-])/;\nconst DOWN = /(?<![\\w-])(fell|fallen|falling|dropp?\\w*|declin\\w*|decreas\\w*|went down|go(?:es)? down|down by|lower|fewer|less|reduc\\w*|cut|dipped|shr[ai]nk\\w*)(?![\\w-])/;\nconst FLAT = /(?<![\\w-])(stayed (?:about |roughly )?the same|unchanged|held steady|flat|no change)(?![\\w-])/;\nconst FUTURE = /(?<![\\w-])(will|next month|aim|plan\\w*|goal|target|want|hope|should|try|expect)(?![\\w-])/;\nconst rowsOf = d.rows || [];\nconst wrongDirection = s => {\n  const t = s.toLowerCase();\n  if (FUTURE.test(t)) return null;\n  let rest = t; const hit = [];\n  for (const [re, lab] of MEASURES) if (re.test(rest)) { hit.push(lab); rest = rest.replace(new RegExp(re.source, 'g'), ' '); }\n  if (hit.length !== 1) return null;\n  const said = [UP.test(t) && 'up', DOWN.test(t) && 'down', FLAT.test(t) && 'flat'].filter(Boolean);\n  if (said.length !== 1) return null;\n  const rs = rowsOf.filter(r => hit[0].test(r.label) && /^[+-]|^no change/.test(r.change));\n  if (!rs.length) return null;\n  const sign = r => r.change === 'no change' ? 0 : r.change[0] === '+' ? 1 : -1;\n  if (new Set(rs.map(sign)).size !== 1) return null;\n  const sg = sign(rs[0]), rel = (rs[0].change.match(/\\(([+-]?\\d+(?:\\.\\d+)?)%\\)/) || [])[1];\n  const bad = said[0] === 'up' ? sg <= 0 : said[0] === 'down' ? sg >= 0\n    : sg !== 0 && rel !== undefined && Math.abs(Number(rel)) >= 5;\n  return bad ? `says ${said[0]}; the data says ${rs[0].change} (${rs[0].label})` : null;\n};\nconst o = g.output && typeof g.output === 'object' ? g.output : null;\nconst raw = o && Array.isArray(o.summary) ? o.summary : [];\nconst sentences = raw.flatMap(s => String(s || '').replace(/\\s+/g, ' ').trim().split(/(?<=[.!?])\\s+(?=[\"'(A-Z0-9])/)).map(s => s.trim()).filter(Boolean);\nconst kept = [], dropped = [];\nfor (const s0 of sentences) {\n  const s = s0.replace(/[‘’]/g, \"'\");\n  const bad = unknownNums(s);\n  if (bad.length) { dropped.push({ sentence: s0, reason: 'number', detail: `not in the data: ${bad.slice(0, 5).join(', ')}` }); continue; }\n  const w = wrongDirection(s);\n  if (w) { dropped.push({ sentence: s0, reason: 'direction', detail: w }); continue; }\n  const c = s.match(CAUSAL);\n  if (c && !HEDGE.test(s)) { dropped.push({ sentence: s0, reason: 'cause', detail: `claims a cause (\"${c[1]}\") without hedging` }); continue; }\n  kept.push(s0);\n}\n// A client reads 3 to 5 sentences; the rest is cut (and counted in the notes).\nconst MAX = 5, cut = Math.max(0, kept.length - MAX);\nkept.splice(MAX);\nconst count = r => dropped.filter(x => x.reason === r).length;\nconst failed = !o;\nconst why = failed ? String((g.error && (g.error.message || g.error)) || 'no output').slice(0, 200) : '';\nconst summaryMd = kept.length ? kept.join(' ') : '';\nconst highlights = [summaryMd, d.work_md, d.change_md].filter(Boolean).join('\\n\\n');\nconst noteLines = [\n  `client report ${d.month}`,\n  failed ? `summary: the LLM failed (${why}); the report has the tables only`\n    : `summary: ${sentences.length} sentence(s) written, ${kept.length} kept, ${count('number')} dropped for a number not in the data, ${count('direction')} for the wrong direction, ${count('cause')} for an unhedged cause`,\n  ...(cut ? [`summary cut to ${MAX} sentences (${cut} more were fine but too many)`] : []),\n  ...dropped.map(x => `dropped (${x.detail}): ${x.sentence.slice(0, 300)}`),\n  `sources used: ${d.sources_used.join(', ') || 'none'}`,\n  ...(d.sources_skipped.length ? [`sources skipped (not installed): ${d.sources_skipped.join('; ')}`] : []),\n  ...(d.sources_failed.length ? [`sources failed: ${d.sources_failed.join('; ')}`] : []),\n  'Never sent to the client automatically: after approval, forward it yourself.',\n];\nreturn [{ json: { kept, dropped, cut, produced: sentences.length, dropped_number: count('number'), dropped_direction: count('direction'), dropped_cause: count('cause'),\n  llm_failed: failed, summary_md: summaryMd, highlights_md: highlights, notes: noteLines.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "3892e334-969f-5ed8-bb76-d5114b040a99",
+      "name": "Render report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REPORT_URL }}/render",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: ($('Report data').first().json.brand ? $('Report data').first().json.brand + ': ' : '') + 'monthly report, ' + $('Report data').first().json.label, period: { from: $('Report data').first().json.from, to: $('Report data').first().json.to }, kpis: $('Report data').first().json.kpis || {}, highlights_markdown: $json.highlights_md, currency: $env.REPORT_CURRENCY || '' }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d19c43f4-7ce0-54df-a339-0b83ae99317e",
+      "name": "Calendar item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Report data').first().json, c = $('Check narrative').first().json;\nconst r = $input.first().json || {};\nconst rendered = r.statusCode >= 200 && r.statusCode < 300 && r.body && typeof r.body.markdown === 'string' ? r.body : null;\nconst title = `Client report ${d.label}`;\nconst heading = `# ${d.brand ? d.brand + ': ' : ''}monthly report, ${d.label}`;\nconst body = rendered ? rendered.markdown : [heading, '', c.highlights_md].join('\\n');\nconst notes = c.notes + (rendered ? '' : `\\nreport-builder (21) failed (${r.statusCode || 'no response'}): the body is the plain markdown`);\nif (d.existing_id) return [{ json: { save: false, title, text: `*${title}*: already in the calendar (#${d.existing_id}); not made again. Reject it to rebuild it.` } }];\nif (!$env.CALENDAR_URL) return [{ json: { save: false, title, text: `*${title}*: CALENDAR_URL is not set; nothing saved.` } }];\nreturn [{ json: { save: true, title, item: { title, channel: 'client_report', status: 'in_review', body, notes } } }];\n"
+      }
+    },
+    {
+      "id": "40db58b7-a7b6-555d-8784-45f728ce7929",
+      "name": "Save?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "18801bbd-0b34-5b9f-b202-c501f32b093c",
+              "leftValue": "={{ $json.save }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8f753fa9-fe8a-5fb1-969c-ce8b74bd9d1f",
+      "name": "Save for review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.item) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "bb629762-ea85-5a31-ad8b-6d50aa60a10f",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const d = $('Report data').first().json, c = $('Check narrative').first().json, it = $('Calendar item').first().json;\nif (!it.save) return [{ json: { text: it.text, saved: 0 } }];\nconst s = $input.first().json || {};\nif (!s.id) return [{ json: { text: `*${it.title}*: saving to the calendar failed (${String((s.error && (s.error.message || s.error)) || 'no id').slice(0, 200)}).`, saved: 0 } }];\nconst sum = c.llm_failed ? 'summary: the LLM failed, tables only'\n  : `summary: ${c.kept.length} of ${c.produced} sentences kept` + (c.dropped.length ? ` (${c.dropped_number} dropped for a number not in the data, ${c.dropped_direction} for the wrong direction, ${c.dropped_cause} for an unhedged cause)` : '');\nreturn [{ json: { saved: 1, text: [`*${it.title}*${d.brand ? ` for ${d.brand}` : ''} is waiting for review (#${s.id}): ${d.rows.length} numbers, ${d.work.length} work lines, ${sum}.`,\n  d.sources_skipped.length ? `Skipped (not installed): ${d.sources_skipped.length} source(s).` : '',\n  d.sources_failed.length ? `Failed: ${d.sources_failed.join('; ')}.` : '',\n  'Nothing was sent to the client. Approve it, then forward it yourself.'].filter(Boolean).join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "f30ee07d-2264-5bbd-ba3b-b57981757efd",
+      "name": "Webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no destination is configured.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "d05536e9-9629-5320-9ff7-b2094d9c7a24",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, item.json.saved > 0);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "5515a14e-4f68-523f-9546-44e0399eb608",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1st of the month 08:00": {
+      "main": [
+        [
+          {
+            "node": "Month",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Month": {
+      "main": [
+        [
+          {
+            "node": "Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sources": {
+      "main": [
+        [
+          {
+            "node": "Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch": {
+      "main": [
+        [
+          {
+            "node": "Report data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report data": {
+      "main": [
+        [
+          {
+            "node": "Summary draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary draft": {
+      "main": [
+        [
+          {
+            "node": "Check narrative",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check narrative": {
+      "main": [
+        [
+          {
+            "node": "Render report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render report": {
+      "main": [
+        [
+          {
+            "node": "Calendar item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar item": {
+      "main": [
+        [
+          {
+            "node": "Save?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save?": {
+      "main": [
+        [
+          {
+            "node": "Save for review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save for review": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary": {
+      "main": [
+        [
+          {
+            "node": "Webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

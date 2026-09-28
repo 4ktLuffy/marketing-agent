@@ -97,6 +97,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "30 Repurpose content"
             }
           ]
         },
@@ -115,7 +119,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Small models sometimes add channels nobody asked for, or drop the link. Fix both here,\n// deterministically, instead of trusting the model.\nconst p = $('Prepare').first().json;\nconst seen = new Set();\nconst out = [];\nfor (const post of $input.first().json.output.posts || []) {\n  const channel = String(post.channel || '').trim().toLowerCase();\n  if (!p.channels.includes(channel) || seen.has(channel)) continue;\n  seen.add(channel);\n  let text = String(post.text || '').trim();\n  if (p.link && !text.includes(p.link)) text += `\\n\\n${p.link}`;\n  out.push({ json: { channel, text } });\n}\nif (!out.length) throw new Error('The model returned no posts for the requested channels');\nreturn out;\n"
+        "jsCode": "// Small models sometimes add channels nobody asked for, or drop the link. Fix both here,\n// deterministically, instead of trusting the model. The model may also answer with an old\n// channel name (\"twitter\" when \"x\" was asked for), so its names go through the same aliases.\nconst OUT_ALIAS = { twitter: 'x', 'x/twitter': 'x', 'x (twitter)': 'x', ig: 'instagram', insta: 'instagram', fb: 'facebook' };\nconst p = $('Prepare').first().json;\nconst seen = new Set();\nconst out = [];\nfor (const post of $input.first().json.output.posts || []) {\n  const named = String(post.channel || '').trim().toLowerCase();\n  const channel = OUT_ALIAS[named] || named;\n  if (!p.channels.includes(channel) || seen.has(channel)) continue;\n  seen.add(channel);\n  let text = String(post.text || '').trim();\n  if (p.link && !text.includes(p.link)) text += `\\n\\n${p.link}`;\n  out.push({ json: { channel, text } });\n}\nif (!out.length) throw new Error('The model returned no posts for the requested channels');\nreturn out;\n"
       }
     },
     {

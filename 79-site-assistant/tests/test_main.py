@@ -39,6 +39,7 @@ def env(tmp_path, monkeypatch):
     for k in ("TRUST_PROXY", "REQUIRE_ORIGIN", "QUALIFY_QUESTIONS", "BRAND_NAME", "CONSENT_TEXT"):
         monkeypatch.delenv(k, raising=False)
     main.limiter.reset()
+    main.notify_limiter.reset()
     main._brand_cache.update(at=0.0, name=None, facts=None)
 
 
@@ -480,3 +481,105 @@ def test_every_handoff_says_it_is_an_ai(monkeypatch):
     for reason in list(m.HANDOFF_TEXT) + ["unknown_reason"]:
         for conv in ({}, {"email": "a@b.co"}):
             assert "I'm an AI assistant, not a person" in m.handoff_reply(None, conv, reason, "x")["reply"], (reason, conv)
+
+
+# ---------- answer time budget (ANSWER_TIMEOUT_S)
+
+
+def _slow(seconds, response):
+    import time as _t
+
+    def effect(request):
+        _t.sleep(seconds)
+        return response(request)
+    return effect
+
+
+def test_slow_claim_check_hands_off_instead_of_answering(world, monkeypatch):
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "0.6")
+    world.verify.side_effect = _slow(0.8, world._verify)
+    body = ok(chat("Can I pause my subscription?"))
+    assert body["kind"] == "handoff" and "skip or pause" not in body["reply"]
+    assert "I'm an AI assistant, not a person" in body["reply"]
+    assert client.get("/admin/handoffs", headers=AUTH).json()[0]["reason"] == "timeout"
+    assert client.get("/admin/stats", headers=AUTH).json()["handed_off"]["by_reason"] == {"timeout": 1}
+
+
+def test_slow_gateway_leaves_no_time_for_the_check(world, monkeypatch):
+    # The model answers, but after the budget: its answer is never checked or shown.
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "0.3")
+    world.gw.side_effect = _slow(0.5, world._gw)
+    body = ok(chat("Can I pause my subscription?"))
+    assert body["kind"] == "handoff" and "skip or pause" not in body["reply"]
+    assert not world.verify.called
+    assert client.get("/admin/handoffs", headers=AUTH).json()[0]["reason"] == "timeout"
+
+
+@pytest.mark.parametrize("target", ["gw", "verify"])
+def test_timeout_errors_are_timeout_handoffs(world, target):
+    getattr(world, target).side_effect = httpx.ReadTimeout("slow")
+    body = ok(chat("Can I pause my subscription?"))
+    assert body["kind"] == "handoff" and "skip or pause" not in body["reply"]
+    assert client.get("/admin/handoffs", headers=AUTH).json()[0]["reason"] == "timeout"
+
+
+def test_each_call_gets_at_most_the_time_left(world, monkeypatch):
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "5")
+    monkeypatch.setenv("GATEWAY_TIMEOUT", "120")
+    monkeypatch.setenv("CLAIMS_TIMEOUT", "180")
+    assert ok(chat("Can I pause my subscription?"))["kind"] == "answer"
+    for route_ in (world.search, world.gw, world.verify):
+        t = route_.calls[0].request.extensions["timeout"]
+        assert 0 < t["read"] <= 5 and 0 < t["connect"] <= 5, t
+
+
+def test_zero_budget_means_the_per_call_timeouts_only(world, monkeypatch):
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "0")
+    monkeypatch.setenv("GATEWAY_TIMEOUT", "120")
+    assert ok(chat("Can I pause my subscription?"))["kind"] == "answer"
+    assert world.gw.calls[0].request.extensions["timeout"]["read"] == 120
+
+
+def test_default_budget_is_20_seconds_when_hosted(monkeypatch):
+    monkeypatch.delenv("ANSWER_TIMEOUT_S", raising=False)
+    monkeypatch.setenv("ASSISTANT_GATEWAY_URL", "http://llm-gateway-assistant:8000")
+    left = main.Budget().left(120, "x")
+    assert 19 < left <= 20
+
+
+def test_waiting_for_a_slot_counts_against_the_budget(world, monkeypatch):
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "0.3")
+    monkeypatch.setenv("QUEUE_WAIT_SECONDS", "30")
+    taken = [main._answer_slots.acquire(blocking=False) for _ in range(main.MAX_CONCURRENT)]
+    try:
+        body = ok(chat("Can I pause my subscription?"))
+    finally:
+        for t in taken:
+            if t:
+                main._answer_slots.release()
+    assert body["kind"] == "handoff" and not world.gw.called
+    assert client.get("/admin/handoffs", headers=AUTH).json()[0]["reason"] == "timeout"
+
+
+def test_busy_queue_without_budget_pressure_is_still_503(world, monkeypatch):
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "20")
+    monkeypatch.setenv("QUEUE_WAIT_SECONDS", "0.1")
+    taken = [main._answer_slots.acquire(blocking=False) for _ in range(main.MAX_CONCURRENT)]
+    try:
+        r = chat("Can I pause my subscription?")
+    finally:
+        for t in taken:
+            if t:
+                main._answer_slots.release()
+    assert r.status_code == 503
+
+
+def test_default_answer_budget_is_120_seconds_all_local_and_empty_env_means_automatic(monkeypatch):
+    import time
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "")          # compose passes an empty value when unset
+    monkeypatch.setenv("ASSISTANT_GATEWAY_URL", "")
+    assert main.Budget().deadline - time.monotonic() > 100
+    monkeypatch.setenv("ASSISTANT_GATEWAY_URL", "http://llm-gateway-assistant:8000")
+    assert main.Budget().deadline - time.monotonic() < 25
+    monkeypatch.setenv("ANSWER_TIMEOUT_S", "45")        # an explicit value always wins
+    assert 40 < main.Budget().deadline - time.monotonic() <= 45

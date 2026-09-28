@@ -17,8 +17,10 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app import performance
 
 log = logging.getLogger("learning-service")
 app = FastAPI(title="learning-service")
@@ -261,7 +263,8 @@ def reflect_one(event: dict) -> dict:
         r = httpx.post(
             f"{gateway_url()}/v1/run",
             json={"prompt": "reflect_rule", "vars": variables},
-            headers={"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {},
+            headers={"X-Caller": "46 learning service",
+                     **({"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {})},
             timeout=gateway_timeout(),
         )
     except httpx.HTTPError as exc:
@@ -341,21 +344,117 @@ def attempts(item_id: int):
     return {"item_id": item_id, "rejections": n}
 
 
-@app.get("/examples")
-def examples(channel: str | None = None, k: int = Query(3, ge=1, le=10)):
+def campaigns_url() -> str:
+    return os.environ.get("CAMPAIGNS_URL", "http://campaign-service:8000").rstrip("/")
+
+
+def perf_params() -> performance.Params:
+    def num(name, default, cast=float):
+        try:
+            return cast(os.environ.get(name, default))
+        except ValueError:
+            return cast(default)
+    return performance.Params(
+        min_clicks=num("PERF_MIN_CLICKS", 5, int), min_posts=num("PERF_MIN_POSTS", 5, int),
+        alpha=num("PERF_ALPHA", 0.1), settle_days=num("PERF_SETTLE_DAYS", 2.0),
+        max_age_days=num("PERF_MAX_AGE_DAYS", 90, int), half_life_days=num("PERF_HALF_LIFE_DAYS", 45.0),
+        dup_jaccard=num("PERF_DUP_JACCARD", 0.5))
+
+
+def approval_examples(channel: str | None, k: int) -> list[dict]:
     where = ["((decision = 'edited' AND final IS NOT NULL) OR decision = 'approved')"]
     args: list = []
     if channel and channel.strip():
         where.append("lower(channel) = lower(?)")
         args.append(channel.strip())
     sql = (
-        "SELECT decision, channel, COALESCE(final, draft) AS text FROM events WHERE "
+        "SELECT item_id, decision, channel, COALESCE(final, draft) AS text FROM events WHERE "
         + " AND ".join(where)
         + " ORDER BY CASE decision WHEN 'edited' THEN 0 ELSE 1 END, id DESC LIMIT ?"
     )
     with db() as conn:
         rows = conn.execute(sql, (*args, k)).fetchall()
-    return [{"text": r["text"], "channel": r["channel"], "decision": r["decision"]} for r in rows]
+    return [{"text": r["text"], "channel": r["channel"], "decision": r["decision"], "item_id": r["item_id"]}
+            for r in rows]
+
+
+def approved_texts(channel: str | None) -> dict[int, dict]:
+    """item_id -> its latest approved or edited text (the words a reviewer let through)."""
+    sql = ("SELECT item_id, decision, channel, COALESCE(final, draft) AS text FROM events"
+           " WHERE ((decision = 'edited' AND final IS NOT NULL) OR decision = 'approved')")
+    args: list = []
+    if channel and channel.strip():
+        sql += " AND lower(channel) = lower(?)"
+        args.append(channel.strip())
+    out: dict[int, dict] = {}
+    with db() as conn:
+        for r in conn.execute(sql + " ORDER BY id", args):
+            out[r["item_id"]] = {"text": r["text"], "decision": r["decision"], "channel": r["channel"]}
+    return out
+
+
+def performance_examples(channel: str | None, k: int) -> tuple[list[dict], str]:
+    """(examples, note). Raises RuntimeError when 45 cannot be read."""
+    p = perf_params()
+    params = {"days": p.max_age_days}
+    if channel and channel.strip():
+        params["channel"] = channel.strip()
+    key = os.environ.get("INTERNAL_API_KEY")
+    try:
+        r = httpx.get(f"{campaigns_url()}/insights/posts", params=params, timeout=float(os.environ.get("CAMPAIGNS_TIMEOUT", "8")),
+                      headers={"X-API-Key": key} if key else {})
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"campaign service unreachable: {type(exc).__name__}") from None
+    if r.status_code != 200:
+        raise RuntimeError(f"campaign service {r.status_code}")
+    try:
+        body = r.json()
+    except ValueError:
+        raise RuntimeError("campaign service returned non-JSON") from None
+    posts = body.get("posts") if isinstance(body, dict) else None
+    if not isinstance(posts, list):
+        raise RuntimeError("campaign service returned no posts list")
+    posts = [x for x in posts if isinstance(x, dict) and isinstance(x.get("item_id"), int)]
+    approved = approved_texts(channel)
+    picked, stats = performance.rank(posts, {i: a["text"] for i, a in approved.items()}, k,
+                                     datetime.now(timezone.utc), p)
+    note = (f"{stats['passed_evidence']} of {stats['settled_posts']} settled posts passed the evidence rule"
+            f" (min {p.min_clicks} clicks, clearly above the channel's median, {p.min_posts}+ posts per channel)")
+    return [{"text": c["text"], "channel": approved[c["item_id"]]["channel"],
+             "decision": approved[c["item_id"]]["decision"], "item_id": c["item_id"],
+             "basis": "performance", "clicks": c["clicks"], "hook_style": c.get("hook_style")}
+            for c in picked], note
+
+
+@app.get("/examples")
+def examples(response: Response, channel: str | None = None, k: int = Query(3, ge=1, le=10),
+             by: Literal["approval", "performance"] = "approval"):
+    """Few-shot examples for the writers. `by=approval` (default): the reviewer's edited
+    finals first, then approved posts, most recent first. `by=performance`: approved posts
+    that earned clearly more clicks than the channel's typical post (app/performance.py),
+    the rest of the k slots filled by approval; headers X-Examples-Basis
+    (performance | mixed | approval) and X-Examples-Note say what happened."""
+    perf: list[dict] = []
+    note = ""
+    if by == "performance":
+        try:
+            perf, note = performance_examples(channel, k)
+        except RuntimeError as exc:
+            note = f"fell back to approval examples: {exc}"
+    if by == "approval":
+        return [{k_: e[k_] for k_ in ("text", "channel", "decision")} for e in approval_examples(channel, k)]
+    out = list(perf)
+    if len(out) < k:
+        for e in approval_examples(channel, k + len(perf)):
+            if len(out) >= k:
+                break
+            if any(e["item_id"] == o["item_id"] or performance.jaccard(e["text"], o["text"]) >= 0.8 for o in perf):
+                continue
+            out.append({**e, "basis": "approval"})
+    response.headers["X-Examples-Basis"] = ("performance" if perf and len(perf) == len(out)
+                                            else "mixed" if perf else "approval")
+    response.headers["X-Examples-Note"] = note[:300]
+    return out
 
 
 @app.post("/reflect", dependencies=[Depends(require_key)])

@@ -1,6 +1,6 @@
 # report-builder
 
-Deploy **21 of 83** of the local-LLM marketing agent. It turns the KPIs from
+Deploy **21 of 87** of the local-LLM marketing agent. It turns the KPIs from
 `20-analytics-ingest` (plus optional LLM-written highlights) into a one-page HTML report
 and a markdown version of the same report. The HTML has KPI tiles with change arrows, a
 bar chart of sessions by channel, and a table by channel. The weekly report workflow
@@ -34,6 +34,7 @@ uvicorn app.main:app --port 8121
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
 | POST | `/render` | `{"title","period","kpis","highlights_markdown"?,"currency"?}` | `{"html","markdown"}` |
+| POST | `/document` | `{"title","markdown"}` | `{"html"}`: any markdown (a calendar item's body, e.g. the client report of 85) as one standalone page to download and forward; raw HTML escaped, links and images only `http(s)` (the control room's **Download** button uses it) |
 
 `kpis` is the exact response of `GET /kpis` on `20-analytics-ingest`. `period` is a
 display string (`"14–20 Sep 2026"`) or a `{"from","to"}` object.
@@ -52,9 +53,13 @@ curl -s localhost:8121/render -H 'content-type: application/json' \
   For **cost per conversion (cpa)**, lower is better, so `▼` is green. **Spend** is
   neutral (grey), because higher spend is neither good nor bad by itself. Without
   `delta_pct`, a tile shows "no comparison".
+- Spend and cost per conversion are left out (tile, table column, footnote) when they are zero
+  or missing in the period, the previous period and every channel: for a business without ads
+  a row of "0.00" says nothing. Zero conversions are still shown.
 - The bar chart shows sessions by channel. If no channel has sessions, it shows clicks.
 - The title, period, channel names and highlights are escaped. In the highlights,
-  markdown is rendered, raw HTML is escaped, and non-http links become `#`.
+  markdown is rendered (including pipe tables, which the monthly client report (85) uses), raw
+  HTML is escaped, and non-http links become `#`.
 - `currency` (optional, default empty) is a prefix for money values, such as `"$"`.
 
 ## CI

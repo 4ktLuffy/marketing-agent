@@ -1,10 +1,30 @@
 """Settings from the environment, read once when the app is created."""
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 def _url(name: str, default: str) -> str:
-    return (os.environ.get(name) or default).strip().rstrip("/")
+    """Unset -> default. Set but empty -> "" = that service isn't installed (core profile)."""
+    v = os.environ.get(name)
+    return default if v is None else v.strip().rstrip("/")
+
+
+def _gateways(raw: str) -> list[tuple[str, str]]:
+    """ACTIVITY_GATEWAYS: "label=url,label=url" or plain "url,url" (labelled "gateway 2", ...).
+    An item with an empty URL is skipped (e.g. "assistant=" on a profile without that gateway)."""
+    out = []
+    for part in (x.strip() for x in (raw or "").split(",")):
+        label, sep, url = part.partition("=") if "=" in part.split("://")[0] else ("", "", part)
+        url = url.strip().rstrip("/")
+        if url.startswith(("http://", "https://")):
+            out.append(((label.strip() or f"gateway {len(out) + 2}")[:40], url))
+    return out
+
+
+def _profile(raw: str | None) -> str:
+    """core | growth | full from COMPOSE_PROFILES (the largest one wins; unset = whole stack = full)."""
+    p = {x.strip() for x in (raw if raw is not None else "full").split(",")}
+    return "full" if "full" in p else "growth" if "growth" in p else "core"
 
 
 def _float(name: str, default: float) -> float:
@@ -32,6 +52,10 @@ class Settings:
     cards_url: str
     video_url: str
     clips_url: str
+    ads_url: str              # 84 ads-sync (performance page ads panel); "" = not installed
+    brand_url: str            # 05 brand service (brand setup pages)
+    gateway_url: str          # 03 LLM gateway (voice interview -> voice_profile)
+    voice_timeout_s: float
     session_hours: float
     idle_minutes: float
     undo_seconds: float
@@ -39,11 +63,20 @@ class Settings:
     login_max_failures: int
     login_window_s: float
     decision_timeout_s: float
+    ad_library_url: str = ""  # 78 ad-library-sync (positioning map); "" = not installed
+    report_url: str = ""      # 21 report-builder (Download of an item as HTML); "" = not installed
+    feed_url: str = ""        # 87 feed-optimizer (product feed page); "" = not installed
+    # Activity page: more gateways to read /v1/activity from, as (label, url); GATEWAY_URL is "main".
+    activity_gateways: list = field(default_factory=list)
+    install_profile: str = "full"   # core | growth | full: which workflows the installer imported
+    activity_days: float = 7        # how far back the Activity timeline reads calendar changes
 
     @property
     def internal_urls(self) -> list[str]:
-        return [self.n8n_url, self.calendar_url, self.campaigns_url, self.learning_url, self.engine_url,
-                self.rules_url, self.status_url, self.cards_url, self.video_url, self.clips_url]
+        return [u for u in [self.n8n_url, self.calendar_url, self.campaigns_url, self.learning_url, self.engine_url,
+                self.rules_url, self.status_url, self.cards_url, self.video_url, self.clips_url, self.ads_url,
+                self.brand_url, self.gateway_url, self.ad_library_url, self.report_url, self.feed_url,
+                *(u for _, u in self.activity_gateways)] if u]
 
 
 def load() -> Settings:
@@ -65,6 +98,18 @@ def load() -> Settings:
         cards_url=_url("CARDS_URL", "http://image-cards:8000"),
         video_url=_url("VIDEO_URL", "http://video-assembly:8000"),
         clips_url=_url("CLIPS_URL", "http://clip-finder:8000"),
+        # Optional (growth profile): unset or empty = the ads panel says "not installed".
+        ads_url=_url("ADS_URL", ""),
+        brand_url=_url("BRAND_URL", "http://brand-service:8000"),
+        gateway_url=_url("GATEWAY_URL", "http://llm-gateway:8000"),
+        ad_library_url=_url("AD_LIBRARY_URL", "http://ad-library-sync:8000"),
+        report_url=_url("REPORT_URL", "http://report-builder:8000"),
+        # Optional (full profile): unset or empty = the product feed page says "not installed".
+        feed_url=_url("FEED_URL", ""),
+        activity_gateways=_gateways(os.environ.get("ACTIVITY_GATEWAYS", "")),
+        install_profile=_profile(os.environ.get("INSTALL_PROFILE")),
+        activity_days=max(1.0, _float("ACTIVITY_DAYS", 7)),
+        voice_timeout_s=_float("VOICE_TIMEOUT_SECONDS", 300),
         session_hours=_float("SESSION_HOURS", 12),
         idle_minutes=_float("SESSION_IDLE_MINUTES", 120),
         undo_seconds=max(0.0, _float("UNDO_SECONDS", 5)),

@@ -1,6 +1,6 @@
 # ollama-models
 
-Deploy **2 of 83** of the local-LLM marketing agent. This repo sets up the local models
+Deploy **2 of 87** of the local-LLM marketing agent. This repo sets up the local models
 everything else uses:
 
 | Model | Built from | Used by | Why this configuration |
@@ -23,6 +23,9 @@ Memory: a 7B model at Q4 needs about 5 GB of RAM or VRAM, so 16 GB is enough. On
 8 GB machines use `BASE_MODEL=qwen2.5:3b`; tool calling gets noticeably worse.
 
 ## Run
+
+First install Ollama ([ollama.com/download](https://ollama.com/download)) and start it
+(`ollama list` must answer). Then, in this folder (about 5.5 GB of downloads):
 
 ```bash
 ./scripts/setup.sh                 # pulls models, builds mkt-agent + mkt-writer

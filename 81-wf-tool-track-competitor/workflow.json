@@ -126,6 +126,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "81 Track a competitor"
             }
           ]
         },

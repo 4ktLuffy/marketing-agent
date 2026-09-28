@@ -1,6 +1,6 @@
 # llm-gateway
 
-Deploy **3 of 83** of the local-LLM marketing agent. Every LLM call the agent makes
+Deploy **3 of 87** of the local-LLM marketing agent. Every LLM call the agent makes
 goes through this service. You call it with a **prompt name and variables**, and it
 returns **validated text or JSON**.
 
@@ -54,6 +54,7 @@ PROMPTS_DIR=../04-prompt-library/prompts OLLAMA_URL=http://localhost:11434 MODEL
 | GET | `/health` | — | `{"status":"ok","model","ollama": true/false}` |
 | GET | `/v1/prompts` | — | `[{"name","description","output","required_vars","optional_vars"}]` |
 | POST | `/v1/run` | `{"prompt","vars":{},"model"?,"temperature"?}` | `{"prompt","model","output","attempts","duration_ms"}` |
+| GET | `/v1/activity?since=&limit=` | — | calls in flight, the last calls and today's totals per model (see *Activity log*). Needs `X-API-Key` like `/v1/run` |
 
 Errors: `404` unknown prompt · `422` missing required vars · `502` Ollama unreachable or
 no valid output after the last attempt (the detail says what was wrong).
@@ -65,6 +66,34 @@ curl -s localhost:8103/v1/run -H 'content-type: application/json' -d '{
 }'
 # {"prompt":"ad_copy","model":"mkt-writer","output":{"headlines":[...],"descriptions":[...]},"attempts":1,"duration_ms":6200}
 ```
+
+## Activity log
+
+The gateway remembers what it did, so the control room (72, **Activity** page) can show it.
+
+- Send an optional `X-Caller` header with `/v1/run`: who is asking, e.g. `26 Social writer`.
+  Every generated workflow sends it, and so do the services that call the gateway. It is cleaned
+  (letters, digits, spaces and `.:/()#·+-` only) and cut to 80 characters. Without it the call
+  shows as `unknown`.
+- `GET /v1/activity` returns `{running, recent, models, day, size, last_id}`:
+  - `running`: calls in flight (`id`, `started_at`, `elapsed_ms`, `prompt`, `caller`, `model`, `provider`).
+  - `recent`: the last calls, newest first. Each has `id`, `started_at`, `finished_at`,
+    `duration_ms`, `prompt`, `caller`, `model`, `provider`, `ok`, `error`, `retries` and
+    `tokens_in` / `tokens_out` (when the backend reports them: Ollama `prompt_eval_count` /
+    `eval_count`, OpenAI `usage`). `since=<id>` returns only newer calls; `limit` (default 100).
+  - `models`: one row per model and provider for today (UTC day): `calls_today`,
+    `failures_today`, `avg_ms`, `p95_ms`, `tokens_in`, `tokens_out`, `last_at`, and `recent_ms`
+    (the last 30 durations, for a sparkline).
+- `provider` is `ollama`, or only the host name of `OPENAI_BASE_URL` (e.g. `api.groq.com`).
+- `error` is a fixed word, never an upstream message: `timeout`, `unreachable`, `upstream_5xx`,
+  `upstream_4xx`, `rate_limited`, `daily_limit`, `not_configured`, `invalid_json`,
+  `schema_mismatch`, `too_long`, `empty_output`, `internal`.
+- **Metadata only.** The log never holds prompt text, vars or model output. A test puts a marker
+  string in the vars and the output and checks it never appears.
+- **Memory only.** It keeps the last `ACTIVITY_SIZE` (500) calls. A restart empties it.
+  Refused requests (unknown prompt, missing vars, wrong key) are not logged.
+- Each gateway copy in the stack (`llm-gateway`, `llm-gateway-verifier`, `llm-gateway-assistant`)
+  keeps its own log.
 
 ## Configuration
 
@@ -84,6 +113,7 @@ curl -s localhost:8103/v1/run -H 'content-type: application/json' -d '{
 | `BRAND_URL` | empty | brand service; its summary is injected as `{{ brand }}` (cached 60 s; last good value kept if it goes down). Prompts that declare a `facts` var also get its `/facts` as `[id] text` lines, one per fact: cached 60 s, last good value kept if it goes down, empty string before the first success (never an error). Not fetched for prompts without the var, and not touched when the caller passes `facts` in `vars` (pass `""` to send none) |
 | `LEARNING_URL` | empty | learning service (deploy 46); its `/rules/summary` (active rules learned from reviewer edits) is appended to `{{ brand }}` after the brand summary, separated by a blank line. Cached 60 s; last good value kept if it goes down; ignored when empty or unavailable. Neither summary is added when the caller passes `brand` in `vars` |
 | `MAX_ATTEMPTS` | `3` | tries per call |
+| `ACTIVITY_SIZE` | `500` | how many finished calls `/v1/activity` remembers (in memory) |
 | `NUM_CTX` | `8192` | context window sent to Ollama |
 | `REQUEST_TIMEOUT` | `240` | seconds per Ollama call |
 

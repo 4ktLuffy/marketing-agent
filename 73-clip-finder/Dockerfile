@@ -19,10 +19,16 @@ ARG WHISPER_REPO=Systran/faster-whisper-small
 ARG WHISPER_REVISION=536b0662742c02347bc0e980a01041f333bce120
 ARG WHISPER_MODEL_SHA256=3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671
 ARG WHISPER_BASE=https://huggingface.co/${WHISPER_REPO}/resolve/${WHISPER_REVISION}
-ADD ${WHISPER_BASE}/config.json ${WHISPER_BASE}/tokenizer.json ${WHISPER_BASE}/vocabulary.txt \
-    ${WHISPER_BASE}/model.bin /models/faster-whisper-small/
-RUN echo "${WHISPER_MODEL_SHA256}  /models/faster-whisper-small/model.bin" | sha256sum -c - \
-  && chmod -R a+rX /models
+# Download, check and make readable in ONE layer: ADD then `RUN chmod` stored the 486 MB
+# model.bin twice (ADD from a URL writes 0600, the chmod layer copies the file again), and
+# ADD --chmod needs BuildKit, which plain `docker compose build` without buildx doesn't use.
+RUN set -e; mkdir -p /models/faster-whisper-small; \
+  for f in config.json tokenizer.json vocabulary.txt model.bin; do \
+    python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+      "${WHISPER_BASE}/$f" "/models/faster-whisper-small/$f"; \
+  done; \
+  echo "${WHISPER_MODEL_SHA256}  /models/faster-whisper-small/model.bin" | sha256sum -c -; \
+  chmod -R a+rX /models
 ENV WHISPER_MODEL=/models/faster-whisper-small HF_HUB_OFFLINE=1 DATA_DIR=/data
 
 COPY app ./app

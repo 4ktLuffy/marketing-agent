@@ -18,6 +18,7 @@ def brand(tmp_path, monkeypatch):
     path = tmp_path / "brand.yaml"
     shutil.copy(EXAMPLE, path)
     monkeypatch.setenv("BRAND_FILE", str(path))
+    monkeypatch.setenv("BRAND_OVERRIDES_FILE", str(tmp_path / "brand.overrides.json"))
     return path
 
 
@@ -230,7 +231,8 @@ def test_voice_put_and_delete_need_key(monkeypatch):
     assert client.put("/voice", json=VOICE, headers={"X-API-Key": "wrong"}).status_code == 401
     assert client.delete("/voice").status_code == 401
     assert client.put("/voice", json=VOICE, headers={"X-API-Key": "k-test"}).status_code == 200
-    assert client.get("/voice").status_code == 200  # reading needs no key, like /profile
+    assert client.get("/voice").status_code == 401  # reads need the key too
+    assert client.get("/voice", headers={"X-API-Key": "k-test"}).status_code == 200
     assert client.delete("/voice", headers={"X-API-Key": "k-test"}).status_code == 200
 
 

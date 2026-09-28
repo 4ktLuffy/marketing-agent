@@ -4,6 +4,7 @@ A backend-for-frontend: the browser gets a session cookie and a CSRF token, neve
 internal URL. Decisions are posted to n8n (workflow 72-control-room/n8n), which runs the same
 decision code as the approval form (38).
 """
+import os
 import asyncio
 import re
 import secrets
@@ -17,10 +18,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import config, views
+from . import activity, brand_setup, config, feeds, positioning, views
 from .backends import BackendError, Backends, gather_soft
 from .pending import PendingDecisions
-from .security import LoginLimiter, Session, Sessions, check_login, same
+from .security import LoginLimiter, Session, Sessions, check_login, client_ip, same
 
 HERE = Path(__file__).parent
 SESSION_COOKIE = "cr_session"
@@ -83,7 +84,7 @@ def create_app() -> FastAPI:
     async def not_logged_in(request: Request, exc: NotLoggedIn):
         if request.headers.get("HX-Request"):
             return Response(status_code=401, headers={"HX-Redirect": "/login"})
-        if request.method == "GET" and not request.url.path.startswith(("/calendar/events", "/media/")):
+        if request.method == "GET" and not request.url.path.startswith(("/calendar/events", "/media/", "/activity/data")):
             nxt = request.url.path + (f"?{request.url.query}" if request.url.query else "")
             return RedirectResponse(f"/login?next={quote(nxt)}", status_code=303)
         return JSONResponse({"detail": "log in first"}, status_code=401)
@@ -133,7 +134,7 @@ def create_app() -> FastAPI:
     @app.post("/login", response_class=HTMLResponse)
     def login(request: Request, user: str = Form(""), password: str = Form(""), csrf: str = Form(""),
               next: str = Form("/")):
-        ip = request.client.host if request.client else "?"
+        ip = client_ip(request, os.getenv("TRUSTED_PROXIES", ""))
         pre = request.cookies.get(LOGIN_COOKIE) or ""
         if not pre or not same(csrf, pre):
             raise HTTPException(403, "missing or wrong CSRF token (reload the login page)")
@@ -250,6 +251,22 @@ def create_app() -> FastAPI:
                     attempts=None if isinstance(attempts, BackendError) else attempts,
                     pending=item_id in P().hidden_ids(), nav="calendar")
 
+    @app.get("/items/{item_id}/download")
+    async def download(request: Request, item_id: int, session: Session = Depends(current)):
+        """The item's body as one HTML file (21 /document): a client report (85) to forward."""
+        if not settings.report_url:
+            return page(request, "error.html", session, 404, error="report-builder (21) is not installed", nav="calendar")
+        try:
+            item = await B().item(item_id)
+            title = str(item.get("title") or f"Item {item_id}")
+            doc = await B().document(title, str(item.get("body") or ""))
+        except BackendError as e:
+            return page(request, "error.html", session, e.status if e.status == 404 else 502, error=str(e), nav="calendar")
+        name = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:80] or f"item-{item_id}"
+        return Response(doc, media_type="text/html; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{name}.html"',
+                                 "Cache-Control": "private, no-store"})
+
     # ------------------------------------------------------------------ 4 calendar
     @app.get("/calendar", response_class=HTMLResponse)
     def calendar(request: Request, session: Session = Depends(current)):
@@ -287,11 +304,14 @@ def create_app() -> FastAPI:
     @app.get("/performance", response_class=HTMLResponse)
     async def performance(request: Request, days: int = 30, session: Session = Depends(current)):
         days = days if days in (7, 30, 90) else 30
-        ins, hooks = await gather_soft(B().insights(days), B().hooks(days))
+        calls = [B().insights(days), B().hooks(days)] + ([B().ads_summary(days)] if settings.ads_url else [])
+        ins, hooks, *ads = await gather_soft(*calls)
+        ads = ads[0] if ads else None
         return page(request, "performance.html", session, days=days, nav="performance",
                     insights=None if isinstance(ins, BackendError) else ins,
                     hooks=None if isinstance(hooks, BackendError) else hooks,
-                    errors=[str(x) for x in (ins, hooks) if isinstance(x, BackendError)])
+                    ads=None if isinstance(ads, BackendError) else ads, ads_installed=bool(settings.ads_url),
+                    errors=[str(x) for x in (ins, hooks, ads) if isinstance(x, BackendError)])
 
     # ------------------------------------------------------------------ 7 content engine
     async def pillar_rows():
@@ -301,6 +321,8 @@ def create_app() -> FastAPI:
 
     @app.get("/engine", response_class=HTMLResponse)
     async def engine(request: Request, session: Session = Depends(current)):
+        if not settings.engine_url:
+            return page(request, "engine.html", session, rows=[], error=None, not_installed=True, nav="more")
         try:
             rows, err = await pillar_rows(), None
         except BackendError as e:
@@ -347,6 +369,18 @@ def create_app() -> FastAPI:
     @app.get("/more", response_class=HTMLResponse)
     def more(request: Request, session: Session = Depends(current)):
         return page(request, "more.html", session, nav="more")
+
+    # ------------------------------------------------------------------ 11 brand setup (05, 03)
+    brand_setup.register(app, page, current, csrf, B)
+
+    # ------------------------------------------------------------------ 12 positioning map (78, read-only)
+    positioning.register(app, page, current)
+
+    # ------------------------------------------------------------------ 13 product feed (87, read-only)
+    feeds.register(app, page, current)
+
+    # ------------------------------------------------------------------ 14 activity (03 gateways, 19; read-only)
+    activity.register(app, page, current)
 
     # ------------------------------------------------------------------ media (17 cards, 71 videos)
     @app.get("/media/{kind}/{name}")

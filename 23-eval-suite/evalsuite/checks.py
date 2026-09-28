@@ -1,5 +1,6 @@
 """Checks applied to one gateway output. Each returns (passed, detail)."""
 import json
+import os
 import re
 
 import httpx
@@ -92,7 +93,8 @@ def run_check(check: dict, output, variables: dict, services: dict) -> tuple[boo
     if kind == "brand_ok":
         errors = []
         for t in targets:
-            r = httpx.post(f"{services['brand']}/check", json={"text": as_text(t), "channel": check.get("channel")}, timeout=10)
+            r = httpx.post(f"{services['brand']}/check", json={"text": as_text(t), "channel": check.get("channel")},
+                           headers={"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {}, timeout=10)
             r.raise_for_status()
             errors += [v["detail"] for v in r.json()["violations"] if v["severity"] == "error"]
         return not errors, f"brand errors: {errors}" if errors else "ok"

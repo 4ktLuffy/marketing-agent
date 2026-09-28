@@ -1,6 +1,6 @@
 # 53 · Campaigns
 
-Deploy **53 of 83** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **53 of 87** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Lets the chat agent list campaigns, show a fresh scorecard, set targets, and activate, pause, complete or cancel a campaign (45). A campaign can't be activated without a target, and that rule is enforced by the service.
 

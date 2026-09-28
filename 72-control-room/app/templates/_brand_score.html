@@ -1,0 +1,9 @@
+<section class="panel">
+  <h2>Ready for the agent: {{ completeness.score }} %</h2>
+  <div class="meter" role="img" aria-label="{{ completeness.done }} of {{ completeness.total }} done"><span style="width: {{ completeness.score }}%"></span></div>
+  <ul class="checklist">
+    {% for c in completeness.checks %}
+    <li class="{{ 'ok' if c.ok else 'bad' }}"><span aria-hidden="true">{{ '✓' if c.ok else '✗' }}</span> {{ c.label }}{% if not c.ok %}<br><span class="small muted">{{ c.missing }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>

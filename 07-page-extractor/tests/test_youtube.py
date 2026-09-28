@@ -4,7 +4,7 @@ import respx
 from fastapi.testclient import TestClient
 from youtube_transcript_api import NoTranscriptFound, RequestBlocked, TranscriptsDisabled
 
-from app import net, youtube
+from app import net, safe_http, youtube
 from app.main import app
 
 client = TestClient(app)
@@ -74,7 +74,7 @@ SNIPPETS = [
 def fake_dns(monkeypatch):
     monkeypatch.delenv("ALLOW_PRIVATE_URLS", raising=False)
     monkeypatch.delenv("TRANSCRIPT_LANGS", raising=False)
-    monkeypatch.setattr(net, "resolve", lambda host: ["142.250.0.1"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["142.250.0.1"])
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ def test_oembed_failure_leaves_title_empty(calls):
 
 @respx.mock
 def test_ssrf_guard_applies_to_oembed(monkeypatch, calls):
-    monkeypatch.setattr(net, "resolve", lambda host: ["127.0.0.1"])  # poisoned DNS for youtube.com
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["127.0.0.1"])  # poisoned DNS for youtube.com
     route = mock_oembed()
     r = client.post("/extract", json={"url": f"https://youtu.be/{VID}"})
     assert r.status_code == 200

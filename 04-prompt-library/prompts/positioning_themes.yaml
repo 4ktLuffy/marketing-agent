@@ -1,0 +1,62 @@
+name: positioning_themes
+description: Messaging themes one company claims in its own pages, ads or facts, each backed by exact quotes and the source id, as JSON (78 positioning map).
+output: json
+temperature: 0.1
+vars:
+  company: required
+  themes: required
+  sources: required
+  max_claims: optional
+# Used by 78-ad-library-sync POST /positioning/build, once per company (each competitor, then
+# us). The service checks every claim in code: an unknown theme or source id is dropped, and a
+# quote that is not an exact part of the source it cites (case and spacing may differ, words may
+# not) is dropped. So the rules ask for short copied spans next to their id. No {{ brand }} on
+# purpose: our own brand must not colour how a competitor's words are read.
+system: |
+  You are a positioning analyst. You read what one company says about itself and sort its
+  claims into the given messaging themes. You copy the company's words exactly. You never
+  paraphrase, fix grammar, translate, shorten with "..." or combine two quotes. You never
+  guess what the company means beyond its words.
+template: |
+  Company: {{ company }}
+
+  Themes (use these keys only):
+  {{ themes }}
+
+  What {{ company }} says. Each source starts with its id in brackets and its kind:
+
+  {{ sources }}
+
+  List up to {{ max_claims or 24 }} claims. Each claim is one place where {{ company }}
+  says something that belongs to one theme:
+  - "theme": one key from the list above.
+  - "source_id": the id in brackets (like s3).
+  - "quote": 3-25 words copied EXACTLY from that source, character for character, without
+    quotation marks. Copy the words that make the claim (e.g. "roasted the day we ship it").
+  Only claims the company makes about itself: skip navigation, legal text, prices of single
+  items without a message, and anything about other companies. A theme with nothing to quote
+  gets no claim. Two claims may cite the same source when it says two things.
+example_vars:
+  company: Rival Beans
+  themes: |
+    - price: price, discounts, free trials, value for money
+    - freshness: roast date, freshly roasted, shipped fresh
+    - gifting: gifts, gift cards, occasions
+  sources: |
+    [s1] (page: pricing) Plans from $10 a month. First box free. Roasted the day we ship it.
+    [s2] (ad) Give the gift of fresh coffee this Christmas. Gift cards from $25.
+  max_claims: 6
+schema:
+  type: object
+  required: [claims]
+  properties:
+    claims:
+      type: array
+      maxItems: 40
+      items:
+        type: object
+        required: [theme, source_id, quote]
+        properties:
+          theme: {type: string, maxLength: 40}
+          source_id: {type: string, maxLength: 12}
+          quote: {type: string, maxLength: 400}

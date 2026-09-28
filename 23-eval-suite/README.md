@@ -1,6 +1,6 @@
 # eval-suite
 
-Deploy **23 of 83** of the local-LLM marketing agent. It tests the agent's writing against
+Deploy **23 of 87** of the local-LLM marketing agent. It tests the agent's writing against
 fixed cases and measures how often the local model produces copy you could actually
 publish: within platform limits, free of banned phrases, on the requested channels,
 and with no invented statistics.
@@ -76,6 +76,9 @@ python -m evalsuite.voc_ab --judge-gateway http://other:8103   # judge on anothe
 python -m evalsuite.voc_ab --cases cases/voc/voc_ab_v2.yaml     # the second, held-out topic set
 python -m evalsuite.voc_ab --rejudge results/voc_ab-X.json --judge-gateway URL   # same posts, other judge
 python -m evalsuite.voc_ab --no-open-with                       # B = customer_phrases only (the first runs)
+python -m evalsuite.voc_ab --cases cases/voc/voc_ab_v3.yaml     # third held-out set (placement checks, judge without B's phrase)
+python -m evalsuite.voc_ab --rescore results/voc_ab-X.json      # 70 /placement/check on stored posts, no LLM
+python -m evalsuite.voc_ab --first-sentence-only                # v1/v2 behaviour: only "phrase in 1st sentence", judge sees it
 ```
 
 `cases/voc/voc_ab.yaml` holds 10 held-out topics (written before the first run). Each topic
@@ -122,6 +125,36 @@ B's phrase is also in the quotes the judge is shown, so this judge partly measur
 with its own evidence. Not yet evidence of better posts. Next: ask for the phrase inside a
 grammatical sentence and fail `bolted_on` in the check; give the judge quotes that exclude
 the phrase B was given.
+
+**Third pass: placement checks, judge without B's phrase (2026-09-28).** `cases/voc/voc_ab_v3.yaml`
+(8 new topics) was written before the checks and the new prompt wording. B's post now goes
+through 70 `POST /placement/check`: the phrase must be woven into a grammatical first sentence
+(`bolted_on` fails it: separator next to it, no join to the next sentence, a verbless sentence
+of its own, a dangling opener before a new subject, capitalized mid-sentence), unquoted, and no
+invented customer; a lowercase start is fixed in code; any other miss → one retry with 70's
+feedback. The judge's quotes exclude every quote containing B's phrase (`judge_quotes_dropped`).
+Writer local `mkt-writer`, judge Groq `gpt-oss-120b` (`_dev/local-test/voc-ab-groq-v3.sh`,
+10,440 tokens). v1/v2 rows = the stored posts re-scored with the same checks (`--rescore`).
+
+| Topics | Phrase in 1st sentence B | Bolted on (model output) | Bolted on after capital fix | Woven in 1st sentence | Invented customers B / A | Judge B / A / tie | Avg chars A / B |
+|---|---|---|---|---|---|---|---|
+| v1 (10, seen) | 10/10 | 8/10 | 6/10 | 4/10 | 1 / 0 | 8 / 1 / 1 (judge saw B's phrase) | 287 / 322 |
+| v2 (8) | 6/8 | 6/6 | 6/6 | 0/8 | 0 / 0 | 6 / 2 / 0 (judge saw B's phrase) | 284 / 321 |
+| **v3 (8, held out)** | 7/8 | 4/7 | 4/7 | 3/8 | 0 / 0 | **3 / 4 / 1** (1 same position; 0 reasons cite B's phrase) | 301 / 264 |
+
+v3 as run: all checks passed first try 4/8, after the retry 5/8; the check then said 2/7
+bolted on. Two posts it passed were dangling openers ("Tastes fresh even in week three, our
+Specialty Coffee is…"), found by reading the v3 posts; the `dangling_opener` rule was added
+AFTER the run, so the 4/7 row is post hoc on v3 (a v4 set is needed to test that rule held out).
+One A-side "invented customer" at run time was a false positive ("Introducing our newest team
+member", fixed: the "Name, a customer" pattern now needs the comma). One B post had a brand
+error (banned "guarantee").
+
+Read it as: without the echo in its evidence the judge no longer prefers B (3/4/1), so the
+v1/v2 wins were mostly the confound. The placement mechanism cuts pasted labels (v1/v2 14/16
+raw → v3 4/7) but not to ≤ 20 %, and woven phrases are sometimes odd in meaning (a complaint,
+"box arrived late", opening a welcome post). **Customer phrases stay OFF by default in the
+writers.**
 
 ## Measuring the site assistant (79)
 

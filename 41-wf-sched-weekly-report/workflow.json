@@ -88,6 +88,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "41 Weekly KPI report"
             }
           ]
         },
@@ -315,16 +319,53 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "551d8daf-4ecd-54a8-a966-bf14a730da11",
-      "name": "Action data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "a74fbbdb-86d1-5c06-9708-38ed45ca2155",
+      "name": "Ads summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         3120,
         300
       ],
       "parameters": {
-        "jsCode": "// One compact JSON for the weekly_actions prompt. Every part is optional: a source that\n// failed (or is not configured) is left out, never invented.\nconst lw = $('Last week').first().json;\nconst body = n => { try { const b = $(n).first().json.body; return b && typeof b === 'object' ? b : null; } catch (e) { return null; } };\nconst data = {};\nconst k = $('KPIs').first().json;\nif (k && k.totals) {\n  data.kpis = { totals: k.totals, delta_pct: k.delta_pct || null,\n    by_channel: (k.by_channel || []).map(c => ({ channel: c.channel, sessions: c.sessions, clicks: c.clicks,\n      conversions: c.conversions, cvr: c.cvr })) };\n}\nconst ins = body('Clicks by channel');\nif (ins && ((ins.by_channel || []).length || (ins.top_posts || []).length)) {\n  data.clicks = { days: 7, by_channel: ins.by_channel || [],\n    top_posts: (ins.top_posts || []).slice(0, 5).map(p => ({ title: p.title, channel: p.channel, clicks: p.clicks })) };\n}\nconst hk = body('Winning hooks');\nif (hk && Array.isArray(hk.styles)) {\n  const used = hk.styles.filter(s => s.posts > 0)\n    .map(s => ({ hook_style: s.hook_style, posts: s.posts, clicks: s.clicks, clicks_per_post: s.clicks_per_post }));\n  if (used.length) data.hooks = { days: 90, styles: used };\n}\nconst cards = $('Collect scorecards').first().json.scorecards || [];\nif (cards.length) data.campaigns = cards;\nconst titles = $('One per pillar').all().map(i => i.json.title);\nconst pillars = $('Pillar health').all().map((i, n) => ({ b: i.json.body, title: titles[n] }))\n  .filter(x => x.b && typeof x.b === 'object' && x.b.pillar_id)\n  .map(({ b, title }) => ({ pillar: title, decided: b.decided, approved: b.approved, edited: b.edited, rejected: b.rejected,\n    approved_clean_rate: b.approved_clean_rate, rejected_rate: b.rejected_rate, paused: b.paused, reason: b.reason || null }));\nif (pillars.length) data.pillars = pillars;\n// Comparisons worked out in code. The 7B model combined real numbers into wrong statements\n// (\"sessions decreased by 1,015 to 1,855\"); with finished sentences it only has to quote.\nconst facts = [];\nconst fmt = n => typeof n === 'number' ? (Number.isInteger(n) ? n.toLocaleString('en-US') : String(Math.round(n * 1000) / 1000)) : String(n);\nif (k && k.totals) {\n  const prev = (k.previous || {}).totals || {};\n  for (const [m, v] of Object.entries(k.totals)) {\n    if (typeof v !== 'number') continue;\n    const d = (k.delta_pct || {})[m];\n    facts.push(`${m}: ${fmt(v)} last week` + (typeof prev[m] === 'number' ? `, ${fmt(prev[m])} the week before` : '')\n      + (typeof d === 'number' ? ` (${d > 0 ? '+' : ''}${fmt(d)}%)` : ''));\n  }\n}\nfor (const c of (data.clicks || {}).by_channel || []) facts.push(`${c.channel}: ${fmt(c.clicks)} tracked clicks from ${fmt(c.posts)} posts last week`);\nfor (const h of (data.hooks || {}).styles || []) facts.push(`hook \"${h.hook_style}\": ${fmt(h.clicks_per_post)} clicks per post over ${fmt(h.posts)} posts (90 days)`);\nif (facts.length) data.facts = facts;\nreturn [{ json: { data: JSON.stringify(data), period: `${lw.from} to ${lw.to}`, parts: Object.keys(data) } }];\n"
+        "method": "GET",
+        "url": "={{ $env.ADS_URL ? $env.ADS_URL.replace(/\\/+$/, '') + '/summary' : $env.CAMPAIGNS_URL + '/health' }}",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "7"
+            },
+            {
+              "name": "end",
+              "value": "={{ $('Last week').first().json.to }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "551d8daf-4ecd-54a8-a966-bf14a730da11",
+      "name": "Action data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// One compact JSON for the weekly_actions prompt. Every part is optional: a source that\n// failed (or is not configured) is left out, never invented.\nconst lw = $('Last week').first().json;\nconst body = n => { try { const b = $(n).first().json.body; return b && typeof b === 'object' ? b : null; } catch (e) { return null; } };\nconst data = {};\nconst k = $('KPIs').first().json;\nif (k && k.totals) {\n  data.kpis = { totals: k.totals, delta_pct: k.delta_pct || null,\n    by_channel: (k.by_channel || []).map(c => ({ channel: c.channel, sessions: c.sessions, clicks: c.clicks,\n      conversions: c.conversions, cvr: c.cvr })) };\n}\nconst ins = body('Clicks by channel');\nif (ins && ((ins.by_channel || []).length || (ins.top_posts || []).length)) {\n  data.clicks = { days: 7, by_channel: ins.by_channel || [],\n    top_posts: (ins.top_posts || []).slice(0, 5).map(p => ({ title: p.title, channel: p.channel, clicks: p.clicks })) };\n}\nconst hk = body('Winning hooks');\nif (hk && Array.isArray(hk.styles)) {\n  const used = hk.styles.filter(s => s.posts > 0)\n    .map(s => ({ hook_style: s.hook_style, posts: s.posts, clicks: s.clicks, clicks_per_post: s.clicks_per_post }));\n  if (used.length) data.hooks = { days: 90, styles: used };\n}\nconst cards = $('Collect scorecards').first().json.scorecards || [];\nif (cards.length) data.campaigns = cards;\nconst titles = $('One per pillar').all().map(i => i.json.title);\nconst pillars = $('Pillar health').all().map((i, n) => ({ b: i.json.body, title: titles[n] }))\n  .filter(x => x.b && typeof x.b === 'object' && x.b.pillar_id)\n  .map(({ b, title }) => ({ pillar: title, decided: b.decided, approved: b.approved, edited: b.edited, rejected: b.rejected,\n    approved_clean_rate: b.approved_clean_rate, rejected_rate: b.rejected_rate, paused: b.paused, reason: b.reason || null }));\nif (pillars.length) data.pillars = pillars;\n// Comparisons worked out in code. The 7B model combined real numbers into wrong statements\n// (\"sessions decreased by 1,015 to 1,855\"); with finished sentences it only has to quote.\nconst facts = [];\nconst fmt = n => typeof n === 'number' ? (Number.isInteger(n) ? n.toLocaleString('en-US') : String(Math.round(n * 1000) / 1000)) : String(n);\nif (k && k.totals) {\n  const prev = (k.previous || {}).totals || {};\n  for (const [m, v] of Object.entries(k.totals)) {\n    if (typeof v !== 'number') continue;\n    const d = (k.delta_pct || {})[m];\n    facts.push(`${m}: ${fmt(v)} last week` + (typeof prev[m] === 'number' ? `, ${fmt(prev[m])} the week before` : '')\n      + (typeof d === 'number' ? ` (${d > 0 ? '+' : ''}${fmt(d)}%)` : ''));\n  }\n}\nfor (const c of (data.clicks || {}).by_channel || []) facts.push(`${c.channel}: ${fmt(c.clicks)} tracked clicks from ${fmt(c.posts)} posts last week`);\nfor (const h of (data.hooks || {}).styles || []) facts.push(`hook \"${h.hook_style}\": ${fmt(h.clicks_per_post)} clicks per post over ${fmt(h.posts)} posts (90 days)`);\n// Paid ads (84): finished sentences computed by ads-sync, so the model only quotes them.\nconst ads = $env.ADS_URL ? body('Ads summary') : null;\nif (ads && ads.has_data && Array.isArray(ads.facts)) facts.push(...ads.facts.slice(0, 16));\nif (facts.length) data.facts = facts;\nreturn [{ json: { data: JSON.stringify(data), period: `${lw.from} to ${lw.to}`, parts: Object.keys(data) } }];\n"
       }
     },
     {
@@ -333,7 +374,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3360,
+        3600,
         300
       ],
       "parameters": {
@@ -348,6 +389,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "41 Weekly KPI report"
             }
           ]
         },
@@ -363,7 +408,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3600,
+        3840,
         300
       ],
       "parameters": {
@@ -376,7 +421,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3840,
+        4080,
         300
       ],
       "parameters": {
@@ -400,7 +445,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4080,
+        4320,
         300
       ],
       "parameters": {
@@ -413,7 +458,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4320,
+        4560,
         300
       ],
       "parameters": {
@@ -446,7 +491,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4560,
+        4800,
         300
       ],
       "parameters": {
@@ -459,7 +504,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4800,
+        5040,
         300
       ],
       "parameters": {
@@ -483,11 +528,24 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5040,
+        5280,
         300
       ],
       "parameters": {
         "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst pct = r => r && r.rate != null ? `${Math.round(r.rate * 100)}%` + (r.ci95 ? ` (${Math.round(r.ci95[0] * 100)}–${Math.round(r.ci95[1] * 100)}%)` : '') : 'n/a';\nconst pp = d => d == null ? '' : ` ${d >= 0 ? '+' : ''}${Math.round(d * 100)} pts`;\n\nconst prev = $('Suggestions section').first().json;\nconst r = $input.first().json || {};\nconst b = $env.VISIBILITY_URL && ok(r) ? bodyOf(r) : null;\nif (!b || !b.run || !b.providers) return [{ json: prev }];\nconst brand = b.brand || 'us';\nconst parts = Object.entries(b.providers).map(([p, s]) => `${p} ${pct(s.mention)}${s.trend ? pp(s.trend.mention_delta) : ''}` +\n  (s.citation ? `, cited ${pct(s.citation)}` : ''));\nconst wrong = Object.values(b.providers).reduce((n, s) => n + ((s.branded || {}).wrong_claims || 0), 0);\nconst line = ['### AI visibility', `${brand} named in unaided AI answers (run ${b.run.id}, ${b.run.finished_at.slice(0, 10)}): ${parts.join('; ')}.` +\n  (wrong ? ` ${wrong} sentence(s) about ${brand} not supported by the approved facts: \\`GET /claims/wrong\\` on ai-visibility (82).` : '') +\n  ' API answers, not what a person sees in the app.'].join('\\n');\nreturn [{ json: { ...prev, markdown: [prev.markdown, line].filter(Boolean).join('\\n\\n') } }];\n"
+      }
+    },
+    {
+      "id": "3ec78c0e-0d75-5c44-8a54-a064cccfd511",
+      "name": "Ads section",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5520,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 300); };\n\nconst prev = $('Visibility section').first().json;\nconst r = $('Ads summary').first().json || {};\nconst b = $env.ADS_URL && ok(r) ? bodyOf(r) : null;\nif (!b || !b.has_data || !Array.isArray(b.facts)) return [{ json: prev }];\nconst w = b.window.current;\nconst facts = b.facts.filter(f => !f.startsWith('alert '));\nconst lines = ['### Ads', `Paid ads ${w.start} to ${w.end} vs the same number of days before. Every number is computed by ads-sync (84) from the platforms' reports, not by the model.`, '',\n  ...facts.slice(0, 14).map(f => `- ${f}`)];\nconst un = Object.entries(b.unmapped_spend || {}).filter(([, v]) => v > 0);\nif (un.length) lines.push('', `Spend not mapped to a campaign: ${un.map(([c, v]) => `${v.toFixed(2)} ${c}`).join(', ')} (84 \\`POST /mappings\\`, or put the campaign slug in the ad campaign's name or utm_campaign).`);\nif ((b.alerts || []).length) {\n  lines.push('', 'Open alerts:', '', ...b.alerts.slice(0, 6).map(x => `- [${x.severity}] ${x.message}`));\n}\nreturn [{ json: { ...prev, markdown: [prev.markdown, lines.join('\\n')].filter(Boolean).join('\\n\\n') } }];\n"
       }
     },
     {
@@ -496,7 +554,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5280,
+        5760,
         300
       ],
       "parameters": {
@@ -514,7 +572,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5520,
+        6000,
         300
       ],
       "parameters": {
@@ -527,7 +585,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5760,
+        6240,
         300
       ],
       "parameters": {
@@ -540,7 +598,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        6000,
+        6480,
         300
       ],
       "parameters": {
@@ -559,7 +617,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6000,
+        6480,
         480
       ],
       "parameters": {
@@ -572,7 +630,7 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        6240,
+        6720,
         480
       ],
       "parameters": {
@@ -733,6 +791,17 @@
       "main": [
         [
           {
+            "node": "Ads summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ads summary": {
+      "main": [
+        [
+          {
             "node": "Action data",
             "type": "main",
             "index": 0
@@ -829,6 +898,17 @@
       ]
     },
     "Visibility section": {
+      "main": [
+        [
+          {
+            "node": "Ads section",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ads section": {
       "main": [
         [
           {

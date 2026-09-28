@@ -1,6 +1,6 @@
 # control-room
 
-Deploy **72 of 83** of the local-LLM marketing agent. A small, mobile-first web app for the one
+Deploy **72 of 87** of the local-LLM marketing agent. A small, mobile-first web app for the one
 person who approves the agent's work:
 
 1. **Login** for one approver (`CONTROL_USER` / `CONTROL_PASSWORD`).
@@ -16,11 +16,49 @@ person who approves the agent's work:
 4. **Calendar** (month, week, list) coloured by status; drag an item to move it.
 5. **Item detail**: notes as a timeline, links, image, video player, rejections so far (46).
 6. **Performance**: clicks by channel, top posts and hook-style winners (45 `/insights`,
-   `/insights/hooks`).
+   `/insights/hooks`), and a **Paid ads** panel when `ADS_URL` is set: spend, conversions, CPL,
+   ROAS, CTR and CPC per platform and per campaign, and the open pacing alerts (84 `/summary`,
+   read-only).
 7. **Content engine**: each pillar's health and pause state, with a **Resume** button (61).
 8. **Campaigns**: scorecards (target vs actual vs time elapsed) and campaigns that ended unmeasured (45).
 9. **Chat**: a link to the n8n chat (see *Chat* below for why it is a link).
 10. **Health**: the status page's summary (22).
+11. **Brand setup** (`/brand`): six short steps instead of editing `brand.yaml`: basics, products
+    (add/edit/remove rows), facts, rules (banned phrases, emoji, other domains, disclaimers), the
+    voice interview (the ten 05 questions → the gateway's `voice_profile` prompt → you review and
+    save), and a review with the completeness score and the summary the agent reads. Each step saves
+    through 05 `PUT /brand/editable`; 05 validates every field and its errors appear next to the
+    field (htmx; works without JavaScript too). The agent uses a change within 60 s (the gateway's
+    brand cache). Reset (step 6) goes back to the shipped `brand.yaml`.
+12. **Positioning** (`/positioning`, under More): 78's monthly positioning map. A table of themes ×
+    brands (the number = how many exact quotes claim that theme; open it to read the quotes with links
+    to their page or ad), the white space (no competitor claims it and an approved fact backs it),
+    crowded themes and the shifts since last month, with older months as tabs. Read-only.
+13. **Product feed** (`/feeds`, under More): the uploads to 87 feed-optimizer with their counts
+    (proposed, rejected by reason, approved) and the downloads (full feed, supplemental feed),
+    passed through with the service key. Read-only: approving needs the approver key on 87.
+14. **Activity** (`/activity`, in the top bar and the phone tab bar): what the agent is doing now
+    and what it did. Read-only. It refreshes every 4 s while the tab is visible and pauses when
+    it is hidden.
+    - **Now**: the model calls running at this moment, with the ability that asked (e.g. "Social
+      post writer"), the prompt, the model, a **local** or **hosted** badge and the seconds so far.
+      "Idle — nothing running" when there are none.
+    - **Timeline**: newest first, grouped by day. AI calls ("Social post writer asked mkt-writer
+      (local) for social posts — 14.2 s, OK") and content changes from the calendar (19: drafts
+      created, sent for review, approved, rejected, published; last `ACTIVITY_DAYS` days) with a
+      link to the item. Filters: All, AI calls, Content, Errors.
+    - **Models**: one card per model today (UTC): calls, failures, average and p95 time, tokens in
+      and out, and a small line of the last 30 call times.
+    - **Abilities**: a tile for everything the agent can do (writers, scheduled jobs, checks,
+      services), installed or not (from the install profile and the service URLs), and when it
+      last called a model. Open a tile to see only its calls.
+    - A small row shows each source (each gateway, the calendar). One that fails says
+      "unreachable"; the rest of the page still works.
+
+    The data comes from each gateway's `GET /v1/activity` (03; metadata only, never prompt text,
+    vars or output; kept in memory, so a gateway restart empties it) and from 19 `GET /items`.
+    Calls show which ability made them through the `X-Caller` header that every workflow and
+    service sends. Gateways appear by label ("main", "verifier", "assistant"), never by URL.
 
 The n8n forms (38 approval, 42 knowledge, 51 rules) stay; use either.
 
@@ -65,8 +103,10 @@ back ("Not in review any more"). The result of each batch appears above the queu
   renders every page, fragment, JSON answer and static file and searches them for the key values
   and the internal host names.
 - Which call carries which key (`app/backends.py`): reads carry none; the decision webhook gets
-  `X-Control-Key` only; moving an item on the calendar (`PATCH scheduled_at`, 19) and resuming a
-  pillar (61) get `X-API-Key`. Nothing gets `X-Approver-Key`.
+  `X-Control-Key` only; moving an item on the calendar (`PATCH scheduled_at`, 19), resuming a
+  pillar (61), reading/saving/resetting the editable brand and saving the voice profile (05), and
+  the voice interview prompt (03) and reading each gateway's activity log (03 `/v1/activity`)
+  get `X-API-Key`. Nothing gets `X-Approver-Key`.
 - Images (17) and videos (71) are streamed through `/media/...` (login required, ids checked,
   `Range` passed on), so a phone on HTTPS never needs ports 8117/8171.
 - Strict headers: CSP without inline scripts or eval (`script-src 'self'`), `frame-ancestors
@@ -78,12 +118,17 @@ back ("Not in review any more"). The result of each batch appears above the queu
 (service `control-room`, `127.0.0.1:8172`). It keeps no state on disk. It calls n8n and the
 services by their container names.
 
+`01-marketing-stack/scripts/install.sh` does all of this (every profile includes the control
+room); the steps below are for setting it up by hand.
+
 1. In `01-marketing-stack/.env`: `CONTROL_USER`, `CONTROL_PASSWORD` (required),
    `CONTROL_ROOM_KEY` (required; `openssl rand -hex 24`; `preflight.sh` fails if it equals
-   another key). n8n gets the same `CONTROL_ROOM_KEY` from the stack.
+   another key). `install.sh` generates the password and the key. n8n gets the same
+   `CONTROL_ROOM_KEY` from the stack.
 2. `docker compose up -d --build control-room n8n`, then `scripts/import-n8n.sh` (it imports
    `72-control-room/n8n/workflow.json` with the other workflows and publishes it).
-3. Open <http://localhost:8172>.
+3. Open <http://localhost:8172>. Brand setup is under **More** on a phone and **Brand** in the
+   top bar on a computer.
 
 **On a phone:** the port is bound to localhost on purpose. Put it behind your HTTPS reverse proxy
 and set `CONTROL_COOKIE_SECURE=true` in the stack's `.env`, for example with Caddy:
@@ -101,7 +146,7 @@ plain HTTP. Add it to your home screen (it has a web app manifest).
 
 ```bash
 docker build -t control-room .
-docker run --rm -p 127.0.0.1:8172:8000 --network marketing \
+docker run --rm -p 127.0.0.1:8172:8000 --network marketing-agent_marketing \
   -e CONTROL_PASSWORD=... -e CONTROL_ROOM_KEY=... -e INTERNAL_API_KEY=... control-room
 ```
 
@@ -120,16 +165,32 @@ CONTROL_PASSWORD=... CONTROL_ROOM_KEY=... INTERNAL_API_KEY=... N8N_BASE_URL=http
 
 ## Configuration
 
+In the stack, `docker-compose.yml` passes `CONTROL_USER`, `CONTROL_PASSWORD`, `CONTROL_ROOM_KEY`,
+`INTERNAL_API_KEY`, `N8N_PUBLIC_URL`, the service URLs, and these with a `CONTROL_` prefix in
+`.env`: `CONTROL_COOKIE_SECURE`, `CONTROL_TRUSTED_PROXIES`, `CONTROL_UNDO_SECONDS`,
+`CONTROL_SESSION_HOURS`, `CONTROL_SESSION_IDLE_MINUTES`. The other settings below keep their
+defaults there.
+
 | Env var | Default | Meaning |
 |---|---|---|
 | `CONTROL_USER` | `approver` | Login name |
 | `CONTROL_PASSWORD` | — | **Required.** Without it nobody can log in (`503`) |
+| `TRUSTED_PROXIES` | empty | comma-separated IPs/CIDRs of your reverse proxy (e.g. `172.16.0.0/12` for the Docker network). Only then is `X-Forwarded-For` used for login rate limits, so one visitor's wrong passwords don't lock you out; without it every request behind a proxy counts as the proxy's address |
 | `CONTROL_REVIEWER` | `CONTROL_USER` | Name in the notes and learning events ("approved by …") |
 | `CONTROL_ROOM_KEY` | — | Sent as `X-Control-Key` to the n8n webhook; n8n must have the same value (at least 16 characters, or the webhook refuses everything) |
 | `INTERNAL_API_KEY` | — | Moving calendar items (19) and resuming pillars (61) |
 | `N8N_BASE_URL` | `http://n8n:5678` | n8n inside the network (the webhook) |
 | `N8N_PUBLIC_URL` | `http://localhost:5678` | n8n as your browser reaches it (the chat link) |
 | `CALENDAR_URL` `CAMPAIGNS_URL` `LEARNING_URL` `ENGINE_URL` `RULES_URL` `STATUS_URL` `CARDS_URL` `VIDEO_URL` | the stack's container names | Services 19, 45, 46, 61, 14, 22, 17, 71 |
+| `ADS_URL` | empty (panel says "not installed") | 84 ads-sync, e.g. `http://ads-sync:8000` |
+| `REPORT_URL` | `http://report-builder:8000` | 21 report-builder for **Download**; empty = not installed |
+| `BRAND_URL` / `GATEWAY_URL` | `http://brand-service:8000` / `http://llm-gateway:8000` | Brand setup: 05 and 03 |
+| `AD_LIBRARY_URL` | `http://ad-library-sync:8000` | Positioning page: 78 (`GET /positioning…`, no key). Empty = not installed |
+| `FEED_URL` | empty (page says "not installed") | 87 feed-optimizer, e.g. `http://feed-optimizer:8000` (full profile) |
+| `ACTIVITY_GATEWAYS` | empty | more gateways for the Activity page, comma-separated, `label=url` or just `url`; an empty url is skipped. `GATEWAY_URL` is always read as "main". The stack passes `verifier=http://llm-gateway-verifier:8000,assistant=${ASSISTANT_GATEWAY_URL}` |
+| `INSTALL_PROFILE` | `full` | `core`, `growth` or `full` (the stack passes `COMPOSE_PROFILES`; the largest wins). Which ability tiles say "installed" |
+| `ACTIVITY_DAYS` | `7` | how far back the Activity timeline reads calendar changes |
+| `VOICE_TIMEOUT_SECONDS` | `300` | How long to wait for the model to write the voice profile |
 | `COOKIE_SECURE` | `auto` | `auto`: Secure when the request is HTTPS (needs the proxy's `X-Forwarded-Proto` trusted, `FORWARDED_ALLOW_IPS`); `true` behind HTTPS |
 | `UNDO_SECONDS` | `5` | How long a decision waits before it is sent |
 | `SESSION_HOURS` / `SESSION_IDLE_MINUTES` | `12` / `120` | Session limits |
@@ -147,9 +208,16 @@ CONTROL_PASSWORD=... CONTROL_ROOM_KEY=... INTERNAL_API_KEY=... N8N_BASE_URL=http
 | `POST /undo/{token}` | Cancels a queued decision; `409` once it is being sent |
 | `GET /results` | The last results from n8n (the queue polls it) |
 | `GET /items/{id}`, `GET /items/{id}/edit` | Detail; edit & approve |
+| `GET /items/{id}/download` | The item's body as one HTML file (21 `/document`), e.g. a client report (85) to forward |
 | `GET /calendar`, `GET /calendar/events?start=&end=`, `POST /calendar/reschedule` | Calendar, its JSON feed, drag to move (`{id, start}`; idea/draft/in_review/approved only) |
 | `GET /performance?days=7\|30\|90`, `/engine`, `POST /engine/{id}/resume`, `/campaigns`, `/chat`, `/status` | Dashboards |
 | `GET /media/cards/{id}.png`, `/media/videos/{id}.mp4\|jpg` | Images and videos, streamed from 17 / 71 |
+| `GET /brand`, `GET /brand/step/{1-6}`, `POST /brand/step/{1-4}` | Brand setup; a POST saves that step (htmx gets the form back with errors or "Saved") |
+| `GET /positioning?id=&theme=&brand=` | Positioning map (78): a month (default latest), and one cell's quotes |
+| `GET /feeds`, `GET /feeds/{id}/export.csv\|tsv`, `/feeds/{id}/supplemental.csv\|tsv` | Product feed (87): uploads with counts, and the downloads |
+| `GET /activity?filter=all\|ai\|content\|errors&ability=NN` | Activity page (works without JavaScript; the filters are links) |
+| `GET /activity/data` (same params) | The page's data as JSON: `{updated_at, profile, sources, now, timeline, models, abilities}`; `401` JSON when logged out |
+| `POST /brand/voice/generate`, `POST /brand/voice/save`, `POST /brand/reset` | Voice interview → profile to review → save (05 `PUT /voice`); reset needs `confirm=yes` |
 
 ## The n8n workflow (`n8n/workflow.json`)
 

@@ -134,6 +134,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "49 Revise a rejected draft"
             }
           ]
         },

@@ -484,3 +484,17 @@ def test_policy_skipped_for_listed_prompts_and_when_brand_down(monkeypatch):
     monkeypatch.setattr(main, "BRAND_URL", "http://down.invalid")
     assert main.emoji_policy() is None          # fail-soft: no policy, output untouched
     assert "claim_details" in main.EMOJI_POLICY_SKIP
+
+
+def test_wrong_var_shape_is_a_422_not_a_500(monkeypatch, tmp_path):
+    # A template that treats `topic` as a string; the caller sends a list.
+    (tmp_path / "shape.yaml").write_text(
+        "name: shape\n"
+        "output: text\n"
+        "vars:\n"
+        "  topic: required\n"
+        "template: '{{ topic.split(\",\") | join(\"/\") }}'\n")
+    from app.prompts import PromptStore
+    monkeypatch.setattr(main, "store", PromptStore(str(tmp_path)))
+    r = client.post("/v1/run", json={"prompt": "shape", "vars": {"topic": ["a", "b"]}})
+    assert r.status_code == 422 and "could not be filled" in r.json()["detail"]

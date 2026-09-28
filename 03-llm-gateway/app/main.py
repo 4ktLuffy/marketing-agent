@@ -11,10 +11,12 @@ import re
 import time
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException
+import jinja2
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, Field
 
+from app.activity import ActivityLog, provider_label
 from app.prompts import PromptStore
 
 # LLM_PROVIDER=ollama (default, local) or openai (any OpenAI-compatible API: Groq,
@@ -35,11 +37,14 @@ MAX_ATTEMPTS = int(os.getenv("MAX_ATTEMPTS", "3"))
 NUM_CTX = int(os.getenv("NUM_CTX", "8192"))
 REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "240"))
 BRAND_TTL = 60.0
+# In-memory activity log (GET /v1/activity): the last ACTIVITY_SIZE calls, metadata only.
+ACTIVITY_SIZE = int(os.getenv("ACTIVITY_SIZE", "500"))
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("llm-gateway")
 app = FastAPI(title="llm-gateway")
 store = PromptStore(PROMPTS_DIR)
+activity = ActivityLog(ACTIVITY_SIZE)
 # "at" is None until the first successful fetch. (It used to start at 0.0, which on a
 # machine booted less than BRAND_TTL seconds ago looked like a fresh cache, so the first
 # minute of prompts went out without the brand profile.)
@@ -74,8 +79,23 @@ def require_key(x_api_key: str | None = Header(default=None)):
         raise HTTPException(401, "missing or wrong X-API-Key")
 
 
+def key_headers() -> dict:
+    """Sent to the brand service (05), which wants the same key on reads."""
+    key = os.environ.get("INTERNAL_API_KEY")
+    return {"X-API-Key": key} if key else {}
+
+
 class GatewayError(Exception):
-    pass
+    """`kind` is what the activity log records (timeout, unreachable, upstream_5xx, ...): a
+    fixed word, never the upstream message, which could quote prompt or output text."""
+
+    def __init__(self, message: str, kind: str = "upstream_error"):
+        super().__init__(message)
+        self.kind = kind
+
+
+def _status_kind(code: int) -> str:
+    return "rate_limited" if code == 429 else "upstream_5xx" if code >= 500 else "upstream_4xx"
 
 
 def brand_summary() -> str:
@@ -85,7 +105,7 @@ def brand_summary() -> str:
     if _brand_cache["at"] is not None and now - _brand_cache["at"] < BRAND_TTL:
         return _brand_cache["summary"]
     try:
-        r = httpx.get(f"{BRAND_URL}/profile/summary", timeout=5)
+        r = httpx.get(f"{BRAND_URL}/profile/summary", headers=key_headers(), timeout=5)
         r.raise_for_status()
         _brand_cache.update(at=now, summary=r.json().get("summary", ""))
     except httpx.HTTPError as exc:
@@ -121,7 +141,7 @@ def facts_text() -> str:
     if _facts_cache["at"] is not None and now - _facts_cache["at"] < BRAND_TTL:
         return _facts_cache["text"]
     try:
-        r = httpx.get(f"{BRAND_URL}/facts", timeout=5)
+        r = httpx.get(f"{BRAND_URL}/facts", headers=key_headers(), timeout=5)
         r.raise_for_status()
         rows = r.json().get("facts") or []
         text = "\n".join(f"[{f['id']}] {str(f['text']).strip()}" for f in rows if f.get("text"))
@@ -156,7 +176,7 @@ def emoji_policy() -> dict | None:
     if _policy_cache["at"] is not None and now - _policy_cache["at"] < BRAND_TTL:
         return _policy_cache["policy"]
     try:
-        r = httpx.get(f"{BRAND_URL}/profile", timeout=5)
+        r = httpx.get(f"{BRAND_URL}/profile", headers=key_headers(), timeout=5)
         r.raise_for_status()
         pol = r.json().get("emoji_policy") or {}
         allowed = {_novs(e) for e in pol.get("allowed") or []} or None
@@ -206,9 +226,10 @@ def ollama_chat(model: str, messages: list[dict], temperature: float, schema: di
     try:
         r = httpx.post(f"{OLLAMA_URL}/api/chat", json=body, timeout=REQUEST_TIMEOUT)
     except httpx.HTTPError as exc:
-        raise GatewayError(f"ollama unreachable at {OLLAMA_URL}: {exc}") from exc
+        kind = "timeout" if isinstance(exc, httpx.TimeoutException) else "unreachable"
+        raise GatewayError(f"ollama unreachable at {OLLAMA_URL}: {exc}", kind) from exc
     if r.status_code != 200:
-        raise GatewayError(f"ollama {r.status_code}: {r.text[:300]}")
+        raise GatewayError(f"ollama {r.status_code}: {r.text[:300]}", _status_kind(r.status_code))
     data = r.json()
     usage = {"prompt_tokens": data.get("prompt_eval_count", 0), "completion_tokens": data.get("eval_count", 0)}
     return THINK_RE.sub("", data["message"]["content"]).strip(), usage
@@ -236,7 +257,7 @@ def wait_seconds(r: httpx.Response) -> float:
 def openai_chat(model: str, messages: list[dict], temperature: float, schema: dict | None,
                 name: str = "output") -> tuple[str, dict]:
     if not OPENAI_BASE_URL or not OPENAI_API_KEY:
-        raise GatewayError("LLM_PROVIDER=openai needs OPENAI_BASE_URL and OPENAI_API_KEY")
+        raise GatewayError("LLM_PROVIDER=openai needs OPENAI_BASE_URL and OPENAI_API_KEY", "not_configured")
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
     body = {"model": model, "messages": messages, "temperature": temperature}
     if REASONING_EFFORT:
@@ -249,11 +270,12 @@ def openai_chat(model: str, messages: list[dict], temperature: float, schema: di
         try:
             r = httpx.post(f"{OPENAI_BASE_URL}/chat/completions", json=body, headers=headers, timeout=REQUEST_TIMEOUT)
         except httpx.HTTPError as exc:
-            raise GatewayError(f"LLM API unreachable at {OPENAI_BASE_URL}: {type(exc).__name__}") from exc
+            kind = "timeout" if isinstance(exc, httpx.TimeoutException) else "unreachable"
+            raise GatewayError(f"LLM API unreachable at {OPENAI_BASE_URL}: {type(exc).__name__}", kind) from exc
         if r.status_code == 429:
             text = r.text.lower()
             if "per day" in text or "tokens per day" in text or "(tpd)" in text or "(rpd)" in text:
-                raise GatewayError(f"daily limit of the LLM API reached: {r.text[:200]}")
+                raise GatewayError(f"daily limit of the LLM API reached: {r.text[:200]}", "daily_limit")
             if attempt < RATE_LIMIT_RETRIES:
                 time.sleep(min(wait_seconds(r), 60.0))
                 continue
@@ -275,13 +297,13 @@ def openai_chat(model: str, messages: list[dict], temperature: float, schema: di
                                  f"this JSON Schema:\n{json.dumps(schema)}"}] + messages
             continue
         if r.status_code != 200:
-            raise GatewayError(f"LLM API {r.status_code}: {r.text[:300]}")
+            raise GatewayError(f"LLM API {r.status_code}: {r.text[:300]}", _status_kind(r.status_code))
         data = r.json()
         u = data.get("usage") or {}
         usage = {"prompt_tokens": u.get("prompt_tokens", 0), "completion_tokens": u.get("completion_tokens", 0)}
         content = data["choices"][0]["message"].get("content") or ""
         return THINK_RE.sub("", content).strip(), usage
-    raise GatewayError("LLM API still rate-limited after retries")
+    raise GatewayError("LLM API still rate-limited after retries", "rate_limited")
 
 
 def chat(model: str, messages: list[dict], temperature: float, schema: dict | None, name: str) -> tuple[str, dict]:
@@ -329,8 +351,21 @@ def list_prompts():
     ]
 
 
+@app.get("/v1/activity", dependencies=[Depends(require_key)])
+def get_activity(since: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=5000)):
+    """Calls in flight, the last calls (newest first; `since` = only ids above it) and today's
+    totals per model (UTC day). Metadata only: no prompt text, vars or output."""
+    return activity.snapshot(since, limit)
+
+
+def _problem_kind(problem: str | None) -> str:
+    p = problem or ""
+    return ("invalid_json" if p.startswith("not valid JSON") else "schema_mismatch" if p.startswith("schema")
+            else "too_long" if p.startswith("too long") else "empty_output" if p.startswith("empty") else "invalid_output")
+
+
 @app.post("/v1/run", dependencies=[Depends(require_key)])
-def run(req: RunRequest):
+def run(req: RunRequest, x_caller: str | None = Header(default=None)):
     prompt = store.all().get(req.prompt)
     if prompt is None:
         raise HTTPException(404, f"unknown prompt '{req.prompt}'")
@@ -347,7 +382,12 @@ def run(req: RunRequest):
         variables["brand"] = brand_text()
     if "facts" not in variables and "facts" in prompt.required_vars + prompt.optional_vars:
         variables["facts"] = facts_text()
-    system, user = prompt.render(variables)
+    try:
+        system, user = prompt.render(variables)
+    except (jinja2.TemplateError, TypeError, ValueError, AttributeError) as exc:
+        # A var of the wrong shape (e.g. `channels` as a list where the template splits a string)
+        # is the caller's error: 422 with the reason, not a 500 (agency leak test, night 6).
+        raise HTTPException(422, f"prompt '{prompt.name}' could not be filled from these vars: {exc}") from None
     model = req.model or prompt.model or MODEL
     temperature = req.temperature if req.temperature is not None else prompt.temperature
     validator = Draft202012Validator(prompt.schema) if prompt.output == "json" else None
@@ -355,14 +395,27 @@ def run(req: RunRequest):
     messages = ([{"role": "system", "content": system}] if system else []) + [
         {"role": "user", "content": user}
     ]
+    usage = {"prompt_tokens": 0, "completion_tokens": 0}
+    outcome = {"ok": False, "error": "internal", "retries": 0}
+    call_id = activity.start(prompt.name, x_caller, model, provider_label(LLM_PROVIDER, OPENAI_BASE_URL))
+    try:
+        return _run(prompt, model, temperature, validator, messages, usage, outcome)
+    finally:
+        activity.finish(call_id, ok=outcome["ok"], error=outcome["error"], retries=outcome["retries"],
+                        tokens_in=usage["prompt_tokens"], tokens_out=usage["completion_tokens"])
+
+
+def _run(prompt, model, temperature, validator, messages, usage, outcome):
     started = time.monotonic()
     problem = None
-    usage = {"prompt_tokens": 0, "completion_tokens": 0}
     for attempt in range(1, MAX_ATTEMPTS + 1):
+        outcome["retries"] = attempt - 1
         try:
             raw, u = chat(model, messages, temperature, prompt.schema, prompt.name)
-            usage = {k: usage[k] + (u.get(k) or 0) for k in usage}
+            for k in usage:
+                usage[k] += u.get(k) or 0
         except GatewayError as exc:
+            outcome["error"] = exc.kind
             raise HTTPException(502, str(exc)) from exc
 
         if validator is not None:
@@ -379,6 +432,7 @@ def run(req: RunRequest):
             policy = emoji_policy() if prompt.name not in EMOJI_POLICY_SKIP else None
             if policy and (policy["allowed"] is not None or policy["max"] is not None):
                 output = apply_emoji_policy(output, policy, removed)
+            outcome.update(ok=True, error=None)
             # One line per call, so token spend on a hosted provider can be summed from the logs.
             log.info("prompt=%s model=%s attempts=%d prompt_tokens=%d completion_tokens=%d",
                      prompt.name, model, attempt, usage["prompt_tokens"], usage["completion_tokens"])
@@ -398,4 +452,5 @@ def run(req: RunRequest):
             {"role": "user", "content": f"That output was rejected: {problem}. "
                                         "Answer again, fixing only that problem."},
         ]
+    outcome["error"] = _problem_kind(problem)
     raise HTTPException(502, f"no valid output after {MAX_ATTEMPTS} attempts; last problem: {problem}")

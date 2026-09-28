@@ -8,12 +8,34 @@
 #
 # Ollama runs on the host (Mac: native, uses Metal). Linux without host Ollama:
 #   docker compose --profile ollama up -d   and set OLLAMA_URL=http://ollama:11434
+#
+# Install profiles (scripts/install.sh --profile <p>; INSTALL.md has what each one holds):
+#   core   = services without a `profiles:` key: n8n, gateways, brand, knowledge base, research and
+#            content tools, calendar, analytics, claim checker, campaigns, learning, status, control room
+#   growth = core + services marked [growth, full]: content engine, bridges, analytics/GSC sync,
+#            reviews, customer language, video, clips, paid ads, email flows
+#   full   = growth + services marked [full]: ad library, site assistant, lead hub, AI visibility,
+#            product feed optimizer
+# COMPOSE_PROFILES in .env selects it for plain `docker compose` commands too.
+# Extra, opt-in: --profile newsletter (self-hosted Listmonk), --profile ollama.
+#
+# Several clients on one host (agency mode, INSTALL.md "Several clients on one host"):
+# `scripts/install.sh --client acme` runs this file as compose project "acme" with .env.acme.
+# Host ports are 127.0.0.1:${PORT_PREFIX}NN (default 81NN) and ${N8N_PORT} (default 5678), so
+# the single install keeps its ports and each client gets its own block (82NN, 83NN, ...).
+# Built images carry a fixed name (marketing-agent-<service>), so every client uses the same
+# images instead of building its own copy; data, networks and keys stay per project.
 
 name: marketing-agent
 
 x-service: &service
   restart: unless-stopped
   networks: [marketing]
+  # Marks every container as this stack's: uninstall.sh --client acts only on containers whose
+  # label names that client (MKT_CLIENT_ID, written by install.sh --client), never on another
+  # compose project that happens to have the same name.
+  labels:
+    com.marketing-agent.client: ${MKT_CLIENT_ID:-single}
   extra_hosts: ["host.docker.internal:host-gateway"]
 
 x-keyed: &keyed
@@ -38,7 +60,14 @@ services:
     image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.40.5}
     depends_on:
       postgres: {condition: service_healthy}
-    ports: ["127.0.0.1:5678:5678"]
+    ports: ["127.0.0.1:${N8N_PORT:-5678}:5678"]
+    # node is always in the image (wget is busybox, which n8n may drop); first start runs migrations.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     environment:
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
@@ -76,22 +105,29 @@ services:
       CLAIMS_URL: http://claim-checker:8000
       CAMPAIGNS_URL: http://campaign-service:8000
       LEARNING_URL: http://learning-service:8000
+      # Services outside the core profile (growth/full): unset = their address in this stack,
+      # empty = not installed, so the workflows that use them skip. install.sh writes the empty
+      # ones into the managed block of .env for the profile you install (INSTALL.md, Profiles).
       UMAMI_SYNC_URL: ${UMAMI_SYNC_URL:-}
-      REVIEWS_URL: http://review-hub:8000
-      ENGINE_URL: http://content-engine:8000
-      NEWSLETTER_URL: http://listmonk-bridge:8000
-      GSC_URL: http://gsc-sync:8000
-      VOC_URL: http://customer-language:8000
-      VIDEO_URL: http://video-assembly:8000
+      REVIEWS_URL: ${REVIEWS_URL-http://review-hub:8000}
+      ENGINE_URL: ${ENGINE_URL-http://content-engine:8000}
+      NEWSLETTER_URL: ${NEWSLETTER_URL-http://listmonk-bridge:8000}
+      GSC_URL: ${GSC_URL-http://gsc-sync:8000}
+      VOC_URL: ${VOC_URL-http://customer-language:8000}
+      VIDEO_URL: ${VIDEO_URL-http://video-assembly:8000}
       # Voice for video previews (57/65): piper | none. Empty = the video service's TTS_BACKEND.
       VIDEO_VOICE: ${VIDEO_VOICE:-}
-      CLIPS_URL: http://clip-finder:8000
-      LEADS_URL: http://lead-hub:8000
+      CLIPS_URL: ${CLIPS_URL-http://clip-finder:8000}
+      LEADS_URL: ${LEADS_URL-http://lead-hub:8000}
       # Competitor registry + ads (78); empty = 37 watches pages only and 81 adds nothing.
-      AD_LIBRARY_URL: http://ad-library-sync:8000
+      AD_LIBRARY_URL: ${AD_LIBRARY_URL-http://ad-library-sync:8000}
       # AI visibility (82) for workflow 83 and the weekly report line; empty = 83 does nothing.
-      VISIBILITY_URL: http://ai-visibility:8000
+      VISIBILITY_URL: ${VISIBILITY_URL-http://ai-visibility:8000}
       VISIBILITY_IDEAS_PER_WEEK: ${VISIBILITY_IDEAS_PER_WEEK:-5}
+      # Paid ads (84): daily sync + alerts (84-ads-sync/n8n) and the weekly report's Ads section.
+      ADS_URL: ${ADS_URL-http://ads-sync:8000}
+      # Lifecycle email flows (86): review sync + due sends every 15 minutes (86-flow-runner/n8n).
+      FLOW_URL: ${FLOW_URL-http://flow-runner:8000}
       # Tool 77 (clip_video): how long it waits for a clip job, and the most clips per video.
       CLIPS_MAX_WAIT_MIN: ${CLIPS_MAX_WAIT_MIN:-30}
       CLIPS_MAX_PER_VIDEO: ${CLIPS_MAX_PER_VIDEO:-5}
@@ -113,6 +149,10 @@ services:
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       REPORT_EMAIL_TO: ${REPORT_EMAIL_TO:-}
       REPORT_EMAIL_FROM: ${REPORT_EMAIL_FROM:-}
+      # Monthly client report (85): optional month override (YYYY-MM), money prefix, client name.
+      CLIENT_REPORT_MONTH: ${CLIENT_REPORT_MONTH:-}
+      REPORT_CURRENCY: ${REPORT_CURRENCY:-}
+      CLIENT_NAME: ${CLIENT_NAME:-}
       PLAN_CHANNELS: ${PLAN_CHANNELS:-linkedin, x}
       PLAN_POSTS_PER_CHANNEL: ${PLAN_POSTS_PER_CHANNEL:-3}
       PLAN_THEMES: ${PLAN_THEMES:-}
@@ -139,8 +179,9 @@ services:
 
   llm-gateway:
     <<: *service
+    image: marketing-agent-llm-gateway
     build: ../03-llm-gateway
-    ports: ["127.0.0.1:8103:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}03:8000"]
     environment:
       <<: *keyed
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
@@ -158,14 +199,24 @@ services:
 
   brand-service:
     <<: *service
+    image: marketing-agent-brand-service
     build: ../05-brand-service
-    ports: ["127.0.0.1:8105:8000"]
-    volumes: ["../05-brand-service/config:/config:ro"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}05:8000"]
+    environment:
+      # Writes (PUT /voice, PUT /brand/editable from the control room's brand setup) need the key.
+      <<: *keyed
+      # brand.yaml stays read-only in /config; edits saved over it and the voice profile go to the
+      # brand_data volume (/config is mounted read-only, so writing there fails).
+      BRAND_OVERRIDES_FILE: /data/brand.overrides.json
+      VOICE_FILE: /data/voice.json
+    # A client of several (install.sh --client) gets its own copy in clients/<slug>/brand.
+    volumes: ["${BRAND_CONFIG_DIR:-../05-brand-service/config}:/config:ro", "brand_data:/data"]
 
   knowledge-base:
     <<: *service
+    image: marketing-agent-knowledge-base
     build: ../06-knowledge-base
-    ports: ["127.0.0.1:8106:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}06:8000"]
     environment:
       <<: *keyed
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
@@ -174,58 +225,68 @@ services:
 
   page-extractor:
     <<: *service
+    image: marketing-agent-page-extractor
     build: ../07-page-extractor
-    ports: ["127.0.0.1:8107:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}07:8000"]
 
   rss-watcher:
     <<: *service
+    image: marketing-agent-rss-watcher
     build: ../08-rss-watcher
-    ports: ["127.0.0.1:8108:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}08:8000"]
     environment: *keyed
-    volumes: ["rss_data:/data", "../08-rss-watcher/config:/config:ro"]
+    volumes: ["rss_data:/data", "${RSS_CONFIG_DIR:-../08-rss-watcher/config}:/config:ro"]
 
   change-monitor:
     <<: *service
+    image: marketing-agent-change-monitor
     build: ../09-change-monitor
-    ports: ["127.0.0.1:8109:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}09:8000"]
     environment: *keyed
     volumes: [monitor_data:/data]
 
   keyword-suggest:
     <<: *service
+    image: marketing-agent-keyword-suggest
     build: ../10-keyword-suggest
-    ports: ["127.0.0.1:8110:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}10:8000"]
 
   social-listening:
     <<: *service
+    image: marketing-agent-social-listening
     build: ../11-social-listening
-    ports: ["127.0.0.1:8111:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}11:8000"]
 
   seo-auditor:
     <<: *service
+    image: marketing-agent-seo-auditor
     build: ../12-seo-auditor
-    ports: ["127.0.0.1:8112:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}12:8000"]
 
   readability:
     <<: *service
+    image: marketing-agent-readability
     build: ../13-readability
-    ports: ["127.0.0.1:8113:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}13:8000"]
 
   platform-rules:
     <<: *service
+    image: marketing-agent-platform-rules
     build: ../14-platform-rules
-    ports: ["127.0.0.1:8114:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}14:8000"]
 
   utm-builder:
     <<: *service
+    image: marketing-agent-utm-builder
     build: ../15-utm-builder
-    ports: ["127.0.0.1:8115:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}15:8000"]
 
   link-shortener:
     <<: *service
+    image: marketing-agent-link-shortener
     build: ../16-link-shortener
     # The only service meant to face the internet: put a reverse proxy / tunnel in front.
-    ports: ["127.0.0.1:8116:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}16:8000"]
     environment:
       <<: *keyed
       BASE_URL: ${SHORT_LINK_BASE_URL:-http://localhost:8116}
@@ -233,8 +294,9 @@ services:
 
   image-cards:
     <<: *service
+    image: marketing-agent-image-cards
     build: ../17-image-cards
-    ports: ["127.0.0.1:8117:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}17:8000"]
     environment:
       <<: *keyed
       # Base of the card URLs (POST /cards). The approval form shows the image from here, so it
@@ -244,13 +306,15 @@ services:
 
   email-renderer:
     <<: *service
+    image: marketing-agent-email-renderer
     build: ../18-email-renderer
-    ports: ["127.0.0.1:8118:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}18:8000"]
 
   content-calendar:
     <<: *service
+    image: marketing-agent-content-calendar
     build: ../19-content-calendar
-    ports: ["127.0.0.1:8119:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}19:8000"]
     environment:
       <<: *keyed
       # Second key for approve/publish: only n8n (approval form, publisher) has it.
@@ -259,22 +323,27 @@ services:
 
   analytics-ingest:
     <<: *service
+    image: marketing-agent-analytics-ingest
     build: ../20-analytics-ingest
-    ports: ["127.0.0.1:8120:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}20:8000"]
     environment: *keyed
     volumes: [analytics_data:/data]
 
   report-builder:
     <<: *service
+    image: marketing-agent-report-builder
     build: ../21-report-builder
-    ports: ["127.0.0.1:8121:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}21:8000"]
 
   status-page:
     <<: *service
+    image: marketing-agent-status-page
     build: ../22-status-page
-    ports: ["127.0.0.1:8122:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}22:8000"]
     environment:
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      # Services to poll; empty = all of them. install.sh sets it to the installed profile's.
+      SERVICES: ${STATUS_SERVICES:-}
 
   # Separate gateway for fact checking, so checking can run on a stronger model than
   # writing. Measured on a fresh held-out set: local qwen2.5:7b caught 5/6 invented claims
@@ -282,8 +351,9 @@ services:
   # Default: same provider/model as writing. Hybrid: VERIFIER_PROVIDER=openai in .env.
   llm-gateway-verifier:
     <<: *service
+    image: marketing-agent-llm-gateway-verifier
     build: ../03-llm-gateway
-    ports: ["127.0.0.1:8147:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}47:8000"]
     environment:
       <<: *keyed
       LLM_PROVIDER: ${VERIFIER_PROVIDER:-ollama}
@@ -297,8 +367,9 @@ services:
 
   claim-checker:
     <<: *service
+    image: marketing-agent-claim-checker
     build: ../44-claim-checker
-    ports: ["127.0.0.1:8144:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}44:8000"]
     environment:
       <<: *keyed
       GATEWAY_URL: http://llm-gateway-verifier:8000
@@ -308,8 +379,9 @@ services:
 
   campaign-service:
     <<: *service
+    image: marketing-agent-campaign-service
     build: ../45-campaign-service
-    ports: ["127.0.0.1:8145:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}45:8000"]
     environment:
       <<: *keyed
       SHORTENER_URL: http://link-shortener:8000
@@ -322,19 +394,24 @@ services:
 
   learning-service:
     <<: *service
+    image: marketing-agent-learning-service
     build: ../46-learning-service
-    ports: ["127.0.0.1:8146:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}46:8000"]
     environment:
       <<: *keyed
       GATEWAY_URL: http://llm-gateway:8000
+      # /examples?by=performance ranks approved posts by their clicks (45 /insights/posts).
+      CAMPAIGNS_URL: http://campaign-service:8000
     volumes: [learning_data:/data]
 
   # Real publishing: point PUBLISH_WEBHOOK_URL at http://postiz-bridge:8000/publish.
   # DRY_RUN=true until you have checked CHANNEL_MAP against GET /integrations.
   postiz-bridge:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-postiz-bridge
     build: ../54-postiz-bridge
-    ports: ["127.0.0.1:8154:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}54:8000"]
     environment:
       <<: *keyed
       POSTIZ_URL: ${POSTIZ_URL:-}
@@ -355,8 +432,10 @@ services:
   # Real analytics: set UMAMI_SYNC_URL=http://umami-sync:8000 to enable the daily sync (56).
   umami-sync:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-umami-sync
     build: ../55-umami-sync
-    ports: ["127.0.0.1:8155:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}55:8000"]
     environment:
       <<: *keyed
       UMAMI_URL: ${UMAMI_URL:-}
@@ -371,8 +450,10 @@ services:
   # Never posts anywhere: a person posts every reply.
   review-hub:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-review-hub
     build: ../58-review-hub
-    ports: ["127.0.0.1:8158:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}58:8000"]
     environment:
       <<: *keyed
     volumes: [review_data:/data]
@@ -381,8 +462,10 @@ services:
   # Writes nothing itself; n8n drafts against it and a person approves every piece.
   content-engine:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-content-engine
     build: ../61-content-engine
-    ports: ["127.0.0.1:8161:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}61:8000"]
     environment:
       <<: *keyed
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
@@ -395,8 +478,10 @@ services:
   # items to CMS_PUBLISH_URL=http://cms-bridge:8000/publish. DRY_RUN=true until checked.
   cms-bridge:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-cms-bridge
     build: ../62-cms-bridge
-    ports: ["127.0.0.1:8162:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}62:8000"]
     environment:
       CMS_BRIDGE_KEY: ${CMS_BRIDGE_KEY:-${INTERNAL_API_KEY:?set INTERNAL_API_KEY in .env}}
       CMS: ${CMS:-wordpress}
@@ -414,8 +499,10 @@ services:
   # n8n calls NEWSLETTER_URL/campaigns. DRY_RUN=true until checked against GET /lists.
   listmonk-bridge:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-listmonk-bridge
     build: ../63-listmonk-bridge
-    ports: ["127.0.0.1:8163:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}63:8000"]
     environment:
       <<: *keyed
       LISTMONK_URL: ${LISTMONK_URL:-http://listmonk:9000}
@@ -434,8 +521,10 @@ services:
   # queries (SEO briefs). Key: secrets/gsc.json (gitignored); /health says configured:false without it.
   gsc-sync:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-gsc-sync
     build: ../67-gsc-sync
-    ports: ["127.0.0.1:8167:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}67:8000"]
     environment:
       <<: *keyed
       GSC_SITE_URL: ${GSC_SITE_URL:-}
@@ -443,14 +532,16 @@ services:
       ANALYTICS_URL: ${GSC_ANALYTICS_URL:-}
     volumes:
       - gsc_data:/data
-      - ./secrets:/secrets:ro
+      - ${SECRETS_DIR:-./secrets}:/secrets:ro
 
   # Customer language (70): phrases and themes customers repeat, mined from reviews (58),
   # Search Console queries (67) and imports; every quote is verbatim. Writers read /relevant.
   customer-language:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-customer-language
     build: ../70-customer-language
-    ports: ["127.0.0.1:8170:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}70:8000"]
     environment:
       <<: *keyed
       GATEWAY_URL: http://llm-gateway:8000
@@ -463,8 +554,10 @@ services:
   # Script -> vertical MP4 (71). Local only: Pillow frames, piper voice, ffmpeg.
   video-assembly:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-video-assembly
     build: ../71-video-assembly
-    ports: ["127.0.0.1:8171:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}71:8000"]
     environment:
       <<: *keyed
       DATA_DIR: /data
@@ -479,29 +572,51 @@ services:
   # phone, put it behind your HTTPS reverse proxy (72-control-room/README.md).
   control-room:
     <<: *service
+    image: marketing-agent-control-room
     build: ../72-control-room
-    ports: ["127.0.0.1:8172:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}72:8000"]
     environment:
       <<: *keyed
       CONTROL_USER: ${CONTROL_USER:-approver}
       CONTROL_PASSWORD: ${CONTROL_PASSWORD:?set CONTROL_PASSWORD in .env}
       CONTROL_ROOM_KEY: ${CONTROL_ROOM_KEY:?set CONTROL_ROOM_KEY in .env}
       COOKIE_SECURE: ${CONTROL_COOKIE_SECURE:-auto}
+      # Behind an HTTPS proxy, list its IPs/CIDRs so login rate limits see the visitor, not the proxy.
+      TRUSTED_PROXIES: ${CONTROL_TRUSTED_PROXIES:-}
+      UNDO_SECONDS: ${CONTROL_UNDO_SECONDS:-5}
+      SESSION_HOURS: ${CONTROL_SESSION_HOURS:-12}
+      SESSION_IDLE_MINUTES: ${CONTROL_SESSION_IDLE_MINUTES:-120}
       N8N_BASE_URL: http://n8n:5678
       N8N_PUBLIC_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      # Brand setup pages: edit the brand (05) and turn the voice interview into a profile (03).
+      BRAND_URL: http://brand-service:8000
+      GATEWAY_URL: http://llm-gateway:8000
       CALENDAR_URL: http://content-calendar:8000
       CAMPAIGNS_URL: http://campaign-service:8000
       LEARNING_URL: http://learning-service:8000
-      ENGINE_URL: http://content-engine:8000
+      # Growth-profile services: install.sh sets these empty on core, so the pages say "not installed".
+      ENGINE_URL: ${ENGINE_URL-http://content-engine:8000}
       RULES_URL: http://platform-rules:8000
       STATUS_URL: http://status-page:8000
       CARDS_URL: http://image-cards:8000
-      VIDEO_URL: http://video-assembly:8000
+      VIDEO_URL: ${VIDEO_URL-http://video-assembly:8000}
+      CLIPS_URL: ${CLIPS_URL-http://clip-finder:8000}
+      AD_LIBRARY_URL: ${AD_LIBRARY_URL-http://ad-library-sync:8000}
+      ADS_URL: ${ADS_URL-http://ads-sync:8000}
+      # Download of an item (a client report, 85) as one HTML file.
+      REPORT_URL: http://report-builder:8000
+      # Product feed page (87, full profile): uploads, counts and the exports.
+      FEED_URL: ${FEED_URL-http://feed-optimizer:8000}
+      # Activity page: more gateways to read (label=url; an empty url is skipped) and the profile.
+      ACTIVITY_GATEWAYS: verifier=http://llm-gateway-verifier:8000,assistant=${ASSISTANT_GATEWAY_URL:-}
+      INSTALL_PROFILE: ${COMPOSE_PROFILES-full}
 
   clip-finder:
     <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-clip-finder
     build: ../73-clip-finder
-    ports: ["127.0.0.1:8173:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}73:8000"]
     environment:
       <<: *keyed
       DATA_DIR: /data
@@ -518,8 +633,10 @@ services:
   # are links for a person to open, never scraped. Active competitors' pages become 09 watches.
   ad-library-sync:
     <<: *service
+    profiles: [full]
+    image: marketing-agent-ad-library-sync
     build: ../78-ad-library-sync
-    ports: ["127.0.0.1:8178:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}78:8000"]
     environment:
       <<: *keyed
       META_AD_LIBRARY_TOKEN: ${META_AD_LIBRARY_TOKEN:-}
@@ -532,7 +649,29 @@ services:
       LISTENING_QUERY: ${LISTENING_QUERY:-coffee subscription}
       KB_URL: http://knowledge-base:8000
       OWN_DOMAINS: ${OWN_DOMAINS:-}
+      # Positioning map (POST /positioning/build): approved facts from 05, prompt positioning_themes via 03.
+      BRAND_URL: http://brand-service:8000
+      GATEWAY_URL: http://llm-gateway:8000
     volumes: [ads_data:/data]
+
+  # Hosted gateway for the website assistant's answers only (79 -> prompt site_answer), so
+  # visitors wait seconds, not a minute. Idle unless ASSISTANT_GATEWAY_URL points 79 here.
+  # Visitor messages and the matching knowledge-base excerpts go to this provider.
+  llm-gateway-assistant:
+    <<: *service
+    profiles: [full]
+    image: marketing-agent-llm-gateway-assistant
+    build: ../03-llm-gateway
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}48:8000"]
+    environment:
+      <<: *keyed
+      LLM_PROVIDER: openai
+      MODEL: ${ASSISTANT_MODEL:-openai/gpt-oss-120b}
+      OPENAI_BASE_URL: ${ASSISTANT_OPENAI_BASE_URL:-https://api.groq.com/openai/v1}
+      OPENAI_API_KEY: ${ASSISTANT_OPENAI_API_KEY:-}
+      REASONING_EFFORT: ${ASSISTANT_REASONING_EFFORT:-low}
+      PROMPTS_DIR: /prompts
+    volumes: ["../04-prompt-library/prompts:/prompts:ro"]
 
   # Website chat assistant (79): answers only from 06 + 05 facts, every answer claim-checked
   # (44), hands off to a person, leads to 80 only with consent. Bound to localhost: publish ONLY
@@ -540,11 +679,18 @@ services:
   # never /admin (79-site-assistant/README.md).
   site-assistant:
     <<: *service
+    profiles: [full]
+    image: marketing-agent-site-assistant
     build: ../79-site-assistant
-    ports: ["127.0.0.1:8179:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}79:8000"]
     environment:
       <<: *keyed
-      GATEWAY_URL: http://llm-gateway:8000
+      # Local gateway by default; http://llm-gateway-assistant:8000 for fast hosted answers.
+      GATEWAY_URL: ${ASSISTANT_GATEWAY_URL:-http://llm-gateway:8000}
+      # Whole answer (search + model + claim check); slower = handoff, never an unchecked answer.
+      # Empty = automatic: 20 s with the hosted gateway, 120 s all-local (79 decides from the line below).
+      ANSWER_TIMEOUT_S: ${ASSISTANT_ANSWER_TIMEOUT_S:-}
+      ASSISTANT_GATEWAY_URL: ${ASSISTANT_GATEWAY_URL:-}
       BRAND_URL: http://brand-service:8000
       KB_URL: http://knowledge-base:8000
       CLAIMS_URL: http://claim-checker:8000
@@ -561,8 +707,10 @@ services:
   # and CRM calls stay dry runs until LEADS_DRY_RUN=false. Publish only /leads/webhook/* publicly.
   lead-hub:
     <<: *service
+    profiles: [full]
+    image: marketing-agent-lead-hub
     build: ../80-lead-hub
-    ports: ["127.0.0.1:8180:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}80:8000"]
     environment:
       <<: *keyed
       EXTRACTOR_URL: http://page-extractor:8000
@@ -588,8 +736,10 @@ services:
   # by default); daily call caps per provider. Gemini also needs VISIBILITY_GEMINI_TERMS_ACCEPTED.
   ai-visibility:
     <<: *service
+    profiles: [full]
+    image: marketing-agent-ai-visibility
     build: ../82-ai-visibility
-    ports: ["127.0.0.1:8182:8000"]
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}82:8000"]
     environment:
       <<: *keyed
       BRAND_URL: http://brand-service:8000
@@ -612,6 +762,77 @@ services:
       COMPETITOR_ALIASES: ${VISIBILITY_COMPETITOR_ALIASES:-}
     volumes: [visibility_data:/data]
 
+  # Paid ads (84): spend, CPL, ROAS and pacing alerts from the Meta Marketing API and the Google
+  # Ads API, READ-ONLY (nothing can change a budget or an ad). Every credential is empty by
+  # default: /health says configured:false and the daily workflow does nothing until you set them.
+  ads-sync:
+    <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-ads-sync
+    build: ../84-ads-sync
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}84:8000"]
+    environment:
+      <<: *keyed
+      META_ACCESS_TOKEN: ${META_ACCESS_TOKEN:-}
+      META_AD_ACCOUNT_IDS: ${META_AD_ACCOUNT_IDS:-}
+      META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v26.0}
+      META_CONVERSION_ACTIONS: ${META_CONVERSION_ACTIONS:-lead}
+      META_REVENUE_ACTIONS: ${META_REVENUE_ACTIONS:-omni_purchase}
+      GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN:-}
+      GOOGLE_ADS_CLIENT_ID: ${GOOGLE_ADS_CLIENT_ID:-}
+      GOOGLE_ADS_CLIENT_SECRET: ${GOOGLE_ADS_CLIENT_SECRET:-}
+      GOOGLE_ADS_REFRESH_TOKEN: ${GOOGLE_ADS_REFRESH_TOKEN:-}
+      GOOGLE_ADS_CUSTOMER_IDS: ${GOOGLE_ADS_CUSTOMER_IDS:-}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID:-}
+      GOOGLE_ADS_API_VERSION: ${GOOGLE_ADS_API_VERSION:-v25}
+      CAMPAIGNS_URL: http://campaign-service:8000
+      ANALYTICS_URL: ${ADS_ANALYTICS_URL:-}
+      ALERT_OVERSPEND_PCT: ${ADS_ALERT_OVERSPEND_PCT:-15}
+      ALERT_UNDERSPEND_PCT: ${ADS_ALERT_UNDERSPEND_PCT:-25}
+      ALERT_ZERO_CONV_DAYS: ${ADS_ALERT_ZERO_CONV_DAYS:-3}
+    volumes: [ads_sync_data:/data]
+
+  # Lifecycle email flows (86): welcome, onboarding and win-back emails from events, with a
+  # randomised holdout, a daily cap and a kill switch. DRY_RUN is fixed to true here: a "send" is
+  # a row in its outbox. Its real send path (listmonk-bridge /tx) is a stub; see its README.
+  flow-runner:
+    <<: *service
+    profiles: [growth, full]
+    image: marketing-agent-flow-runner
+    build: ../86-flow-runner
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}86:8000"]
+    environment:
+      <<: *keyed
+      # Approving a flow version and resuming after a pause need this second key (n8n has it).
+      APPROVER_KEY: ${APPROVER_KEY:?set APPROVER_KEY in .env}
+      DRY_RUN: "true"
+      FLOW_DAILY_CAP: ${FLOW_DAILY_CAP:-200}
+      FLOW_PAUSED: ${FLOW_PAUSED:-false}
+      FLOW_HOLDOUT_PCT: ${FLOW_HOLDOUT_PCT:-15}
+      CALENDAR_URL: http://content-calendar:8000
+      GATEWAY_URL: http://llm-gateway:8000
+      CLAIMS_URL: http://claim-checker:8000
+      NEWSLETTER_URL: ${NEWSLETTER_URL-http://listmonk-bridge:8000}
+    volumes: [flow_data:/data]
+
+  # Product feed optimizer (87): better titles for a Google Merchant Center feed file. The model's
+  # titles are checked in code against each product's own row; a person approves with the
+  # approver key; the export is the uploaded file with only approved titles/descriptions changed.
+  # Nothing is uploaded to Merchant Center.
+  feed-optimizer:
+    <<: *service
+    profiles: [full]
+    image: marketing-agent-feed-optimizer
+    build: ../87-feed-optimizer
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}87:8000"]
+    environment:
+      <<: *keyed
+      APPROVER_KEY: ${APPROVER_KEY:?set APPROVER_KEY in .env}
+      GATEWAY_URL: http://llm-gateway:8000
+      FEED_MAX_BYTES: ${FEED_MAX_BYTES:-10000000}
+      FEED_MAX_ROWS: ${FEED_MAX_ROWS:-5000}
+    volumes: [feed_data:/data]
+
   # Optional self-hosted Listmonk (AGPL): docker compose --profile newsletter up -d
   # Admin UI http://localhost:9000. Based on github.com/knadh/listmonk docker-compose.yml.
   listmonk:
@@ -620,7 +841,7 @@ services:
     profiles: [newsletter]
     depends_on:
       listmonk-db: {condition: service_healthy}
-    ports: ["127.0.0.1:9000:9000"]
+    ports: ["127.0.0.1:${LISTMONK_PORT:-9000}:9000"]
     command: [sh, -c, "./listmonk --install --idempotent --yes --config '' && ./listmonk --upgrade --yes --config '' && ./listmonk --config ''"]
     environment:
       LISTMONK_app__address: 0.0.0.0:9000
@@ -654,15 +875,18 @@ services:
     <<: *service
     image: ollama/ollama:latest
     profiles: [ollama]
-    ports: ["127.0.0.1:11434:11434"]
+    ports: ["127.0.0.1:${OLLAMA_PORT:-11434}:11434"]
     volumes: [ollama_data:/root/.ollama]
 
 networks:
-  marketing:
-    name: marketing
+  # No fixed name: Compose calls it <project>_marketing ("marketing-agent_marketing" by default), so
+  # two installs on one host (e.g. `docker compose -p client-a`) never share a network and a service
+  # name like brand-service can't resolve to another install's container (docs/agency-mode.md).
+  marketing: {}
 
 volumes:
   pg_data:
+  brand_data:
   cards_data:
   n8n_data:
   kb_data:
@@ -682,6 +906,9 @@ volumes:
   video_data:
   clips_data:
   ads_data:
+  ads_sync_data:
+  flow_data:
+  feed_data:
   site_data:
   lead_data:
   visibility_data:

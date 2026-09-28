@@ -9,6 +9,8 @@ Pipeline for one visitor message (POST /chat):
    the rest through the claim checker (44) with the same sources. Unsupported sentences
    are dropped; if none is left, or the model says the sources don't cover it, a person
    takes over (handoff record + notification). Nothing is shown unchecked.
+   The whole answer (search + model + claim check) has a time budget, ANSWER_TIMEOUT_S
+   (default 20 s): when it runs out, a person takes over too.
 3. Buying intent (code rules OR the model's flag): at most MAX_QUALIFY qualifying
    questions, then the booking link. An email is only stored through POST /consent with
    the consent box ticked; then the lead goes to 80 lead-hub (or stays here).
@@ -18,6 +20,7 @@ Everything under /admin needs X-API-Key and must not be exposed publicly.
 """
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
 import os
@@ -315,6 +318,21 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def rate_key(ip: str) -> str:
+    """The per-IP limit key. One IPv6 subscriber gets a whole /64 (2^64 addresses), so IPv6 is
+    limited per /64; an IPv4-mapped address counts as that IPv4 address (security review
+    2026-09-28, SA-3)."""
+    try:
+        addr = ipaddress.ip_address(ip.split("%")[0])
+    except ValueError:
+        return ip
+    if isinstance(addr, ipaddress.IPv6Address):
+        if addr.ipv4_mapped:
+            return str(addr.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{addr}/64", strict=False))
+    return str(addr)
+
+
 def limit(key: str, per_minute: int, per_day: int) -> None:
     for n, window in ((per_minute, 60), (per_day, 86400)):
         if n > 0 and (wait := limiter.hit(f"{key}:{window}", n, window)) is not None:
@@ -414,6 +432,37 @@ class Unavailable(Exception):
     pass
 
 
+class TooSlow(Unavailable):
+    """The per-answer time budget (ANSWER_TIMEOUT_S) ran out."""
+
+
+class Budget:
+    """Wall-clock budget for one sourced answer: search + model + claim check. Every call gets
+    at most the time that is left, and a result that arrives after the deadline is not used
+    (the visitor gets a handoff, never an unchecked answer). ANSWER_TIMEOUT_S=0: no budget."""
+
+    def __init__(self, seconds: float | None = None):
+        if seconds is None:
+            # Hosted gateway (ASSISTANT_GATEWAY_URL set): 20 s. All-local: 120 s — a laptop 7B takes
+            # 25–75 s per sourced answer, and a 20 s budget turned almost every answer into a handoff.
+            raw = (os.getenv("ANSWER_TIMEOUT_S") or "").strip()
+            seconds = float(raw) if raw else (20.0 if (os.getenv("ASSISTANT_GATEWAY_URL") or "").strip() else 120.0)
+        self.deadline = time.monotonic() + seconds if seconds > 0 else None
+
+    def left(self, cap: float, what: str) -> float:
+        """Timeout for the next call: min(cap, time left); TooSlow when nothing is left."""
+        if self.deadline is None:
+            return cap
+        left = self.deadline - time.monotonic()
+        if left <= 0.05:
+            raise TooSlow(f"answer time budget used up before {what}")
+        return min(cap, left)
+
+    def check(self, what: str) -> None:
+        if self.deadline is not None and time.monotonic() > self.deadline:
+            raise TooSlow(f"answer time budget used up by {what}")
+
+
 _brand_cache: dict = {"at": 0.0, "name": None, "facts": None}
 
 
@@ -424,8 +473,8 @@ def brand() -> tuple[str, list[str]]:
         return _brand_cache["name"], _brand_cache["facts"]
     base = service_url("BRAND_URL", "http://brand-service:8000")
     try:
-        facts = [f["text"] for f in httpx.get(f"{base}/facts", timeout=10).json()["facts"]]
-        name = httpx.get(f"{base}/profile", timeout=10).json().get("name") or "our company"
+        facts = [f["text"] for f in httpx.get(f"{base}/facts", headers=key_headers(), timeout=10).json()["facts"]]
+        name = httpx.get(f"{base}/profile", headers=key_headers(), timeout=10).json().get("name") or "our company"
         _brand_cache.update(at=now, name=name, facts=facts)
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
         log.warning("brand-service unavailable: %s", exc)
@@ -438,14 +487,14 @@ def brand_name() -> str:
     return env("BRAND_NAME") or brand()[0]
 
 
-def kb_search(query: str) -> list[dict]:
+def kb_search(query: str, timeout: float = 30) -> list[dict]:
     """Trusted knowledge-base excerpts above KB_MIN_SCORE; [] when 06 is down (the answer
     then has only the approved facts, which makes it stricter, not looser)."""
     base = service_url("KB_URL", "http://knowledge-base:8000")
     if not base:
         return []
     try:
-        r = httpx.post(f"{base}/search", json={"query": query[:500], "k": env_int("KB_K", 4)}, timeout=30)
+        r = httpx.post(f"{base}/search", json={"query": query[:500], "k": env_int("KB_K", 4)}, timeout=timeout)
         r.raise_for_status()
         hits = r.json().get("results", [])
     except (httpx.HTTPError, ValueError) as exc:
@@ -461,13 +510,18 @@ def kb_search(query: str) -> list[dict]:
     return out
 
 
-def run_prompt(variables: dict) -> dict:
+def run_prompt(variables: dict, budget: Budget | None = None) -> dict:
     base = service_url("GATEWAY_URL", "http://llm-gateway:8000")
+    timeout = env_float("GATEWAY_TIMEOUT", 120)
+    if budget:
+        timeout = budget.left(timeout, "the answer")
     try:
         r = httpx.post(f"{base}/v1/run", json={"prompt": "site_answer", "vars": variables},
-                       headers=key_headers(), timeout=env_float("GATEWAY_TIMEOUT", 120))
+                       headers={**key_headers(), "X-Caller": "79 site assistant"}, timeout=timeout)
         r.raise_for_status()
         out = r.json().get("output")
+    except httpx.TimeoutException as exc:
+        raise TooSlow(f"gateway: {type(exc).__name__}") from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise Unavailable(f"gateway: {type(exc).__name__}") from exc
     if not isinstance(out, dict):
@@ -475,22 +529,44 @@ def run_prompt(variables: dict) -> dict:
     return out
 
 
-def verify(text: str, context: str) -> dict:
+def verify(text: str, context: str, budget: Budget | None = None) -> dict:
     base = service_url("CLAIMS_URL", "http://claim-checker:8000")
+    timeout = env_float("CLAIMS_TIMEOUT", 180)
+    if budget:
+        timeout = budget.left(timeout, "the claim check")
     try:
         r = httpx.post(f"{base}/verify", json={"text": text, "context": context or None},
-                       headers=key_headers(), timeout=env_float("CLAIMS_TIMEOUT", 180))
+                       headers=key_headers(), timeout=timeout)
         r.raise_for_status()
         return r.json()
+    except httpx.TimeoutException as exc:
+        raise TooSlow(f"claim checker: {type(exc).__name__}") from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise Unavailable(f"claim checker: {type(exc).__name__}") from exc
 
 
+notify_limiter = Limiter()
+
+
+def notify_safe(text: str) -> str:
+    """Visitor words go into the team's chat. Slack reads <!channel>, <@U123> and <url|label>;
+    Discord pings @everyone / @here and renders [label](url). None of that may come from a
+    visitor, so angle brackets become look-alikes and mentions are broken (SA-1)."""
+    text = text.replace("<", "‹").replace(">", "›").replace("](", "] (")
+    return re.sub(r"@(?=(everyone|here|channel)\b)", "@​", text, flags=re.I)
+
+
 def notify(text: str) -> tuple[bool, str | None]:
-    """Same body as the n8n notify helper's generic format: {text, content}."""
+    """Same body as the n8n notify helper's generic format: {text, content}. At most
+    NOTIFY_MAX_PER_HOUR (default 20; 0 = no cap) are sent: new sessions are free, so without a
+    cap one script can flood the team's channel (SA-2). Handoffs are recorded either way."""
     url = env("NOTIFY_WEBHOOK_URL")
     if not url:
         return False, "NOTIFY_WEBHOOK_URL not set"
+    cap = env_int("NOTIFY_MAX_PER_HOUR", 20)
+    if cap > 0 and notify_limiter.hit("notify", cap, 3600) is not None:
+        return False, f"not sent: NOTIFY_MAX_PER_HOUR ({cap}) reached"
+    text = notify_safe(text)
     try:
         httpx.post(url, json={"text": text, "content": text}, timeout=10).raise_for_status()
         return True, None
@@ -534,6 +610,7 @@ HANDOFF_TEXT = {
     "low_confidence": "I don't know — let me get a person. I've passed your question to our team.",
     "unsupported": "I couldn't confirm an answer from our sources, so I've passed your question to a person on our team.",
     "unavailable": "I can't answer that right now, so I've passed your question to a person on our team.",
+    "timeout": "I couldn't check an answer quickly enough, so I've passed your question to a person on our team.",
     "complaint": "I'm sorry to hear that. This needs a person, so I've passed it to our team.",
     "refund": "I'm sorry to hear that. Refunds are handled by a person, so I've passed this to our team.",
     "account": "Changes to orders and accounts are handled by a person, so I've passed this to our team.",
@@ -660,12 +737,21 @@ def drop_unsupported(kept: list[str], result: dict) -> tuple[list[str], list[str
 
 
 def answer_from_sources(conn, conv: dict, message: str) -> dict:
+    budget = Budget()  # started before the search: the visitor waits for all of it
+    try:
+        return _answer_from_sources(conn, conv, message, budget)
+    except TooSlow as exc:
+        log.warning("%s", exc)
+        return handoff_reply(conn, conv, "timeout", message)
+
+
+def _answer_from_sources(conn, conv: dict, message: str, budget: Budget) -> dict:
     st = conv["state"]
     query = message
     if len(message.split()) < 6 and st.get("previous"):
         query = f"{st['previous']} {message}"
     name, facts = brand()
-    sources = kb_search(query) + [{"title": "Product facts", "text": f} for f in facts]
+    sources = kb_search(query, budget.left(30, "the search")) + [{"title": "Product facts", "text": f} for f in facts]
     if not sources:
         return handoff_reply(conn, conv, "unavailable", message)
     listing = "\n".join(f"[{i + 1}] ({s['title']}) {' '.join(s['text'].split())}" for i, s in enumerate(sources))
@@ -674,12 +760,19 @@ def answer_from_sources(conn, conv: dict, message: str) -> dict:
     variables = {"question": message, "sources": listing, "brand_name": env("BRAND_NAME") or name}
     if st.get("previous"):
         variables["previous"] = st["previous"]
-    if not _answer_slots.acquire(timeout=env_float("QUEUE_WAIT_SECONDS", 30)):
+    queue_wait = env_float("QUEUE_WAIT_SECONDS", 30)
+    wait = budget.left(queue_wait, "a free answer slot")
+    if not _answer_slots.acquire(timeout=wait):
+        if wait < queue_wait:  # the answer budget, not the queue limit, ran out
+            raise TooSlow("answer time budget used up waiting for a free answer slot")
         raise HTTPException(503, "the assistant is busy; please try again in a minute",
                             headers={"Retry-After": "30"})
     try:
         try:
-            out = run_prompt(variables)
+            out = run_prompt(variables, budget)
+            budget.check("the answer")
+        except TooSlow:
+            raise
         except Unavailable as exc:
             log.warning("%s", exc)
             return handoff_reply(conn, conv, "unavailable", message)
@@ -696,7 +789,10 @@ def answer_from_sources(conn, conv: dict, message: str) -> dict:
         unsupported = []
         if kept:
             try:
-                result = verify("\n".join(kept), kb_context)
+                result = verify("\n".join(kept), kb_context, budget)
+                budget.check("the claim check")
+            except TooSlow:
+                raise
             except Unavailable as exc:
                 log.warning("%s", exc)
                 r = handoff_reply(conn, conv, "unavailable", message)
@@ -787,7 +883,7 @@ def widget_css():
 @app.post("/chat")
 def chat(req: ChatRequest, request: Request):
     origin = check_origin(request)
-    limit(f"ip:{client_ip(request)}", env_int("RATE_IP_PER_MINUTE", 8), env_int("RATE_IP_PER_DAY", 150))
+    limit(f"ip:{rate_key(client_ip(request))}", env_int("RATE_IP_PER_MINUTE", 8), env_int("RATE_IP_PER_DAY", 150))
     message = " ".join(req.message.split())
     if len(message) > env_int("MAX_MESSAGE_CHARS", 800):
         raise HTTPException(413, "message too long")
@@ -863,7 +959,7 @@ def chat(req: ChatRequest, request: Request):
 def consent(req: ConsentRequest, request: Request):
     """The only way an email is stored: the visitor ticked the consent box (agree=true)."""
     check_origin(request)
-    limit(f"ip:{client_ip(request)}", env_int("RATE_IP_PER_MINUTE", 8), env_int("RATE_IP_PER_DAY", 150))
+    limit(f"ip:{rate_key(client_ip(request))}", env_int("RATE_IP_PER_MINUTE", 8), env_int("RATE_IP_PER_DAY", 150))
     if req.agree is not True:
         raise HTTPException(422, "consent is required to store an email address")
     email = req.email.strip()
@@ -886,7 +982,7 @@ def consent(req: ConsentRequest, request: Request):
         lead_status = None
         open_h = conn.execute("SELECT * FROM handoffs WHERE conversation_id = ? AND status = 'open'",
                               (conv["id"],)).fetchone()
-        if open_h:
+        if open_h and open_h["email"] != email:  # the same address again: no new notification
             ok, err = notify(f"Site assistant: the visitor of handoff #{open_h['id']} left an email: {email}. "
                              f"Conversation {conv['id']}.")
             with write(conn):

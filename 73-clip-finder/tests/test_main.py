@@ -8,7 +8,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app import main, media, net
+from app import main, media, net, safe_http
 from app.main import app
 
 KEY = "test-key"
@@ -24,7 +24,7 @@ def env(tmp_path, monkeypatch):
     for k in ("PUBLIC_BASE_URL", "RETENTION_DAYS", "MAX_UPLOAD_MB", "MAX_CLIPS", "ALLOW_PRIVATE_URLS", "WHISPER_MODEL"):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setattr(media, "find_ffmpeg", lambda: ("/x/ffmpeg", "system"))
-    monkeypatch.setattr(net, "resolve", lambda host: ["93.184.216.34"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["93.184.216.34"])
     yield
     if main._busy.locked():
         main._busy.release()
@@ -118,7 +118,7 @@ def test_lookalike_hosts_are_not_platforms():
 ])
 def test_private_addresses_are_blocked(no_run, monkeypatch, url, ip):
     if ip:
-        monkeypatch.setattr(net, "resolve", lambda host: [ip])
+        monkeypatch.setattr(safe_http, "resolve", lambda host: [ip])
     r = post({"url": url})
     assert r.status_code == 422 and "non-public" in r.json()["detail"]
     assert not no_run
@@ -271,7 +271,7 @@ def test_download_octet_stream_needs_a_media_extension(tmp_path):
 
 @respx.mock
 def test_download_rechecks_redirects(tmp_path, monkeypatch):
-    monkeypatch.setattr(net, "resolve", lambda host: ["10.0.0.1"] if host == "internal.example" else ["93.184.216.34"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["10.0.0.1"] if host == "internal.example" else ["93.184.216.34"])
     respx.get("https://cdn.example.com/a.mp4").mock(
         return_value=httpx.Response(302, headers={"location": "http://internal.example/secret.mp4"}))
     with pytest.raises(net.BlockedURL):

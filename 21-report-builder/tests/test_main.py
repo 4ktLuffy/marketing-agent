@@ -80,6 +80,12 @@ def test_user_text_is_escaped():
     assert "javascript:" not in h and "<strong>ok</strong>" in h
 
 
+def test_highlights_table_is_rendered_and_escaped():
+    h = render(highlights_markdown="| Measure | Aug | Change |\n|---|---:|---:|\n| Sessions <b>x</b> | 1,240 | +140 (+12.7%) |")["html"]
+    assert "<table>" in h.split("Highlights", 1)[1] and "<td>Sessions &lt;b&gt;x&lt;/b&gt;</td>" in h
+    assert '<td style="text-align: right;">+140 (+12.7%)</td>' in h
+
+
 def test_markdown_report():
     md = render(highlights_markdown="- Organic grew 12%")["markdown"]
     assert md.startswith("# Weekly report\n")
@@ -108,3 +114,54 @@ def test_pipe_in_channel_escaped_in_markdown():
 
 def test_missing_fields_422():
     assert client.post("/render", json={"title": "t", "period": "p"}).status_code == 422
+
+
+NO_ADS = {
+    "totals": {"sessions": 1760, "clicks": 790, "conversions": 40, "spend": 0, "cpa": 0},
+    "by_channel": [{"channel": "organic", "sessions": 1240, "clicks": 530, "conversions": 31, "spend": 0, "cpa": 0},
+                   {"channel": "social", "sessions": 520, "clicks": 260, "conversions": 9, "spend": None}],
+    "previous": {"period": {"from": "2026-08-01", "to": "2026-08-31"}, "sessions": 1500, "spend": 0},
+}
+
+
+def test_money_measures_without_any_spend_are_left_out():
+    """A client with no ads gets no "Spend 0.00" tile or column: zero here means "not tracked"."""
+    out = render(kpis=NO_ADS)
+    for text in (out["html"], out["markdown"]):
+        assert "Spend" not in text and "Cost per conversion" not in text and "CPA" not in text
+        assert "Sessions" in text
+    assert "| organic | 1,240 | 530 | 31 |" in out["markdown"]
+
+
+def test_zero_conversions_still_shown_and_spend_kept_when_any_period_has_it():
+    k = {**NO_ADS, "totals": {**NO_ADS["totals"], "conversions": 0}, "previous": {**NO_ADS["previous"], "spend": 80}}
+    md = render(kpis=k)["markdown"]
+    assert "| Conversions | 0 |" in md       # "no conversions" is information
+    assert "| Spend |" in md                 # spent last month, none now: say so
+
+
+def test_document_turns_markdown_into_a_standalone_page():
+    """POST /document: any calendar body (the client report, a blog draft) as one HTML file to forward."""
+    md = ("# Northwind Roasters: monthly report, September 2026\n\nSessions rose.\n\n"
+          "| Measure | Sep | Aug |\n|---|---:|---:|\n| Sessions | 1,760 | 1,500 |\n\n- Published 2 pieces\n")
+    r = client.post("/document", json={"title": "Client report September 2026", "markdown": md})
+    assert r.status_code == 200, r.text
+    page = r.json()["html"]
+    assert page.startswith("<!DOCTYPE html>") and "<title>Client report September 2026</title>" in page
+    assert "<table>" in page and "<td>1,760</td>" in page.replace(' style="text-align: right;"', "")
+    assert "<h1>Northwind Roasters: monthly report, September 2026</h1>" in page
+    assert "<script" not in page
+
+
+def test_document_escapes_html_and_unsafe_links():
+    md = "<script>alert(1)</script>\n\n[x](javascript:alert(1)) [ok](https://example.org) ![i](javascript:x)"
+    page = client.post("/document", json={"title": "<b>T</b>", "markdown": md}).json()["html"]
+    body = page.split("<body>")[1]
+    assert "<script>" not in body and "&lt;script&gt;" in body
+    assert "javascript:" not in page and 'href="https://example.org"' in page
+    assert "<title>&lt;b&gt;T&lt;/b&gt;</title>" in page
+
+
+def test_document_needs_title_and_markdown():
+    assert client.post("/document", json={"title": "x"}).status_code == 422
+    assert client.post("/document", json={"title": "", "markdown": "a"}).status_code == 422

@@ -1,7 +1,8 @@
 """Clip finder: one long video (a direct media link or an upload) -> short vertical clips.
 
-Transcribe locally (faster-whisper, word timestamps) -> sentence windows of min_s..max_s built
-in code -> the LLM gateway scores each window (prompt clip_scoring) -> the best
+Transcribe locally (faster-whisper, word timestamps) -> topic segments (embeddings, pauses,
+discourse markers) -> sentence windows of min_s..max_s inside one segment, built in code -> the LLM gateway scores them (prompt clip_scoring; SCORING_MODE=rank: compares them in
+batches, prompt clip_ranking, a tournament) -> the best
 non-overlapping windows, snapped to scene cuts and silences -> 1080x1920 MP4s with burned-in
 word-by-word captions, a poster and an SRT. Fully local; one job at a time, in the background.
 
@@ -27,7 +28,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from . import captions, media, net, scenes, scoring, transcribe, windows
+from . import captions, media, net, ranking, scenes, scoring, segments, transcribe, windows
 
 log = logging.getLogger("clip-finder")
 
@@ -63,6 +64,47 @@ def env_float(name: str, default: float) -> float:
         return float(os.environ.get(name, "") or default)
     except ValueError:
         return default
+
+
+def scoring_mode() -> str:
+    """score (default): absolute 0-10 scores per window (app/scoring.py); rank: the model
+    compares windows in batches (app/ranking.py). With topic windows, score picked the human
+    picks on two test talks (4/4 twice, 3/3) and rank did not (2/4 twice, 2/3); see README."""
+    return "rank" if (os.environ.get("SCORING_MODE") or "score").strip().lower() == "rank" else "score"
+
+
+def topic_windows_on() -> bool:
+    """TOPIC_WINDOWS (default true): windows lie inside one topic segment (app/segments.py)."""
+    return (os.environ.get("TOPIC_WINDOWS") or "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def embedder():
+    """Ollama sentence embeddings for topic segmentation; None when EMBED_MODEL is set empty."""
+    model = os.environ.get("EMBED_MODEL", "qwen3-embedding:0.6b").strip()
+    if not model:
+        return None
+    url = os.environ.get("OLLAMA_URL") or "http://host.docker.internal:11434"
+    return segments.ollama_embedder(url, model, env_float("EMBED_TIMEOUT", 60))
+
+
+def candidate_windows(words, min_s: float, max_s: float, job: dict) -> list:
+    """Windows to rank: inside topic segments (default), or anywhere (TOPIC_WINDOWS=false, or
+    when no segment holds a window). Records the segmentation in job["segments"]."""
+    seg_list = None
+    if topic_windows_on():
+        sents = windows.sentences(words)
+        seg = segments.segment(sents, embedder())
+        seg_list = segments.merge_short(seg, sents, min_s)
+        job["segments"] = {"method": seg.method, "count": len(seg_list),
+                           "boundaries_s": [round(sents[i].start, 2) for i in seg.boundaries]}
+        if seg.error:
+            job["notes"].append(seg.error)
+    built = windows.build_windows(words, min_s, max_s, seg_list,
+                                  whole_min_s=segments.SHORT_POINT * min_s if seg_list is not None else None)
+    if seg_list is not None and not built:
+        job["notes"].append("no topic segment holds a window; windows may span two points")
+        built = windows.build_windows(words, min_s, max_s)
+    return windows.thin(built, stride_s=env_float("WINDOW_STRIDE_S", 8), cap=int(env_float("MAX_CANDIDATES", 48)))
 
 
 def data_dir() -> Path:
@@ -389,7 +431,8 @@ class JobFailed(Exception):
 
 
 STAGES = {  # stage -> (progress at start, progress at end)
-    "download": (0.0, 0.08), "audio": (0.08, 0.1), "transcribe": (0.1, 0.6), "scenes": (0.6, 0.65),
+    "download": (0.0, 0.08), "audio": (0.08, 0.1), "transcribe": (0.1, 0.6), "segment": (0.6, 0.6),
+    "scenes": (0.6, 0.65),
     "score": (0.65, 0.8), "render": (0.8, 1.0),
 }
 
@@ -462,8 +505,8 @@ def run_job(job: dict, url: str | None, work: Path) -> None:
         if not words:
             raise JobFailed("no speech found in the source")
 
-        cands = windows.thin(windows.build_windows(words, p["min_s"], p["max_s"]),
-                             stride_s=env_float("WINDOW_STRIDE_S", 8), cap=int(env_float("MAX_CANDIDATES", 48)))
+        stage("segment")
+        cands = timed("segment", candidate_windows, words, p["min_s"], p["max_s"], job)
         job["candidates"] = len(cands)
         if not cands:
             raise JobFailed(f"no stretch of whole sentences lasts {p['min_s']:g}-{p['max_s']:g} s")
@@ -480,14 +523,20 @@ def run_job(job: dict, url: str | None, work: Path) -> None:
         job["scene_cuts"] = len(cuts)
 
         stage("score")
+        rank_mode = scoring_mode() == "rank"
         try:
-            stats = timed("score", scoring.score, cands, int(env_float("SCORE_BATCH", 6)),
-                          env_float("GATEWAY_TIMEOUT", 300), p["language"], progress=progress("score"))
+            stats = timed("score", ranking.rank if rank_mode else scoring.score, cands,
+                          int(env_float("SCORE_BATCH", 6)), env_float("GATEWAY_TIMEOUT", 300), p["language"],
+                          progress=progress("score"))
         except scoring.ScoringFailed as e:
             raise JobFailed(f"scoring failed: {e}")
-        job["scoring"] = {k: stats[k] for k in ("batches", "failed_batches", "scored")}
+        job["scoring"] = {"mode": "rank" if rank_mode else "score",
+                          **{k: stats[k] for k in ("batches", "failed_batches", "scored", "rounds", "calls")
+                             if k in stats}}
         if stats["failed_batches"]:
-            job["notes"].append(f"{stats['failed_batches']} scoring batch(es) failed; those windows were skipped")
+            job["notes"].append(f"{stats['failed_batches']} ranking batch(es) failed; ordered by transcript features"
+                                if rank_mode else
+                                f"{stats['failed_batches']} scoring batch(es) failed; those windows were skipped")
         chosen = windows.pick(cands, p["max_clips"], env_float("MIN_SCORE", 0))
 
         stage("render")
@@ -553,6 +602,7 @@ def render_one(n: int, w: windows.Window, bound: tuple, words, info, mode, src, 
     return {
         "id": clip_id, "index": n + 1, "start_s": start, "end_s": end, "duration_s": round(dur, 3),
         "title": w.title, "hook": w.hook, "reason": w.reason, "score": w.score, "scores": w.scores,
+        "rank": w.rank, "criteria": w.criteria, "features": w.features,
         "transcript": w.text, "snapped": how,
         "reframe": ("face" if center_x is not None else ("center" if mode == "face" else mode))
         if info["has_video"] else "audio_only",

@@ -39,12 +39,20 @@ repos=(
   71-video-assembly
   72-control-room
   73-clip-finder
+  74-wf-sched-experiment-manager
+  75-wf-sched-experiment-analysis
+  76-wf-experiments-form
+  77-wf-tool-clips
   78-ad-library-sync
   79-site-assistant
   80-lead-hub
   81-wf-tool-track-competitor
   82-ai-visibility
   83-wf-sched-ai-visibility
+  84-ads-sync
+  85-wf-sched-client-report
+  86-flow-runner
+  87-feed-optimizer
 )
 for r in "${repos[@]}"; do
   if [ -d "$r" ]; then echo "skip $r (exists)"; continue; fi

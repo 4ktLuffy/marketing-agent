@@ -1,0 +1,161 @@
+{% macro err(errors, name) %}{% for m in (errors or {}).get(name, []) %}<p class="field-error small" role="alert">{{ m }}</p>{% endfor %}{% endmacro %}
+{% macro formtag(action) %}<form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="#brand-form" hx-swap="outerHTML" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
+<div id="brand-form">
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+{% if errors or row_errors %}<p class="alert danger" role="alert">Not saved yet: fix what is marked below.</p>{% endif %}
+{% if saved %}<p class="alert ok" role="status"><b>Saved.</b> {{ note }}
+  {% if step < 6 %}<a href="/brand/step/{{ step + 1 }}">Next: {{ steps[step][1] }} →</a>{% endif %}</p>{% endif %}
+
+{% if step == 1 and values %}
+<h2>1 · Basics</h2>
+{{ formtag("/brand/step/1") }}
+  <label>Brand name <input name="name" value="{{ values.name }}" maxlength="80" required autocomplete="organization"></label>
+  {{ err(errors, "name") }}
+  <label>What you sell, in one sentence <input name="one_liner" value="{{ values.one_liner }}" maxlength="200" required></label>
+  <p class="small muted">The agent may repeat this sentence as it is, so keep it true.</p>
+  {{ err(errors, "one_liner") }}
+  <label>Website <input name="website" value="{{ values.website }}" maxlength="200" inputmode="url" placeholder="https://example.com"></label>
+  {{ err(errors, "website") }}
+  <label>Who you sell to <textarea name="audience_primary" rows="2" maxlength="300">{{ values.audience_primary }}</textarea></label>
+  {{ err(errors, "audience_primary") }}
+  <label>Second audience (optional) <textarea name="audience_secondary" rows="2" maxlength="300">{{ values.audience_secondary }}</textarea></label>
+  {{ err(errors, "audience_secondary") }}
+  <label>Tone in a few words (optional) <input name="tone" value="{{ values.tone }}" maxlength="200" placeholder="Warm, plain, a little dry"></label>
+  {{ err(errors, "tone") }}
+  <div class="actions"><button class="btn primary big" type="submit">Save basics</button></div>
+</form>
+
+{% elif step == 2 and rows %}
+<h2>2 · Products</h2>
+<p class="small muted">Every product the agent may write about. A price is optional; leave it blank if it changes.
+  "Other names" are words people use for it (e.g. decaf), comma-separated.</p>
+{{ err(errors, "products") }}
+{{ formtag("/brand/step/2") }}
+  {% for r in rows %}
+  <fieldset class="product-row{% if (row_errors or {}).get(loop.index) %} has-error{% endif %}">
+    <legend>Product {{ loop.index }}</legend>
+    {% for m in (row_errors or {}).get(loop.index, []) %}<p class="field-error small" role="alert">{{ m }}</p>{% endfor %}
+    <label>Name <input name="p_name" value="{{ r.name }}" maxlength="80"></label>
+    <label>One-line description <input name="p_one_line" value="{{ r.one_line }}" maxlength="200"></label>
+    <div class="row2">
+      <label>Price <input name="p_price" value="{{ r.price }}" maxlength="40" placeholder="$18 / 340 g"></label>
+      <label>Other names <input name="p_aliases" value="{{ r.aliases }}" maxlength="300"></label>
+    </div>
+    {% if r.name %}<label class="check"><input type="checkbox" name="p_remove" value="{{ loop.index0 }}" {% if r.remove %}checked{% endif %}> Remove this product</label>{% endif %}
+  </fieldset>
+  {% endfor %}
+  <div class="actions">
+    <button class="btn primary big" type="submit" name="action" value="save">Save products</button>
+    <button class="btn ghost" type="submit" name="action" value="add">Add another product</button>
+  </div>
+</form>
+
+{% elif step == 3 and values %}
+<h2>3 · Facts</h2>
+<p class="alert">Only true, checkable statements. Every claim the agent makes must come from here
+  (or from the products and key messages); the claim checker rejects anything else. One fact per line, at most 200 characters each.</p>
+{{ formtag("/brand/step/3") }}
+  <label for="facts">Facts, one per line</label>
+  <textarea id="facts" name="facts" rows="10" placeholder="Unopened bags can be returned within 30 days for a full refund.">{{ values.facts }}</textarea>
+  {{ err(errors, "facts") }}
+  <label for="key_messages">Key messages, one per line <span class="small muted">(what you want said often)</span></label>
+  <textarea id="key_messages" name="key_messages" rows="4">{{ values.key_messages }}</textarea>
+  {{ err(errors, "key_messages") }}
+  <div class="actions"><button class="btn primary big" type="submit">Save facts</button></div>
+</form>
+
+{% elif step == 4 and values %}
+<h2>4 · Rules</h2>
+{{ formtag("/brand/step/4") }}
+  <label for="banned_phrases">Never say, one per line</label>
+  <textarea id="banned_phrases" name="banned_phrases" rows="6" placeholder="guaranteed">{{ values.banned_phrases }}</textarea>
+  <p class="small muted">Whole words, any case. A * stands for up to three words: "best * in the world" also catches "best coffee in the world".</p>
+  {{ err(errors, "banned_phrases") }}
+  <div class="row2">
+    <label>Emoji allowed <input name="emoji_allowed" value="{{ values.emoji_allowed }}" placeholder="☕ 🌱 📦"></label>
+    <label>Max emoji per post <input name="emoji_max" value="{{ values.emoji_max }}" inputmode="numeric" placeholder="2"></label>
+  </div>
+  <p class="small muted">Separate emoji with spaces. Leave "allowed" empty to allow any emoji; leave "max" empty for no limit.</p>
+  {{ err(errors, "emoji_allowed") }}{{ err(errors, "emoji_max") }}
+  <label for="allowed_domains">Other websites posts may link to, one per line</label>
+  <textarea id="allowed_domains" name="allowed_domains" rows="3" placeholder="shop.example.com">{{ values.allowed_domains }}</textarea>
+  <p class="small muted">Your own website is always allowed. Any other address in a draft is flagged.</p>
+  {{ err(errors, "allowed_domains") }}
+  <label for="disclaimers">Required disclaimers, one channel per line</label>
+  <textarea id="disclaimers" name="disclaimers" rows="4" placeholder="paid_social: #ad, Sponsored">{{ values.disclaimers }}</textarea>
+  <p class="small muted">A post for that channel must contain one of the texts after the colon.</p>
+  {{ err(errors, "disclaimers") }}
+  <div class="actions"><button class="btn primary big" type="submit">Save rules</button></div>
+</form>
+
+{% elif step == 5 and review %}
+<h2>5 · Voice: check the profile</h2>
+<p class="small muted">Written by the model from your answers. Change anything that is wrong, then save. Nothing is used until you save.</p>
+<form method="post" action="/brand/voice/save" hx-post="/brand/voice/save" hx-target="#brand-form" hx-swap="outerHTML" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Summary <textarea name="summary" rows="3" maxlength="300">{{ review.summary }}</textarea></label>
+  {{ err(errors, "summary") }}
+  <label>Do, one per line <textarea name="do" rows="4">{{ review.do }}</textarea></label>
+  {{ err(errors, "do") }}
+  <label>Don't, one per line <textarea name="dont" rows="4">{{ review.dont }}</textarea></label>
+  {{ err(errors, "dont") }}
+  <label>Words we use (comma-separated) <input name="words_we_use" value="{{ review.words_we_use }}"></label>
+  {{ err(errors, "words_we_use") }}
+  <label>Words we avoid (comma-separated) <input name="words_we_avoid" value="{{ review.words_we_avoid }}"></label>
+  <p class="small muted">Drafts that use these get a warning.</p>
+  {{ err(errors, "words_we_avoid") }}
+  <label>Sentence style <input name="sentence_style" value="{{ review.sentence_style }}" maxlength="200"></label>
+  {{ err(errors, "sentence_style") }}
+  <label>Sample lines, one per line <textarea name="sample_lines" rows="3">{{ review.sample_lines }}</textarea></label>
+  <p class="small muted">Kept for you to read; they are not sent to the writers.</p>
+  {{ err(errors, "sample_lines") }}
+  <div class="actions"><button class="btn primary big" type="submit">Save voice profile</button>
+    <a class="btn ghost" href="/brand/step/5">Start the interview again</a></div>
+</form>
+
+{% elif step == 5 and questions %}
+<h2>5 · Voice interview</h2>
+{% if voice %}<p class="alert ok">A voice profile is saved: “{{ voice.summary }}” Answer again to replace it.</p>{% endif %}
+<p class="small muted">Plain words are best. Answer at least 3; skip what doesn't fit. The local model then writes a profile for you to check (up to a few minutes).</p>
+{{ err(errors, "answers") }}
+<form method="post" action="/brand/voice/generate" hx-post="/brand/voice/generate" hx-target="#brand-form" hx-swap="outerHTML"
+      hx-indicator="#voice-wait" hx-disabled-elt="find button" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% for q in questions %}
+  <label>{{ loop.index }}. {{ q }} <textarea name="a{{ loop.index0 }}" rows="3" maxlength="2000">{{ answers[loop.index0] if answers else '' }}</textarea></label>
+  {% endfor %}
+  <div class="actions"><button class="btn primary big" type="submit">Write my voice profile</button>
+    <span id="voice-wait" class="htmx-indicator small muted" role="status">Writing… this can take a few minutes.</span></div>
+</form>
+
+{% elif step == 5 and saved %}
+<h2>5 · Voice</h2>
+<p><a href="/brand/step/6">Next: review →</a></p>
+
+{% elif step == 6 %}
+<h2>6 · Review</h2>
+{% if completeness %}{% include "_brand_score.html" %}{% endif %}
+{% if summary is not none %}
+<section class="panel">
+  <h2>What the agent reads before every draft</h2>
+  <pre class="summary">{{ summary }}</pre>
+  <p class="small muted">{{ note }}</p>
+</section>
+{% endif %}
+{% if doc %}
+<section class="panel">
+  <h2>Changed from the shipped profile</h2>
+  {% if doc.overridden %}<p>{{ doc.overridden|join(', ')|replace('_', ' ') }}</p>
+  {% if doc.products.changed or doc.products.added or doc.products.removed %}<p class="small muted">Products — changed: {{ doc.products.changed|join(', ') or '—' }}; added: {{ doc.products.added|join(', ') or '—' }}; removed: {{ doc.products.removed|join(', ') or '—' }}</p>{% endif %}
+  {% else %}<p class="muted">Nothing yet: the agent uses the shipped brand profile.</p>{% endif %}
+  <form method="post" action="/brand/reset" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if reset_error %}<p class="field-error small" role="alert">{{ reset_error }}</p>{% endif %}
+    <label class="check"><input type="checkbox" name="confirm" value="yes"> Undo all changes made here (steps 1–4) and go back to the shipped profile. The voice profile stays.</label>
+    <button class="btn reject ghost" type="submit">Reset to the shipped profile</button>
+  </form>
+</section>
+{% endif %}
+{% endif %}
+</div>

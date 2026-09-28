@@ -1,28 +1,33 @@
 #!/usr/bin/env bash
-# Load the Ollama credential and all workflow deploys (NN-wf-*) into the stack's n8n, publish them,
-# and restart n8n so schedules, forms and the chat go live. Safe to re-run: imports
-# overwrite by id.
+# Load the Ollama credential and the workflow deploys (NN-wf-*) of the installed profile into the
+# stack's n8n, publish them, and restart n8n so schedules, forms and the chat go live. Safe to
+# re-run: imports overwrite by id.
 #
-# Before the first run: `docker compose up -d` and create the n8n owner account in the UI.
+# The profile is COMPOSE_PROFILES in .env (core, growth or full; unset = full). Workflows that need
+# a service outside the profile are not imported (scripts/profiles.sh has the list).
+#
+# Before the first run: `docker compose up -d` and create the n8n owner account (install.sh does
+# both).
+#
+# One client of several (MKT_CLIENT=<slug>, set by install.sh --client): imports into that client's
+# n8n, and moves every schedule by SCHEDULE_OFFSET_MIN minutes (scripts/shift-cron.py) so clients'
+# schedules don't all hit the one Ollama at the same minute.
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
-
-# Read .env like docker compose does (KEY=VALUE, values may contain spaces); never execute it.
-load_env() {
-  [ -f .env ] || return 0
-  while IFS= read -r line || [ -n "$line" ]; do
-    [[ "$line" =~ ^[[:space:]]*# || "$line" != *=* ]] && continue
-    key="${line%%=*}"; val="${line#*=}"
-    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && export "$key=$val"
-  done < .env
-}
+[ "${1:-}" = --client ] && export MKT_CLIENT="${2:-}"
+# shellcheck source=profiles.sh
+. scripts/profiles.sh   # and client.sh: load_env, compose, n8n_port
 
 load_env
 OLLAMA_URL="${OLLAMA_URL:-http://host.docker.internal:11434}"
-dc() { docker compose exec -T n8n "$@"; }
+dc() { compose exec -T n8n "$@"; }
+offset="${SCHEDULE_OFFSET_MIN:-0}"
+[[ "$offset" =~ ^[0-9]+$ ]] || { echo "SCHEDULE_OFFSET_MIN must be a number of minutes (got '$offset')"; exit 1; }
+# The workflow as this install imports it: schedules moved by the client's offset.
+workflow_json() { if [ "$offset" -gt 0 ]; then python3 scripts/shift-cron.py "$offset" < "$1"; else cat "$1"; fi; }
 
 if [ -z "${FORMS_USER:-}" ] || [ -z "${FORMS_PASSWORD:-}" ] || [[ "${FORMS_PASSWORD}" == change-me* ]]; then
-  echo "set FORMS_USER and FORMS_PASSWORD in .env first (login for the approval/knowledge/rules forms)"; exit 1
+  echo "set FORMS_USER and FORMS_PASSWORD in $(env_file) first (login for the approval/knowledge/rules forms)"; exit 1
 fi
 echo "==> forms login credential (user: $FORMS_USER)"
 python3 -c 'import json,os; print(json.dumps([{"id":"mktFormsLogin001","name":"Forms login","type":"httpBasicAuth","data":{"user":os.environ["FORMS_USER"],"password":os.environ["FORMS_PASSWORD"]}}]))' \
@@ -32,21 +37,23 @@ echo "==> Ollama credential -> $OLLAMA_URL"
 sed "s|http://host.docker.internal:11434|$OLLAMA_URL|" n8n/credentials/ollama.json \
   | dc sh -c 'cat > /tmp/ollama-cred.json && n8n import:credentials --input=/tmp/ollama-cred.json && rm /tmp/ollama-cred.json'
 
-shopt -s nullglob
+profile="$(current_profile)"
 # NN-wf-* deploys, then workflows that ship inside a service repo (72-control-room/n8n).
-workflows=(../[0-9][0-9]-wf-*/workflow.json ../[0-9][0-9]-*/n8n/workflow.json)
+workflows=()
+while IFS= read -r f; do workflows+=("$f"); done < <(profile_workflows "$profile")
 [ ${#workflows[@]} -gt 0 ] || { echo "no workflow repos found next to this one (run scripts/clone-all.sh)"; exit 1; }
+echo "==> profile $profile: ${#workflows[@]} workflows${MKT_CLIENT:+ for client $MKT_CLIENT}$([ "$offset" -gt 0 ] && echo ", schedules +$offset min")"
 
 # Import sub-workflows before the workflows that call them.
 for f in "${workflows[@]}"; do
-  name="$(basename "$(dirname "$f")")"
+  name="${f#../}"; name="${name%/workflow.json}"
   echo "==> import $name"
-  dc sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json >/dev/null && rm /tmp/wf.json' < "$f"
+  workflow_json "$f" | dc sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json >/dev/null && rm /tmp/wf.json'
 done
 
 # Optional: chat agent on a hosted OpenAI-compatible model (Groq by default).
 if [ "${CHAT_PROVIDER:-local}" = "hosted" ]; then
-  [ -n "${CHAT_API_KEY:-}" ] || { echo "CHAT_PROVIDER=hosted needs CHAT_API_KEY in .env"; exit 1; }
+  [ -n "${CHAT_API_KEY:-}" ] || { echo "CHAT_PROVIDER=hosted needs CHAT_API_KEY in $(env_file)"; exit 1; }
   export CHAT_BASE_URL="${CHAT_BASE_URL:-https://api.groq.com/openai/v1}" CHAT_MODEL="${CHAT_MODEL:-openai/gpt-oss-120b}"
   echo "==> hosted chat model: $CHAT_MODEL at $CHAT_BASE_URL (key not shown)"
   # The key goes through stdin, never argv.
@@ -65,9 +72,29 @@ for f in "${workflows[@]}"; do
   dc n8n publish:workflow --id="$id" >/dev/null
 done
 
+# Moved to a smaller profile: workflows of the larger one stay in n8n but are unpublished, so their
+# schedules don't run against services that are gone.
+if [ "$profile" != full ]; then
+  listed="$(dc n8n list:workflow 2>/dev/null || true)"
+  while IFS= read -r f; do
+    printf '%s\n' "${workflows[@]}" | grep -qxF "$f" && continue
+    id="$(grep -m1 -o '"id": "mkt[A-Za-z0-9]*"' "$f" | cut -d'"' -f4)"
+    if grep -q "^$id|" <<<"$listed"; then
+      echo "==> unpublish ${f#../} (not in profile $profile)"
+      dc n8n unpublish:workflow --id="$id" >/dev/null </dev/null   # exec would eat the loop's stdin
+    fi
+  done < <(profile_workflows full)
+fi
+
 echo "==> restart n8n"
-docker compose restart n8n >/dev/null
-echo "done. Chat: ${N8N_PUBLIC_URL:-http://localhost:5678/}webhook/mkt-marketing-chat/chat"
-echo "      Approval form: ${N8N_PUBLIC_URL:-http://localhost:5678/}form/mkt-content-approval"
-echo "      Control room (72): http://localhost:8172 (or your HTTPS address for it)"
-echo "      Knowledge form: ${N8N_PUBLIC_URL:-http://localhost:5678/}form/mkt-knowledge-add"
+compose restart n8n >/dev/null
+# Wait until n8n serves again, so a smoke test right after this doesn't hit a starting n8n.
+for _ in $(seq 90); do
+  [ "$(compose ps --format '{{.Health}}' n8n 2>/dev/null)" = healthy ] \
+    && curl -fsS -m 5 "http://127.0.0.1:$(n8n_port)/rest/settings" >/dev/null 2>&1 && break
+  sleep 2
+done
+echo "done. Chat: ${N8N_PUBLIC_URL:-http://localhost:$(n8n_port)/}webhook/mkt-marketing-chat/chat"
+echo "      Approval form: ${N8N_PUBLIC_URL:-http://localhost:$(n8n_port)/}form/mkt-content-approval"
+echo "      Control room (72): http://localhost:$(host_port 72) (or your HTTPS address for it)"
+echo "      Knowledge form: ${N8N_PUBLIC_URL:-http://localhost:$(n8n_port)/}form/mkt-knowledge-add"

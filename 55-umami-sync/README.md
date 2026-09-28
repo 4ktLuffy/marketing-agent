@@ -1,6 +1,6 @@
 # umami-sync
 
-Deploy **55 of 83** of the local-LLM marketing agent. It reads your Umami website
+Deploy **55 of 87** of the local-LLM marketing agent. It reads your Umami website
 analytics one day at a time: visits and conversions for each `utm_source` and `utm_campaign`
 pair. It uploads them to `20-analytics-ingest` as a generic CSV, labelled `umami`.
 Campaign scorecards (45) and the weekly report (41) can then use real site numbers
@@ -16,7 +16,7 @@ It calls Umami (self-hosted or Umami Cloud) and `analytics-ingest` on the same n
 
 ```bash
 docker build -t umami-sync .
-docker run --rm -p 8155:8000 --network marketing --env-file .env umami-sync
+docker run --rm -p 8155:8000 --network marketing-agent_marketing --env-file .env umami-sync
 ```
 
 Local without Docker:

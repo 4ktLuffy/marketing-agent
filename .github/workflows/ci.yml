@@ -55,6 +55,9 @@ jobs:
           - 79-site-assistant
           - 80-lead-hub
           - 82-ai-visibility
+          - 84-ads-sync
+          - 86-flow-runner
+          - 87-feed-optimizer
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -90,12 +93,50 @@ jobs:
           print(f"{len(files)} workflows ok")
           PY
 
+  generator:
+    name: workflows match tools/workflow-generator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: regenerate every workflow deploy; the committed files must not change
+        run: |
+          python tools/workflow-generator/build.py
+          git status --porcelain
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: generator tests (Code-node logic as it ships)
+        run: for t in tools/workflow-generator/tests/*.js; do node "$t"; done
+
+  shared-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SSRF guard copies are identical (07 is canonical; see its header)
+        run: |
+          set -e
+          ref=$(md5sum 07-page-extractor/app/safe_http.py | cut -d' ' -f1)
+          for f in 08-rss-watcher 09-change-monitor 12-seo-auditor 73-clip-finder 80-lead-hub; do
+            got=$(md5sum "$f/app/safe_http.py" | cut -d' ' -f1)
+            [ "$got" = "$ref" ] || { echo "$f/app/safe_http.py differs from 07's copy"; exit 1; }
+          done
+          echo "all copies identical"
+
   stack:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: compose file is valid
+      - name: compose file is valid for every install profile
         working-directory: 01-marketing-stack
-        run: cp .env.example .env && docker compose config -q
+        run: |
+          cp .env.example .env
+          for p in core growth full; do docker compose --profile "$p" config -q && echo "ok: $p"; done
       - name: shell scripts
-        run: shellcheck -S warning 01-marketing-stack/scripts/*.sh 02-ollama-models/scripts/*.sh
+        run: shellcheck -S warning 01-marketing-stack/scripts/*.sh 01-marketing-stack/tests/*.sh 02-ollama-models/scripts/*.sh
+      - name: agency mode (client names, port blocks, flags, rendered ports/networks, cron shift)
+        run: bash 01-marketing-stack/tests/test-clients.sh

@@ -1,2 +1,6 @@
 .env
 secrets/
+.env.*
+!.env.example
+# Per-client brand, feeds and secrets (install.sh --client)
+clients/

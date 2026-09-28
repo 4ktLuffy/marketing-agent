@@ -3,7 +3,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app import net
+from app import net, safe_http
 from app.main import app
 
 client = TestClient(app)
@@ -30,7 +30,7 @@ def env(monkeypatch, tmp_path):
     monkeypatch.setenv("DB_PATH", str(tmp_path / "rss.sqlite"))
     monkeypatch.setenv("INTERNAL_API_KEY", "test-key")
     monkeypatch.delenv("ALLOW_PRIVATE_URLS", raising=False)
-    monkeypatch.setattr(net, "resolve", lambda host: ["93.184.215.14"])
+    monkeypatch.setattr(safe_http, "resolve", lambda host: ["93.184.215.14"])
 
 
 def test_health():

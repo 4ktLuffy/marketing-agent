@@ -1022,3 +1022,9 @@ def scan_suggestions(min_mentions: int | None = Query(default=None, ge=1, le=50)
 @app.get("/suggestions")
 def suggestions():
     return list_competitors(status="suggested")
+
+
+# ---------- positioning map (app/positioning.py; imported last: it uses the helpers above)
+from app.positioning import router as positioning_router  # noqa: E402
+
+app.include_router(positioning_router)

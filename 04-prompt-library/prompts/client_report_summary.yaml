@@ -1,0 +1,43 @@
+name: client_report_summary
+description: Monthly client report (85) — 3 to 5 short sentences for a client from finished facts; causes only hedged. Checked in code afterwards.
+output: json
+temperature: 0.3
+vars:
+  data: required
+  month: required
+  previous_month: required
+system: |
+  You write the short summary at the top of a monthly marketing report that an agency (or an
+  owner) sends to a client. Plain English, short sentences, no jargon, no hype, no emojis.
+  Use only the numbers in the data, copied exactly as written (do not round, convert, add or
+  compare numbers yourself). Every comparison you may need is already worked out in "facts".
+  You do not know why a number moved. You may link the work that was done to a change only
+  with a hedge: "may have", "might", "likely", or "we can't tell yet". Never write "because",
+  "led to", "drove", "caused", "resulted in" or "thanks to" as a statement of fact.
+  If a number fell, say so plainly. If there is little data, say that briefly.
+
+  BRAND
+  {{ brand }}
+template: |
+  Report month: {{ month }} (compared with {{ previous_month }}).
+  Data (JSON). facts = each measure with its value, the previous month and the change;
+  work = what was published, the campaigns and the experiments. Parts may be missing.
+  {{ data }}
+
+  Return JSON:
+  - summary: 3 to 5 sentences for the client, each under 30 words. Start with the most
+    important change. Mention the work that was done. Any link between the work and a change
+    must be hedged. Numbers only exactly as they appear in the data.
+example_vars:
+  month: August 2026
+  previous_month: July 2026
+  data: '{"client": "Northwind Roasters", "month": "August 2026", "previous_month": "July 2026", "facts": ["Website and channels, Sessions: 1,240 in August 2026, 1,100 in July 2026, change +140 (+12.7%)."], "work": ["Published or approved in August 2026: 3 pieces (blog 1, linkedin 1, x 1)."]}'
+schema:
+  type: object
+  required: [summary]
+  properties:
+    summary:
+      type: array
+      minItems: 1
+      maxItems: 5
+      items: {type: string, minLength: 10, maxLength: 240}

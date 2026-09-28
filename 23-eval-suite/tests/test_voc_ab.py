@@ -4,14 +4,15 @@ import yaml
 
 import pytest
 
-from evalsuite.voc_ab import (ROOT, bolted_on, countable, enforcement, first_sentence, has_phrase, metrics, opens_with,
-                              pick_open_with, totals, write_b)
+from evalsuite.voc_ab import (ROOT, countable, enforcement, first_sentence, has_phrase, judge_quotes_without, metrics,
+                              opens_with, pick_open_with, totals, write_b)
 
 CASE = Path(__file__).parent.parent / "cases" / "voc" / "voc_ab.yaml"
 CASE_V2 = CASE.with_name("voc_ab_v2.yaml")
+CASE_V3 = CASE.with_name("voc_ab_v3.yaml")
 
 
-@pytest.mark.parametrize("path", [CASE, CASE_V2], ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", [CASE, CASE_V2, CASE_V3], ids=lambda p: p.stem)
 def test_case_file_is_complete(path):
     case = yaml.safe_load(path.read_text())
     ids = [t["id"] for t in case["topics"]]
@@ -24,6 +25,13 @@ def test_v2_topics_are_new():
     v1, v2 = (yaml.safe_load(p.read_text())["topics"] for p in (CASE, CASE_V2))
     assert not {t["id"] for t in v1} & {t["id"] for t in v2}
     assert not {t["topic"].lower() for t in v1} & {t["topic"].lower() for t in v2}
+
+
+def test_v3_topics_are_new():
+    v1, v2, v3 = (yaml.safe_load(p.read_text())["topics"] for p in (CASE, CASE_V2, CASE_V3))
+    old = v1 + v2
+    assert not {t["id"] for t in old} & {t["id"] for t in v3}
+    assert not {t["topic"].lower() for t in old} & {t["topic"].lower() for t in v3}
 
 
 def test_samples_path_resolves_when_repos_are_side_by_side():
@@ -94,11 +102,32 @@ def test_write_b_retries_once_with_feedback():
     assert enforcement(rows) == {"posts_with_open_with": 2, "first_try": "1/2", "after_retry": "1/2", "retries": 1}
 
 
-def test_bolted_on_catches_pasted_labels_not_sentences():
-    assert bolted_on("box arrived late We're sorry to hear it.", "box arrived late")
-    assert bolted_on("pause my subscription | When you pause...", "pause my subscription")
-    assert bolted_on("never run out with Northwind.", "never run out")  # lowercase paste
-    assert bolted_on("☕ Coffee subscription: gifts made easy.", "coffee subscription")
-    assert not bolted_on("Afternoon cup, and it's the best part of my day.", "afternoon cup")
-    assert not bolted_on("Skipping a delivery is easy though! Log in.", "Skipping a delivery is easy though")
-    assert not bolted_on("You'll never run out.", "never run out")  # not at the start
+def test_judge_quotes_exclude_b_phrase():
+    quotes = ["I never run out now", "arrived late again", "never run out", "pile of bags", "run out"]
+    kept, dropped = judge_quotes_without(quotes, "never run out", 2)
+    assert kept == ["arrived late again", "pile of bags"]
+    assert dropped == ["I never run out now", "never run out", "run out"]  # contains it / is part of it
+    assert judge_quotes_without(quotes, None, 3) == (quotes[:3], [])
+
+
+class FakePlacementLive(FakeLive):
+    """70 /placement/check stand-in: ok when the text starts with 'If '."""
+    def placement(self, text, phrase, allowed):
+        ok = text.startswith("If ")
+        return {"opens_with": phrase.lower() in text.split(".")[0].lower(), "ok": ok, "first_sentence": text,
+                "bolted_reasons": [] if ok else ["no_join"], "quoted": False, "invented_customers": [],
+                "bolted_on": not ok, "feedback": "" if ok else "FIX-IT"}
+
+
+def test_write_b_with_placement_retries_on_bolted_on():
+    live = FakePlacementLive(["never run out We ship weekly.", "If you never run out, good."])
+    b = write_b(live, {"open_with": "never run out"}, "x", "never run out", allowed_text="Northwind")
+    assert b["text"] == "If you never run out, good." and live.calls[1]["open_with_feedback"] == "FIX-IT"
+    assert b["open_with"]["first_try"] and not b["open_with"]["first_try_ok"] and b["open_with"]["final_ok"]
+    assert b["open_with"]["first_text"] == "never run out We ship weekly." and b["open_with"]["attempts"] == 2
+    ok = write_b(FakePlacementLive(["If you never run out."]), {}, "x", "never run out", allowed_text="")
+    assert ok["open_with"]["attempts"] == 1
+    assert enforcement([{"B": b}, {"B": ok}])["all_checks_first_try"] == "1/2"
+    m = metrics(b["text"], [], [], [], "never run out", b["placement"])
+    assert m["bolted_on"] is False and m["invented_customers"] == []
+    assert metrics("x", [], [], [], "never run out")["bolted_on"] is None  # not measured without 70

@@ -21,10 +21,12 @@
     <a href="/" {% if nav == 'queue' %}aria-current="page"{% endif %}>Queue</a>
     <a href="/calendar" {% if nav == 'calendar' %}aria-current="page"{% endif %}>Calendar</a>
     <a href="/performance" {% if nav == 'performance' %}aria-current="page"{% endif %}>Performance</a>
+    <a href="/activity" {% if nav == 'activity' %}aria-current="page"{% endif %}>Activity</a>
     <a href="/engine">Engine</a>
     <a href="/campaigns">Campaigns</a>
     <a href="/chat">Chat</a>
     <a href="/status">Health</a>
+    <a href="/brand" {% if request.url.path.startswith('/brand') %}aria-current="page"{% endif %}>Brand</a>
   </nav>
   <form method="post" action="/logout" class="logout">
     <input type="hidden" name="csrf" value="{{ csrf }}">
@@ -32,7 +34,7 @@
   </form>
 </header>
 {% endif %}
-<main id="main">
+<main id="main"{% block main_attrs %}{% endblock %}>
 {% block main %}{% endblock %}
 </main>
 {% if csrf %}
@@ -41,6 +43,7 @@
   <a href="/" {% if nav == 'queue' %}aria-current="page"{% endif %}><span aria-hidden="true">✓</span>Queue</a>
   <a href="/calendar" {% if nav == 'calendar' %}aria-current="page"{% endif %}><span aria-hidden="true">▦</span>Calendar</a>
   <a href="/performance" {% if nav == 'performance' %}aria-current="page"{% endif %}><span aria-hidden="true">▲</span>Stats</a>
+  <a href="/activity" {% if nav == 'activity' %}aria-current="page"{% endif %}><span aria-hidden="true">◉</span>Activity</a>
   <a href="/more" {% if nav == 'more' %}aria-current="page"{% endif %}><span aria-hidden="true">…</span>More</a>
 </nav>
 {% endif %}

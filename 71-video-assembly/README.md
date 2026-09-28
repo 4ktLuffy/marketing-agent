@@ -1,6 +1,6 @@
 # video-assembly
 
-Deploy **71 of 83** of the local-LLM marketing agent. It turns a short-form video script
+Deploy **71 of 87** of the local-LLM marketing agent. It turns a short-form video script
 (the output of prompt `video_script` in 04, written by deploy 57) into a finished
 **vertical MP4, 1080×1920**, ready for Reels, TikTok or Shorts:
 

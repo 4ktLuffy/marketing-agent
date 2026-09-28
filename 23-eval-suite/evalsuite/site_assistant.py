@@ -40,7 +40,7 @@ def as_list(v) -> list:
 
 
 def evidence_for(message: str, brand: str, kb: str) -> str:
-    facts = [f["text"] for f in httpx.get(f"{brand}/facts", timeout=10).json()["facts"]]
+    facts = [f["text"] for f in httpx.get(f"{brand}/facts", timeout=10, headers={"X-API-Key": os.environ["INTERNAL_API_KEY"]} if os.getenv("INTERNAL_API_KEY") else {}).json()["facts"]]
     try:
         hits = httpx.post(f"{kb}/search", json={"query": message, "k": 4}, timeout=60).json()["results"]
         chunks = [h["chunk"] for h in hits if h.get("source") not in ("trend-digest", "competitor-watch")]

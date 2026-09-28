@@ -1,8 +1,9 @@
 # marketing-stack
 
-Deploy **1 of 83** of the local-LLM marketing agent. This repo holds the one
-`docker compose` file that runs n8n, Postgres and all 20 services on one private network,
-plus the scripts that load the n8n workflows. Ollama runs next to it on the host.
+Deploy **1 of 87** of the local-LLM marketing agent. This repo holds the one
+`docker compose` file that runs n8n, Postgres and the services on one private network (26
+containers on the core profile, 38 on growth, 43 on full), plus the installer and the scripts that
+load the n8n workflows. Ollama runs next to it on the host.
 
 ```
              you ──► n8n chat (24) ──► mkt-agent (Ollama, host)
@@ -18,7 +19,8 @@ plus the scripts that load the n8n workflows. Ollama runs next to it on the host
 
 ## Where to deploy
 
-**One Docker host**: your Mac (Docker Desktop or OrbStack) or a Linux server/VPS.
+**One Docker host**: your Mac (Docker Desktop, OrbStack or colima) or a Linux server/VPS.
+A full first run in Docker is written up in `DOCKER-RUN.md` (build times, image sizes, memory).
 Every other deploy is either built by this compose file (services 03, 05–22), mounted
 into it (04 prompts, 05 brand config, 08 feeds), or imported into its n8n
 (all `NN-wf-*` workflow deploys).
@@ -42,7 +44,29 @@ git clone https://github.com/<you>/01-marketing-stack.git
 ./01-marketing-stack/scripts/clone-all.sh <you>          # clones 02–43
 ```
 
-## Run, step by step
+## Install (one command)
+
+```bash
+./scripts/install.sh --profile core      # or growth / full; without flags it asks
+```
+
+[INSTALL.md](INSTALL.md) is the full checklist: prerequisites, the three profiles (what each runs,
+memory, disk), first login, brand, publishing, HTTPS, backups, updates, uninstall. The installer
+creates `.env` with generated secrets, runs preflight, builds, starts, waits for health, creates the
+n8n owner, imports the profile's workflows and runs the smoke test. Re-running it is safe.
+
+**Profiles.** Services without a `profiles:` key are **core**; `[growth, full]` and `[full]` mark
+the rest. `COMPOSE_PROFILES` in `.env` selects the profile for every `docker compose` command.
+`install.sh` keeps it in a managed block of `.env` together with the n8n URLs of services the
+profile doesn't run, set empty so the workflows that use them skip; `scripts/profiles.sh` lists the
+workflows imported only with growth or full.
+
+**Several clients on one host (agency mode).** `install.sh --client <slug>` installs one client as
+its own compose project (own `.env.<slug>`, keys, network, volumes, n8n, port block `<prefix>NN`
+with n8n on `<prefix>99`, schedules shifted per client); `uninstall.sh --client <slug>` removes it;
+`leak-test.sh` proves two clients can't see each other. INSTALL.md section 12.
+
+## Run, step by step (what the installer does)
 
 ```bash
 # 1. Models (on the machine running Ollama)
@@ -64,7 +88,7 @@ open http://localhost:8122             # status page: every service green?
 
 # 5. Load the workflows into n8n
 open http://localhost:5678             # create the owner account once
-./scripts/import-n8n.sh                # imports credentials + every workflow deploy, activates schedules
+./scripts/import-n8n.sh                # imports credentials + the profile's workflow deploys, activates schedules
 
 # 6. Check the running system end to end (services, n8n, workflows, one LLM call, one fact check)
 ./scripts/smoke-test.sh
@@ -96,7 +120,7 @@ two ports only. The website chat (79, port 8179) is public by design: publish on
 | `INTERNAL_API_KEY` | yes | `X-API-Key` for write endpoints of 06, 09, 16, 19, 20 |
 | `N8N_PUBLIC_URL` | | public n8n URL (webhooks, form links) |
 | `CARDS_PUBLIC_URL` | `http://localhost:8117` | public base of the image cards (17). Post images link here and the approval form (38) shows them, so the reviewer's browser must reach it |
-| `OLLAMA_URL` | | default `http://host.docker.internal:11434` |
+| `OLLAMA_URL` | | default `http://host.docker.internal:11434`. Works unchanged on Docker Desktop, OrbStack and colima (checked on colima 0.10.3 with vmType vz: the name resolves to the host at 192.168.5.2, and Ollama on the Mac's 127.0.0.1 answers; `host.lima.internal` is the same address). Linux: see below |
 | `AGENT_MODEL` / `WRITER_MODEL` / `EMBED_MODEL` | | from 02 |
 | `SHORT_LINK_BASE_URL` | | public base of 16, e.g. `https://go.yourbrand.com` |
 | `LISTENING_QUERY` | | what 36 searches for on Hacker News/Reddit |
@@ -129,4 +153,4 @@ Prompt changes (04) and brand changes (05 `config/brand.yaml`) are mounted: a
 
 ## CI
 
-Validates `docker-compose.yml` with `docker compose config` and shellchecks the scripts (`preflight.sh`, `smoke-test.sh`, `import-n8n.sh`, `clone-all.sh`).
+Validates `docker-compose.yml` with `docker compose config` for each profile (core, growth, full) and shellchecks the scripts (`install.sh`, `uninstall.sh`, `leak-test.sh`, `client.sh`, `profiles.sh`, `preflight.sh`, `smoke-test.sh`, `import-n8n.sh`, `clone-all.sh`), and runs `tests/test-clients.sh` (agency mode: client names, port blocks, flags, rendered ports and networks, cron shift; no containers).

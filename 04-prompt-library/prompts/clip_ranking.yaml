@@ -1,0 +1,99 @@
+name: clip_ranking
+description: Ranks transcript windows of a long video against each other as short vertical clips (best first), with short notes per criterion and a title, as JSON (73 clip-finder).
+output: json
+temperature: 0.2
+vars:
+  windows: required
+  count: optional
+  notes: optional
+  language: optional
+# Used by 73-clip-finder with SCORING_MODE=rank (the default is clip_scoring), a batch of up
+# to ~6 windows at a time, then again for the best of each batch until one final batch is left (a tournament).
+# Comparing is easier for a small model than giving absolute 0-10 scores: with clip_scoring a
+# 7B gave two different clips the same scores and the same reason. The code checks the answer:
+# unknown or repeated ids are ignored, missing ones go to the end in the code's own order, and
+# titles and hook lines get the same checks as clip_scoring. `notes` is set on the first round
+# only; later rounds only need the order.
+system: |
+  You are a short-form video editor. You compare moments of a long talk, podcast or interview
+  and decide which ones would work best on their own as a 20-60 second vertical clip (Reels,
+  TikTok, Shorts). You judge only the transcript you are given. You never add facts, numbers,
+  names or claims that are not in a window, and you never rewrite what the speaker said.
+template: |
+  Transcript windows from one video. Each starts with its id in brackets, its time range and
+  length, the words spoken in its FIRST 3 SECONDS, and its FULL TEXT:
+
+  {{ windows }}
+
+  Compare the {{ count or "given" }} windows WITH EACH OTHER and rank them from the best clip
+  to the worst. A better clip:
+  - hooks in its first 3 seconds: a question, a bold or surprising statement, a number or a
+    clear problem beats filler ("so", "um", "here is the first one"), greetings or a sentence
+    that starts in the middle of a thought;
+  - stands alone: it makes sense to someone who has not seen the rest of the video (it does
+    not lean on "that", "this one", "as I mentioned" or the previous point);
+  - pays off: it ends on a lesson, an answer, a twist or a clear takeaway, not in the middle of
+    the next topic;
+  - has a line people would repeat or put on screen.
+  Longer is not better. The best clip holds ONE complete point; a window that also covers
+  the next point, or starts a new one near its end, is worse than a shorter window with that
+  one point. Windows can overlap: then prefer the one whose start and end fit the point best.
+  "ranking" lists every id exactly once, best first. No ties: if two are close, still decide.
+  {% if notes %}
+  For each window also write, in "notes":
+  - "hook", "standalone", "payoff", "quotable": a few words (at most 12) on that point for
+    this window, specific to what it says (not the same words for every window);
+  - "title": what the clip is about, at most 60 characters, plain words, no hashtags, no
+    emoji, no clickbait. Use only what is said in the window.
+  - "hook_line": the single strongest line of the window, copied WORD FOR WORD from its FULL
+    TEXT (at most 20 words, no quotation marks). Do not fix, shorten with "..." or combine lines.
+  - "reason": one short sentence on why it ranks where it does compared with the others.
+  {% if language %}
+  Write the notes, "title" and "reason" in this language: {{ language }}.
+  {% else %}
+  Write the notes, "title" and "reason" in the language of the transcript.
+  {% endif %}
+  Shape: {"ranking": ["<id>", "<id>"], "notes": [{"id": "<id>", "hook": "<note>",
+  "standalone": "<note>", "payoff": "<note>", "quotable": "<note>", "title": "<title>",
+  "hook_line": "<line>", "reason": "<sentence>"}, ...]}. Each note says something about THAT
+  window in your own words (not the name of a criterion); a quotable line must be in its text.
+  {% else %}
+  Return only "ranking", like {"ranking": ["<id>", "<id>"]}.
+  {% endif %}
+  Use the ids exactly as given (like w3).
+example_vars:
+  windows: |
+    [w1] 00:12-00:41 (29 s)
+    FIRST 3 SECONDS: So, um, where was I.
+    FULL TEXT: So, um, where was I. Right, the second slide. We tried a few tools last year and some of them were fine.
+
+    [w2] 01:05-01:48 (43 s)
+    FIRST 3 SECONDS: Nobody on a remote team drinks coffee together.
+    FULL TEXT: Nobody on a remote team drinks coffee together. That is the problem. So every Monday we open a video call, no agenda, cameras on, and everyone brings a cup. It sounds silly. It is the one meeting nobody skips.
+  count: 2
+  notes: true
+schema:
+  type: object
+  required: [ranking]
+  properties:
+    ranking:
+      type: array
+      maxItems: 20
+      items: {type: string, maxLength: 12}
+    notes:
+      type: array
+      maxItems: 20
+      items:
+        type: object
+        required: [id]
+        properties:
+          id: {type: string, maxLength: 12}
+          # Lenient limits: 73 trims every field itself; a too-long hook line from a
+          # bigger model once failed a whole batch against a limit of 300.
+          hook: {type: string, maxLength: 400}
+          standalone: {type: string, maxLength: 400}
+          payoff: {type: string, maxLength: 400}
+          quotable: {type: string, maxLength: 400}
+          title: {type: string, maxLength: 200}
+          hook_line: {type: string, maxLength: 800}
+          reason: {type: string, maxLength: 600}

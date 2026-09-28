@@ -97,10 +97,14 @@ Integrate instead of build: **Postiz** (publishing), **Umami** (analytics API in
 Perplexity Sonar chat completions ended 2026-09-27, so 82 uses the Agent API. Gemini grounding stays off
 unless `VIS_GEMINI_TERMS_ACCEPTED=true` (Google's terms forbid analysing Grounded Results).
 
-## Files for continuing (NOT deploys, don't push to GitHub)
+## Files for continuing
 
-- `_dev/workflow-generator/`: the Python that generates every `NN-wf-*/workflow.json`
-  (`python build.py`). **Edit this, not the JSON files**, then rebuild.
+- `tools/workflow-generator/` (in the repo): the Python that generates every `NN-wf-*/workflow.json`
+  (`python3 tools/workflow-generator/build.py`). **Edit this, not the JSON files**, then rebuild.
+  CI fails when a committed workflow differs from what it generates.
+
+Not deploys, not pushed to GitHub:
+
 - `_dev/local-test/`: scripts used to run everything without Docker. They contain local-only
   test values and paths into a temporary scratchpad directory. `_dev/` is kept out of the
   repository (see `.gitignore`).

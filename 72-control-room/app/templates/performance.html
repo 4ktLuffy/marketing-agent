@@ -31,5 +31,22 @@
   {% if hooks.unlabeled_posts %}<p class="small muted">{{ hooks.unlabeled_posts }} posts have no hook style.</p>{% endif %}
   {% else %}<p class="muted">No data.</p>{% endif %}
 </section>
+<section class="panel" id="ads">
+  <h2>Paid ads</h2>
+  {% if not ads_installed %}<p class="muted">Not installed. ads-sync (84) is in the growth profile; set <code>ADS_URL</code> and the Meta / Google Ads credentials.</p>
+  {% elif ads and ads.has_data %}
+  <p class="small muted">{{ ads.window.current.start }} to {{ ads.window.current.end }} vs the {{ days }} days before. Read-only reports from the ad platforms (84); CPL = spend / conversions. Currencies are never converted.</p>
+  <table><thead><tr><th>Platform</th><th>Spend</th><th>Δ</th><th>Conv.</th><th>CPL</th><th>ROAS</th><th>CTR</th><th>CPC</th></tr></thead><tbody>
+  {% for p in ads.platforms %}{% set c = p.current %}<tr><td>{{ p.platform }}</td><td>{{ '%.2f'|format(c.spend) }} {{ p.currency }}</td><td>{% if p.delta_pct.spend is not none %}{{ '%+.1f'|format(p.delta_pct.spend) }}%{% else %}–{% endif %}</td><td>{{ c.conversions }}</td><td>{{ c.cpl if c.cpl is not none else '–' }}</td><td>{{ c.roas if c.roas is not none else '–' }}</td><td>{{ '%.2f'|format(c.ctr * 100) ~ '%' if c.ctr is not none else '–' }}</td><td>{{ c.cpc if c.cpc is not none else '–' }}</td></tr>{% endfor %}
+  {% for t in ads.total %}{% set c = t.current %}<tr class="win"><td>Total {{ t.currency }}</td><td>{{ '%.2f'|format(c.spend) }} {{ t.currency }}</td><td>{% if t.delta_pct.spend is not none %}{{ '%+.1f'|format(t.delta_pct.spend) }}%{% else %}–{% endif %}</td><td>{{ c.conversions }}</td><td>{{ c.cpl if c.cpl is not none else '–' }}</td><td>{{ c.roas if c.roas is not none else '–' }}</td><td>{{ '%.2f'|format(c.ctr * 100) ~ '%' if c.ctr is not none else '–' }}</td><td>{{ c.cpc if c.cpc is not none else '–' }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% if ads.campaigns %}<h3>Campaigns</h3>
+  <table><thead><tr><th>Campaign</th><th>Platforms</th><th>Spend</th><th>Conv.</th><th>CPL</th><th>ROAS</th></tr></thead><tbody>
+  {% for c in ads.campaigns %}<tr><td>{{ c.key }}</td><td>{{ c.platforms|join(', ') }}</td><td>{{ '%.2f'|format(c.current.spend) }} {{ c.currency }}</td><td>{{ c.current.conversions }}</td><td>{{ c.current.cpl if c.current.cpl is not none else '–' }}</td><td>{{ c.current.roas if c.current.roas is not none else '–' }}</td></tr>{% endfor %}
+  </tbody></table>{% endif %}
+  {% if ads.alerts %}<h3>Alerts</h3><ul>{% for a in ads.alerts %}<li class="alert {{ 'danger' if a.severity == 'high' else '' }}"><b>{{ a.rule|replace('_', ' ') }}</b>: {{ a.message }}</li>{% endfor %}</ul>{% endif %}
+  {% elif ads %}<p class="muted">No ad data in this period yet. Run a sync (84 <code>POST /sync</code>) or wait for the daily workflow.</p>
+  {% else %}<p class="muted">ads-sync did not answer.</p>{% endif %}
+</section>
 <script type="application/json" id="perf-data">{{ {"by_channel": (insights.by_channel if insights else []), "hooks": (hooks.styles if hooks else [])}|tojson }}</script>
 {% endblock %}

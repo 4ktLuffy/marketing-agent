@@ -17,3 +17,6 @@ __pycache__/
 
 # Eval outputs
 23-eval-suite/results/
+.env.*
+!.env.example
+01-marketing-stack/clients/

@@ -523,6 +523,36 @@ def test_insights_shortener_down(mock):
     assert body["errors"][0]["source"] == "shortener"
 
 
+def test_insights_posts_lists_every_post_with_date_and_channel_filter(mock):
+    mock.get(f"{SHORT}/links").mock(return_value=httpx.Response(200, json=[
+        {"slug": "a", "url": "https://ex.com/?utm_source=linkedin&utm_content=1", "clicks": 30, "created_at": "2026-09-20T10:00:00Z"},
+        {"slug": "b", "url": "https://ex.com/?utm_source=linkedin&utm_content=1", "clicks": 10, "created_at": "2026-09-18T10:00:00Z"},
+        {"slug": "c", "url": "https://ex.com/?utm_source=x&utm_content=2", "clicks": 4, "created_at": "2026-09-21T10:00:00Z"},
+    ]))
+    mock.get(f"{CAL}/items/1").mock(return_value=httpx.Response(200, json={
+        "id": 1, "title": "Launch", "channel": "linkedin", "hook_style": "question", "status": "published",
+        "published_at": "2026-09-19T08:00:00Z"}))
+    mock.get(f"{CAL}/items/2").mock(return_value=httpx.Response(200, json={"id": 2, "title": "Tip", "channel": "x"}))
+    body = client.get("/insights/posts?days=90").json()
+    assert body["errors"] == []
+    assert body["posts"] == [
+        {"item_id": 1, "title": "Launch", "channel": "linkedin", "clicks": 40, "hook_style": "question",
+         "status": "published", "posted_at": "2026-09-19T08:00:00Z"},
+        # no published_at on the item: the day of its first tracked link
+        {"item_id": 2, "title": "Tip", "channel": "x", "clicks": 4, "hook_style": None, "status": None,
+         "posted_at": "2026-09-21T10:00:00Z"},
+    ]
+    only_x = client.get("/insights/posts?channel=X").json()["posts"]
+    assert [p["item_id"] for p in only_x] == [2]
+
+
+def test_insights_posts_shortener_down_and_validation(mock):
+    mock.get(f"{SHORT}/links").mock(side_effect=httpx.ConnectError("refused"))
+    body = client.get("/insights/posts").json()
+    assert body["posts"] == [] and body["errors"][0]["source"] == "shortener"
+    assert client.get("/insights/posts?days=0").status_code == 422
+
+
 # ---------- insights/hooks (Thompson sampling over hook styles)
 
 import random  # noqa: E402

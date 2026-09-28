@@ -27,6 +27,8 @@ import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 
+from app.placement import check_post
+
 app = FastAPI(title="customer-language")
 
 MAX_IMPORT = 5000
@@ -339,7 +341,7 @@ async def run_prompt(prompt: str, vars_: dict) -> dict:
     try:
         async with httpx.AsyncClient(timeout=env_num("GATEWAY_TIMEOUT", 300)) as client:
             r = await client.post(f"{gateway_url()}/v1/run", json={"prompt": prompt, "vars": vars_},
-                                  headers=key_headers())
+                                  headers={**key_headers(), "X-Caller": "70 customer language"})
     except httpx.HTTPError as exc:
         raise HTTPException(502, f"gateway unreachable for {prompt}: {type(exc).__name__}")
     if r.status_code != 200:
@@ -584,6 +586,12 @@ class HeadlineRequest(BaseModel):
 class PersonaRequest(BaseModel):
     n: int = Field(default=3, ge=2, le=4)
     max_quotes_per_theme: int = Field(default=4, ge=1, le=10)
+
+
+class PlacementRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=20000)
+    phrase: str | None = Field(default=None, max_length=300)
+    allowed_text: str = Field(default="", max_length=50000)
 
 
 # ---------- endpoints: health, sources
@@ -1058,3 +1066,16 @@ def last_personas():
     if row is None:
         raise HTTPException(404, "no personas yet: POST /personas")
     return json.loads(row["body"])
+
+
+# ---------- endpoints: placement check for writers
+
+
+@app.post("/placement/check")
+def placement_check(req: PlacementRequest):
+    """Is `phrase` woven into the post's first sentence (not pasted on as a label), unquoted,
+    and does the post invent no customer? Names/organizations in any stored source or in
+    `allowed_text` (brand profile, facts, topic) are not treated as invented. No LLM."""
+    with db() as conn:
+        sources = "\n".join(r["text"] for r in conn.execute("SELECT text FROM sources"))
+    return check_post(req.text, req.phrase, f"{sources}\n{req.allowed_text}")

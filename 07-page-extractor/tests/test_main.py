@@ -3,7 +3,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app import net
+from app import net, safe_http
 from app.main import app
 
 client = TestClient(app)
@@ -33,7 +33,7 @@ PAGE = """<!doctype html>
 @pytest.fixture(autouse=True)
 def fake_dns(monkeypatch):
     monkeypatch.delenv("ALLOW_PRIVATE_URLS", raising=False)
-    monkeypatch.setattr(net, "resolve", lambda host: FAKE_DNS.get(host, ["93.184.215.14"]))
+    monkeypatch.setattr(safe_http, "resolve", lambda host: FAKE_DNS.get(host, ["93.184.215.14"]))
 
 
 def test_health():

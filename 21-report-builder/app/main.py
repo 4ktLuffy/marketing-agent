@@ -23,6 +23,17 @@ TABLE_COLS = [("sessions", "int"), ("clicks", "int"), ("conversions", "num"),
               ("ctr", "pct"), ("cvr", "pct"), ("spend", "money"), ("cpa", "money")]
 
 
+MONEY_KEYS = ("spend", "cpa")
+
+
+def unused_money(k) -> set[str]:
+    """Spend and cost per conversion that are zero or missing in both periods and every channel:
+    for a business without ads that means "not tracked", so the tile and column are left out."""
+    prev = k.previous or {}
+    return {key for key in MONEY_KEYS
+            if not k.totals.get(key) and not prev.get(key) and not any(ch.get(key) for ch in k.by_channel)}
+
+
 class Kpis(BaseModel):
     period: dict | None = None
     totals: dict = Field(default_factory=dict)
@@ -81,11 +92,12 @@ def md_cell(text: str) -> str:
 
 
 def highlights_html(text: str) -> str:
-    md = markdown.Markdown(extensions=["sane_lists"])
+    md = markdown.Markdown(extensions=["sane_lists", "tables"])  # tables: the client report (85)
     md.preprocessors.deregister("html_block")  # raw HTML is escaped, not rendered
     md.inlinePatterns.deregister("html")
     out = md.convert(text)
-    return re.sub(r'href="(?!https?:|mailto:)[^"]*"', 'href="#"', out)
+    out = re.sub(r'href="(?!https?:|mailto:)[^"]*"', 'href="#"', out)
+    return re.sub(r'src="(?!https?:)[^"]*"', 'src=""', out)
 
 
 # ---------- HTML
@@ -149,8 +161,9 @@ def render_html(req: RenderRequest) -> str:
     k, cur = req.kpis, req.currency
     deltas = k.delta_pct or {}
     tiles = []
+    skip = unused_money(k)
     for key, label, kind, better in TILES:
-        if key not in k.totals:
+        if key not in k.totals or key in skip:
             continue
         d = delta_info(key, deltas.get(key), better)
         delta_html = (
@@ -162,16 +175,18 @@ def render_html(req: RenderRequest) -> str:
             f'<div class="value">{html.escape(fmt(k.totals[key], kind, cur))}</div>{delta_html}</div>'
         )
 
-    head = "".join(f"<th>{c.upper() if c in ('ctr', 'cvr', 'cpa') else c.capitalize()}</th>" for c, _ in TABLE_COLS)
+    cols = [(c, kind) for c, kind in TABLE_COLS if c not in skip]
+    head = "".join(f"<th>{c.upper() if c in ('ctr', 'cvr', 'cpa') else c.capitalize()}</th>" for c, _ in cols)
     body = "".join(
         "<tr><td>" + html.escape(str(ch.get("channel", ""))) + "</td>"
-        + "".join(f"<td>{html.escape(fmt(ch.get(c), kind, cur))}</td>" for c, kind in TABLE_COLS)
+        + "".join(f"<td>{html.escape(fmt(ch.get(c), kind, cur))}</td>" for c, kind in cols)
         + "</tr>"
         for ch in k.by_channel
     )
     table = (f'<table><thead><tr><th>Channel</th>{head}</tr></thead><tbody>{body}</tbody></table>'
              if k.by_channel else '<p class="muted">No channel data for this period.</p>')
 
+    cpa_note = "" if "cpa" in skip else " ·\nCost per conversion: lower is better."
     metric = chart_metric(k.by_channel)
     compare_note = ""
     if k.previous and isinstance(k.previous.get("period"), dict):
@@ -194,8 +209,7 @@ def render_html(req: RenderRequest) -> str:
 <h2>By channel</h2>
 <div class="card">{table}</div>
 <p class="muted" style="font-size:12px;margin-top:24px">CTR = clicks / impressions ·
-Conversion rate = conversions / sessions (or / clicks without sessions) ·
-Cost per conversion: lower is better.</p>
+Conversion rate = conversions / sessions (or / clicks without sessions){cpa_note}</p>
 </main></body></html>"""
 
 
@@ -207,8 +221,9 @@ def render_markdown(req: RenderRequest) -> str:
     deltas = k.delta_pct or {}
     lines = [f"# {req.title}", "", f"_{period_text(req.period)}_", "",
              "| Metric | Value | vs previous |", "|---|---:|---:|"]
+    skip = unused_money(k)
     for key, label, kind, better in TILES:
-        if key not in k.totals:
+        if key not in k.totals or key in skip:
             continue
         d = delta_info(key, deltas.get(key), better)
         lines.append(f"| {label} | {fmt(k.totals[key], kind, cur)} | {d[1] if d else '–'} |")
@@ -216,15 +231,36 @@ def render_markdown(req: RenderRequest) -> str:
         lines += ["", "## Highlights", "", req.highlights_markdown.strip()]
     lines += ["", "## By channel", ""]
     if k.by_channel:
+        cols = [(c, kind) for c, kind in TABLE_COLS if c not in skip]
         lines.append("| Channel | " + " | ".join(c.upper() if c in ("ctr", "cvr", "cpa") else c.capitalize()
-                                               for c, _ in TABLE_COLS) + " |")
-        lines.append("|---|" + "---:|" * len(TABLE_COLS))
+                                               for c, _ in cols) + " |")
+        lines.append("|---|" + "---:|" * len(cols))
         for ch in k.by_channel:
-            cells = [md_cell(ch.get("channel", ""))] + [fmt(ch.get(c), kind, cur) for c, kind in TABLE_COLS]
+            cells = [md_cell(ch.get("channel", ""))] + [fmt(ch.get(c), kind, cur) for c, kind in cols]
             lines.append("| " + " | ".join(cells) + " |")
     else:
         lines.append("No channel data for this period.")
     return "\n".join(lines) + "\n"
+
+
+class DocumentRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    markdown: str = Field(max_length=200_000)
+
+
+def render_document(req: DocumentRequest) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{html.escape(req.title)}</title><style>{CSS}</style></head>
+<body><main><div class="card highlights">{highlights_html(req.markdown)}</div></main></body></html>"""
+
+
+@app.post("/document")
+def document(req: DocumentRequest):
+    """Any markdown (a calendar item's body: the client report, a blog draft) as one standalone
+    HTML page, to download and forward. Raw HTML is escaped; links and images only http(s)."""
+    return {"html": render_document(req)}
 
 
 @app.get("/health")

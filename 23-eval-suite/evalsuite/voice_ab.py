@@ -129,7 +129,7 @@ class Live:
         key = os.getenv("INTERNAL_API_KEY")
         self.h = {"X-API-Key": key} if key else {}
         self.gateway, self.brand, self.learning = gateway, brand, learning
-        self.http = httpx.Client(timeout=900)
+        self.http = httpx.Client(timeout=900, headers=self.h)  # 05 wants the key on reads too
 
     def run(self, prompt: str, vars_: dict, temperature: float | None = None) -> dict:
         body = {"prompt": prompt, "vars": vars_}

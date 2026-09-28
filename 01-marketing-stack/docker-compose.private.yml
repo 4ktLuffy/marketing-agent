@@ -1,0 +1,42 @@
+# Agency mode: install.sh --client puts this file in the client's COMPOSE_FILE, so services that only
+# other containers call publish no host port. Docker Desktop and colima forward a port published on
+# 127.0.0.1 to host.docker.internal, where every container can reach it: with ports, one client's
+# containers could call another client's services (checked on colima, 2026-09-28). Kept: what a
+# person's browser or the internet opens (n8n, control room, status page, site assistant, short
+# links, lead webhooks, media for the review forms, Listmonk, Ollama). Scripts reach the others from
+# inside the stack (client.sh stack_http).
+services:
+  ad-library-sync: {ports: !reset []}
+  ads-sync: {ports: !reset []}
+  ai-visibility: {ports: !reset []}
+  analytics-ingest: {ports: !reset []}
+  brand-service: {ports: !reset []}
+  campaign-service: {ports: !reset []}
+  change-monitor: {ports: !reset []}
+  claim-checker: {ports: !reset []}
+  cms-bridge: {ports: !reset []}
+  content-calendar: {ports: !reset []}
+  content-engine: {ports: !reset []}
+  customer-language: {ports: !reset []}
+  email-renderer: {ports: !reset []}
+  feed-optimizer: {ports: !reset []}
+  flow-runner: {ports: !reset []}
+  gsc-sync: {ports: !reset []}
+  keyword-suggest: {ports: !reset []}
+  knowledge-base: {ports: !reset []}
+  learning-service: {ports: !reset []}
+  listmonk-bridge: {ports: !reset []}
+  llm-gateway: {ports: !reset []}
+  llm-gateway-assistant: {ports: !reset []}
+  llm-gateway-verifier: {ports: !reset []}
+  page-extractor: {ports: !reset []}
+  platform-rules: {ports: !reset []}
+  postiz-bridge: {ports: !reset []}
+  readability: {ports: !reset []}
+  report-builder: {ports: !reset []}
+  review-hub: {ports: !reset []}
+  rss-watcher: {ports: !reset []}
+  seo-auditor: {ports: !reset []}
+  social-listening: {ports: !reset []}
+  umami-sync: {ports: !reset []}
+  utm-builder: {ports: !reset []}

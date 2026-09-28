@@ -1,6 +1,6 @@
 # 30 · Repurpose content
 
-Deploy **30 of 83** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **30 of 87** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Turns an article, a web page (fetched with 07) or pasted text into one grounded post per channel. Each post goes through the quality gate and is saved to the calendar.
 

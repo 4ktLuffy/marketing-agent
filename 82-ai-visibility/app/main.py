@@ -260,7 +260,7 @@ def brand_profile() -> dict:
     """05 /profile. Without it, BRAND_NAME (+ BRAND_ALIASES, OWN_DOMAINS) is enough to run."""
     base = env("BRAND_URL", "http://brand-service:8000").rstrip("/")
     try:
-        r = httpx.get(f"{base}/profile", timeout=15)
+        r = httpx.get(f"{base}/profile", headers=key_headers(), timeout=15)
         if r.status_code == 200 and isinstance(r.json(), dict) and r.json().get("name"):
             return r.json()
         why = f"HTTP {r.status_code}"
@@ -274,7 +274,7 @@ def brand_profile() -> dict:
 def brand_facts() -> list[str]:
     base = env("BRAND_URL", "http://brand-service:8000").rstrip("/")
     try:
-        r = httpx.get(f"{base}/facts", timeout=15)
+        r = httpx.get(f"{base}/facts", headers=key_headers(), timeout=15)
         return [f["text"] for f in r.json().get("facts", [])] if r.status_code == 200 else []
     except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
         return []
@@ -336,7 +336,8 @@ def build_entities() -> dict:
 def gateway(prompt: str, variables: dict) -> dict:
     base = env("GATEWAY_URL", "http://llm-gateway:8000").rstrip("/")
     try:
-        r = httpx.post(f"{base}/v1/run", json={"prompt": prompt, "vars": variables}, headers=key_headers(),
+        r = httpx.post(f"{base}/v1/run", json={"prompt": prompt, "vars": variables},
+                       headers={**key_headers(), "X-Caller": "82 AI visibility"},
                        timeout=float(env("GATEWAY_TIMEOUT", "300")))
     except httpx.HTTPError as exc:
         raise UpstreamError(f"gateway unreachable ({type(exc).__name__})") from None

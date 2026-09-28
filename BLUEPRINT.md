@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 83 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 87 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility, 84 paid ads, 85 client report, 86 email flows, 87 product feed).
 
 ## What the agent does
 
@@ -85,6 +85,21 @@ A 7B local model picks tools reliably from ~10, not from 40. So:
 | 42 | `42-wf-kb-ingest-form` | n8n workflow (form) | n8n | 06, 07 |
 | 43 | `43-wf-error-handler` | n8n error workflow | n8n | — |
 | 44 | `44-claim-checker` | service | Docker host | 03, 05, 06 |
+
+### Install profiles (01)
+
+| Profile | Services (compose) | Workflows not imported |
+|---|---|---|
+| core | n8n, postgres, 03 (+ verifier), 05–22, 44, 45, 46, 72 | 56, 60, 65, 68, 69, 74, 75, 76, 83, 84 (n8n/) |
+| growth | core + 54, 55, 58, 61, 62, 63, 67, 70, 71, 73, 84 | 83 |
+| full | growth + 78, 79, 80, 82 | — |
+
+Rule: a service whose absence would break a core workflow is in core (45 is: the chat tools 47
+and 53 need it, and 26, 40, 41 and 72 read it). A workflow that only does something with a growth/full service is imported only
+with that profile (`01-marketing-stack/scripts/profiles.sh`). A chat tool is always imported and
+answers "not installed" when its service's URL is empty (64, 77, 81), so the agent never calls a
+missing workflow. On a smaller profile `install.sh` sets the n8n URLs of missing services to empty,
+and every workflow that reads them skips that step.
 
 ## Conventions (every service)
 
@@ -476,3 +491,95 @@ Fixed two-arm tests of ONE variable, decided in code; the LLM only proposes. Des
 - **83** Tuesdays 06:00: `/health` → `POST /runs?wait=true` → summary, wrong claims, gaps → notify; wrong claims then
   gaps → calendar `visibility_gap` ideas (≤ `VISIBILITY_IDEAS_PER_WEEK`, once per 28 days). **39** `NOT_POSTS` includes
   `visibility_gap`. **41** adds an "AI visibility" line from `/summary`.
+
+## Paid ads (84)
+
+- **84 ads-sync** (service, port 8184, SQLite `/data`, growth profile). Read-only: Meta Marketing API Insights
+  (`GET /v26.0/act_<id>/insights`, `time_increment=1`, campaign/adset/ad level, token in the Authorization header,
+  `x-business-use-case-usage` parsed) and Google Ads API (`POST /v25/customers/<id>/googleAds:searchStream`, GAQL over
+  `campaign` with `segments.date`, OAuth refresh token + developer token + optional `login-customer-id`). LinkedIn Ads:
+  not implemented (README says why). Daily rows per platform/account/level/entity: spend, impressions, clicks,
+  conversions, revenue, currency; CTR, CPC, CPM, CPL, ROAS, CVR and deltas computed in code; currencies never mixed.
+- Campaign mapping to 45 slugs: `POST /mappings` 🔑, then `utm_campaign` in the Google campaign's URL suffix/template,
+  then our slug inside the platform campaign name.
+- `POST /budgets` 🔑 {campaign, month, amount, currency, weighting linear|weekday, weekday_weights?, cpl_target?,
+  roas_target?}; `GET /pacing`; `GET /alerts` (overspend ≥ `ALERT_OVERSPEND_PCT`, underspend, CPL above / ROAS below
+  target over `ALERT_WINDOW_DAYS`, spend with 0 conversions for `ALERT_ZERO_CONV_DAYS`); `POST /alerts/check` 🔑 marks
+  the new ones sent (again after `ALERT_REPEAT_DAYS`); `GET /summary?days=7` (per platform, per currency total, top
+  campaigns, week-over-week deltas, `facts` sentences).
+- `84-ads-sync/n8n/workflow.json` daily 07:30: `/health` → `POST /sync {days:7}` → `POST /alerts/check` → notify new
+  alerts and sync failures. **41** puts 84's `facts` into the `weekly_actions` data (the number check accepts only
+  those numbers) and adds an "Ads" section; **72** performance page shows an ads panel.
+
+## Client report (85)
+
+- **85** n8n schedule, 1st of the month 08:00, every profile (a source whose URL env is empty is skipped). Last
+  calendar month vs the month before (`CLIENT_REPORT_MONTH=YYYY-MM` overrides). One GET per installed source: 05
+  `/profile` 🔑 (name), 20 `/kpis?compare=false` for each month (all sources; `source=umami` with `UMAMI_SYNC_URL`,
+  `source=gsc` with `GSC_URL`), 45 `/insights/posts`, `/campaigns`, `/experiments`, 84 `/summary?days=<days in
+  month>&end=<last day>` with `ADS_URL`, 19 `/items?status=published,approved` and `?channel=client_report`.
+- "What we did" (calendar work of the month by channel, active campaigns with KPI actuals, decided experiments) and
+  "What changed" (value, previous, change per measure) are computed in code. Prompt `client_report_summary` gets them
+  as finished sentences; the workflow drops a sentence with a number (or ISO date, spelled-out count, "doubled")
+  not in that data, and one with a causal word without a hedge. Dropped sentences and skipped/failed sources go to
+  the item's notes only. LLM failure: tables only.
+- 21 `/render` (pipe tables in the highlights) → 19 item `client_report` / `in_review`, title `Client report
+  <Month YYYY>`; one per month. 39 lists `client_report` in `NOT_POSTS`: approving it never sends it. The owner is
+  notified; a person forwards the report.
+
+## Lifecycle email flows (86)
+
+- **86 flow-runner** (service, port 8186, SQLite `/data`, growth profile, `DRY_RUN` fixed to `true` in compose).
+  Flows `welcome` (trigger `subscribed`), `onboarding` (`trial_started`), `winback` (`inactive`) and custom ones
+  (`POST /flows` 🔑). A flow has versions `{steps: [{delay_hours, subject, body_markdown}], exit_events}`;
+  `delay_hours` counts from entry. Every edit (`POST /flows/{name}/versions` 🔑) is a new draft; only the one
+  `approved` version runs. `POST /flows/{name}/draft` 🔑 drafts one with prompt `email_sequence` (03, the prompt 57
+  uses) and checks each email with 44 (`/verify`); flagged sentences go to the version's notes.
+- `POST /events` 🔑 `{id?, type, contact: {email, consent?, source?}, at?, data?}`, idempotent on `id`. Entry needs
+  recorded consent, an approved version, no pause, an event under `FLOW_ENTRY_MAX_AGE_HOURS` (48) old, and the
+  contact not already in that flow. `unsubscribed` suppresses the contact forever and exits every flow; an exit event
+  exits a flow when it happens after entry. `consent: false` withdraws consent and exits every flow.
+- Arms: `sha256(salt|flow|email)` → `holdout` for `holdout_pct` % (default 15), else `flow`. The salt is `FLOW_SALT`
+  or generated once per install. Holdout contacts get nothing; in A/A mode (`PATCH /flows/{name} {mode:"aa"}`) both
+  arms get the same emails, as the negative control for the tracking.
+- `POST /tick` 🔑: the next due step per contact (never two in a row: `FLOW_MIN_GAP_HOURS`, 12), up to
+  `FLOW_DAILY_CAP` (200) outbox rows per UTC day. Right before each send, inside the send transaction: enrollment
+  active, contact consented and not suppressed, no exit event since entry, version still approved, not paused. The
+  outbox row is written first (unique per contact and step), so a step is never sent twice. `DRY_RUN`: the row is
+  the send. Otherwise `POST {NEWSLETTER_URL}/tx` (63), a stub: 63 has no transactional send yet, so it fails and is
+  recorded as failed, never retried. Kill switch: `FLOW_PAUSED=true` or `POST /pause` 🔑; `POST /resume` needs
+  `X-Approver-Key`.
+- Review: `POST /flows/{name}/versions/{n}/submit` 🔑 → 19 item `email_flow` / `in_review`, body = the whole
+  sequence (`--- Email 1 of 3 · 0 hours after entry ---` / `Subject: …` / body). 39 lists `email_flow` in
+  `NOT_POSTS`. `POST /reviews/sync` 🔑 + `X-Approver-Key`: 19 item approved → version approved (an edited text is
+  parsed into a new version and approved; unreadable text is refused); rejected → rejected. Or approve directly:
+  `POST /flows/{name}/versions/{n}/approve` 🔑 + `X-Approver-Key` (refused when `APPROVER_KEY` is unset).
+- `GET /flows/{name}/results?days=30` 🔑: per arm entered, emails sent, clicked, purchased, unsubscribed (contacts
+  with the event after entry); flow − holdout with a 95 % two-proportion interval, "not enough data" under
+  `FLOW_MIN_N` (100) per arm or fewer than 5 events. No opens.
+- `86-flow-runner/n8n/workflow.json` every 15 minutes: `/health` (skipped when `FLOW_URL` is empty) → `POST
+  /reviews/sync` (with the approver key) → `POST /tick` → notify only when something was sent, a flow was approved,
+  rejected or is waiting, a cap or pause was hit (once each), or a call failed.
+
+## Product feed titles (87)
+
+- **87 feed-optimizer** (service, port 8187, SQLite `/data`, full profile). `POST /batches?name=` 🔑 with the feed
+  file as the body (Google Merchant Center CSV or TSV with a header; UTF-8, BOM kept; `FEED_MAX_BYTES` 10 MB,
+  `FEED_MAX_ROWS` 5000; unique non-empty `id`; unknown columns kept). The upload is stored as it came.
+- Every product gets a rule-based title at upload (no LLM): brand + gender/age + the cleaned original title +
+  product type (short titles only) + the colour, size, material and pattern the title lacks. A word the original
+  title has that a filled field contradicts is left out, with a warning.
+- `POST /batches/{id}/propose` 🔑 `{limit, descriptions, llm}`: per pending product one call to 03 with prompt
+  `feed_title` (vars: `product` = the row's descriptive fields as JSON, never price/id/gtin/links/custom labels;
+  `with_description`). The title and description are checked in `app/checks.py`: a number, colour, material, size,
+  gender, age or claim word not in the row (a filled field wins over the rest of the row), another product's or a
+  well-known brand, promo text, a price, symbols, ALL CAPS, over 150 (5000) characters, a missing brand, HTML or a
+  link → rejected with reasons; the rule-based title (or the original description) is used instead. A gateway that
+  is unreachable stops the run with the product still pending.
+- `POST /batches/{id}/approve` / `revoke` 🔑 + `X-Approver-Key` (`{ids}` or `{all: true}`); the approved text is
+  copied. `GET /batches/{id}/export.csv|tsv` 🔑: the uploaded file with only approved `title`/`description` cells
+  replaced (same format: every other byte as uploaded; the export is parsed again and must match on every other
+  column, else 500). `GET /batches/{id}/supplemental.csv|tsv` 🔑: `id,title(,description)` of approved products.
+  Nothing goes to Merchant Center.
+- Control room (72) page **Product feed** (`FEED_URL`; empty = "not installed"): uploads with counts and the
+  downloads, proxied with the service key. Approval stays with the approver key (72 holds none).

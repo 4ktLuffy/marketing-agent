@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: compose file is valid
+      - name: compose file is valid for every install profile
         run: |
           cp .env.example .env
           # build contexts point at sibling repos; create empty stand-ins so config resolves
           for d in $(grep -oE '\.\./[0-9]{2}-[a-z0-9-]+' docker-compose.yml | sort -u); do mkdir -p "$d"; done
-          docker compose config -q
-      - run: shellcheck scripts/*.sh
+          for p in core growth full; do docker compose --profile "$p" config -q && echo "ok: $p"; done
+      - run: shellcheck -S warning scripts/*.sh tests/*.sh
+      - name: agency mode (client names, port blocks, flags, rendered ports/networks, cron shift)
+        run: bash tests/test-clients.sh
       - run: python3 -c "import json,glob; [json.load(open(f)) for f in glob.glob('n8n/**/*.json', recursive=True)]"

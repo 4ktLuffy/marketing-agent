@@ -1,6 +1,6 @@
 # content-calendar
 
-Deploy **19 of 83** of the local-LLM marketing agent. It is the central store for every
+Deploy **19 of 87** of the local-LLM marketing agent. It is the central store for every
 piece of content: the chat agent saves drafts here, a human approves them here, and the
 publisher picks up approved, due items from here. It enforces the review workflow, so
 nothing reaches `approved` without passing `in_review`. It uses no LLM.

@@ -173,6 +173,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "37 Competitor watch"
             }
           ]
         },
@@ -287,6 +291,15 @@
               "fullResponse": true
             }
           }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
         }
       },
       "onError": "continueRegularOutput"
@@ -325,6 +338,10 @@
             {
               "name": "X-API-Key",
               "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Caller",
+              "value": "37 Competitor watch"
             }
           ]
         },
@@ -372,6 +389,207 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5c4ed97d-1771-5350-887f-209d81074c31",
+      "name": "Monthly positioning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        820
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 1 * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "afa21b74-d296-5340-bf3d-c281cc34b946",
+      "name": "Build positioning",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        820
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AD_LIBRARY_URL ? $env.AD_LIBRARY_URL.replace(/\\/+$/, '') + '/positioning/build' : $env.MONITOR_URL + '/health' }}",
+        "options": {
+          "timeout": 1800000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6235e2e4-a92c-5a57-be42-bb6fcdbe1596",
+      "name": "Positioning map",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        820
+      ],
+      "parameters": {
+        "jsCode": "const errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? '' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 200); };\nconst clean = s => String(s ?? '').replace(/\\s+/g, ' ').trim();\n\nif (!String($env.AD_LIBRARY_URL || '').trim()) return [];\nconst r = $input.first().json || {};\nconst s = r.body;\nif (!(r.statusCode >= 200 && r.statusCode < 300) || !s || typeof s !== 'object' || !s.month) {\n  return [{ json: { ok: false, notify: `*Positioning map*\\nThe monthly build failed: ${errText(r) || 'no answer'}. Nothing was saved.` } }];\n}\nconst MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];\nconst [y, m] = String(s.month).split('-');\nconst label = `${MONTHS[Number(m) - 1] || m} ${y}`;\nconst ws = (s.white_space || []).map(w => `- ${w.theme}` + ((w.facts || [])[0] ? `: \"${clean(w.facts[0].quote)}\" (${w.facts[0].source.ref})` : ''));\nconst crowded = (s.crowded || []).map(c => `- ${c.theme}: ${(c.competitors || []).join(', ')}`);\nconst shifts = (s.shifts || []).slice(0, 5).map(x => `- ${x.text}`);\nconst failed = (s.brands || []).filter(b => b.error).map(b => b.name);\nconst notify = [`*Positioning map ${label}*`,\n  '', '*White space* (no competitor claims it; our approved facts back it):', ...(ws.length ? ws : ['- none']),\n  '', '*Crowded:*', ...(crowded.length ? crowded : ['- none']),\n  '', `*Shifts${s.previous_month ? ' since ' + s.previous_month : ''}:*`, ...(shifts.length ? shifts : ['- none']),\n  ...(failed.length ? ['', `_Not read: ${failed.join(', ')}._`] : []),\n  '', 'Full map: control room → More → Positioning.'].join('\\n');\nreturn [{ json: { ok: true, notify,\n  doc: { doc_id: `positioning-${s.month}`, title: `Positioning map ${label}`, text: String(s.markdown || ''), source: 'positioning-map' },\n  idea: { title: `Positioning map ${label}: ${ws.length} white-space theme(s), ${shifts.length} shift(s)`.slice(0, 200),\n    channel: 'positioning', status: 'idea', body: String(s.markdown || '') + '\\n\\n_Built by the competitor watch (37) from 78\\'s positioning map. A brief for the team, never published._',\n    notes: `positioning map #${s.id} (${s.month})` } } }];\n"
+      }
+    },
+    {
+      "id": "1342af00-f505-5810-8dc1-c037cce49259",
+      "name": "Built?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        820
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ffbb1ab3-3c6d-5f0f-abf5-edc15349843a",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7a824b90-23c3-5fd9-acd5-1833855d7f4a",
+      "name": "Save map to knowledge base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        820
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KB_URL }}/docs",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Positioning map').first().json.doc) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6596e8b4-c28f-57fe-bbd3-e3984d1d65f5",
+      "name": "Save positioning idea",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        820
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CALENDAR_URL }}/items",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Positioning map').first().json.idea) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a2cec8ca-30ce-5e66-a16b-f5219a5af04c",
+      "name": "Positioning webhook set?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        820
+      ],
+      "parameters": {
+        "jsCode": "// Skip notifying when no destination is configured.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all() : [];\n"
+      }
+    },
+    {
+      "id": "b3b8b553-6040-5ca4-af65-1a058a66d13b",
+      "name": "Notify positioning format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        820
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest($('Positioning map').first().json.notify, $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "0a66d71d-6c0b-5fd7-ae49-6e751c4ae03d",
+      "name": "Notify positioning",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        820
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
       },
       "onError": "continueRegularOutput"
     }
@@ -541,6 +759,101 @@
         [
           {
             "node": "Save brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify positioning format": {
+      "main": [
+        [
+          {
+            "node": "Notify positioning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monthly positioning": {
+      "main": [
+        [
+          {
+            "node": "Build positioning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build positioning": {
+      "main": [
+        [
+          {
+            "node": "Positioning map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Positioning map": {
+      "main": [
+        [
+          {
+            "node": "Built?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Built?": {
+      "main": [
+        [
+          {
+            "node": "Save map to knowledge base",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Positioning webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save map to knowledge base": {
+      "main": [
+        [
+          {
+            "node": "Save positioning idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save positioning idea": {
+      "main": [
+        [
+          {
+            "node": "Positioning webhook set?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Positioning webhook set?": {
+      "main": [
+        [
+          {
+            "node": "Notify positioning format",
             "type": "main",
             "index": 0
           }

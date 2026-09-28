@@ -59,15 +59,20 @@ def talk(tmp_path):
     return out
 
 
-def test_real_pipeline_with_mocked_scorer(talk, tmp_path, monkeypatch):
+@pytest.mark.parametrize("mode", ["rank", "score"])
+def test_real_pipeline_with_mocked_scorer(talk, tmp_path, monkeypatch, mode):
+    monkeypatch.setenv("SCORING_MODE", mode)
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("INTERNAL_API_KEY", "k")
     monkeypatch.setenv("PUBLIC_BASE_URL", "http://clips.test")
     seen = []
 
-    def fake_prompt(vars_, timeout):
+    def fake_prompt(vars_, timeout, prompt=scoring.PROMPT):
         seen.append(vars_)
         ids = [line.split("]")[0][1:] for line in vars_["windows"].splitlines() if line.startswith("[w")]
+        if prompt == "clip_ranking":
+            return {"ranking": ids[::-1], "notes": [{"id": i, "hook": "clear", "title": f"Remote coffee idea {i}",
+                                                     "hook_line": "Cameras on, but no agenda at all."} for i in ids]}
         return {"scores": [{"id": i, "hook": 8 - n % 3, "standalone": 7, "payoff": 6, "quotable": 5,
                             "title": f"Remote coffee idea {i}", "hook_line": "Cameras on, but no agenda at all.",
                             "reason": "clear point"} for n, i in enumerate(ids)]}
@@ -83,6 +88,7 @@ def test_real_pipeline_with_mocked_scorer(talk, tmp_path, monkeypatch):
     assert job["status"] == "done", job
     assert job["transcript"]["words"] > 50 and job["candidates"] >= 2 and seen
     assert "coffee" in seen[0]["windows"].lower()
+    assert job["scoring"]["mode"] == mode
     assert 1 <= len(job["clips"]) <= 2
     clips = job["clips"]
     for a, b in zip(clips, clips[1:]):
@@ -99,4 +105,6 @@ def test_real_pipeline_with_mocked_scorer(talk, tmp_path, monkeypatch):
         assert client.get(f"/clips/{c['id']}.jpg").content[:2] == b"\xff\xd8"
         srt = client.get(f"/clips/{c['id']}.srt").text
         assert "-->" in srt
+        if mode == "rank":
+            assert c["rank"] >= 1 and c["criteria"] == {"hook": "clear"} and "total" in c["features"]
     assert not os.listdir(tmp_path / "data" / "tmp")

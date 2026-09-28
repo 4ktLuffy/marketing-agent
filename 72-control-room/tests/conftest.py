@@ -22,6 +22,8 @@ URLS = {
     "STATUS_URL": "http://status.internal:8000",
     "CARDS_URL": "http://cards.internal:8000",
     "VIDEO_URL": "http://video.internal:8000",
+    "BRAND_URL": "http://brand.internal:8000",
+    "GATEWAY_URL": "http://gateway.internal:8000",
 }
 CAL, N8N, ENGINE = URLS["CALENDAR_URL"], URLS["N8N_BASE_URL"], URLS["ENGINE_URL"]
 WEBHOOK = f"{N8N}/webhook/mkt-apply-decisions"

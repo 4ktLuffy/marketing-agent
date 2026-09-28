@@ -1,6 +1,6 @@
 # site-assistant
 
-Deploy **79 of 83** of the local-LLM marketing agent. A chat widget for your website that
+Deploy **79 of 87** of the local-LLM marketing agent. A chat widget for your website that
 answers visitors' questions **only from your knowledge base (06) and approved facts (05)**,
 checks every answer with the claim checker (44) before showing it, asks at most two
 qualifying questions when someone wants to buy, offers your booking link, and **hands off to
@@ -51,6 +51,9 @@ It never books, sells, refunds, discounts or promises anything, and it always sa
    excerpts as `context` (44 adds the approved facts itself). Unsupported sentences are
    dropped. If none is left, or 44 is down, a person takes over: the check fails closed.
 5. The reply shows the source titles it used ("Source: Customer FAQ").
+6. **Time budget.** Steps 2–4 together get `ANSWER_TIMEOUT_S` (default 20 s). Each call gets
+   at most the time left; a gateway or claim check that doesn't answer in time, or a queue wait
+   that uses the budget up, gives a handoff (reason `timeout`), never an unchecked answer.
 
 ## Qualification, booking, consent, leads
 
@@ -103,7 +106,7 @@ over your VPN.
 
 ```bash
 docker build -t site-assistant .
-docker run --rm -p 8179:8000 --network marketing -e INTERNAL_API_KEY=change-me \
+docker run --rm -p 8179:8000 --network marketing-agent_marketing -e INTERNAL_API_KEY=change-me \
   -e ALLOWED_ORIGINS=https://www.example.com -e BOOKING_URL=https://cal.com/you/intro \
   -v site-data:/data site-assistant
 ```
@@ -170,7 +173,8 @@ curl -s localhost:8179/chat -H 'content-type: application/json' -d '{"message":"
 |---|---|
 | Allowed `Origin`s (`ALLOWED_ORIGINS`); CORS only for them; empty = no browser allowed | — |
 | Requests without `Origin` (not a browser) allowed unless `REQUIRE_ORIGIN=true`; the header is easy to fake outside a browser, so the limits below are the real protection | allowed |
-| Per IP: `RATE_IP_PER_MINUTE` / `RATE_IP_PER_DAY` (429 with `Retry-After`) | 8 / 150 |
+| Per IP: `RATE_IP_PER_MINUTE` / `RATE_IP_PER_DAY` (429 with `Retry-After`); IPv6 counted per /64 | 8 / 150 |
+| Handoff notifications: `NOTIFY_MAX_PER_HOUR` (0 = no cap); over it the handoff is still recorded (`notify_error`). Visitor text in a notification can't ping (`@everyone`, `<!channel>`) or hide a link | 20 |
 | Per session: `RATE_SESSION_PER_MINUTE`, `MAX_SESSION_MESSAGES` | 5 / 40 |
 | `MAX_MESSAGE_CHARS` (413), `MAX_BODY_BYTES` (413, also for chunked bodies) | 800 / 4096 |
 | `MAX_CONCURRENT_ANSWERS` LLM answers at once; others wait `QUEUE_WAIT_SECONDS`, then 503 | 2 / 30 |
@@ -196,7 +200,8 @@ curl -s localhost:8179/chat -H 'content-type: application/json' -d '{"message":"
 | `KB_SOURCES` | empty | if set, only these knowledge-base sources are used (e.g. `website,faq`), so internal notes can't reach visitors |
 | `TRUST_PROXY` | `false` | take the client IP from the last `X-Forwarded-For` entry |
 | `REQUIRE_ORIGIN` | `false` | refuse requests without `Origin` |
-| `GATEWAY_TIMEOUT` / `CLAIMS_TIMEOUT` | `120` / `180` | seconds |
+| `ANSWER_TIMEOUT_S` | automatic | seconds for one sourced answer (search + model + claim check); slower = handoff. Empty = `20` when `ASSISTANT_GATEWAY_URL` is set (hosted), `120` all-local (a laptop 7B takes 25–75 s). `0` = only the per-call timeouts |
+| `GATEWAY_TIMEOUT` / `CLAIMS_TIMEOUT` | `120` / `180` | seconds per call (capped by the time left in `ANSWER_TIMEOUT_S`) |
 | `SESSION_TTL_HOURS` | `24` | a session idle longer starts over (with the disclosure again) |
 | `RETENTION_DAYS` | `90` | idle conversations deleted after this (not ones with a lead); `0` = keep |
 | rate and size limits | see above | |
@@ -229,11 +234,38 @@ intent (the word "team") and got a qualifying question. One run, one brand, 26 c
 error bars. Next: a held-out set of paraphrased injection and health messages, and the same
 set with a hosted verifier for 44.
 
+### Hosted (fast) path
+
+In the stack: set `ASSISTANT_OPENAI_API_KEY` and `ASSISTANT_GATEWAY_URL=http://llm-gateway-assistant:8000`
+(a second 03 gateway on Groq `openai/gpt-oss-120b`, `REASONING_EFFORT=low`), and run 44's checks on
+Groq `openai/gpt-oss-20b` (`VERIFIER_PROVIDER=openai`, `VERIFIER_MODEL`). Visitor messages and the
+excerpts used to answer them then go to the provider. One run on 2026-09-28, same cases, same
+example brand, a recreated two-question FAQ, `ANSWER_TIMEOUT_S=20`:
+
+| Set | Right kind | Invented | Handoffs | Injections | Median / p90, all cases | Sourced answers |
+|---|---|---|---|---|---|---|
+| 26 cases, local 7B (09-27) | 26/26 | 0 | 8 | 4/4 | 25.3 / 64.8 s | 46–75 s |
+| 26 cases, Groq | 24/26 | 0 | 10 | 4/4 | 0.9 / 9.5 s | 1.4–11 s |
+| 16 held-out, local 7B (09-27) | 15/16 | 0 | 13 | 2/2 | 22.6 / 45.6 s | 45 s |
+| 16 held-out, Groq | 14/16 | 0 | 11 | 2/2 | 0.9 / 10.9 s | 4–11 s |
+
+Misses on Groq: a 429 rate limit on the checker → 44 error → handoff (safe); "team of 20" →
+the model repeated "20" from the visitor, the number guard dropped the sentence → handoff
+(safe; the guard stays strict so a visitor can't put a price in the bot's mouth);
+"real barista or a program?" → handoff (as locally, now with the AI disclosure); an angry
+"third box late" got the true returns policy instead of a person. The prompt now says
+complaints are `covered: false`; after that change the late-box case and 2 new complaint
+messages handed off and 3 new covered questions were still answered (written before the run;
+the held-out set is no longer unseen for this change). Answers over 5 s were Groq retrying
+429s: the free tier's per-minute limit on the shared key, not the model.
+
 ## Known limits
 
 - **Slow on a laptop model.** A sourced answer takes one gateway call plus 2+ claim-checker
-  calls per sentence; see the timings above. The widget shows "writing…"; a hosted verifier
-  for 44 (`VERIFIER_PROVIDER`) makes it much faster.
+  calls per sentence; see the timings above. With the default `ANSWER_TIMEOUT_S=20` most local
+  answers become handoffs: use the hosted path above, or raise it.
+- **Rate limits on a free hosted tier** turn answers into handoffs at busy times (safe, but
+  answers are lost). A paid tier or a separate key for the assistant avoids it.
 - **The claim checker flags about 1 in 8 true sentences** (44 README). A flagged true
   answer becomes a handoff: safe, but it costs answers.
 - **Word lists are English** and will miss some phrasings (and over-catch some: "is it safe

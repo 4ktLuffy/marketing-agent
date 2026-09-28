@@ -21,9 +21,11 @@ facts don't support are rewritten out or sent to you flagged.
 approve its own work; that rule is enforced in the workflow, not just stated in a prompt.
 
 The example brand is a made-up coffee subscription, *Northwind Roasters*. Replace it with
-yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
+yours in the control room's **Brand setup** (or `05-brand-service/config/brand.yaml`) and add
+your FAQs in the knowledge-base form (42). After installing, [PILOT.md](PILOT.md) is the
+day-by-day plan.
 
-## The 83 deploys: each folder is one GitHub repo
+## The 87 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -48,6 +50,10 @@ yours in `05-brand-service/config/brand.yaml` and the knowledge-base form (42).
 | **Control room & clips** | 72 control room: mobile web app to review (swipe, undo), see the calendar, previews, performance and engine status; same decisions as form 38 · 73 clip finder: long video (direct file or upload) → short vertical clips with word-by-word captions, transcribed locally · 77 chat tool `clip_video`: clips → captioned `video` items for approval | containers · 77 → n8n |
 | **Inbound & competitors** | 79 site assistant: website chat that answers only from your knowledge base and facts (claim-checked), says it's an AI, qualifies, offers your booking link, hands off to a person · 80 lead hub: consented inbound leads → enrichment from their own website → score with reasons → HubSpot/Pipedrive (dry run) → first reply for you to approve · 78 ad library + competitor registry (official Meta API for EU ads, links elsewhere) · 81 `track_competitor` chat tool · 77 `clip_video` chat tool (clips → approval) | 78–80 → containers · 77, 81 → n8n |
 | **AI visibility (GEO)** | 82 ai-visibility: a versioned, approved set of buyer questions asked to AI assistants through their official APIs (OpenAI web search, Perplexity, Groq model knowledge; Gemini only if you accept its terms), 3 answers each; is the brand named, cited, where in the list, share of voice vs the 78 competitors, and sentences about the brand checked by 44 · 83 weekly run: numbers to your notifications, gaps and wrong claims as calendar ideas (`visibility_gap`, never published) | 82 → container · 83 → n8n |
+| **Paid ads** | 84 ads-sync: spend, conversions, CPL, ROAS, CTR, CPC per platform and campaign from the Meta Marketing API and the Google Ads API (read-only: it cannot change a budget or an ad), mapped to your campaigns (45), monthly budgets with pacing (linear or weekday-weighted) and alerts (overspend, underspend, CPL above / ROAS below target, spend with 0 conversions); a daily sync + alerts workflow ships in `84-ads-sync/n8n/`, the weekly report (41) gets an Ads section and the control room (72) an ads panel | container (its workflow → n8n) |
+| **Client report** | 85 monthly report (1st of the month) for a client or whoever you report to: last month vs the month before from the sources you have installed (20, 55, 67, 45, 84), "what we did" and "what changed" built in code, and a short summary by the model that is checked in code (sentences with a number not in the data, or an unhedged cause, are dropped). It waits for approval as a `client_report` item and is never sent to the client: a person forwards it | n8n (schedule) |
+| **Email flows** | 86 flow-runner: triggered lifecycle emails (welcome on `subscribed`, onboarding on `trial_started`, win-back on `inactive`, or your own). Only contacts with recorded consent enter; `unsubscribed` stops every flow forever; exit events (e.g. `purchased`) are checked right before each send. A person approves each flow version once (the whole sequence is one `email_flow` item in the control room); an edit needs approval again. A random 15% holdout gets nothing, and `/results` compares clicks, purchases and unsubscribes between the arms with a 95% interval (never opens); an A/A mode is the check that the tracking works. Daily cap and kill switch. **Always a dry run in this stack**: sends go to an outbox; the real send path is a stub | container (its 15-minute workflow → n8n) |
+| **Product feed** | 87 feed-optimizer: upload your Google Merchant Center feed file (CSV/TSV); the model proposes a title per product (brand, product, colour/size/material first), checked in code against that product's own row (an invented number, colour, material, size, claim or other brand is rejected and a rule-based title used instead); a person approves with the approver key; the export is your file with only the approved titles/descriptions changed, or a supplemental feed. Nothing is uploaded to Merchant Center | container (full profile) |
 | **Experiments** | the agent proposes one-variable A/B tests weekly (74), a person approves them (76), 61 gives the two versions to planned slots balanced by weekday and hour, 45 decides at weekly looks in code (HDI + ROPE on clicks per post within 72 h; 75); a winner becomes a provisional rule in 46 that writers only get after a later experiment agrees and a person approves it (51) | 45, 46, 61 → containers · 74–76 → n8n |
 | **Safety net** | 43 error handler | n8n |
 
@@ -56,22 +62,26 @@ test it. `BLUEPRINT.md` has the architecture and every API contract.
 
 ## Deploy order
 
+**Installing it: [01-marketing-stack/INSTALL.md](01-marketing-stack/INSTALL.md)**, a checklist for
+one person (prerequisites, profiles with their memory and disk, first login, brand, publishing,
+HTTPS, backups, updates, uninstall). The installer does steps 4 and 5 below in one command.
+
 ```text
-1. Push each folder to its own GitHub repo (same name as the folder).
+1. Only if you want one repo per deploy: push each folder to its own GitHub repo
+   (same name as the folder). With this repo cloned as-is, skip steps 1 and 3.
 2. On the machine with Ollama:        02-ollama-models  → ./scripts/setup.sh
 3. On the Docker host:                clone all repos side by side
                                       (01-marketing-stack/scripts/clone-all.sh <github-user>)
-4. 01-marketing-stack:                cp .env.example .env  → fill the 3 secrets
-                                      ./scripts/preflight.sh      (fix every FAIL)
-                                      docker compose up -d --build
-                                      open http://localhost:8122   (all green?)
-5. n8n (http://localhost:5678):       create the owner account
-                                      01-marketing-stack/scripts/import-n8n.sh
-                                      01-marketing-stack/scripts/smoke-test.sh
-6. Teach it your brand:               edit 05-brand-service/config/brand.yaml
+4-5. 01-marketing-stack:              ./scripts/install.sh --profile core   (or growth / full)
+                                      generates .env and its secrets, preflight, build, start,
+                                      n8n owner, import workflows, smoke test; prints the URLs
+6. Teach it your brand:               control room → More → Brand setup (on a computer:
+                                      Brand in the top bar), or edit
+                                      05-brand-service/config/brand.yaml)
                                       add FAQs/product facts in the knowledge form (42)
 7. Chat:                              n8n → "24 · Marketing chat agent" → Open chat
-                                      "Plan a campaign for …" → review drafts in the approval form
+                                      "Plan a campaign for …" → review drafts in the control room
+8. Run the pilot:                     PILOT.md (daily 10-minute review, turning publishing on)
 ```
 
 To push one folder as a repo (repeat per folder, or script it):
@@ -82,14 +92,13 @@ git init -b main && git add . && git commit -m "page-extractor"
 gh repo create <you>/07-page-extractor --private --source=. --push
 ```
 
-## Tested before handover
+## Tested at the first handover (deploys 01–44)
 
-Everything ran on an M-series Mac with 16 GB and `qwen2.5:7b`. Docker wasn't available
-on the build machine, so the services ran with uvicorn and n8n 2.40.5 ran from npm.
-**The Dockerfiles and the compose stack were not run.** `docker compose config` validates, and
-every service image was simulated: each service was installed into a clean Python 3.12
-environment from only its `requirements.txt` and started. All 22 answered `/health`.
-`preflight.sh` and `smoke-test.sh` check the real Docker run on your machine.
+This table is the record of the first handover, on an M-series Mac with 16 GB and
+`qwen2.5:7b`, with the services run without Docker. Since then the whole stack has been built
+and run in Docker, and installed from scratch with `install.sh` per profile:
+[01-marketing-stack/DOCKER-RUN.md](01-marketing-stack/DOCKER-RUN.md) has those runs, timings,
+memory and disk. Each deploy's README has its own current test results.
 
 | What | Result |
 |---|---|
@@ -155,6 +164,6 @@ templates, and the self-hostable marketing tools.
   badly ("Boost your workday! Free first").
 - **Reddit** blocks unauthenticated requests, so social listening (11) mostly returns
   Hacker News results.
-- **Image cards (17)** work as a service, but no workflow calls them yet.
-- **Publishing** goes to one webhook (`PUBLISH_WEBHOOK_URL`). To post natively, swap the
-  *Publish* node in 39 for n8n's LinkedIn, X or Facebook node.
+- **Publishing**: on the core profile, social posts go to one webhook (`PUBLISH_WEBHOOK_URL`),
+  which has no dry run. The growth profile adds the Postiz bridge (54, social) and the CMS
+  bridge (62, blog), both in dry run until you turn them on (INSTALL.md, section 6).

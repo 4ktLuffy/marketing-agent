@@ -48,6 +48,9 @@ class Window:
     title: str | None = None
     hook: str | None = None
     reason: str | None = None
+    rank: int | None = None                                # 1 = best (SCORING_MODE=rank)
+    criteria: dict = field(default_factory=dict)          # the model's note per criterion
+    features: dict = field(default_factory=dict)          # tie-break features computed in code
 
     @property
     def duration(self) -> float:
@@ -80,15 +83,35 @@ def sentences(words: list[Word]) -> list[Sentence]:
     return out
 
 
-def build_windows(words: list[Word], min_s: float, max_s: float) -> list[Window]:
+def _window(words: list[Word], a: Sentence, b: Sentence) -> "Window":
+    first, last = a.first, b.last
+    return Window(id="", start=a.start, end=b.end, first_word=first, last_word=last,
+                  text=_join(words[first:last + 1]),
+                  opening=_join([w for w in words[first:last + 1] if w.start < a.start + OPENING_S]))
+
+
+def build_windows(words: list[Word], min_s: float, max_s: float, segments=None,
+                  whole_min_s: float | None = None) -> list[Window]:
     """Every window of whole sentences lasting min_s..max_s: per starting sentence, the
-    shortest one that reaches min_s and the longest one that stays within max_s."""
+    shortest one that reaches min_s and the longest one that stays within max_s.
+
+    With `segments` (topic segments from app/segments.py: objects with .first/.last sentence
+    indexes, covering sentences(words) in order), a window never crosses a segment boundary:
+    it lies inside one point of the talk, and may cover a whole segment; a whole segment of at
+    least `whole_min_s` is a candidate even when it is shorter than min_s (a short, complete point)."""
     sents = sentences(words)
+    limit = list(range(len(sents)))            # last sentence index a window from i may reach
+    if segments:
+        for seg in segments:
+            for i in range(seg.first, seg.last + 1):
+                limit[i] = seg.last
+    else:
+        limit = [len(sents) - 1] * len(sents)
     out: list[Window] = []
     seen: set[tuple[int, int]] = set()
     for i, s in enumerate(sents):
         shortest = longest = None
-        for j in range(i, len(sents)):
+        for j in range(i, limit[i] + 1):
             dur = sents[j].end - s.start
             if dur > max_s:
                 break
@@ -100,12 +123,12 @@ def build_windows(words: list[Word], min_s: float, max_s: float) -> list[Window]
             if j is None or (i, j) in seen:
                 continue
             seen.add((i, j))
-            first, last = s.first, sents[j].last
-            out.append(Window(
-                id="", start=s.start, end=sents[j].end, first_word=first, last_word=last,
-                text=_join(words[first:last + 1]),
-                opening=_join([w for w in words[first:last + 1] if w.start < s.start + OPENING_S]),
-            ))
+            out.append(_window(words, s, sents[j]))
+    for seg in segments or []:
+        dur = sents[seg.last].end - sents[seg.first].start
+        if whole_min_s is not None and whole_min_s <= dur < min_s and (seg.first, seg.last) not in seen:
+            seen.add((seg.first, seg.last))
+            out.append(_window(words, sents[seg.first], sents[seg.last]))
     out.sort(key=lambda w: (w.start, w.end))
     return out
 

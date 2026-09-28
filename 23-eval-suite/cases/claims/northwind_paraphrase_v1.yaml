@@ -1,0 +1,29 @@
+# Held-out paraphrase set (2026-09-28), written BEFORE the paraphrase changes to 44 ran and
+# before looking at any checker output on these claims. 14 true paraphrases of the approved
+# facts in 05 brand.yaml (synonyms, reordering, negation-equivalents, unit restatements,
+# product short names) and 10 inventions that look like paraphrases but change a value or scope
+# (wrong day/price/quantity, "all orders" vs "subscriptions in the US", added guarantees).
+- {claim: "The Rotation is a lightly roasted coffee, and each shipment comes from a different origin.", label: supported}
+- {claim: "Desk Blend tastes of hazelnut and chocolate, at a medium roast.", label: supported}
+- {claim: "If you subscribe in the US, you never pay for shipping.", label: supported}
+- {claim: "Haven't opened a bag? Return it within 30 days and get all your money back.", label: supported}
+- {claim: "Team Box costs $79 a month.", label: supported}
+- {claim: "The Desk Blend is $18 for a 340-gram bag.", label: supported}
+- {claim: "Pausing or skipping a delivery costs nothing, and you can do it from your account page whenever you like.", label: supported}
+- {claim: "Our decaf is roasted in small batches each Tuesday.", label: supported}
+- {claim: "Every bag ships no more than 48 hours after it was roasted.", label: supported}
+- {claim: "Choose a delivery every week, every two weeks or every four weeks.", label: supported}
+- {claim: "Each teammate gets their own Team Box shipment with two blends, 1.5 kilograms in all.", label: supported}
+- {claim: "Desk Blend is built for French press and drip coffee makers.", label: supported}
+- {claim: "The Single-Origin Rotation costs $22 per 250 g bag.", label: supported}
+- {claim: "A medium roast, the Desk Blend brings chocolate and hazelnut notes to your drip brewer.", label: supported}
+- {claim: "Our decaf is roasted in small batches every Thursday.", label: unsupported}
+- {claim: "The Rotation costs $20 per 250 g bag.", label: unsupported}
+- {claim: "Every order ships free.", label: unsupported}
+- {claim: "Unopened bags can be returned within 60 days for a full refund.", label: unsupported}
+- {claim: "Skip or pause any delivery for free, and we guarantee your next bag arrives within two days.", label: unsupported}
+- {claim: "Team Box: 1.5 kg across three blends, shipped to each teammate.", label: unsupported}
+- {claim: "Any bag, opened or not, can be returned within 30 days for a full refund.", label: unsupported}
+- {claim: "The Rotation is a medium roast with a new origin every shipment.", label: unsupported}
+- {claim: "Subscriptions ship free anywhere in the world.", label: unsupported}
+- {claim: "Deliveries come every one, two or three weeks.", label: unsupported}

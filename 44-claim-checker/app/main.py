@@ -9,6 +9,14 @@ How it decides (each step was measured on labelled claims, see README):
   own words must also appear in that quote ("every Friday" vs a quote saying Tuesday).
 - The LLM never gives a yes/no verdict on a whole claim: asked that way, qwen2.5:7b
   called 10 of 13 invented claims supported.
+- Values are compared in code: a detail's number words, weekdays and months must be in the
+  evidence, and a detail whose quote states a different value of the same kind (another
+  number, day or month) is flagged even when the model called it stated.
+- Second chance (lenient mode): a detail found "not stated" is asked once more, alone, against
+  the few evidence lines closest to it ("do these lines imply it?"). It passes only with a real
+  quote from those lines that contains all of its values and names, and without widening the
+  scope ("every order" when the quote has no every/all/any). This cut paraphrase false alarms
+  ("somewhere new" for "a different origin").
 """
 import hmac
 import os
@@ -56,6 +64,12 @@ def require_key(x_api_key: str | None = Header(default=None)):
         raise HTTPException(401, "missing or wrong X-API-Key")
 
 
+def key_headers() -> dict:
+    """Sent to the brand service (05), which wants the same key on reads."""
+    key = os.environ.get("INTERNAL_API_KEY")
+    return {"X-API-Key": key} if key else {}
+
+
 class CheckError(Exception):
     pass
 
@@ -72,7 +86,8 @@ def gateway(prompt: str, variables: dict) -> dict:
         body["model"] = VERIFIER_MODEL
     try:
         key = os.getenv("INTERNAL_API_KEY")
-        r = httpx.post(f"{GATEWAY_URL}/v1/run", json=body, headers={"X-API-Key": key} if key else {},
+        r = httpx.post(f"{GATEWAY_URL}/v1/run", json=body, headers={"X-Caller": "44 claim checker",
+                                                                      **({"X-API-Key": key} if key else {})},
                        timeout=TIMEOUT)
     except httpx.HTTPError as exc:
         raise CheckError(f"gateway unreachable: {exc}") from exc
@@ -83,7 +98,7 @@ def gateway(prompt: str, variables: dict) -> dict:
 
 def gather_evidence(req: VerifyRequest) -> list[str]:
     try:
-        r = httpx.get(f"{BRAND_URL}/facts", timeout=10)
+        r = httpx.get(f"{BRAND_URL}/facts", headers=key_headers(), timeout=10)
         r.raise_for_status()
         lines = [f"[{f['id']}] {f['text']}" for f in r.json()["facts"]]
     except httpx.HTTPError as exc:
@@ -111,7 +126,7 @@ def product_subjects() -> list[tuple[str, re.Pattern]]:
     "Team Box costs $18" passed on the Desk Blend's price (caught 1 of 7 such claims on Groq).
     """
     try:
-        r = httpx.get(f"{BRAND_URL}/profile", timeout=10)
+        r = httpx.get(f"{BRAND_URL}/profile", headers=key_headers(), timeout=10)
         r.raise_for_status()
         prods = r.json().get("products") or []
     except Exception:  # noqa: BLE001 - any failure only turns scoping off
@@ -200,6 +215,89 @@ def is_number_detail(detail: str) -> bool:
     return all(w in UNIT_WORDS for w in re.findall(r"[a-z]+", rest))
 
 
+# Values of a kind a paraphrase must never change. Number words become digits so "three blends"
+# is compared with "two blends" / "2". "one" is left out: "the one you love", "one of our".
+NUMBER_WORDS = {w: str(i) for i, w in enumerate(
+    "zero _ two three four five six seven eight nine ten eleven twelve".split()) if w != "_"}
+NUMBER_WORDS |= {"dozen": "12", "twenty": "20", "thirty": "30", "forty": "40", "fifty": "50",
+                 "hundred": "100", "half": "0.5", "twice": "2"}
+WEEKDAYS = "monday tuesday wednesday thursday friday saturday sunday".split()
+# Months only when capitalised ("May" vs "may"): details copy the claim's own capitalisation.
+MONTH_RE = re.compile(r"\b(January|February|March|April|May|June|July|August|September|October|"
+                      r"November|December)\b")
+UNIVERSAL = {"all", "any", "every", "each", "everyone", "anyone", "everything", "anything",
+             "anywhere", "everywhere", "worldwide", "always", "forever", "lifetime"}
+
+
+def values(text: str) -> dict[str, set[str]]:
+    """The values in a text by kind: numbers (digits and number words), weekdays, months."""
+    text = ID_RE.sub("", text)
+    low = text.lower()
+    nums = numbers(text) | {NUMBER_WORDS[w] for w in re.findall(r"[a-z]+", low) if w in NUMBER_WORDS}
+    days = {d for d in WEEKDAYS if re.search(rf"\b{d}s?\b", low)}
+    months = {m.lower() for m in MONTH_RE.findall(text)}
+    return {"number": nums, "day": days, "month": months}
+
+
+def word_values_missing(detail: str, evidence: str) -> set[str]:
+    """Number words, weekdays and months of a detail that the evidence never mentions.
+
+    Digits are checked for the whole sentence already; these were left to the model, which
+    missed "three blends" and "every Thursday" (README known gaps).
+    """
+    dv, ev = values(detail), values(evidence)
+    digits = numbers(detail)
+    return ((dv["number"] - digits) - ev["number"]) | (dv["day"] - ev["day"]) | (dv["month"] - ev["month"])
+
+
+def value_conflict(detail: str, quote: str) -> list[str]:
+    """Values of the detail that differ from same-kind values in its quote ("every Thursday" vs a
+    quote saying "every Tuesday", "within 60 days" vs "within 30 days")."""
+    dv, qv = values(detail), values(quote)
+    return sorted(v for kind in dv if qv[kind] for v in dv[kind] - qv[kind])
+
+
+def capital_names(detail: str) -> set[str]:
+    """Capitalised words after the first word and all-caps words: names, places ("UK")."""
+    toks = re.findall(r"[A-Za-z][A-Za-z'-]*", detail)
+    return {t.lower() for i, t in enumerate(toks) if (i > 0 and t[0].isupper()) or (len(t) > 1 and t.isupper())}
+
+
+def closest_lines(text: str, evidence: str, k: int = 3) -> list[str]:
+    """The evidence lines sharing the most words (5-letter prefixes) with the text."""
+    want = words(text)
+    scored = [(len(want & words(line)), i, line) for i, line in enumerate(evidence.splitlines()) if line.strip()]
+    scored = [x for x in scored if x[0] > 0]
+    return [line for _, _, line in sorted(scored, key=lambda x: (-x[0], x[1]))[:k]]
+
+
+def second_chance(detail: str, sentence: str, evidence: str) -> bool:
+    """Ask once more, narrowly, whether the closest evidence lines imply a rejected detail.
+
+    Accepted only when the model says yes AND in code: the quote really is in those lines, the
+    detail's numbers/days/months are all in the quote, its names/places are in the lines, and a
+    detail with every/all/any is backed by a quote that also has one. So it can turn a paraphrase
+    false alarm into a pass but cannot approve a changed value or a wider scope.
+    """
+    lines = closest_lines(f"{detail} {sentence}", evidence)
+    if not lines:
+        return False
+    block = "\n".join(lines)
+    out = gateway("detail_entails", {"detail": detail, "sentence": sentence, "evidence": block})
+    quote = str(out.get("quote") or "")
+    if not (out.get("implied") is True and quote.strip() and in_evidence(quote, block)):
+        return False
+    dv, qv = values(detail), values(quote)
+    if any(dv[kind] - qv[kind] for kind in dv):
+        return False
+    if capital_names(detail) - set(WORD_RE.findall(ID_RE.sub("", block.lower()))):
+        return False
+    qwords = set(re.findall(r"[a-z]+", quote.lower()))
+    if set(re.findall(r"[a-z]+", detail.lower())) & UNIVERSAL and not qwords & UNIVERSAL:
+        return False
+    return True
+
+
 def check_one(detail: str, evidence: str) -> dict | None:
     """Ask about a single detail (used when the model skipped it in the batch)."""
     checks = gateway("detail_check", {"details": detail, "evidence": evidence}).get("checks", [])
@@ -232,7 +330,12 @@ def check_sentence(sentence: str, evidence: str) -> list[str]:
         ok = bool(c.get("stated")) and in_evidence(quote, evidence)
         if ok and CHECK_MODE == "strict":
             ok = words(detail) <= words(quote)
-        if not ok:
+        # Values are decided in code, whatever the model said.
+        missing = word_values_missing(detail, evidence)
+        conflict = value_conflict(detail, quote) if ok else []
+        if missing or conflict:
+            reasons.append(f"value not in the facts: {', '.join(sorted(missing) or conflict)} ({detail})")
+        elif not ok and not (CHECK_MODE == "lenient" and second_chance(detail, sentence, evidence)):
             reasons.append(f"not in the facts: {detail}")
     return reasons
 

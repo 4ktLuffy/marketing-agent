@@ -9,12 +9,13 @@ social networks, no search engines: nothing but the company's own pages.
 import ipaddress
 import os
 import re
-import socket
 import time
 import urllib.robotparser
 from urllib.parse import urlsplit
 
 import httpx
+
+from app import safe_http
 
 ROBOTS_AGENT = "marketing-agent"
 USER_AGENT = "marketing-agent/1.0 (+lead-hub)"
@@ -117,34 +118,38 @@ def site_base(domain: str) -> str:
     return base
 
 
-def same_site(url: str, domain: str) -> bool:
+def _origin(url: str) -> tuple[str, int | None]:
+    parts = urlsplit(url)
+    try:
+        port = parts.port
+    except ValueError:
+        return parts.scheme, -1
+    return parts.scheme, port or {"http": 80, "https": 443}.get(parts.scheme)
+
+
+def same_site(url: str, domain: str, base: str | None = None) -> bool:
+    """The company's own site: its host (or www.) and, given the base, the same scheme and port.
+    A redirect to another port of the same name is not the site (security review 2026-09-28,
+    LH-3: with DNS rebinding that name can point at an internal service)."""
     host = (urlsplit(url).hostname or "").lower()
-    return host == domain or host == "www." + domain
+    if host != domain and host != "www." + domain:
+        return False
+    return base is None or _origin(url) == _origin(base)
 
 
 # ---------- robots.txt (07 has no robots check, so the hub reads it itself, guarded)
+# The guard is app/safe_http.py, the same file as 07's: GuardedClient checks every address of
+# the host and connects only to a checked one (security review X-1: no DNS-rebinding gap).
 
-
-def resolve(host: str) -> list[str]:
-    return [info[4][0] for info in socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)]
+_is_public = safe_http._is_public  # 07's rule, incl. IPv6 forms that embed an IPv4 (LH-3)
 
 
 def _public_host(host: str) -> bool:
-    if os.getenv("ALLOW_PRIVATE_URLS", "").lower() == "true":
-        return True
+    """Every address of host is public (ALLOW_PRIVATE_URLS=true switches the check off)."""
     try:
-        addrs = [host] if ipaddress.ip_address(host) else []
-    except ValueError:
-        try:
-            addrs = resolve(host)
-        except (OSError, UnicodeError):
-            return False
-    for a in addrs:
-        ip = ipaddress.ip_address(a.split("%")[0])
-        if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
-            ip = ip.ipv4_mapped
-        if not ip.is_global or ip.is_multicast:
-            return False
+        safe_http.vet(f"http://[{host}]/" if ":" in host else f"http://{host}/")
+    except (safe_http.BlockedURL, safe_http.FetchError):
+        return False
     return True
 
 
@@ -152,21 +157,22 @@ def robots(base: str, domain: str) -> urllib.robotparser.RobotFileParser | None:
     """Parsed robots.txt, or None when there is none (404 etc. = everything allowed).
     Raises EnrichError when the site forbids reading robots.txt or is unreachable/blocked."""
     url = base + "/robots.txt"
-    host = urlsplit(url).hostname or ""
-    if not _public_host(host):
-        raise EnrichError(f"{domain} does not resolve to a public address")
     try:
-        with httpx.Client(timeout=10, headers={"User-Agent": USER_AGENT}, trust_env=False,
-                          follow_redirects=False) as client:
-            for _ in range(3):
+        with safe_http.GuardedClient(timeout=10, headers={"User-Agent": USER_AGENT}) as client:
+            try:
                 resp = client.get(url)
-                if resp.is_redirect:
-                    nxt = str(resp.url.join(resp.headers.get("location", "")))
-                    if not same_site(nxt, domain) or not _public_host(urlsplit(nxt).hostname or ""):
-                        return None  # robots.txt moved off-site: treat as none
-                    url = nxt
-                    continue
-                break
+            except (safe_http.BlockedURL, safe_http.FetchError) as exc:
+                raise EnrichError(f"{domain} does not resolve to a public address") from exc
+            for _ in range(2):
+                if not resp.is_redirect:
+                    break
+                nxt = str(resp.url.join(resp.headers.get("location", "")))
+                if not same_site(nxt, domain, base):
+                    return None  # robots.txt moved off-site: treat as none
+                try:
+                    resp = client.get(nxt)  # checked and pinned again
+                except (safe_http.BlockedURL, safe_http.FetchError):
+                    return None
     except httpx.HTTPError as exc:
         raise EnrichError(f"site unreachable ({type(exc).__name__})") from exc
     if resp.status_code in (401, 403):
@@ -206,7 +212,8 @@ def gateway(prompt: str, variables: dict) -> dict:
     base = os.environ.get("GATEWAY_URL", "http://llm-gateway:8000").rstrip("/")
     try:
         r = httpx.post(f"{base}/v1/run", json={"prompt": prompt, "vars": variables},
-                       headers=_key_headers(), timeout=float(os.environ.get("GATEWAY_TIMEOUT", "300")))
+                       headers={**_key_headers(), "X-Caller": "80 lead hub"},
+                       timeout=float(os.environ.get("GATEWAY_TIMEOUT", "300")))
     except httpx.HTTPError as exc:
         raise EnrichError(f"gateway unreachable ({type(exc).__name__})") from exc
     if r.status_code != 200:
@@ -285,7 +292,7 @@ def enrich_domain(domain: str) -> dict:
                 skipped.append({"url": url, "why": "could not be read"})
             continue
         final = page.get("url") or url
-        if not same_site(final, domain):
+        if not same_site(final, domain, base):
             skipped.append({"url": url, "why": "redirected off the company domain"})
             continue
         text = (page.get("text") or "")[:PAGE_CHARS]

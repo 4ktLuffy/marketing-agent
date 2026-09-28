@@ -1,6 +1,6 @@
 # status-page
 
-Deploy **22 of 83** of the local-LLM marketing agent. It checks every service in the
+Deploy **22 of 87** of the local-LLM marketing agent. It checks every service in the
 stack at the same time (`GET /health`, 3 s timeout) and shows the result as one
 auto-refreshing page with green and red dots, plus a JSON endpoint for n8n or uptime
 monitors. It can also check Ollama. It uses no LLM.
@@ -15,7 +15,7 @@ to see the page in your browser. It keeps no state.
 
 ```bash
 docker build -t status-page .
-docker run --rm -p 8122:8000 --network marketing status-page
+docker run --rm -p 8122:8000 --network marketing-agent_marketing status-page
 ```
 
 Local without Docker:

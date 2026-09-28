@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Brand setup{% endblock %}
+{% block main %}
+<h1>Brand setup</h1>
+<nav class="steps" aria-label="Steps">
+  {% for n, label in steps %}<a href="/brand/step/{{ n }}" {% if n == step %}aria-current="step"{% endif %}><b>{{ n }}</b> {{ label }}</a>{% endfor %}
+</nav>
+{% if step == 0 %}
+<p>Everything the agent knows about your brand comes from here: what you sell, what is true about it,
+what it must never say, and how you sound. Six short steps; you can come back to any of them.</p>
+{% if error %}<p class="alert danger">{{ error }}</p>{% endif %}
+{% if completeness %}{% include "_brand_score.html" %}{% endif %}
+<p><a class="btn primary big" href="/brand/step/1">Start with step 1: basics</a></p>
+{% else %}
+{% include "_brand_step.html" %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,340 @@
+{
+  "id": "mktWf86FlowRunnr",
+  "name": "86 · Schedule · Email flows",
+  "nodes": [
+    {
+      "id": "bf933446-0846-556f-be87-84d180c87d4b",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fe1bd7d2-747a-5d10-b637-a2ddd4f0c992",
+      "name": "Flow health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.FLOW_URL ? $env.FLOW_URL.replace(/\\/+$/, '') + '/health' : $env.CALENDAR_URL + '/health' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "22d9b02a-f817-58b1-b545-cce361f9c4ab",
+      "name": "Ready?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 300); };\n\nconst r = $input.first().json;\nif (!$env.FLOW_URL) return [{ json: { go: false, notify: false, text: '*Email flows*: FLOW_URL is not set. Nothing to do.' } }];\nif (!ok(r)) return [{ json: { go: false, notify: true, text: `*Email flows*: flow-runner (86) did not answer (${r.statusCode || 'no response'}: ${errText(r)}).` } }];\nreturn [{ json: { go: true } }];\n"
+      }
+    },
+    {
+      "id": "414a744f-45c2-5089-8ea9-b90b1a544cd7",
+      "name": "Go?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c84b60d7-9086-5057-848d-3aa9284e543c",
+              "leftValue": "={{ $json.go }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2001f1c9-404e-59f8-b8ef-fffb5057ef88",
+      "name": "Sync reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FLOW_URL.replace(/\\/+$/, '') }}/reviews/sync",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "X-Approver-Key",
+              "value": "={{ $env.APPROVER_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "cfabf1b0-2142-59b8-8403-b909b02c1548",
+      "name": "Tick",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FLOW_URL.replace(/\\/+$/, '') }}/tick",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5562fb19-ed9c-525c-811d-1a5e101835ec",
+      "name": "Build",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 300); };\n\nconst s = $('Sync reviews').first().json, t = $('Tick').first().json;\nconst sb = bodyOf(s), tb = bodyOf(t);\nconst lines = [], problems = [];\nconst list = a => (Array.isArray(a) ? a : []);\nif (!ok(s)) problems.push(`review sync failed (${s.statusCode || 'no response'}: ${errText(s)})`);\nelse {\n  if (list(sb.created).length) lines.push(`*Email flow waiting for approval*: ${list(sb.created).map(c => c.version).join(', ')} (the whole sequence is one item in the calendar).`);\n  if (list(sb.approved).length) lines.push(`*Email flow approved*: ${list(sb.approved).join(', ')}. It runs for contacts who enter from now on.`);\n  if (list(sb.rejected).length) lines.push(`*Email flow rejected*: ${list(sb.rejected).join(', ')}. The approved version, if any, keeps running.`);\n  if (list(sb.waiting_for_approver_key).length) problems.push(`approved in review but n8n has no APPROVER_KEY: ${list(sb.waiting_for_approver_key).join(', ')}`);\n  problems.push(...list(sb.problems));\n}\nif (!ok(t)) problems.push(`tick failed (${t.statusCode || 'no response'}: ${errText(t)})`);\nelse {\n  const by = Object.entries(tb.by_flow || {}).map(([f, n]) => `${f} ${n}`).join(', ');\n  if (tb.sent > 0) lines.push(tb.dry_run\n    ? `*Email flows (dry run)*: ${tb.sent} email${tb.sent === 1 ? '' : 's'} written to the outbox, nothing delivered (${by}).`\n    : `*Email flows*: ${tb.sent} email${tb.sent === 1 ? '' : 's'} sent (${by}).`);\n  if (tb.failed > 0) problems.push(`${tb.failed} send${tb.failed === 1 ? '' : 's'} failed (GET /outbox?status=failed)`);\n  for (const n of list(tb.notices)) lines.push(`*Email flows*: ${n}`);\n}\nif (problems.length) lines.push(`*Email flow problems*: ${problems.slice(0, 5).join('; ')}`);\nreturn [{ json: { notify: lines.length > 0, text: lines.join('\\n'), waits: list(sb.created).length > 0,\n  sent: ok(t) ? tb.sent || 0 : 0, problems: problems.length } }];\n"
+      }
+    },
+    {
+      "id": "e403efc9-e910-52a0-933e-fbbb8a41b2a8",
+      "name": "Report?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Nothing happened, or no destination: no notification.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all().filter(i => i.json.notify) : [];\n"
+      }
+    },
+    {
+      "id": "863261aa-f179-5bb7-8a3e-b98aa657a1e6",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, item.json.waits);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "6fd371ee-7826-5725-8363-66a90f17d23b",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Flow health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flow health": {
+      "main": [
+        [
+          {
+            "node": "Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready?": {
+      "main": [
+        [
+          {
+            "node": "Go?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Go?": {
+      "main": [
+        [
+          {
+            "node": "Sync reviews",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync reviews": {
+      "main": [
+        [
+          {
+            "node": "Tick",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tick": {
+      "main": [
+        [
+          {
+            "node": "Build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build": {
+      "main": [
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

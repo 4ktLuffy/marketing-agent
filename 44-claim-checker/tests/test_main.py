@@ -31,6 +31,8 @@ def fake_gateway(answers: dict):
 
     def handler(request):
         prompt = json.loads(request.content)["prompt"]
+        if prompt == "detail_entails" and prompt not in answers:
+            return httpx.Response(200, json={"output": {"implied": False, "quote": ""}})
         a = answers[prompt]
         if isinstance(a, list):
             a, calls[prompt] = a[calls[prompt]], calls[prompt] + 1
@@ -101,15 +103,123 @@ def test_invented_quote_is_rejected():
 
 
 @respx.mock
-def test_strict_mode_catches_wrong_value_in_real_quote(monkeypatch):
-    # the model marks "every Friday" stated, quoting a real fact that says Tuesday
+def test_strict_mode_catches_wrong_word_in_real_quote(monkeypatch):
+    # the model marks "large batches" stated, quoting a real fact that says small batches
+    answers = {"claim_details": details("roasted in large batches"),
+               "detail_check": checks(("roasted in large batches", True,
+                                       "Our Swiss Water decaf is roasted in small batches every Tuesday"))}
+    mock(answers)
+    monkeypatch.setattr(main, "CHECK_MODE", "lenient")
+    assert client.post("/verify", json={"text": "The decaf is roasted in large batches."}).json()["ok"] is True
+    monkeypatch.setattr(main, "CHECK_MODE", "strict")
+    assert client.post("/verify", json={"text": "The decaf is roasted in large batches."}).json()["ok"] is False
+
+
+@respx.mock
+@pytest.mark.parametrize("mode", ["lenient", "strict"])
+def test_wrong_weekday_is_flagged_in_code_even_when_the_model_says_stated(monkeypatch, mode):
+    # Negative control: before the value check, lenient mode passed this (the model is wrong).
     answers = {"claim_details": details("every Friday"),
                "detail_check": checks(("every Friday", True, "Our Swiss Water decaf is roasted in small batches every Tuesday"))}
     mock(answers)
-    monkeypatch.setattr(main, "CHECK_MODE", "lenient")
-    assert client.post("/verify", json={"text": "The decaf is roasted every Friday."}).json()["ok"] is True
-    monkeypatch.setattr(main, "CHECK_MODE", "strict")
-    assert client.post("/verify", json={"text": "The decaf is roasted every Friday."}).json()["ok"] is False
+    monkeypatch.setattr(main, "CHECK_MODE", mode)
+    body = client.post("/verify", json={"text": "The decaf is roasted every Friday."}).json()
+    assert body["ok"] is False
+    assert "value not in the facts: friday" in body["claims"][0]["reasons"][0]
+
+
+@respx.mock
+def test_number_that_exists_elsewhere_but_differs_from_its_quote_is_flagged():
+    # "18" is in the facts ($18), so the sentence-level number check passes; the model calls
+    # "roasted within 18 hours" stated, quoting the 48-hour fact. The quote comparison catches it.
+    mock({"claim_details": details("roasted within 18 hours of shipping"),
+          "detail_check": checks(("roasted within 18 hours of shipping", True, "Roasted within 48 hours of shipping."))})
+    body = client.post("/verify", json={"text": "Roasted within 18 hours of shipping."}).json()
+    assert body["numbers"] == [{"value": "18", "supported": True}]
+    assert body["ok"] is False and "value not in the facts: 18" in body["claims"][0]["reasons"][0]
+
+
+def test_values_by_kind():
+    v = main.values("[f3] Ships every 1, 2 or four weeks on Tuesdays, from May to June; you may skip.")
+    assert v == {"number": {"1", "2", "4"}, "day": {"tuesday"}, "month": {"may", "june"}}
+    assert main.values("one of our blends")["number"] == set()  # "one" is too often not a value
+
+
+def test_word_values_missing_and_value_conflict():
+    ev = "[f1] Team Box contains 1.5 kg across two blends.\n[f2] Roasted every Tuesday."
+    assert main.word_values_missing("three blends", ev) == {"3"}
+    assert main.word_values_missing("roasted every Thursday", ev) == {"thursday"}
+    assert main.word_values_missing("two blends, every Tuesday", ev) == set()
+    assert main.value_conflict("returned within 60 days", "returned within 30 days") == ["60"]
+    assert main.value_conflict("every two or four weeks", "Ships every 1, 2 or 4 weeks") == []
+    assert main.value_conflict("a light roast", "Rotation is a light roast") == []  # no values: no conflict
+
+
+def test_closest_lines_rank_by_shared_words():
+    ev = "[f1] Desk Blend is a medium roast.\n[f2] Rotation is a light roast, a different origin every shipment.\n[f3] Free shipping in the US."
+    assert main.closest_lines("light roast from somewhere new", ev, k=1) == ["[f2] Rotation is a light roast, a different origin every shipment."]
+    assert main.closest_lines("zebra", ev) == []
+
+
+ROTATION = "Single-Origin Rotation is a light roast, with a different origin in every shipment."
+SHIPPING = "Free shipping on subscriptions in the US."
+
+
+def second_chance_case(monkeypatch, detail, text, entails, mode="lenient"):
+    calls = []
+    answers = {"claim_details": details(detail), "detail_check": checks((detail, False, "")),
+               "detail_entails": entails}
+    respx.get(f"{BRAND}/facts").mock(return_value=httpx.Response(200, json={"facts": FACTS}))
+    handler = fake_gateway(answers)
+
+    def spy(request):
+        assert request.headers["X-Caller"] == "44 claim checker"   # shown on the Activity page (72)
+        calls.append(json.loads(request.content)["prompt"])
+        return handler(request)
+    respx.post(f"{GW}/v1/run").mock(side_effect=spy)
+    monkeypatch.setattr(main, "CHECK_MODE", mode)
+    body = client.post("/verify", json={"text": text, "extra_facts": [ROTATION, SHIPPING]}).json()
+    return body, calls
+
+
+@respx.mock
+def test_second_chance_accepts_a_paraphrase_with_a_real_quote(monkeypatch):
+    body, calls = second_chance_case(
+        monkeypatch, "from somewhere new each time", "The Rotation brings a light roast from somewhere new each time.",
+        {"implied": True, "quote": "a different origin in every shipment"})
+    assert body["ok"] is True and calls.count("detail_entails") == 1
+
+
+@respx.mock
+@pytest.mark.parametrize("detail,text,quote", [
+    # the quote is not in the evidence lines it was shown
+    ("from somewhere new", "The Rotation comes from somewhere new.", "a new farm each month"),
+    # a value of the detail is missing from the quote
+    ("free shipping within 48 hours", "Free shipping within 48 hours.", "Free shipping on subscriptions in the US"),
+    # a place the evidence never names
+    ("free shipping in the UK", "Free shipping in the UK.", "Free shipping on subscriptions in the US"),
+    # wider scope: every/all/any with a quote that has none
+    ("every order ships free", "Every order ships free.", "Free shipping on subscriptions in the US"),
+])
+def test_second_chance_code_guards_reject_a_yes(monkeypatch, detail, text, quote):
+    body, calls = second_chance_case(monkeypatch, detail, text, {"implied": True, "quote": quote})
+    assert "detail_entails" in calls  # the model said yes; code refused it
+    assert body["ok"] is False
+
+
+@respx.mock
+def test_second_chance_no_means_flagged(monkeypatch):
+    body, _ = second_chance_case(monkeypatch, "tasting cards from the farmers", "Every box has tasting cards from the farmers.",
+                                 {"implied": False, "quote": ""})
+    assert body["ok"] is False
+
+
+@respx.mock
+def test_strict_mode_has_no_second_chance(monkeypatch):
+    body, calls = second_chance_case(
+        monkeypatch, "from somewhere new each time", "The Rotation brings a light roast from somewhere new each time.",
+        {"implied": True, "quote": "a different origin in every shipment"}, mode="strict")
+    assert body["ok"] is False and "detail_entails" not in calls
 
 
 @respx.mock

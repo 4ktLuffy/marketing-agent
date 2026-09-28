@@ -44,7 +44,12 @@ template: |
 
   {% endif %}
   {% if open_with %}
-  The FIRST sentence of every post must contain this exact phrase, word for word: "{{ open_with }}". It is how customers say it; do not put it in quotation marks and do not attribute it to a customer.
+  The FIRST sentence of every post must contain this exact phrase, word for word: "{{ open_with }}". It is how customers say it. Build ONE grammatical sentence around it, with your own words before or after it, as if the words were yours.
+  Two patterns that work (examples from a bike shop and a plant shop, not about us):
+  - Words before it: "If your chain keeps slipping on wet mornings, a worn cassette is the usual cause."
+  - Words after it: "Leaves turning yellow in winter usually means too much water, not too little."
+  Never paste it on as a label or heading: no | : – — or line break right after it, no new sentence starting straight after it, and never as a sentence on its own ("Leaves turning yellow." or "chain keeps slipping Here is the fix" are wrong). Use normal sentence capitalization.
+  Do not put it in quotation marks and do not attribute it to anyone: no customer names, no "a customer told us", no invented people, teams or companies.
   {% if open_with_feedback %}
   {{ open_with_feedback }}
   {% endif %}

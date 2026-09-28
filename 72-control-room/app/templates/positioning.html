@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Positioning{% endblock %}
+{% block main %}
+<h1>Positioning</h1>
+<p class="small muted">What each competitor claims, by theme, from their watched pages (09) and active ads (78), and what we claim from our approved facts (05) and our pages. Every quote is copied exactly from its source. Built monthly by the competitor watch (37).</p>
+{% if not_installed %}<p class="muted">The ad library service (78) isn't installed. Install the profile with the competitor radar to see the positioning map.</p>{% endif %}
+{% if error %}<p class="alert danger">{{ error }}</p>{% endif %}
+{% if snap %}
+{% if history|length > 1 %}<nav class="tabs" aria-label="Month">{% for h in history %}<a href="/positioning?id={{ h.id }}" {% if h.id == snap.id %}aria-current="page"{% endif %}>{{ h.month }}</a>{% endfor %}</nav>{% endif %}
+<section class="panel">
+  <h2>Map {{ snap.month }} <span class="chip">built {{ snap.built_at[:10] }}</span></h2>
+  <div class="matrix-wrap">
+  <table class="matrix">
+    <thead><tr><th>Theme</th>{% for b in brands %}<th>{{ b.name }}{% if b.kind == 'ours' %} <span class="chip good">us</span>{% endif %}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for r in rows %}<tr>
+      <th scope="row" title="{{ descr.get(r.theme) or '' }}">{{ r.theme }}</th>
+      {% for c in r.cells %}<td class="heat{{ c.heat }}{% if selected and selected.theme == r.theme and selected.brand == c.brand %} sel{% endif %}">{% if c.count %}<a href="/positioning?{{ {'id': snap.id, 'theme': r.theme, 'brand': c.brand}|urlencode }}#quotes">{{ c.count }}</a>{% if c.facts %}<span class="small muted"> ({{ c.facts }} fact{{ 's' if c.facts != 1 }})</span>{% endif %}{% else %}<span class="muted">·</span>{% endif %}</td>{% endfor %}
+    </tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="small muted">A number is how many different quotes claim that theme; open it to read them. {{ snap.stats.kept or 0 }} of {{ snap.stats.proposed or 0 }} quotes the model proposed were exact and kept.</p>
+  {% for b in brands if b.error %}<p class="small alert warn">{{ b.name }}: {{ b.error }}</p>{% endfor %}
+</section>
+{% if selected %}
+<section class="panel" id="quotes">
+  <h2>{{ selected.brand }} · {{ selected.theme }} <span class="chip">{{ selected.count }}</span></h2>
+  <ul class="quotes">{% for q in selected.quotes %}<li>“{{ q.quote }}” <span class="small muted">{{ q.kind }} · {% if q.url %}<a href="{{ q.url }}" rel="noopener noreferrer" target="_blank">{{ q.ref }}</a>{% else %}{{ q.ref }}{% endif %}</span></li>{% endfor %}</ul>
+  {% if selected.count > selected.quotes|length %}<p class="small muted">Showing {{ selected.quotes|length }} of {{ selected.count }}.</p>{% endif %}
+</section>
+{% endif %}
+<section class="panel">
+  <h2>White space</h2>
+  <p class="small muted">No competitor claims these, and one of our approved facts backs them.</p>
+  {% for w in snap.white_space %}<p><b>{{ w.theme }}</b>: {% for q in w.facts[:2] %}“{{ q.quote }}” <span class="small muted">({{ q.source.ref }})</span>{% if not loop.last %}; {% endif %}{% endfor %}</p>
+  {% else %}<p class="muted">None this month.</p>{% endfor %}
+  {% if snap.open_no_fact %}<p class="small muted">Nobody claims {{ snap.open_no_fact|join(', ') }}, but no approved fact supports it. Add a fact in Brand setup before claiming it.</p>{% endif %}
+</section>
+<section class="panel">
+  <h2>Crowded</h2>
+  {% for c in snap.crowded %}<p><b>{{ c.theme }}</b>: {{ c.competitors|join(', ') }}</p>{% else %}<p class="muted">No theme is claimed by most competitors.</p>{% endfor %}
+  {% if snap.they_claim_we_dont %}<p class="small">They claim it, we say nothing: {% for m in snap.they_claim_we_dont %}<b>{{ m.theme }}</b> ({{ m.competitors|join(', ') }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+</section>
+<section class="panel">
+  <h2>Shifts{% if snap.previous_month %} since {{ snap.previous_month }}{% endif %}</h2>
+  {% for s in snap.shifts %}<p>{{ s.text }}{% for q in s.quote %}: “{{ q.quote }}” <span class="small muted">{% if q.url %}<a href="{{ q.url }}" rel="noopener noreferrer" target="_blank">{{ q.source.ref }}</a>{% else %}{{ q.source.ref }}{% endif %}</span>{% endfor %}</p>
+  {% else %}<p class="muted">{% if snap.previous_month %}No shift since {{ snap.previous_month }}.{% else %}This is the first map: shifts appear next month.{% endif %}</p>{% endfor %}
+</section>
+{% for w in snap.warnings or [] %}<p class="small alert warn">{{ w }}</p>{% endfor %}
+{% elif not error and not not_installed %}
+<p class="muted">No positioning map yet. The competitor watch (37) builds one on the 1st of each month, or run <code>POST /positioning/build</code> on 78.</p>
+{% endif %}
+{% endblock %}

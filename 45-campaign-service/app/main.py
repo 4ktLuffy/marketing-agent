@@ -756,8 +756,11 @@ def tracked_posts(days: int, errors: list[dict]) -> dict[int, dict]:
             item_id = int(content)
             p = posts.setdefault(item_id, {"item_id": item_id, "title": None,
                                            "channel": q.get("utm_source") or None, "clicks": 0,
-                                           "hook_style": None})
+                                           "hook_style": None, "first_link_at": None,
+                                           "published_at": None, "status": None})
             p["clicks"] += int(number(link.get("clicks")) or 0)
+            if created and (p["first_link_at"] is None or created < p["first_link_at"]):
+                p["first_link_at"] = created
 
         for item_id, p in posts.items():  # one calendar lookup per item
             try:
@@ -769,6 +772,8 @@ def tracked_posts(days: int, errors: list[dict]) -> dict[int, dict]:
                 p["title"] = item.get("title")
                 p["channel"] = item.get("channel") or p["channel"]
                 p["hook_style"] = item.get("hook_style") or None
+                p["published_at"] = item.get("published_at") or None
+                p["status"] = item.get("status") or None
     return posts
 
 
@@ -793,6 +798,28 @@ def insights(days: int = 90):
     top = sorted(posts.values(), key=lambda p: (-p["clicks"], p["item_id"]))[:10]
     top = [{k: p[k] for k in ("item_id", "title", "channel", "clicks")} for p in top]
     return {"by_channel": by_channel, "top_posts": top, "errors": errors}
+
+
+@app.get("/insights/posts")
+def insights_posts(days: int = 90, channel: str | None = None):
+    """Every tracked post of the last `days` days with its clicks (the same join as
+    /insights), for 46's performance-ranked writer examples. `posted_at` is the calendar
+    item's published_at, else the day its first tracked link was created."""
+    if days < 1:
+        raise HTTPException(422, "days must be at least 1")
+    errors: list[dict] = []
+    try:
+        posts = tracked_posts(days, errors)
+    except UpstreamDown as e:
+        return {"posts": [], "errors": [{"source": "shortener", "error": str(e)}]}
+    want = (channel or "").strip().lower()
+    out = []
+    for p in sorted(posts.values(), key=lambda p: p["item_id"]):
+        if want and (p["channel"] or "").lower() != want:
+            continue
+        out.append({k: p[k] for k in ("item_id", "title", "channel", "clicks", "hook_style", "status")}
+                   | {"posted_at": p["published_at"] or p["first_link_at"]})
+    return {"posts": out, "errors": errors}
 
 
 # ---------- hook styles: which opening earns clicks (Thompson sampling)

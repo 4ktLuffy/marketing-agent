@@ -1,6 +1,6 @@
 # ad-library-sync
 
-Deploy **78 of 83** of the local-LLM marketing agent. It is the **competitor registry** and
+Deploy **78 of 87** of the local-LLM marketing agent. It is the **competitor registry** and
 the competitors' **ads**. It uses official APIs only.
 
 - **Registry.** This is the one list of competitors. Each has a name, website, key pages,
@@ -17,7 +17,7 @@ the competitors' **ads**. It uses official APIs only.
   mentions (11) and trend digests (06). 78 stores them as `suggested`, with the quotes.
   Nothing is tracked until a person accepts one.
 
-It uses no LLM. The competitor watch (37) reads its ads and links every 6 hours. The chat
+It uses no LLM except for the monthly positioning map (below). The competitor watch (37) reads its ads and links every 6 hours. The chat
 tool `track_competitor` (81) adds competitors, and the weekly report (41) shows suggestions.
 
 ## What is legal and official (and what is not)
@@ -68,7 +68,7 @@ When the token expires, `/sync` returns `502` with "expired or invalid". Repeat 
 
 ```bash
 docker build -t ad-library-sync .
-docker run --rm -p 8178:8000 --network marketing --env-file .env -v ads-data:/data ad-library-sync
+docker run --rm -p 8178:8000 --network marketing-agent_marketing --env-file .env -v ads-data:/data ad-library-sync
 ```
 
 Local without Docker:
@@ -101,6 +101,10 @@ INTERNAL_API_KEY=change-me DB_PATH=./ads.sqlite uvicorn app.main:app --port 8178
 | GET | `/links/{ref}` | — | `{"competitor","links":[{"platform","market","api","url","note"}]}` |
 | POST | `/suggestions/scan` 🔑 | `?min_mentions=` | `{"scanned","errors","min_mentions","new","updated","pending"}` |
 | GET | `/suggestions` | — | competitors with status `suggested`, with `evidence` |
+| POST | `/positioning/build` 🔑 | `?month=YYYY-MM` (default: this month) | this month's positioning map (below); replaces that month's snapshot. `502` when every LLM call failed (nothing stored) |
+| GET | `/positioning` | — | `[{"id","month","built_at","brands","white_space","crowded","shifts"}]`, newest month first |
+| GET | `/positioning/latest`, `/positioning/{id}` | — | a stored map, or `404` |
+| GET | `/positioning/diff` | `?from=<id>&to=<id>` | `{"from","to","shifts"}` between two stored maps (ordered by month) |
 
 ### Competitor
 
@@ -197,6 +201,36 @@ These are URLs only. 78 never fetches them.
 | `linkedin` | `https://www.linkedin.com/ad-library/search?companyIds=<id>`, or `?accountOwner=<name>` |
 | `tiktok` | `https://library.tiktok.com/ads?region=all&adv_name=<name>`. If the search box is empty, type the name. |
 
+### `POST /positioning/build` (competitor positioning map)
+
+Which messaging themes each **active** competitor claims, and which we claim. The only part of 78
+that uses an LLM.
+
+1. **What they say now**: the latest text of each competitor's watched pages (09 `GET /snapshots`,
+   tag `competitor:<id>`; 37 re-checks them every 6 hours) and their **active** ads stored here
+   (bodies, link titles and descriptions).
+2. **What we say**: the approved facts (05 `GET /facts`: facts, products, key messages) and our own
+   watched pages (09 watches on the 05 `website` host or `OWN_DOMAINS`).
+3. One gateway call per company (prompt `positioning_themes`, no `{{ brand }}`) sorts claims into the
+   themes (default: price, freshness, convenience, quality, ethics, speed, team_office, gifting,
+   guarantee; `POSITIONING_THEMES` overrides), each with a quote and its source id.
+4. **Code keeps a claim only if** the theme is known, the source id is one it sent, and the quote is an
+   exact part of that source (case, spacing and apostrophe style may differ; words may not; 3–25
+   words). The stored quote is the source's own span. Drops are counted in `stats`.
+
+The result: `cells[theme][brand] = {count, sources, from_facts, quotes (≤ 5, with source kind, ref,
+URL)}`; `crowded` (claimed by at least half the competitors, min 2); `white_space` (**no competitor
+claims it and one of our approved facts backs it**: our web pages alone never make white space);
+`open_no_fact` (nobody claims it, no fact of ours backs it); `they_claim_we_dont`; `shifts` since the
+previous month (started / stopped talking about a theme, or the count at least doubled or halved by 2+,
+e.g. "Rival Beans started talking about price in October 2026"; a "started" whose quotes were already in
+last month's text, or a "stopped" whose old quotes are still there, is the model re-labelling unchanged
+words and is dropped and counted in `shifts_suppressed`); `markdown` (the report 37 saves to
+the knowledge base); `usage` (tokens). A company with nothing to read, or whose LLM call failed, has an
+`error` and is left out of crowded/white space.
+
+37 runs it on the 1st of each month at 07:00; the control room (72) shows it under More → Positioning.
+
 ### `POST /suggestions/scan`
 
 It reads three sources. Each is optional, and a failure goes to `errors`:
@@ -250,6 +284,11 @@ carry the token.
 | `REVIEWS_URL`, `LISTENING_URL`, `LISTENING_QUERY`, `KB_URL` | empty | Suggestion sources. Empty: that source is skipped. |
 | `OWN_DOMAINS` | empty | Our domains, comma-separated, never suggested. |
 | `SUGGEST_MIN_MENTIONS` | `2` | Evidence items needed before a domain is suggested. |
+| `BRAND_URL` | empty | 05 base URL: our name, website and approved facts for the positioning map. Empty: no white space. |
+| `GATEWAY_URL` | empty | 03 base URL for the positioning map (prompt `positioning_themes`). Empty: `/positioning/build` returns `502`. |
+| `POSITIONING_THEMES` | the 9 above | JSON object `{"key": "what counts"}` (keys: lowercase, `_`). |
+| `POSITIONING_MAX_CHARS` / `POSITIONING_MAX_CLAIMS` | `6000` / `24` | Source text per company sent to the model; claims asked for. |
+| `POSITIONING_TIMEOUT` | `300` | Seconds per gateway call. |
 | `DB_PATH` | `/data/ads.sqlite` | SQLite file. |
 
 ## Known limits

@@ -33,6 +33,7 @@ products:
     price: "$18 / 340 g"
     one_line: Chocolate-hazelnut medium roast for drip and French press.
   - name: Single-Origin Rotation
+    aliases: [Rotation]   # copy calls it "the Rotation"; without this, 44 checked it against all products' facts
     price: "$22 / 250 g"
     one_line: A new light-roast origin every shipment.
   - name: Team Box

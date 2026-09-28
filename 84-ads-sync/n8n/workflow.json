@@ -1,0 +1,339 @@
+{
+  "id": "mktWf84AdsSync00",
+  "name": "84 · Schedule · Paid ads sync and alerts",
+  "nodes": [
+    {
+      "id": "6760499d-fdec-5add-8aa0-5bbfaf877dc0",
+      "name": "Daily 07:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "4c0e147c-9a2c-522e-b46f-2bc10e4f940a",
+      "name": "Ads health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ADS_URL ? $env.ADS_URL.replace(/\\/+$/, '') + '/health' : $env.CALENDAR_URL + '/health' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "2eb50acb-1729-5e6e-85d3-39f8ed049eec",
+      "name": "Ready?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 300); };\n\nconst r = $input.first().json;\nconst b = bodyOf(r);\nif (!$env.ADS_URL) return [{ json: { go: false, notify: false, text: '*Paid ads*: ADS_URL is not set. Nothing to do.' } }];\nif (!ok(r)) return [{ json: { go: false, notify: true, text: `*Paid ads*: ads-sync (84) did not answer (${r.statusCode || 'no response'}: ${errText(r)}).` } }];\nif (!b.configured) return [{ json: { go: false, notify: false,\n  text: `*Paid ads*: no ad platform is configured (${(b.config_errors || []).join('; ')}). See 84-ads-sync/README.md.` } }];\nreturn [{ json: { go: true } }];\n"
+      }
+    },
+    {
+      "id": "767d432e-cb48-551e-b23d-b3c3da8e3a25",
+      "name": "Go?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dc06dec2-669b-5692-b65b-6ef535cec801",
+              "leftValue": "={{ $json.go }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "89f64da1-fcc2-5e90-ac94-586ebad2ddf0",
+      "name": "Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ADS_URL.replace(/\\/+$/, '') }}/sync",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ days: 7 }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "4705a9b0-984c-5b28-a9eb-7a72eca194b1",
+      "name": "Check alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ADS_URL.replace(/\\/+$/, '') }}/alerts/check",
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6d1dd732-ed30-5334-97b5-6cadceb009d4",
+      "name": "Build",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const ok = r => r && r.statusCode >= 200 && r.statusCode < 300;\nconst bodyOf = r => (r && r.body && typeof r.body === 'object' ? r.body : {});\nconst errText = r => { r = r || {}; const b = r.body; const e = (b && typeof b === 'object' ? (b.detail ?? b.message) : b) ?? r.error?.message ?? r.error; return e == null || e === '' ? 'no answer' : String(typeof e === 'object' ? JSON.stringify(e) : e).slice(0, 300); };\n\nconst s = $('Sync').first().json, a = $('Check alerts').first().json;\nconst sb = bodyOf(s), ab = bodyOf(a);\nconst lines = [];\nconst problems = [];\nif (!ok(s)) problems.push(`sync failed (${s.statusCode || 'no response'}: ${errText(s)})`);\nfor (const [p, r] of Object.entries(sb.platforms || {})) if (r && r.ok === false) problems.push(`${p}: ${r.error}`);\nfor (const w of sb.warnings || []) problems.push(w);\nconst fresh = ok(a) && Array.isArray(ab.new) ? ab.new : [];\nif (fresh.length) {\n  lines.push(`*Paid ads alerts* (as of ${ab.as_of}):`);\n  for (const x of fresh) lines.push(`- [${x.severity}] ${x.rule.replace(/_/g, ' ')}: ${x.message}`);\n}\nif (!ok(a)) problems.push(`alerts not checked (${a.statusCode || 'no response'}: ${errText(a)})`);\nif (problems.length) lines.push(`${lines.length ? '\\n' : ''}*Paid ads sync*: ${problems.slice(0, 5).join('; ')}`);\nreturn [{ json: { notify: lines.length > 0, text: lines.join('\\n'), new_alerts: fresh.length, problems: problems.length } }];\n"
+      }
+    },
+    {
+      "id": "14d29b4a-b04b-5707-af1a-431074320d8c",
+      "name": "Report?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Nothing new, or no destination: no notification.\nreturn (String($env.NOTIFY_FORMAT || '').trim().toLowerCase() === 'telegram' ? $env.TELEGRAM_BOT_TOKEN && $env.TELEGRAM_CHAT_ID : $env.NOTIFY_WEBHOOK_URL) ? $input.all().filter(i => i.json.notify) : [];\n"
+      }
+    },
+    {
+      "id": "82bbfc63-1b0f-5135-b753-bbbe72e80e4b",
+      "name": "Notify format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function notifyRequest(text, env, waits) {\n  const fmt = String(env.NOTIFY_FORMAT || 'generic').trim().toLowerCase();\n  const telegram = fmt === 'telegram';\n  if (telegram ? !(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) : !env.NOTIFY_WEBHOOK_URL) return null;\n  const plain = String(text ?? '');\n  const form = `${String(env.N8N_PUBLIC_URL || 'http://localhost:5678/').trim().replace(/\\/?$/, '/')}form/mkt-content-approval`;\n  const link = waits && !plain.includes(form) ? form : null;   // already in the text: once is enough\n  // Cut the text (never the link) to the longest prefix whose rendered message fits:\n  // escaping can make the rendered text several times longer, so search for it.\n  const fit = (render, max) => {\n    if (render(plain).length <= max) return render(plain);\n    let lo = 0, hi = plain.length;\n    while (lo < hi) {\n      const mid = Math.ceil((lo + hi) / 2);\n      if (render(plain.slice(0, mid).trimEnd() + '…').length <= max) lo = mid; else hi = mid - 1;\n    }\n    return render(plain.slice(0, lo).trimEnd() + '…');\n  };\n  const mdLink = /\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)\"<>]+)\\)/g;\n  const oneStar = /(^|[^*\\w])\\*(?![\\s*])([^*\\n]*?[^\\s*])\\*(?![*\\w])/g;   // Slack-style *bold*\n  const heading = /^#{1,6}[ \\t]+(.+)$/gm;\n  if (telegram) {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<a href=\"$2\">$1</a>')\n      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<b>$1</b>').replace(oneStar, '$1<b>$2</b>').replace(heading, '<b>$1</b>')\n      + (link ? `\\n\\n<a href=\"${esc(link)}\">Open the approval form</a>` : '');\n    const api = String(env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\\/+$/, '');\n    return { format: 'telegram', url: `${api}/bot<TELEGRAM_BOT_TOKEN>/sendMessage`, body: {\n      chat_id: String(env.TELEGRAM_CHAT_ID).trim(), text: fit(render, 4096), parse_mode: 'HTML',\n      disable_web_page_preview: true } };\n  }\n  const url = '<NOTIFY_WEBHOOK_URL>';\n  if (fmt === 'slack') {\n    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n    const render = t => esc(t)\n      .replace(mdLink, '<$2|$1>').replace(/\\*\\*([^*\\n]+)\\*\\*/g, '*$1*').replace(heading, '*$1*')\n      + (link ? `\\n\\n<${link}|Open the approval form>` : '');\n    return { format: 'slack', url, body: { text: fit(render, 40000) } };\n  }\n  if (fmt === 'discord') {\n    // <url> stops link previews; Discord bold is **x**; nothing in the text can ping anyone.\n    const render = t => t.replace(oneStar, '$1**$2**').replace(/(^|\\s)(https?:\\/\\/[^\\s<>]+)/g, '$1<$2>')\n      + (link ? `\\n\\nApproval form: <${link}>` : '');\n    return { format: 'discord', url, body: { content: fit(render, 2000), allowed_mentions: { parse: [] } } };\n  }\n  const t = link ? `${plain.trimEnd()}\\n\\nApproval form: ${link}` : plain;\n  return { format: 'generic', url, body: { text: t, content: t } };   // the payload before NOTIFY_FORMAT\n}\n\nreturn $input.all().flatMap(item => {\n  const req = notifyRequest(item.json.text, $env, false);\n  return req ? [{ json: req }] : [];\n});\n"
+      }
+    },
+    {
+      "id": "e7476e53-2822-528c-b8e7-841b4976938b",
+      "name": "Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url.replace('<TELEGRAM_BOT_TOKEN>', () => $env.TELEGRAM_BOT_TOKEN || '').replace('<NOTIFY_WEBHOOK_URL>', () => $env.NOTIFY_WEBHOOK_URL || '') }}",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Notify format": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 07:30": {
+      "main": [
+        [
+          {
+            "node": "Ads health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ads health": {
+      "main": [
+        [
+          {
+            "node": "Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready?": {
+      "main": [
+        [
+          {
+            "node": "Go?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Go?": {
+      "main": [
+        [
+          {
+            "node": "Sync",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync": {
+      "main": [
+        [
+          {
+            "node": "Check alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check alerts": {
+      "main": [
+        [
+          {
+            "node": "Build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build": {
+      "main": [
+        [
+          {
+            "node": "Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report?": {
+      "main": [
+        [
+          {
+            "node": "Notify format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "mktWf43ErrorHand"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

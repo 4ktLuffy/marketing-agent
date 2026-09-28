@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Activity{% endblock %}
+{% block main_attrs %} class="wide"{% endblock %}
+{% block head %}<script src="/static/activity.js" defer></script>{% endblock %}
+{% block main %}
+<div class="act-head">
+  <h1>Activity</h1>
+  <p class="small muted act-updated">Updated <time id="act-updated" datetime="{{ data.updated_at }}">{{ data.updated_at[11:19] }} UTC</time> · <span id="act-poll">reload to refresh</span></p>
+</div>
+<ul class="sources" id="act-sources" aria-label="Sources">
+  {% for s in data.sources %}<li class="{{ 'ok' if s.ok else 'bad' }}"><span class="dot" aria-hidden="true"></span>{{ s.name }}{% if not s.ok %}: {{ s.detail }}{% endif %}</li>{% else %}<li class="bad"><span class="dot" aria-hidden="true"></span>no sources configured</li>{% endfor %}
+</ul>
+
+<section class="panel" aria-labelledby="h-now">
+  <h2 id="h-now">Now</h2>
+  <div id="act-now" class="now-grid" aria-live="polite">
+    {% for c in data.now %}
+    <article class="now-card" data-id="{{ c.id }}">
+      <div class="row-between"><b>{{ c.who }}</b><span class="badge {{ 'local' if c.local else 'hosted' }}">{{ 'local' if c.local else 'hosted' }}</span></div>
+      <div class="small muted">{{ c.prompt }} · {{ c.model }}</div>
+      <div class="elapsed" data-elapsed="{{ c.elapsed_ms }}" aria-hidden="true">{{ (c.elapsed_ms // 1000) }} s</div>
+    </article>
+    {% else %}
+    <p class="idle"><span class="dot idle-dot" aria-hidden="true"></span>Idle — nothing running.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel" id="timeline" aria-labelledby="h-timeline">
+  <h2 id="h-timeline">Timeline</h2>
+  <nav class="tabs" id="act-filters" aria-label="Filter the timeline">
+    {% for key, label in filters %}<a href="/activity?filter={{ key }}{% if data.ability %}&amp;ability={{ data.ability }}{% endif %}#timeline" data-filter="{{ key }}" {% if data.filter == key %}aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  </nav>
+  <p class="small act-ability" id="act-ability" {% if not ability_name %}hidden{% endif %}>Only <b id="act-ability-name">{{ ability_name or '' }}</b> · <a href="/activity?filter={{ data.filter }}#timeline" data-ability-clear>show everything</a></p>
+  <div id="act-timeline">
+    {% for g in days %}
+    <h3 class="day">{{ g.day }}</h3>
+    <ol class="tl">
+      {% for e in g.events %}<li class="tl-row {{ e.kind }}{% if not e.ok %} bad{% endif %}"><time datetime="{{ e.at }}">{{ (e.at or '')[11:16] }}</time><span class="tl-icon" aria-hidden="true">{{ e.icon }}</span><span class="tl-text">{% if e.link %}<a href="{{ e.link }}">{{ e.text }}</a>{% else %}{{ e.text }}{% endif %}</span></li>{% endfor %}
+    </ol>
+    {% else %}
+    <p class="muted">Nothing yet{% if data.filter != 'all' or ability_name %} for this filter{% endif %}. AI calls appear here as they finish; content changes from the last {{ '%g'|format(request.app.state.settings.activity_days) }} days.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="h-models">
+  <h2 id="h-models">Models <span class="small muted">today (UTC)</span></h2>
+  <div id="act-models" class="model-grid">
+    {% for m in data.models %}
+    <article class="model-card">
+      <div class="row-between"><b class="model-name">{{ m.model }}</b><span class="badge {{ 'local' if m.local else 'hosted' }}">{{ 'local' if m.local else 'hosted' }}</span></div>
+      <div class="small muted">{{ m.provider }}</div>
+      <dl class="stats">
+        <div><dt>Calls</dt><dd>{{ m.calls_today }}</dd></div>
+        <div><dt>Failed</dt><dd {% if m.failures_today %}class="bad-text"{% endif %}>{{ m.failures_today }}</dd></div>
+        <div><dt>Average</dt><dd>{{ seconds(m.avg_ms) }}</dd></div>
+        <div><dt>p95</dt><dd>{{ seconds(m.p95_ms) }}</dd></div>
+        <div><dt>Tokens in</dt><dd>{{ m.tokens_in }}</dd></div>
+        <div><dt>Tokens out</dt><dd>{{ m.tokens_out }}</dd></div>
+      </dl>
+      <svg class="spark" viewBox="0 0 120 28" preserveAspectRatio="none" role="img" aria-label="time per call, last {{ m.spark|length }} calls"><polyline points="{{ m.points }}"/></svg>
+    </article>
+    {% else %}
+    <p class="muted">No model calls yet today.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="h-abilities">
+  <h2 id="h-abilities">Abilities <span class="small muted">install profile: {{ data.profile }}</span></h2>
+  <p class="small muted">Everything the agent can do. Open one to see only its calls in the timeline.</p>
+  <div id="act-abilities" class="ability-grid">
+    {% for a in data.abilities %}
+    <a class="tile{% if not a.installed %} off{% endif %}" href="/activity?ability={{ a.num }}#timeline" data-ability="{{ a.num }}" data-name="{{ a.name }}">
+      <span class="row-between"><b>{{ a.name }}</b><span class="chip">{{ a.num }}</span></span>
+      <span class="small">{{ a.desc }}</span>
+      <span class="small muted tile-foot"><span class="badge {{ 'on' if a.installed else 'off' }}">{{ 'installed' if a.installed else 'not installed' }}</span> {{ a.kind }} · {{ a.profile }}<span class="tile-last" data-at="{{ a.last_at or '' }}">{% if a.last_at %} · last {{ a.last_at[11:16] }} UTC, {{ a.last_text }}{% endif %}</span></span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+<script type="application/json" id="act-data">{{ data|tojson }}</script>
+{% endblock %}

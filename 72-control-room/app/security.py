@@ -100,3 +100,38 @@ class LoginLimiter:
 
     def succeeded(self, ip: str) -> None:
         self._per_ip.pop(ip, None)
+
+
+def client_ip(request, trusted_proxies: str) -> str:
+    """The visitor's address for rate limits. Behind a reverse proxy every request comes from the
+    proxy, so 20 bad passwords from anyone would lock the approver out (security review, low).
+    X-Forwarded-For is trusted ONLY when the direct peer is in TRUSTED_PROXIES (comma-separated IPs
+    or CIDRs); then the right-most address that is not itself a trusted proxy is the client."""
+    import ipaddress
+    peer = request.client.host if request.client else "?"
+    nets = []
+    for part in (trusted_proxies or "").split(","):
+        part = part.strip()
+        if part:
+            try:
+                nets.append(ipaddress.ip_network(part, strict=False))
+            except ValueError:
+                continue
+
+    def trusted(addr: str) -> bool:
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            return False
+        return any(ip in n for n in nets)
+
+    if not nets or not trusted(peer):
+        return peer
+    hops = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    for hop in reversed(hops):
+        if not trusted(hop):
+            try:
+                return str(ipaddress.ip_address(hop))
+            except ValueError:
+                return peer
+    return peer

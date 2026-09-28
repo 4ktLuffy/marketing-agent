@@ -1,6 +1,6 @@
 # customer-language
 
-Deploy **70 of 83** of the local-LLM marketing agent. It is a "voice of customer" engine.
+Deploy **70 of 87** of the local-LLM marketing agent. It is a "voice of customer" engine.
 It collects what customers wrote or searched, finds the words they repeat, and gives writers
 the phrases that fit a topic, so copy uses the customers' words rather than generic AI words.
 
@@ -56,7 +56,7 @@ SQLite, so run exactly one instance.
 
 ```bash
 docker build -t customer-language .
-docker run --rm -p 8170:8000 --network marketing -e INTERNAL_API_KEY=change-me \
+docker run --rm -p 8170:8000 --network marketing-agent_marketing -e INTERNAL_API_KEY=change-me \
   -e GATEWAY_URL=http://llm-gateway:8000 -v voc-data:/data customer-language
 ```
 
@@ -91,6 +91,7 @@ gateway's prompt library (04).
 | POST | `/headlines` 🔑 | `{"topic","channel"?,"n":8,"k":8,"phrases"?,"facts"?,"max_chars":140}` | `{"phrases_offered","headlines":[{"text","phrase","phrase_id","source_ids"}],"dropped":[{"text","reason"}]}` |
 | POST | `/personas` 🔑 | `{"n":3}` (2–4) | `{"built_from","note","personas","attributes_dropped","personas_dropped","labels_replaced"}` |
 | GET | `/personas` | — | the last personas, `404` before the first |
+| POST | `/placement/check` | `{"text","phrase"?,"allowed_text"?}` | `{"text","repaired","opens_with","first_sentence","bolted_on","bolted_reasons","raw_bolted_reasons","quoted","invented_customers","ok","feedback"}` (no LLM) |
 
 ### Sources
 
@@ -195,8 +196,29 @@ emoji policy: small models ignore soft instructions). So the writer should also:
    Write the post again so that its first sentence contains "<phrase>" word for word.`
 4. If the retry misses too, keep the retry's post (don't block the draft) and note it.
 
-Reference implementation: `23-eval-suite/evalsuite/voc_ab.py` (`pick_open_with`,
-`first_sentence`, `opens_with`, `open_with_feedback`, `write_b`).
+**Woven, not pasted: `POST /placement/check`.** Step 3 alone is met by pasting the phrase in
+front as a label ("box arrived late We're sorry…"). The check (code, `app/placement.py`) takes
+the post, the phrase and `allowed_text` (topic, brand profile, facts) and returns `ok` only
+when all of these hold:
+
+- the first sentence contains the phrase (as in step 3);
+- it is not **bolted on**: no `|` `:` `–` `—` or line break right after it (or a separator right
+  before it); when it starts the sentence, the next word doesn't start a new sentence with no
+  punctuation ("box arrived late We're…"), it isn't a sentence on its own without a verb of its
+  own ("Coarse grind for cold brew."), and it doesn't dangle before a new subject ("Tastes fresh
+  even in week three, our coffee is…"); mid-sentence it isn't capitalized ("…and Never Run Out");
+- it is **not in quotation marks**. Decision: 70 phrases are verbatim customer text but not
+  consented testimonials, 58 `/testimonials/check` flags any quoted span that isn't one, and a
+  quote invites an invented speaker. So the phrase is reused as the brand's own words;
+- no **invented customer**: "our customer Sarah", "Tom K., a longtime subscriber", "Maria in
+  Denver says", "the team at Acme Tech", "a customer told us". A name or organization found in any
+  stored source or in `allowed_text` is not flagged. Plural generic ("our customers tell us") is
+  fine. Not caught: a first-person customer story with no name ("I just changed my delivery…").
+
+A post that starts in lowercase is fixed in code first (`text` is the repaired post; use it).
+On `ok: false`, retry once with `open_with_feedback` = the returned `feedback`, keep the retry's
+post either way. Reference implementation: `23-eval-suite/evalsuite/voc_ab.py` (`pick_open_with`,
+`write_b`, `judge_quotes_without`).
 
 ### Headline bank (`POST /headlines`)
 
@@ -288,6 +310,15 @@ topics) posts, against 1/10 and 0/8 for A. Judge on Groq `gpt-oss-120b` (no posi
 is pasted as a label ("box arrived late We're sorry…"), and the judge's reasons mostly
 cite the echoed phrase, which is often also in the quotes it is shown. So: the mechanism
 works, the posts are not yet clearly better.
+
+**Third pass (2026-09-28): placement check + a judge that never sees B's phrase** (8 new
+held-out topics, `voc_ab_v3.yaml`; table in the 23 README). Pasted labels fell from 14/16 (v1/v2
+posts re-scored) to 4/7, phrase woven into the first sentence 3/8, no invented customer, B
+shorter (264 vs 301 chars). Groq judge: **B 3 / A 4 / tie 1**, with none of its reasons citing
+B's phrase: the earlier B wins were mostly the judge rewarding the echo. **Decision: customer
+phrases stay off by default in 26/48/65** (the bar was a non-confounded judge win and bolted-on
+≤ 20 %; neither was met). Next, if revisited: a stronger writer, phrases filtered by sentiment
+(complaints make odd openers), and a v4 held-out set for the post-hoc `dangling_opener` rule.
 
 ## Known limits
 

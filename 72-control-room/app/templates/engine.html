@@ -3,6 +3,7 @@
 {% block main %}
 <h1>Content engine</h1>
 <p class="small muted">Each pillar (61) pauses itself when too many of its drafts are rejected. Resume it here after fixing the cause.</p>
+{% if not_installed %}<p class="muted">The content engine isn't installed (core profile). Install the growth profile to plan a month of content from one topic.</p>{% endif %}
 {% if error %}<p class="alert danger">{{ error }}</p>{% endif %}
 {% for r in rows %}
 <section class="panel pillar {% if r.p.status == 'paused' %}paused{% endif %}">
@@ -25,6 +26,6 @@
   {% endif %}
 </section>
 {% else %}
-{% if not error %}<p class="muted">No pillars yet. Ask the chat agent to plan a month (tool 64).</p>{% endif %}
+{% if not error and not not_installed %}<p class="muted">No pillars yet. Ask the chat agent to plan a month (tool 64).</p>{% endif %}
 {% endfor %}
 {% endblock %}

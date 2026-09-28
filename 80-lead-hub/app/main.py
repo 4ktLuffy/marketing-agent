@@ -27,6 +27,7 @@ app = FastAPI(title="lead-hub")
 log = logging.getLogger("lead-hub")
 
 SOURCES = ("site_assistant", "form", "webhook", "manual")
+MAX_WEBHOOK_BYTES = 200_000
 EMAIL_RE = re.compile(r"^[^@\s<>\"',;]{1,64}@[^@\s<>\"',;]{1,253}\.[a-zA-Z]{2,63}$")
 ACTIONS = {"A": ("notify_now", "hot"), "B": ("daily_digest", "digest"),
            "C": ("nurture", "nurture"), "D": ("nurture", "nurture")}
@@ -616,9 +617,16 @@ def create_lead(req: LeadIn, tasks: BackgroundTasks):
 
 @app.post("/leads/webhook/{source}")
 async def webhook(source: str, request: Request, tasks: BackgroundTasks):
-    body = await request.body()
-    if len(body) > 200_000:
+    # Public endpoint: never hold more than the cap in memory, even for a chunked body (LH-1).
+    length = request.headers.get("content-length")
+    if length is not None and (not length.isdigit() or int(length) > MAX_WEBHOOK_BYTES):
         raise HTTPException(413, "payload too large")
+    body = bytearray()
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > MAX_WEBHOOK_BYTES:
+            raise HTTPException(413, "payload too large")
+    body = bytes(body)
     if not webhooks.verify(source, body, request.headers):
         raise HTTPException(401, "missing or wrong webhook secret for this source")
     try:

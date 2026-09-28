@@ -1,6 +1,6 @@
 # campaign-service
 
-Deploy **45 of 83** of the local-LLM marketing agent. It holds each campaign: the goal,
+Deploy **45 of 87** of the local-LLM marketing agent. It holds each campaign: the goal,
 audience, channels, dates and the KPI targets, set before anything ships. It builds UTM
 links for the campaign, pulls actual results from the link shortener (16) and analytics (20),
 and returns a scorecard that says which targets are met, on track or behind. It uses no LLM.
@@ -18,7 +18,7 @@ instance and back up the volume.
 ```bash
 docker build -t campaign-service .
 docker run --rm -p 8145:8000 -e INTERNAL_API_KEY=change-me -v campaign-data:/data \
-  --network marketing campaign-service
+  --network marketing-agent_marketing campaign-service
 ```
 
 Local without Docker:
@@ -51,6 +51,7 @@ INTERNAL_API_KEY=change-me DB_PATH=./campaigns.sqlite uvicorn app.main:app --por
 | GET | `/campaigns/{id}/scorecard` | — | scorecard |
 | GET | `/report/unmeasured` | — | `[campaign + "unmeasured": [metric]]` |
 | GET | `/insights` | `?days=90` | `{"by_channel","top_posts","errors"}` |
+| GET | `/insights/posts` | `?days=90&channel=` | `{"posts":[{"item_id","title","channel","clicks","hook_style","status","posted_at"}],"errors"}` |
 | GET | `/insights/hooks` | `?days=90&explore=0.2&seed=` | `{"recommended","explored","styles","unlabeled_posts","method","errors"}` |
 | POST | `/experiments` 🔑 | `{"hypothesis","variable","arms":[{"value","brief"?}×2],"channels":[],"min_posts_per_arm"?:12,"max_weeks"?:8,"rope"?:0.15,"created_by"?:"human"\|"agent"}` | experiment, `201` |
 | GET | `/experiments` | `?status=` (one or a comma list) `&channel=` | `[experiment]` |
@@ -186,6 +187,10 @@ and the error is listed.
   `top_posts` is the 10 posts with the most clicks, `[{"item_id","title","channel","clicks"}]`.
   If an item cannot be fetched, its `title` is `null`, its channel falls back to
   `utm_source`, and the failure is listed in `errors`.
+- `/insights/posts?days=90&channel=` lists every post of that join (not only the top 10),
+  optionally one channel (case ignored), with `posted_at` = the calendar item's
+  `published_at`, else the creation time of its first tracked link. 46 uses it to pick
+  writer examples by performance (`/examples?by=performance`).
 - `/insights/hooks?days=90&explore=0.2&seed=` learns which hook style (how a post opens)
   earns clicks. It reuses the `/insights` join (same links, same calendar lookups) and
   groups posts by the calendar item's `hook_style`, one of `question`, `fact_led`,

@@ -1,6 +1,6 @@
 # 37 · Competitor watch
 
-Deploy **37 of 83** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **37 of 87** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every 6 hours it diffs the competitor pages you watch (09) and, when `AD_LIBRARY_URL` is set, syncs the competitors' ads from the official Meta Ad Library API (78 `POST /sync`, EU-delivered ads only) and reads the week's new, changed or stopped ads (78 `GET /ads`) and the manual-check links (78 `GET /links`). It goes on when a page changed or an ad appeared, changed or stopped since the last run. The LLM (prompt `competitor_changes`, with the ad texts) explains what changed and whether to react.
 
@@ -9,6 +9,8 @@ Every 6 hours it diffs the competitor pages you watch (09) and, when `AD_LIBRARY
 **Pricing page changed** (78 labels it `<name> · pricing`, or the URL has /pricing, /plans ...): the LLM (prompt `competitor_brief`, with the approved facts from 05) suggests match, counter or ignore, with reasons and response points. Lines with a number that is in neither the diff nor the facts are dropped. The brief is saved to the calendar (19) as an `idea` with channel `competitor_brief`, which the publisher (39) never sends. At most 3 briefs per run.
 
 With `AD_LIBRARY_URL` empty, or 78 down, it works as before on page changes only.
+
+**Monthly positioning map** (1st of the month, 07:00, needs `AD_LIBRARY_URL`): 78 `POST /positioning/build` sorts what each active competitor says (their watched pages' latest text in 09 and their active ads) and what we say (approved facts from 05, our own watched pages) into messaging themes (prompt `positioning_themes`); 78 keeps only quotes that are an exact part of their source. The map (themes x brands, white space = no competitor claims it AND one of our approved facts backs it, crowded themes, shifts since last month) is saved to the knowledge base (doc `positioning-<YYYY-MM>`), to the calendar as an `idea` with channel `positioning` (the publisher never sends it), and the white space, crowded themes and top shifts are posted to your webhook. The control room shows it under More → Positioning. A failed build is reported and saves nothing.
 
 ## Where to deploy
 
@@ -31,7 +33,7 @@ Its workflow id is fixed (`mktWf37Competito`), because other workflows call it b
 
 ## Schedule
 
-every 6 hours. Change it in the first node.
+every 6 hours; positioning map on the 1st of each month at 07:00. Change it in the first node.
 
 ## Configuration (env on the n8n container)
 

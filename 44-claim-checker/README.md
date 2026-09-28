@@ -1,6 +1,6 @@
 # claim-checker
 
-Deploy **44 of 83** of the local-LLM marketing agent. It flags statements in marketing copy
+Deploy **44 of 87** of the local-LLM marketing agent. It flags statements in marketing copy
 that your **approved facts don't support**: invented tasting notes, wrong prices, made-up
 policies, awards and statistics.
 
@@ -24,7 +24,17 @@ piece (`context`) + matching knowledge-base excerpts (06).
    stated.** The quote has to really exist in the evidence (checked in code). A detail
    the model skips is asked again on its own; if it's still unanswered it counts as
    unsupported, because an empty answer must never mean "all fine".
-4. The LLM **never gives a yes/no verdict** on a claim. See below for why.
+4. **Values are compared in code, whatever the model says.** A detail's number words
+   ("three blends"), weekdays and months must appear in the evidence, and a detail whose quote
+   holds a different value of the same kind ("within 60 days" quoting "within 30 days") is flagged.
+5. **Second chance for paraphrases** (lenient mode only). A detail judged not stated is asked
+   once more, alone, against the 1–3 evidence lines that share most words with it (prompt
+   `detail_entails`: "do these lines imply it? yes/no + quote"). A yes counts only if, in code,
+   the quote is really in those lines, it contains every number/day/month of the detail, the
+   detail's names and places (capitalised words, "UK") are in those lines, and a detail with
+   every/all/any is backed by a quote that also has one. So it can only turn a false alarm into
+   a pass; it cannot approve a changed value, a new place or a wider scope.
+6. The LLM **never gives a yes/no verdict** on a whole claim. See below for why.
 
 ## How well it works (qwen2.5:7b, labelled claims in `23-eval-suite/cases/claims/`)
 
@@ -47,6 +57,32 @@ piece (`context`) + matching knowledge-base excerpts (06).
 | `openai/gpt-oss-120b`, before product scoping | 1 / 7 | 1 / 5 | details moved between products (v1) |
 | `openai/gpt-oss-20b` / `120b` | 6 / 6 · 6 / 6 | 1 / 6 · 1–3 / 6 | v6 (120b varied between runs) |
 
+**Paraphrase update (2026-09-28, `openai/gpt-oss-20b`, low effort):** value checks in code, the
+second chance, and the alias `Rotation` for Single-Origin Rotation in the example brand. Before and
+after ran through a record/replay cache, so both versions saw the **same model answers** for every
+call they share; the differences come from the change, not run-to-run noise.
+
+| Set | Invented caught before → after | True flagged before → after |
+|---|---|---|
+| **paraphrase v1 (held-out, written before this change ran)** | 8 / 10 → **9 / 10** | 3 / 14 → **2 / 14** |
+| seven older sets (113 claims) | 54 / 55 → 54 / 55 | 3 / 58 → **0 / 58** |
+| transfer v2 + v6 | 12 / 12 → 12 / 12 | 2 / 12 → **0 / 12** |
+| **all 161** | 74 / 77 → **75 / 77** | 8 / 84 → **2 / 84** |
+| paraphrase v1 (held-out), **local `mkt-writer` (qwen2.5:7b)**, same replay method | 7 / 10 → **8 / 10** | 5 / 14 → **2 / 14** |
+
+Only the paraphrase row is held-out: the false alarms fixed in the other rows ("Swiss Water
+process", "whenever you like", "somewhere new") are the examples this change was designed from.
+The extra catch is the alias: "The Rotation is a medium roast" was checked against every
+product's facts and passed on the Desk Blend's. Still wrong after the change: "Every order ships free" passes
+(the model says free shipping on US subscriptions states it; scope is only guarded on the second
+chance), and two true sentences stay flagged because the every/all guard refused the model's yes
+("get all your money back", "every bag ships…"): the guard's price for blocking "every order".
+On Groq the model already flagged every changed day and number word, so the value check changed
+reasons, not verdicts, there (locally too); it is what catches them when the model says "stated"
+(tests; those fail on the previous version). Locally "any bag, opened or not" also still passes.
+Cost: the second chance asked 81 extra questions over the 161 claims (mostly details of invented
+claims, which are rejected anyway): 39.7k tokens on top of 137.5k, about +29%.
+
 The 20b model is the recommended hosted checker: as accurate here as 120b, cheaper, faster, and
 on Groq it has its own daily token budget. The 113-claim run used about 90k tokens (~800 per claim).
 
@@ -58,10 +94,13 @@ wrong for ad claims, but it's a real cost.
 
 **Known gaps**
 - **Right attribute, wrong value** ("roasted every Monday" when the fact says Tuesday)
-  was the most frequent miss in earlier versions.
+  was the most frequent miss in earlier versions. Days, months and numbers are now compared in
+  code; other values (roast level, colour, place) still rely on the model.
 - **Paraphrases can be flagged** ("costs nothing" vs "no fee").
 - **Vague value claims** ("a sustainable choice") are sometimes treated as mood, not fact.
-- **Number words** ("three blends") aren't checked in code; only the LLM step sees them.
+- **Scope widening** ("every order ships free" vs free shipping on US subscriptions) can pass when
+  the model calls it stated.
+- Number words are checked in code except "one" ("one of our blends" is rarely a value).
 
 What makes it work much better than anything above: **more and clearer facts** in
 `05-brand-service/config/brand.yaml`. Every claim you want the agent to make should be
@@ -105,7 +144,7 @@ curl -s localhost:8144/verify -H 'content-type: application/json' -d '{
 #  "claims": [{"reasons": ["numbers not in the facts: 24", "not in the facts: caramel notes", ...]}], ...}
 ```
 
-It takes about 2–10 s per sentence on a laptop, since each sentence needs 2+ LLM calls.
+It takes about 2–10 s per sentence on a laptop, since each sentence needs 2+ LLM calls (plus one per detail found not stated, for the second chance).
 
 ## Configuration
 
@@ -114,7 +153,7 @@ It takes about 2–10 s per sentence on a laptop, since each sentence needs 2+ L
 | `GATEWAY_URL` | `http://llm-gateway:8000` | runs the `claim_details` and `detail_check` prompts (04) |
 | `BRAND_URL` | `http://brand-service:8000` | source of approved facts |
 | `KB_URL` | empty | knowledge base; its matching excerpts also count as evidence |
-| `CHECK_MODE` | `lenient` | `strict` also requires each detail's words to appear in its quote. It catches more wrong values but flagged a third of true sentences in testing |
+| `CHECK_MODE` | `lenient` | `strict` also requires each detail's words to appear in its quote and has no second chance (the literal mode). It flagged a third of true sentences in testing. Value checks apply in both modes |
 | `VERIFIER_MODEL` | empty | a different Ollama model for the checking prompts. Measure it with `python -m evalsuite.claims` before switching. (MiniCheck models are CC BY-NC, i.e. **not for commercial use**) |
 | `KB_MIN_SCORE` | `0.35` | minimum knowledge-base search score to count as evidence |
 | `KB_UNTRUSTED_SOURCES` | `trend-digest,competitor-watch` | knowledge-base sources that never count as evidence: they are LLM summaries of untrusted pages, so they could otherwise approve their own claims |

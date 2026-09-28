@@ -15,12 +15,20 @@ Pipedrive (API token in header x-api-token, base https://<company>.pipedrive.com
 With DRY_RUN (the default) nothing is sent: the planned requests are returned instead,
 with the token left out. Tokens never appear in results, errors or logs.
 """
+import html
 import os
 from urllib.parse import quote
 
 import httpx
 
 TIMEOUT = 20
+
+
+def note_html(note: str) -> str:
+    """Both CRMs render notes as HTML. The note carries text the lead typed (message, name) and
+    text from their website, so it is escaped: no tracking pixels or disguised links in the
+    team's CRM (security review 2026-09-28, LH-2)."""
+    return html.escape(note, quote=False).replace("\n", "<br>")
 
 
 class CRMError(Exception):
@@ -80,7 +88,7 @@ def hubspot_plan(lead: dict, note: str, tag: str) -> dict:
         "create": {"method": "POST", "url": f"{b}/crm/v3/objects/contacts", "json": {"properties": create}},
         "update": {"method": "PATCH", "url": f"{b}/crm/v3/objects/contacts/<id>", "json": {"properties": props}},
         "note": {"method": "POST", "url": f"{b}/crm/v3/objects/notes", "json": {
-            "properties": {"hs_timestamp": lead["now"], "hs_note_body": note},
+            "properties": {"hs_timestamp": lead["now"], "hs_note_body": note_html(note)},
             "associations": [{"to": {"id": "<id>"}, "types": [
                 {"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}]}]}},
     }
@@ -135,7 +143,7 @@ def pipedrive_plan(lead: dict, note: str, tag: str) -> dict:
         "create": {"method": "POST", "url": f"{b}/api/v2/persons", "json": person},
         "update": {"method": "PATCH", "url": f"{b}/api/v2/persons/<id>", "json": update},
         "note": {"method": "POST", "url": f"{b}/api/v1/notes",
-                 "json": {"content": note.replace("\n", "<br>"), "person_id": "<id>"}},
+                 "json": {"content": note_html(note), "person_id": "<id>"}},
     }
 
 
