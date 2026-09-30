@@ -2,6 +2,7 @@
 {% block title %}Brand setup{% endblock %}
 {% block main %}
 <h1>Brand setup</h1>
+{% if not can('owner') %}<p class="alert warn small">Your role ({{ me.role }}) can read the brand setup; only the owner changes it.</p>{% endif %}
 <nav class="steps" aria-label="Steps">
   {% for n, label in steps %}<a href="/brand/step/{{ n }}" {% if n == step %}aria-current="step"{% endif %}><b>{{ n }}</b> {{ label }}</a>{% endfor %}
 </nav>

@@ -49,6 +49,7 @@ def env(monkeypatch):
     monkeypatch.setenv("N8N_PUBLIC_URL", "https://n8n.example.test/")
     monkeypatch.setenv("UNDO_SECONDS", "30")   # tests flush explicitly
     monkeypatch.setenv("TASKS_URL", "")         # 88 off unless a test turns it on (tests/test_tasks.py)
+    monkeypatch.setenv("CONTROL_USERS_FILE", "")  # the single CONTROL_USER login unless a test sets a file
 
 
 @pytest.fixture

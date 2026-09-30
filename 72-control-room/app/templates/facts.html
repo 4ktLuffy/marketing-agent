@@ -6,7 +6,7 @@
 {% if not_installed %}<p class="muted">The brand service (05) isn't installed, so there are no facts to show.</p>{% else %}
 {% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
 {% if done %}{% set what, _, key = done.partition(':') %}
-<p class="alert ok" role="status">{% if what == 'saved' %}<b>Saved as a draft.</b> Confirm {{ key }} to start using it.{% elif what == 'confirmed' %}<b>Confirmed.</b> {{ key }} is in use now.{% elif what == 'retired' %}<b>Retired.</b> {{ key }} is no longer used.{% elif what == 'derived' %}That fact comes from your brand profile. Turn it into a scoped fact to change it.{% elif what == 'onboarded' %}{% set nf, _, nq = key.partition('-') %}<b>{{ nf }} draft{{ 's' if nf != '1' }} added from your website or documents{% if nq and nq != '0' %}, and {{ nq }} open question{{ 's' if nq != '1' }}{% endif %}.</b> They need your confirmation: check each one below and confirm it.{% elif what == 'answered' %}<b>Answered.</b> Thank you.{% elif what == 'dismissed' %}Question dismissed.{% else %}Done.{% endif %}</p>
+<p class="alert ok" role="status">{% if what == 'saved' %}<b>Saved as a draft.</b> Confirm {{ key }} to start using it.{% elif what == 'confirmed' %}<b>Confirmed.</b> {{ key }} is in use now.{% elif what == 'retired' %}<b>Retired.</b> {{ key }} is no longer used.{% elif what == 'derived' %}That fact comes from your brand profile. Turn it into a scoped fact to change it.{% elif what == 'onboarded' %}{% set nf, _, nq = key.partition('-') %}<b>{{ nf }} draft{{ 's' if nf != '1' }} added from your website or documents{% if nq and nq != '0' %}, and {{ nq }} open question{{ 's' if nq != '1' }}{% endif %}.</b> They need your confirmation: check each one below and confirm it.{% elif what == 'wording' %}{% if key == 'confirmed' %}<b>Wording confirmed.</b> The check accepts it from now on.{% else %}Wording dismissed.{% endif %}{% elif what == 'answered' %}<b>Answered.</b> Thank you.{% elif what == 'dismissed' %}Question dismissed.{% else %}Done.{% endif %}</p>
 {% endif %}
 {% if not owner_ready %}<p class="alert warn small">Confirming is switched off: the control room has no owner key (FACT_OWNER_KEY). You can still add and edit drafts.</p>{% endif %}
 
@@ -20,6 +20,7 @@
   <a href="/facts?show=expired" {% if show == 'expired' %}aria-current="page"{% endif %}>Expired ({{ counts.expired or 0 }})</a>
   <a href="/facts?show=due" {% if show == 'due' %}aria-current="page"{% endif %}>Due for review ({{ counts.due or 0 }})</a>
   <a href="/facts?show=questions" {% if show == 'questions' %}aria-current="page"{% endif %}>Open questions ({{ counts.questions or 0 }})</a>
+  <a href="/facts?show=wordings" {% if show == 'wordings' %}aria-current="page"{% endif %}>Wordings to confirm {% if counts.wordings %}<span class="chip st-warn" data-wordings="{{ counts.wordings }}">{{ counts.wordings }}</span>{% else %}(0){% endif %}</a>
 </nav>
 
 {% if questions and show in ('all', 'attention', 'questions') %}
@@ -42,6 +43,33 @@
   <p class="small muted">An answer is a note, not a fact. If it is a fact, add it with "Add a fact" too.</p>
 </section>
 {% elif show == 'questions' %}<p class="muted">No open questions.</p>
+{% endif %}
+
+{% if wordings_error and show == 'wordings' %}<p class="alert warn small">{{ wordings_error }}</p>{% endif %}
+{% if wordings and show in ('all', 'attention', 'wordings') %}
+<section class="panel" id="wordings" aria-labelledby="w-h">
+  <h2 id="w-h">Wordings to confirm <span class="chip">{{ wordings|length }}</span></h2>
+  <p class="small muted">Someone accepted a “missing disclosure” finding because the post said it in other words, and saved those words. Once you confirm a wording, the check accepts it for that fact next time.</p>
+  <ul class="fact-list">
+  {% for w in wordings %}
+    <li class="fact needs" data-wording="{{ w.id }}">
+      <dl class="facts small">
+        <dt>Fact</dt><dd><code>{{ w.fact_key }}</code></dd>
+        <dt>Must say</dt><dd>“{{ w.disclosure }}”</dd>
+        <dt>Saved wording</dt><dd><b>“{{ w.wording }}”</b></dd>
+        <dt>Proposed by</dt><dd>{{ w.proposed_by or 'someone' }}{% if w.task_id %}, from <a href="/tasks/{{ w.task_id }}">task {{ w.task_id }}</a>{% endif %}{% if w.created_at %} · {{ w.created_at[:16]|replace('T', ' ') }}{% endif %}</dd>
+      </dl>
+      {% if can('owner') and w.id is not none %}
+      <div class="row-actions">
+        <form method="post" action="/facts/wordings/{{ w.id }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn approve small" type="submit" {% if not owner_ready %}disabled{% endif %}>Confirm</button></form>
+        <form method="post" action="/facts/wordings/{{ w.id }}/dismiss"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost small" type="submit" {% if not owner_ready %}disabled{% endif %}>Dismiss</button></form>
+      </div>
+      {% elif not can('owner') %}<p class="small muted">The owner confirms or dismisses it.</p>{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% elif show == 'wordings' and not wordings_error %}<p class="muted">No wordings waiting.</p>
 {% endif %}
 
 {% for g in groups %}
@@ -71,8 +99,8 @@
           {% endif %}
         {% else %}
           <a class="btn small" href="/facts/{{ f.key }}/edit">Edit</a>
-          {% if v.can_confirm %}<form method="post" action="/facts/{{ f.key }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn approve small" type="submit" {% if not owner_ready %}disabled{% endif %}>Confirm</button></form>{% endif %}
-          {% if v.can_retire %}<form method="post" action="/facts/{{ f.key }}/retire"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn reject ghost small" type="submit" {% if not owner_ready %}disabled{% endif %}>Retire</button></form>{% endif %}
+          {% if v.can_confirm and can('owner') %}<form method="post" action="/facts/{{ f.key }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn approve small" type="submit" {% if not owner_ready %}disabled{% endif %}>Confirm</button></form>{% endif %}
+          {% if v.can_retire and can('owner') %}<form method="post" action="/facts/{{ f.key }}/retire"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn reject ghost small" type="submit" {% if not owner_ready %}disabled{% endif %}>Retire</button></form>{% endif %}
         {% endif %}
       </div>
     </li>
@@ -80,7 +108,7 @@
   </ul>
 </section>
 {% else %}
-{% if show != 'questions' and not error %}<p class="muted">{% if show == 'all' %}No facts yet. Add one, or start from a starter kit.{% else %}Nothing here.{% endif %}</p>{% endif %}
+{% if show not in ('questions', 'wordings') and not error %}<p class="muted">{% if show == 'all' %}No facts yet. Add one, or start from a starter kit.{% else %}Nothing here.{% endif %}</p>{% endif %}
 {% endfor %}
 {% endif %}
 {% endblock %}

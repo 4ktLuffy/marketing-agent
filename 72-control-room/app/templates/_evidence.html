@@ -11,7 +11,7 @@
         {% if ch.quote %}<q class="small">{{ ch.quote }}</q>{% endif %}
         {% if ch.detail %}<span class="small muted">{{ ch.detail }}</span>{% endif %}
         {% if ch.accepted %}<p class="small ev-accepted"><span class="ev ev-warn">accepted</span> by {{ ch.accepted.by }}: “{{ ch.accepted.note }}”</p>{% endif %}
-        {% if ch.acceptable and r.sha and task %}
+        {% if ch.acceptable and r.sha and task and can('approver') %}
         <details class="ev-accept"><summary class="small">It’s there, in other words</summary>
           <form method="post" action="/tasks/{{ task.id }}/accept" class="stack small">
             <input type="hidden" name="csrf" value="{{ csrf }}">
@@ -20,6 +20,9 @@
             <input type="hidden" name="sha" value="{{ r.sha }}">
             <label>Where does the text say it? <input name="note" required minlength="3" maxlength="300"
               placeholder="e.g. said as ‘frames extra’"></label>
+            <label>Save this exact wording for next time (copy it from the post)
+              <input name="wording" minlength="3" maxlength="200" placeholder="optional, e.g. frames extra"></label>
+            <p class="small muted">Optional. It must be copied word for word from the post; the owner confirms it before the check uses it.</p>
             <p class="small muted">Only for a disclosure written in other words. Your name and this note are kept with the approval record; approval still happens in the queue.</p>
             <button class="btn small">Accept this finding</button>
           </form>

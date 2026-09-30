@@ -582,7 +582,8 @@ def _why(e: BackendError) -> str:
     return re.sub(r"^HTTP \d+: ", "", e.detail)
 
 
-def register(app, page, current, csrf, B):
+def register(app, page, current, csrf, B, need=None):
+    need = need or (lambda role: csrf)   # older callers: CSRF only, no roles
     s = app.state.settings
     store = Store()
     app.state.onboarding = store
@@ -618,7 +619,7 @@ def register(app, page, current, csrf, B):
                     extractor=bool(s.extractor_url), errors=[], values={})
 
     @app.post("/facts/setup", response_class=HTMLResponse)
-    async def setup_sources(request: Request, session=Depends(csrf)):
+    async def setup_sources(request: Request, session=Depends(need("writer"))):
         if not s.brand_url:
             return off(request, session)
         form = await request.form()
@@ -713,7 +714,7 @@ def register(app, page, current, csrf, B):
         return await work_page(request, session, sid, load(sid))
 
     @app.post("/facts/setup/{sid}/paste", response_class=HTMLResponse)
-    async def setup_paste(request: Request, sid: str, session=Depends(csrf)):
+    async def setup_paste(request: Request, sid: str, session=Depends(need("writer"))):
         if not s.brand_url:
             return off(request, session)
         run = load(sid)
@@ -739,7 +740,7 @@ def register(app, page, current, csrf, B):
         return RedirectResponse(f"/facts/setup/{sid}/review", status_code=303)
 
     @app.post("/facts/setup/{sid}/model", response_class=HTMLResponse)
-    async def setup_model(request: Request, sid: str, session=Depends(csrf)):
+    async def setup_model(request: Request, sid: str, session=Depends(need("writer"))):
         if not s.brand_url:
             return off(request, session)
         run = load(sid)
@@ -769,7 +770,7 @@ def register(app, page, current, csrf, B):
         return review_page(request, session, sid, load(sid))
 
     @app.post("/facts/setup/{sid}/save", response_class=HTMLResponse)
-    async def setup_save(request: Request, sid: str, session=Depends(csrf)):
+    async def setup_save(request: Request, sid: str, session=Depends(need("writer"))):
         if not s.brand_url:
             return off(request, session)
         run = load(sid)

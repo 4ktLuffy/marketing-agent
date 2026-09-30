@@ -1,6 +1,6 @@
 # ads-sync
 
-Deploy **84 of 89** of the local-LLM marketing agent. It is **paid-ads reporting**: spend,
+Deploy **84 of 90** of the local-LLM marketing agent. It is **paid-ads reporting**: spend,
 conversions, CPL, ROAS, CTR and CPC per platform and per campaign, monthly budgets with
 **pacing**, and **alerts** when a campaign overspends, underspends, gets too expensive per lead,
 earns too little per euro, or spends for days without a single conversion.

@@ -49,6 +49,8 @@
 
 {% if accept_error %}<p class="alert danger" role="alert">{{ accept_error }}</p>{% endif %}
 {% if accepted %}<p class="alert ok" role="status">Finding accepted and recorded. If nothing else blocks the piece, it is now waiting for approval in the queue.</p>{% endif %}
+{% if wording_saved %}<p class="alert ok small" role="status">Wording saved for the owner to confirm. Once confirmed, the check accepts it next time.</p>{% endif %}
+{% if wording_error %}<p class="alert warn small" role="status">The finding is accepted, but the wording was not saved: {{ wording_error }}</p>{% endif %}
 {% if results %}
 <section aria-labelledby="res-h">
   <h2 id="res-h">{% if submitted %}Checked and added{% else %}Pieces{% endif %}</h2>

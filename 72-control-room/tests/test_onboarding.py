@@ -200,6 +200,7 @@ def setup(monkeypatch, mock):
     mock.get(f"{BRAND}/facts/v2").respond(json={"facts": EXISTING})
     mock.get(f"{BRAND}/starter-kits").respond(json=KITS)
     mock.get(f"{BRAND}/questions").respond(json={"questions": []})
+    mock.get(f"{BRAND}/disclosure-wordings").respond(json={"wordings": []})
     mock.get(f"{GW}/health").respond(json={"status": "ok", "provider": "openai", "base_url": SECRET_BASE, "model": "m"})
     mock.get(f"{GW}/v1/prompts").respond(json=[{"name": "propose_facts"}, {"name": "voice_profile"}])
     app = create_app()

@@ -23,6 +23,7 @@
   <div class="swipe-zone">
     {% include "_preview.html" %}
   </div>
+  {% if can('approver') %}
   <div class="actions">
     <button class="btn approve" data-act="approve" hx-post="/decide" hx-vals='{{ {"id": c.id, "decision": "approve", "seen": c.body_sha256}|tojson }}'
             hx-target="#card-{{ c.id }}" hx-swap="outerHTML" aria-keyshortcuts="a">Approve <kbd>a</kbd></button>
@@ -49,4 +50,7 @@
       <button class="btn ghost" type="button" data-act="close-sheet">Cancel</button>
     </div>
   </form>
+  {% else %}
+  <p class="small muted readonly-note">Read only: approving needs the approver role ({{ me.display if me else '' }} is {{ me.role if me else '' }}).</p>
+  {% endif %}
 </article>

@@ -30,13 +30,15 @@ Options:
                                (INSTALL.md, "Several clients on one host"); same as MKT_CLIENT=SLUG
   --port-prefix NN             with --client: host ports 127.0.0.1:NNxx (82..99); default the next
                                free one
+  --approval n8n|service       where control-room decisions go: n8n (default) or the approval
+                               service (90), so approving works without n8n
   --no-build                   use the images already built (marketing-agent-*); fail if one is missing
   --yes                        don't ask; use the defaults for anything not given
   -h, --help                   this help
 EOF
 }
 
-profile="" url="" owner_email="" assume_yes="" port_prefix="" no_build=""
+profile="" url="" owner_email="" assume_yes="" port_prefix="" no_build="" approval=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --profile) profile="${2:-}"; shift 2 ;;
@@ -51,6 +53,8 @@ while [ $# -gt 0 ]; do
     --client=*) export MKT_CLIENT="${1#*=}"; shift ;;
     --port-prefix) port_prefix="${2:-}"; shift 2 ;;
     --port-prefix=*) port_prefix="${1#*=}"; shift ;;
+    --approval) approval="${2:-}"; shift 2 ;;
+    --approval=*) approval="${1#*=}"; shift ;;
     --no-build) no_build=1; shift ;;
     --yes|-y) assume_yes=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -187,6 +191,12 @@ for key in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FO
 done
 [ "$(env_get FORMS_USER)" ] || env_set FORMS_USER reviewer
 [ "$(env_get CONTROL_USER)" ] || env_set CONTROL_USER approver
+case "${approval:-}" in
+  "") ;;
+  n8n) env_set CONTROL_APPROVAL_URL "" ;;
+  service) env_set CONTROL_APPROVAL_URL "http://approval-service:8000" ;;
+  *) die "--approval is n8n or service" ;;
+esac
 [ "$generated" -gt 0 ] && echo "    generated $generated secret(s) into $ENV_FILE (not shown)"
 
 # Profile: flag > question (default: the installed one, else core).

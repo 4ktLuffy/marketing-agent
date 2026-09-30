@@ -573,7 +573,7 @@ services:
     volumes: [video_data:/data]
 
   # Mobile-first review queue, calendar and dashboards (72). It holds no APPROVER_KEY: decisions
-  # go to n8n (webhook mkt-apply-decisions, same code as form 38). Bound to localhost; for a
+  # go to n8n (webhook mkt-apply-decisions, same code as form 38) or to the approval service (90). Bound to localhost; for a
   # phone, put it behind your HTTPS reverse proxy (72-control-room/README.md).
   control-room:
     <<: *service
@@ -593,6 +593,8 @@ services:
       SESSION_IDLE_MINUTES: ${CONTROL_SESSION_IDLE_MINUTES:-120}
       N8N_BASE_URL: http://n8n:5678
       N8N_PUBLIC_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      # Empty: decisions go to n8n. http://approval-service:8000: to the approval service (90).
+      APPROVAL_URL: ${CONTROL_APPROVAL_URL-}
       # Brand setup pages: edit the brand (05) and turn the voice interview into a profile (03).
       BRAND_URL: http://brand-service:8000
       GATEWAY_URL: http://llm-gateway:8000
@@ -618,6 +620,8 @@ services:
       # Activity page: more gateways to read (label=url; an empty url is skipped) and the profile.
       ACTIVITY_GATEWAYS: verifier=http://llm-gateway-verifier:8000,assistant=${ASSISTANT_GATEWAY_URL:-}
       INSTALL_PROFILE: ${COMPOSE_PROFILES-full}
+    # People and roles: the users file (python -m app.users add ...) lives here.
+    volumes: [control_room_data:/data]
 
   clip-finder:
     <<: *service
@@ -858,6 +862,24 @@ services:
       PACK_MAX_CHARS: ${TASKS_PACK_MAX_CHARS:-8000}
     volumes: [task_data:/data]
 
+  # Approval service (90): applies the control room's decisions (approve / edit / reject / back to
+  # draft) to the calendar without n8n. Besides n8n it is the only service holding APPROVER_KEY;
+  # only the control room may call it (X-Control-Key). Used when CONTROL_APPROVAL_URL points here
+  # (install.sh --approval service); otherwise decisions go through n8n as before.
+  approval-service:
+    <<: *service
+    image: marketing-agent-approval-service
+    build: ../90-approval-service
+    # No host port on purpose: it holds APPROVER_KEY and only the control room calls it, inside
+    # the compose network. (Host port 90 of each block is Listmonk's in agency mode.)
+    environment:
+      <<: *keyed
+      APPROVER_KEY: ${APPROVER_KEY:?set APPROVER_KEY in .env}
+      CONTROL_ROOM_KEY: ${CONTROL_ROOM_KEY:?set CONTROL_ROOM_KEY in .env}
+      CALENDAR_URL: http://content-calendar:8000
+      LEARNING_URL: http://learning-service:8000
+      ENGINE_URL: ${ENGINE_URL-http://content-engine:8000}
+
   # Claude connector (89, MCP): read public facts, make packs, submit answers, check text. It holds
   # only the internal key, so it can never approve, confirm a fact or publish. Profile "claude":
   #   COMPOSE_PROFILES=core,claude  (or: docker compose --profile claude up -d mcp-connector)
@@ -951,6 +973,7 @@ volumes:
   flow_data:
   feed_data:
   task_data:
+  control_room_data:
   site_data:
   lead_data:
   visibility_data:

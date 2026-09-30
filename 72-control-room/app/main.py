@@ -18,11 +18,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import activity, brand_setup, client_links, config, facts_page, feeds, onboarding, positioning, tasks, views
+from . import activity, brand_setup, client_links, config, facts_page, feeds, onboarding, positioning, tasks, users, views
 from . import results as results_page
 from .backends import BackendError, Backends, gather_soft
 from .pending import PendingDecisions
-from .security import LoginLimiter, Session, Sessions, check_login, client_ip, same
+from .security import ACTOR, LoginLimiter, Session, Sessions, client_ip, same
 
 HERE = Path(__file__).parent
 SESSION_COOKIE = "cr_session"
@@ -36,6 +36,13 @@ CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
 
 class NotLoggedIn(Exception):
     pass
+
+
+class Forbidden(Exception):
+    """Logged in, but the role can't do this (need(role) in create_app)."""
+
+    def __init__(self, session: Session):
+        self.session = session
 
 
 def create_app() -> FastAPI:
@@ -65,12 +72,15 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
     templates.env.globals["STATUS_COLORS"] = views.STATUS_COLORS
+    templates.env.globals["can"] = lambda role: False   # page() passes the session's own
+    templates.env.globals["me"] = None
 
     def secure(request: Request) -> bool:
         return settings.cookie_secure == "true" or (settings.cookie_secure == "auto" and request.url.scheme == "https")
 
     @app.middleware("http")
     async def headers(request: Request, call_next):
+        ACTOR.set(None)   # set again by `current` for a logged-in request
         resp = await call_next(request)
         resp.headers.setdefault("Content-Security-Policy", CSP)
         resp.headers["X-Content-Type-Options"] = "nosniff"
@@ -94,23 +104,71 @@ def create_app() -> FastAPI:
             return RedirectResponse(f"/login?next={quote(nxt)}", status_code=303)
         return JSONResponse({"detail": "log in first"}, status_code=401)
 
-    def current(request: Request) -> Session:
-        s = app.state.sessions.get(request.cookies.get(SESSION_COOKIE))
+    @app.exception_handler(Forbidden)
+    async def forbidden(request: Request, exc: Forbidden):
+        role = exc.session.role or "none"
+        return page(request, "error.html", exc.session, 403, nav="more",
+                    error=f"Your role ({role}) can't do this; ask the owner.")
+
+    async def current(request: Request) -> Session:
+        """The session, with the person's role and name as the users file says NOW (a removed user
+        is logged out, a changed role applies at once). Async on purpose: ACTOR must be set in the
+        request's own context, not in a worker thread's copy."""
+        sid = request.cookies.get(SESSION_COOKIE)
+        s = app.state.sessions.get(sid)
         if s is None:
             raise NotLoggedIn()
+        if s.user:
+            try:
+                u = users.lookup(settings, s.user)
+            except users.UsersFileError:
+                u = None
+            if u is None:
+                app.state.sessions.drop(sid)
+                raise NotLoggedIn()
+            s.display, s.role = u.display, u.role
+        ACTOR.set(s.display or None)
         return s
 
-    async def csrf(request: Request, session: Session = Depends(current)) -> Session:
+    async def check_csrf(request: Request, session: Session) -> None:
         token = request.headers.get("X-CSRF-Token")
         if token is None and request.headers.get("content-type", "").startswith(
                 ("application/x-www-form-urlencoded", "multipart/form-data")):
             token = (await request.form()).get("csrf")
         if not token or not same(str(token), session.csrf):
             raise HTTPException(403, "missing or wrong CSRF token (reload the page)")
+
+    async def csrf(request: Request, session: Session = Depends(current)) -> Session:
+        await check_csrf(request, session)
         return session
 
+    needs: dict = {}
+
+    def need(role: str):
+        """Dependency: logged in with at least `role` (owner > approver > writer); a POST also needs
+        the CSRF token (checked first). Anything less gets the 403 page."""
+        if role not in users.RANK:
+            raise ValueError(role)
+        if role not in needs:
+            async def dep(request: Request, session: Session = Depends(current)) -> Session:
+                if request.method not in ("GET", "HEAD", "OPTIONS"):
+                    await check_csrf(request, session)
+                if users.RANK.get(session.role, 0) < users.RANK[role]:
+                    raise Forbidden(session)
+                return session
+            dep.role = role
+            needs[role] = dep
+        return needs[role]
+
+    app.state.need = need
+
     def page(request: Request, name: str, session: Session | None, status: int = 200, **ctx):
-        ctx.update(request=request, csrf=session.csrf if session else None, user=settings.user,
+        me = {"name": session.user or settings.user, "display": session.display or settings.reviewer,
+              "role": session.role} if session else None
+        rank = users.RANK.get(me["role"], 0) if me else 0
+        ctx.update(request=request, csrf=session.csrf if session else None,
+                   user=me["name"] if me else settings.user, me=me,
+                   can=lambda role: rank >= users.RANK.get(role, 99),
                    undo_seconds=settings.undo_seconds)
         return templates.TemplateResponse(request, name, ctx, status_code=status)
 
@@ -132,7 +190,7 @@ def create_app() -> FastAPI:
         if not re.fullmatch(r"[A-Za-z0-9_-]{32,64}", token):
             token = secrets.token_urlsafe(32)
         resp = page(request, "login.html", None, login_token=token, next=_safe_next(next),
-                    configured=bool(settings.password))
+                    configured=users.state(settings) in ("env", "file"))
         resp.set_cookie(LOGIN_COOKIE, token, max_age=3600, httponly=True, samesite="strict", secure=secure(request))
         return resp
 
@@ -143,21 +201,32 @@ def create_app() -> FastAPI:
         pre = request.cookies.get(LOGIN_COOKIE) or ""
         if not pre or not same(csrf, pre):
             raise HTTPException(403, "missing or wrong CSRF token (reload the login page)")
-        ctx = dict(login_token=pre, next=_safe_next(next), configured=bool(settings.password))
-        if not settings.password:
-            return page(request, "login.html", None, 503, error="CONTROL_PASSWORD is not set on the server.", **ctx)
+        st = users.state(settings)
+        ctx = dict(login_token=pre, next=_safe_next(next), configured=st in ("env", "file"))
+        if st == "bad":
+            return page(request, "login.html", None, 503, error="The users file can't be read; the owner can check "
+                        "it with python -m app.users list.", **ctx)
+        if st == "none":
+            msg = ("CONTROL_PASSWORD is not set on the server." if users.read_users(settings.users_file) is None
+                   else "Nobody is in the users file yet; add someone with python -m app.users add.")
+            return page(request, "login.html", None, 503, error=msg, **ctx)
         wait = app.state.limiter.retry_after(ip)
         if wait:
             resp = page(request, "login.html", None, 429,
                         error=f"Too many failed logins. Try again in {max(1, wait // 60)} min.", **ctx)
             resp.headers["Retry-After"] = str(wait)
             return resp
-        if not check_login(settings, user[:200], password[:1000]):
+        try:
+            who = users.authenticate(settings, user[:200], password[:1000])
+        except users.UsersFileError:
+            return page(request, "login.html", None, 503, error="The users file can't be read; the owner can "
+                        "check it with python -m app.users list.", **ctx)
+        if who is None:
             app.state.limiter.failed(ip)
             return page(request, "login.html", None, 401, error="Wrong user or password.", **ctx)
         app.state.limiter.succeeded(ip)
         app.state.sessions.drop(request.cookies.get(SESSION_COOKIE))
-        sid, _ = app.state.sessions.create()
+        sid, _ = app.state.sessions.create(who)
         resp = RedirectResponse(_safe_next(next), status_code=303)
         resp.set_cookie(SESSION_COOKIE, sid, max_age=int(settings.session_hours * 3600), httponly=True,
                         samesite="strict", secure=secure(request), path="/")
@@ -198,7 +267,7 @@ def create_app() -> FastAPI:
     @app.post("/decide")
     async def decide(request: Request, id: int = Form(...), decision: str = Form(...), text: str = Form(""),
                      reason: str = Form(""), publish_at: str = Form(""), seen: str = Form(""),
-                     session: Session = Depends(csrf)):
+                     session: Session = Depends(need("approver"))):
         if decision not in DECISIONS or id < 1:
             raise HTTPException(422, "unknown decision")
         if len(text) > 60000 or len(reason) > 500 or len(publish_at) > 40:
@@ -210,13 +279,14 @@ def create_app() -> FastAPI:
         if seen and not views.SHA256.match(seen):
             raise HTTPException(422, "seen: the text's sha256, 64 hex characters")
         d = P().add(id, decision, text=text if decision == "edit" else None, reason=reason.strip() or None,
-                    publish_at=publish_at or None, seen_sha256=seen or None)
+                    publish_at=publish_at or None, seen_sha256=seen or None,
+                    reviewer=session.display or settings.reviewer)
         if request.headers.get("HX-Request"):
             return frag(request, "_decided.html", session, d=d)
         return RedirectResponse(f"/?toast={d.token}", status_code=303)
 
     @app.post("/undo/{token}")
-    async def undo(request: Request, token: str, session: Session = Depends(csrf)):
+    async def undo(request: Request, token: str, session: Session = Depends(need("approver"))):
         d = P().undo(token)
         htmx = request.headers.get("HX-Request")
         if not htmx:
@@ -294,7 +364,7 @@ def create_app() -> FastAPI:
         return [views.event(i) for i in items if i.get("scheduled_at")]
 
     @app.post("/calendar/reschedule")
-    async def reschedule(request: Request, session: Session = Depends(csrf)):
+    async def reschedule(request: Request, session: Session = Depends(need("approver"))):
         try:
             body = await request.json()
             item_id, start = int(body["id"]), str(body["start"])
@@ -340,7 +410,7 @@ def create_app() -> FastAPI:
         return page(request, "engine.html", session, rows=rows, error=err, nav="more")
 
     @app.post("/engine/{pid}/resume")
-    async def resume(request: Request, pid: int, session: Session = Depends(csrf)):
+    async def resume(request: Request, pid: int, session: Session = Depends(need("approver"))):
         try:
             await B().resume(pid)
         except BackendError as e:
@@ -381,7 +451,7 @@ def create_app() -> FastAPI:
         return page(request, "more.html", session, nav="more")
 
     # ------------------------------------------------------------------ 11 brand setup (05, 03)
-    brand_setup.register(app, page, current, csrf, B)
+    brand_setup.register(app, page, current, csrf, B, need=need)
 
     # ------------------------------------------------------------------ 12 positioning map (78, read-only)
     positioning.register(app, page, current)
@@ -393,13 +463,13 @@ def create_app() -> FastAPI:
     activity.register(app, page, current)
 
     # ------------------------------------------------------------------ 15 facts (05 v2), 16 tasks + blockers (88)
-    onboarding.register(app, page, current, csrf, B)   # /facts/setup before /facts/{key}/...
-    facts_page.register(app, page, current, csrf, B)
+    onboarding.register(app, page, current, csrf, B, need=need)   # /facts/setup before /facts/{key}/...
+    facts_page.register(app, page, current, csrf, B, need=need)
     results_page.register(app, page, current)       # /tasks/results before /tasks/{task_id}
-    tasks.register(app, page, current, csrf, B)
+    tasks.register(app, page, current, csrf, B, need=need)
 
     # ------------------------------------------------------------------ 17 client approval links (19; /c/ is public)
-    client_links.register(app, page, current, csrf, B)
+    client_links.register(app, page, current, csrf, B, need=need)
 
     # ------------------------------------------------------------------ media (17 cards, 71 videos)
     @app.get("/media/{kind}/{name}")

@@ -1,4 +1,5 @@
-"""Login, sessions, CSRF and the login rate limit. One approver, sessions in memory."""
+"""Login, sessions, CSRF and the login rate limit. Named users (app/users.py), sessions in memory."""
+import contextvars
 import hashlib
 import hmac
 import secrets
@@ -12,10 +13,18 @@ def same(a: str, b: str) -> bool:
     return hmac.compare_digest(hashlib.sha256(a.encode()).digest(), hashlib.sha256(b.encode()).digest())
 
 
+# The logged-in person's display name for this request: set by main.current, read by the backends
+# (X-Actor, 88's "by"). None outside a logged-in request -> settings.reviewer.
+ACTOR: contextvars.ContextVar[str | None] = contextvars.ContextVar("actor", default=None)
+
+
 def check_login(settings, user: str, password: str) -> bool:
-    ok_user = same(user.strip(), settings.user)
-    ok_pass = same(password, settings.password)   # always evaluated: no early exit on the user name
-    return bool(settings.password) and ok_user and ok_pass
+    """True when the name and password match a user (the users file, or CONTROL_USER)."""
+    from .users import UsersFileError, authenticate
+    try:
+        return authenticate(settings, user, password) is not None
+    except UsersFileError:
+        return False
 
 
 @dataclass
@@ -23,11 +32,14 @@ class Session:
     created: float
     last_seen: float
     csrf: str = field(default_factory=lambda: secrets.token_urlsafe(32))
+    user: str = ""
+    display: str = ""
+    role: str = "writer"
 
 
 class Sessions:
     """Session id -> Session. Only a SHA-256 of the id is kept, so a memory dump of this dict
-    can't be replayed as a cookie. A restart logs everyone out (one approver: acceptable)."""
+    can't be replayed as a cookie. A restart logs everyone out."""
 
     def __init__(self, hours: float, idle_minutes: float, clock=time.time):
         self.max_age = hours * 3600
@@ -39,11 +51,14 @@ class Sessions:
     def _h(sid: str) -> str:
         return hashlib.sha256(sid.encode()).hexdigest()
 
-    def create(self) -> tuple[str, Session]:
+    def create(self, user=None) -> tuple[str, Session]:
+        """`user`: a users.User (name, display, role)."""
         now = self.clock()
         self._by_hash = {h: s for h, s in self._by_hash.items() if self._alive(s, now)}
         sid = secrets.token_urlsafe(32)
         s = Session(created=now, last_seen=now)
+        if user is not None:
+            s.user, s.display, s.role = user.name, user.display, user.role
         self._by_hash[self._h(sid)] = s
         return sid, s
 

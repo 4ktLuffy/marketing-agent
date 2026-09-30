@@ -1,6 +1,6 @@
 # 43 · Error handler
 
-Deploy **43 of 89** of the local-LLM marketing agent. This deploy is an n8n workflow.
+Deploy **43 of 90** of the local-LLM marketing agent. This deploy is an n8n workflow.
 
 Every other workflow reports failures here (`settings.errorWorkflow`). It posts the workflow name, the failing node, the error and a link to the execution to your webhook.
 

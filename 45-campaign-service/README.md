@@ -1,6 +1,6 @@
 # campaign-service
 
-Deploy **45 of 89** of the local-LLM marketing agent. It holds each campaign: the goal,
+Deploy **45 of 90** of the local-LLM marketing agent. It holds each campaign: the goal,
 audience, channels, dates and the KPI targets, set before anything ships. It builds UTM
 links for the campaign, pulls actual results from the link shortener (16) and analytics (20),
 and returns a scorecard that says which targets are met, on track or behind. It uses no LLM.

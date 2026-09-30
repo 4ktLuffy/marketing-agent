@@ -2,7 +2,7 @@
 
 Required: brand service (05: facts, profile summary, brand check, fact changes) and content
 calendar (19: review items). Optional: platform rules (14), claim checker (44, only with
-MODEL_CHECK=auto), lead hub (80, for the blockers list). A missing optional service is skipped
+MODEL_CHECK=auto or review), lead hub (80, for the blockers list). A missing optional service is skipped
 with a note; nothing here ever raises on an optional service being absent.
 """
 import os
@@ -40,8 +40,14 @@ def leads_url() -> str:
     return _url("LEADS_URL")
 
 
+def model_check_mode() -> str:
+    """off | auto | review. auto/review need CLAIMS_URL; anything else is off."""
+    mode = (os.environ.get("MODEL_CHECK") or "off").strip().lower()
+    return mode if mode in ("auto", "review") and claims_url() else "off"
+
+
 def model_check_on() -> bool:
-    return (os.environ.get("MODEL_CHECK") or "off").strip().lower() == "auto" and bool(claims_url())
+    return model_check_mode() == "auto"
 
 
 def _timeout(name: str = "SERVICE_TIMEOUT", default: float = 15.0) -> float:
@@ -150,6 +156,18 @@ def fact_changes(since: int) -> dict:
     return out
 
 
+def propose_wording(fact_key: str, disclosure: str, wording: str, task_id: str | None, by: str | None) -> dict:
+    """Propose the business's own words for a required disclosure (05 stores it as a draft; the
+    owner confirms it there). Raises ServiceError; the caller treats it as best effort."""
+    base = _need(brand_url(), "BRAND_URL", "the brand service (05)")
+    out = _call("POST", f"{base}/disclosure-wordings", "brand service", timeout=_timeout("WORDING_TIMEOUT", 10),
+                json={"fact_key": fact_key, "disclosure": disclosure, "wording": wording,
+                      "task_id": task_id, "proposed_by": by})
+    if not isinstance(out, dict) or not isinstance(out.get("id"), int):
+        raise ServiceError("brand service returned no wording id")
+    return out
+
+
 def open_questions() -> list[dict]:
     base = brand_url()
     if not base:
@@ -240,6 +258,21 @@ def model_check(text: str, fact_lines: list[str]) -> tuple[list[dict], str | Non
     except ServiceError as exc:
         return [], f"model check skipped: {exc}"
     claims = [c for c in (out or {}).get("claims") or [] if isinstance(c, dict) and not c.get("supported", True)]
+    return claims, None
+
+
+def model_review(sentences: list[str], fact_lines: list[str]) -> tuple[list[dict], str | None]:
+    """MODEL_CHECK=review: only the chosen sentences go to 44, one per line. No `context` is sent:
+    44 turns context into evidence lines ([c1] ...), so an instruction there would count as a fact.
+    Any error (timeout, HTTP, bad JSON) returns ([], note) and the piece is checked by rules only."""
+    if model_check_mode() != "review" or not sentences:
+        return [], None
+    try:
+        out = _call("POST", f"{claims_url()}/verify", "claim checker", timeout=_timeout("CLAIMS_TIMEOUT", 120),
+                    json={"text": "\n".join(sentences), "facts": [f[:500] for f in fact_lines[:200]]})
+        claims = [c for c in (out or {}).get("claims") or [] if isinstance(c, dict) and not c.get("supported", True)]
+    except (ServiceError, AttributeError, TypeError) as exc:
+        return [], f"model check skipped: {exc}"
     return claims, None
 
 

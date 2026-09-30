@@ -12,6 +12,9 @@ Storage is one SQLite file (`FACTS_DB`, default `/data/facts.sqlite`):
                   DELETE, so history cannot be rewritten through the service or by hand.
 - `changes`       append-only log (`seq` only grows) that 88 polls with `/facts/changes?since=`.
 - `open_questions`, `rules` (starter-kit rules, draft until the owner confirms), `meta`.
+- `disclosure_wordings` a business's own words for a fact's required disclosure, proposed when a
+                  person accepts a missing_disclosure finding; served on the fact only once the
+                  owner confirms it. Deciding one never writes a `changes` row.
 
 The brand.yaml / overrides facts are NOT stored here: they are "derived" facts computed from the
 brand on every read (see main.py) and passed in where needed.
@@ -58,7 +61,7 @@ QUERY_DIMS = {"site": "sites", "region": "regions", "channel": "channels", "segm
               "plan_tier": "plan_tiers", "variant": "variants"}
 # Fields a GET returns that a client may send back unchanged; they are dropped, never stored.
 READ_ONLY = {"version", "latest_version", "derived", "versions", "updated_at", "superseded_by",
-             "created_at", "created_by", "confirmed_by", "scope_note", "id"}
+             "created_at", "created_by", "confirmed_by", "scope_note", "id", "disclosure_wordings"}
 
 
 def _s(max_len: int, min_len: int = 0):
@@ -270,6 +273,13 @@ CREATE TABLE IF NOT EXISTS rules (
     created_at TEXT NOT NULL, UNIQUE (kit, kind, phrase)
 );
 CREATE TABLE IF NOT EXISTS meta (name TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS disclosure_wordings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fact_key TEXT NOT NULL, disclosure TEXT NOT NULL, wording TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft', proposed_by TEXT, task_id TEXT,
+    created_at TEXT NOT NULL, decided_by TEXT, decided_at TEXT
+);
+CREATE INDEX IF NOT EXISTS disclosure_wordings_key ON disclosure_wordings (fact_key, status);
 CREATE TRIGGER IF NOT EXISTS fact_versions_no_update BEFORE UPDATE ON fact_versions
 BEGIN SELECT RAISE(ABORT, 'fact_versions is append-only'); END;
 CREATE TRIGGER IF NOT EXISTS fact_versions_no_delete BEFORE DELETE ON fact_versions
@@ -463,10 +473,11 @@ def effective_status(row, data: dict, day: str, succ: dict | None = None) -> str
     return status
 
 
-def render(row, data: dict, day: str, succ: dict | None = None) -> dict:
+def render(row, data: dict, day: str, succ: dict | None = None, wordings: dict | None = None) -> dict:
     out = dict(data)
     out.update(status=effective_status(row, data, day, succ), version=row["current_version"],
-               latest_version=row["latest_version"], derived=False, updated_at=row["updated_at"])
+               latest_version=row["latest_version"], derived=False, updated_at=row["updated_at"],
+               disclosure_wordings=list((wordings or {}).get(row["key"], [])))
     return out
 
 
@@ -656,7 +667,7 @@ def get(conn, key: str) -> dict:
     if row is None:
         raise NotFound(key)
     data = _version_data(conn, key, row["current_version"])
-    return render(row, data, today(), successor_map(conn)) | {"superseded_by": _superseded_by(conn, key),
+    return render(row, data, today(), successor_map(conn), active_wordings(conn)) | {"superseded_by": _superseded_by(conn, key),
                                           "versions": versions_of(conn, key)}
 
 
@@ -673,6 +684,80 @@ def changes_since(conn, since: int, limit: int = 1000) -> dict:
     rows = conn.execute("SELECT seq, key, version, kind, at FROM changes WHERE seq > ? ORDER BY seq LIMIT ?",
                         (since, limit)).fetchall()
     return {"seq": m, "changes": [dict(r) for r in rows]}
+
+
+# --- disclosure wordings -----------------------------------------------------------------
+# A person accepted a missing_disclosure finding because the text says the disclosure in other
+# words. Those exact words are proposed here (draft) and count as the disclosure only after the
+# owner confirms them. They are kept apart from allowed_phrasing and from the fact's versions:
+# confirming or dismissing one writes no `changes` row, so approved posts never go back to draft.
+
+WORDING_STATUSES = ("draft", "active", "dismissed")
+WORDING_COLS = ("id", "fact_key", "disclosure", "wording", "status", "proposed_by", "task_id",
+                "created_at", "decided_by", "decided_at")
+
+
+class WordingIn(_Strict):
+    fact_key: _s(60, 1)
+    disclosure: _s(200, 1)
+    wording: _s(200, 1)
+    task_id: _s(80) | None = None
+    proposed_by: _s(80) | None = None
+
+
+def norm_text(s: str) -> str:
+    return " ".join(str(s).split()).casefold()
+
+
+def _wording(r) -> dict:
+    return {k: r[k] for k in WORDING_COLS}
+
+
+def active_wordings(conn) -> dict[str, list[str]]:
+    """fact key -> the wordings the owner confirmed, oldest first."""
+    out: dict[str, list[str]] = {}
+    if conn is None:
+        return out
+    for r in conn.execute("SELECT fact_key, wording FROM disclosure_wordings WHERE status = 'active' ORDER BY id"):
+        out.setdefault(r["fact_key"], []).append(r["wording"])
+    return out
+
+
+def propose_wording(w: WordingIn, disclosure: str) -> tuple[dict, bool]:
+    """(row, created). `disclosure` is the fact's own text of the disclosure. The same wording for
+    the same disclosure is never stored twice (a dismissed one stays dismissed)."""
+    wording = " ".join(w.wording.split())
+    with _lock, connect() as conn:
+        for r in conn.execute("SELECT * FROM disclosure_wordings WHERE fact_key = ? ORDER BY id", (w.fact_key,)):
+            if norm_text(r["disclosure"]) == norm_text(disclosure) and norm_text(r["wording"]) == norm_text(wording):
+                return _wording(r), False
+        cur = conn.execute(
+            "INSERT INTO disclosure_wordings (fact_key, disclosure, wording, status, proposed_by, task_id, created_at) "
+            "VALUES (?,?,?,'draft',?,?,?)", (w.fact_key, disclosure, wording, w.proposed_by, w.task_id, now_iso()))
+        r = conn.execute("SELECT * FROM disclosure_wordings WHERE id = ?", (cur.lastrowid,)).fetchone()
+        return _wording(r), True
+
+
+def list_wordings(conn, status: str | None, fact_key: str | None, limit: int = 500) -> list[dict]:
+    if conn is None:
+        return []
+    where, args = [], []
+    if status:
+        where.append("status = ?"), args.append(status)
+    if fact_key:
+        where.append("fact_key = ?"), args.append(fact_key)
+    sql = "SELECT * FROM disclosure_wordings" + (" WHERE " + " AND ".join(where) if where else "")
+    return [_wording(r) for r in conn.execute(sql + " ORDER BY id DESC LIMIT ?", (*args, limit))]
+
+
+def set_wording_status(wid: int, status: str, actor: str | None) -> dict:
+    with _lock, connect() as conn:
+        r = conn.execute("SELECT * FROM disclosure_wordings WHERE id = ?", (wid,)).fetchone()
+        if r is None:
+            raise NotFound(f"disclosure wording {wid}")
+        conn.execute("UPDATE disclosure_wordings SET status = ?, decided_by = ?, decided_at = ? WHERE id = ?",
+                     (status, actor, now_iso(), wid))
+        return _wording(conn.execute("SELECT * FROM disclosure_wordings WHERE id = ?", (wid,)).fetchone())
 
 
 # --- open questions -----------------------------------------------------------------------

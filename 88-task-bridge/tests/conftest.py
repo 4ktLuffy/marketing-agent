@@ -40,6 +40,7 @@ class Stack:
     verify_answer: list = field(default_factory=list)
     brand_violations: list = field(default_factory=list)
     queries: list = field(default_factory=list)
+    wording_posts: list = field(default_factory=list)
 
     def fact(self, key):
         return next(f for f in self.facts if f["key"] == key)
@@ -146,6 +147,14 @@ def stack(monkeypatch, mock):
         seq = max([c["seq"] for c in s.changes] + [0])
         return httpx.Response(200, json={"seq": seq, "changes": [c for c in s.changes if c["seq"] > since]})
     mock.get(f"{BRAND}/facts/changes").mock(side_effect=guarded(changes))
+
+    def propose_wording(r):  # 05 POST /disclosure-wordings: a draft row (dedupe is 05's business)
+        body = json.loads(r.content)
+        s.wording_posts.append(body)
+        row = {"id": len(s.wording_posts), **body, "status": "draft", "created_at": "2026-09-30T10:00:00Z",
+               "decided_by": None, "decided_at": None}
+        return httpx.Response(201, json=row)
+    s.wording_route = mock.post(f"{BRAND}/disclosure-wordings").mock(side_effect=guarded(propose_wording))
 
     # 14 platform rules
     rules = {"linkedin": {"limit": 3000}, "instagram": {"limit": 2200, "max_hashtags": 30}, "x": {"limit": 280}}

@@ -1,6 +1,6 @@
 # postiz-bridge
 
-Deploy **54 of 89** of the local-LLM marketing agent. It receives the approved posts that the
+Deploy **54 of 90** of the local-LLM marketing agent. It receives the approved posts that the
 publisher (39) sends to `PUBLISH_WEBHOOK_URL` and posts them through
 [Postiz](https://postiz.com), self-hosted or cloud. Each of our channels (`linkedin`, `x`, …)
 maps to one connected Postiz integration. It uses no LLM.

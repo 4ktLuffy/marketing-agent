@@ -1,6 +1,6 @@
 # claim-checker
 
-Deploy **44 of 89** of the local-LLM marketing agent. It flags statements in marketing copy
+Deploy **44 of 90** of the local-LLM marketing agent. It flags statements in marketing copy
 that your **approved facts don't support**: invented tasting notes, wrong prices, made-up
 policies, awards and statistics.
 

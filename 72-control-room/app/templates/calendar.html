@@ -4,7 +4,7 @@
 {% block main %}
 <h1>Calendar</h1>
 <ul class="legend">{% for s, col in STATUS_COLORS.items() %}<li><span class="dot" style="background: {{ col }}"></span>{{ s|replace('_', ' ') }}</li>{% endfor %}</ul>
-<p class="small muted">Times in UTC. Drag an item to move it (idea, draft, in review, approved). Tap an item to open it.</p>
+<p class="small muted">Times in UTC. {% if can('approver') %}Drag an item to move it (idea, draft, in review, approved). {% endif %}Tap an item to open it.</p>
 <p class="alert danger" id="cal-error" hidden></p>
-<div id="calendar"></div>
+<div id="calendar" data-editable="{{ 'true' if can('approver') else 'false' }}"></div>
 {% endblock %}

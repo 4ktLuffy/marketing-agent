@@ -1,6 +1,6 @@
 # flow-runner
 
-Deploy **86 of 89** of the local-LLM marketing agent. It runs **triggered lifecycle emails**:
+Deploy **86 of 90** of the local-LLM marketing agent. It runs **triggered lifecycle emails**:
 a welcome series when someone subscribes, onboarding when a trial starts, a win-back when a
 customer goes quiet, or your own flow on your own event.
 

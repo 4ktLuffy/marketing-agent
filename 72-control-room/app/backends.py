@@ -18,6 +18,8 @@ results carries a key or an internal URL back to a page.
 | activity (calls in flight, recent calls, model totals) | 03 llm-gateway (each gateway in ACTIVITY_GATEWAYS) | X-API-Key |
 | facts v2 (list, versions, add, edit, query), questions, starter kits, rules (read) | 05 brand-service | X-API-Key |
 | confirm / retire a fact, import, apply a starter kit, confirm / dismiss a kit rule | 05 brand-service | X-API-Key + X-Owner-Key (FACT_OWNER_KEY) |
+| learned disclosure wordings: list drafts | 05 brand-service | X-API-Key |
+| learned disclosure wordings: confirm / dismiss | 05 brand-service | X-API-Key + X-Owner-Key (FACT_OWNER_KEY) |
 | tasks, packs, paste, split, submit, export, blockers, reconcile | 88 task-bridge | X-API-Key |
 | results: an item's audit and versions (read-only) | 19 content-calendar | X-API-Key |
 | client links: make, list, revoke; a client's page: resolve / respond with token + PIN | 19 content-calendar | X-API-Key |
@@ -30,8 +32,11 @@ The control room never holds APPROVER_KEY: only n8n (38, 39, and this webhook) c
 """
 import asyncio
 import time
+import unicodedata
 
 import httpx
+
+from .security import ACTOR
 
 
 class BackendError(Exception):
@@ -110,21 +115,28 @@ class Backends:
 
     # ---- n8n: decisions run in the workflow that shares form 38's code
     async def apply_decisions(self, reviewer: str, decisions: list[dict]) -> dict:
+        """To the approval service (90) when APPROVAL_URL is set, else the n8n webhook: the same
+        payload, the same X-Control-Key and the same answer shape either way."""
+        if self.s.approval_url:
+            name, url = "approval service", f"{self.s.approval_url}/decisions"
+            not_json = "answer is not JSON (is the approval service running?)"
+        else:
+            name, url = "n8n", f"{self.s.n8n_url}/webhook/mkt-apply-decisions"
+            not_json = "answer is not JSON (is workflow 72 imported and published?)"
         try:
-            r = await self.c.post(f"{self.s.n8n_url}/webhook/mkt-apply-decisions",
-                                  json={"reviewer": reviewer, "decisions": decisions},
+            r = await self.c.post(url, json={"reviewer": reviewer, "decisions": decisions},
                                   headers={"X-Control-Key": self.s.control_key},
                                   timeout=self.s.decision_timeout_s)
         except httpx.HTTPError as e:
-            raise BackendError("n8n", f"unreachable ({type(e).__name__})") from None
+            raise BackendError(name, f"unreachable ({type(e).__name__})") from None
         if r.status_code >= 400:
-            raise BackendError("n8n", _detail(r), r.status_code)
+            raise BackendError(name, _detail(r), r.status_code)
         try:
             body = r.json()
         except ValueError:
-            raise BackendError("n8n", "answer is not JSON (is workflow 72 imported and published?)") from None
+            raise BackendError(name, not_json) from None
         if not isinstance(body, dict):
-            raise BackendError("n8n", "unexpected answer")
+            raise BackendError(name, "unexpected answer")
         return body
 
     # ---- 46 learning-service
@@ -274,8 +286,15 @@ class Backends:
         return out
 
     # ---- 05 brand-service: facts v2, questions, starter kits, rules (contract §2)
+    def who(self) -> str:
+        """The logged-in person's display name for this request (settings.reviewer outside one)."""
+        return (ACTOR.get() or self.s.reviewer or "control room")[:80]
+
     def _actor(self) -> dict:
-        return {"X-Actor": (self.s.reviewer or "control room")[:80]}
+        # A header value must be ASCII: accents are folded ("Hénos" -> "Henos"), anything else dropped.
+        folded = unicodedata.normalize("NFKD", self.who()).encode("ascii", "ignore").decode()
+        clean = "".join(ch for ch in folded if 32 <= ord(ch) < 127).strip()
+        return {"X-Actor": clean or (self.s.reviewer or "control room")[:80]}
 
     def _owner(self) -> dict:
         """X-Owner-Key for the few calls that turn a draft into a fact (or retire one). Refused here,
@@ -348,6 +367,15 @@ class Backends:
     async def kit_rule_set(self, rid: int, action: str) -> dict:
         return await self._brand("POST", f"/rules/{rid}/{action}", owner=True)
 
+    async def disclosure_wordings(self, status: str | None = "draft") -> list[dict]:
+        """05 GET /disclosure-wordings: wordings people saved when accepting a finding (88)."""
+        body = await self._brand("GET", "/disclosure-wordings", params={"status": status} if status else None)
+        ws = body.get("wordings") if isinstance(body, dict) else body
+        return [w for w in ws if isinstance(w, dict)] if isinstance(ws, list) else []
+
+    async def disclosure_wording_set(self, wid: int, action: str) -> dict:
+        return await self._brand("POST", f"/disclosure-wordings/{wid}/{action}", owner=True)
+
     # ---- onboarding: 07 page-extractor and the 03 gateway's propose_facts prompt
     async def extract(self, body: dict) -> dict:
         """07 POST /extract: {"url"} or {"pdf_base64", "filename"}. 07 is keyless (internal network)."""
@@ -410,10 +438,14 @@ class Backends:
     async def task_split(self, task_id: str, draft_id: int, pieces: list[dict]) -> dict:
         return await self._tasks("POST", f"/tasks/{task_id}/drafts/{draft_id}/split", json={"pieces": pieces}, timeout=30)
 
-    async def task_accept(self, task_id: str, piece_key: str, finding: int, sha256: str, by: str, note: str) -> dict:
-        """A person says a missing-disclosure finding is wrong ("it's there, in other words")."""
-        return await self._tasks("POST", f"/tasks/{task_id}/pieces/{piece_key}/accept", timeout=30,
-                                 json={"finding": finding, "expected_sha256": sha256, "by": by, "note": note})
+    async def task_accept(self, task_id: str, piece_key: str, finding: int, sha256: str, by: str, note: str,
+                          wording: str | None = None) -> dict:
+        """A person says a missing-disclosure finding is wrong ("it's there, in other words").
+        `wording`: the exact words from the piece, saved (as a draft for the owner) for next time."""
+        body = {"finding": finding, "expected_sha256": sha256, "by": by, "note": note}
+        if wording:
+            body["wording"] = wording
+        return await self._tasks("POST", f"/tasks/{task_id}/pieces/{piece_key}/accept", timeout=30, json=body)
 
     async def task_submit(self, task_id: str, draft_id: int) -> dict | list:
         return await self._tasks("POST", f"/tasks/{task_id}/submit", json={"draft_id": draft_id}, timeout=180)

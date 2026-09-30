@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 89** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 90** of the local-LLM marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.

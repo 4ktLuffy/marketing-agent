@@ -1,9 +1,10 @@
 # control-room
 
-Deploy **72 of 89** of the local-LLM marketing agent. A small, mobile-first web app for the one
+Deploy **72 of 90** of the local-LLM marketing agent. A small, mobile-first web app for the one
 person who approves the agent's work:
 
-1. **Login** for one approver (`CONTROL_USER` / `CONTROL_PASSWORD`).
+1. **Login**: one owner from `CONTROL_USER` / `CONTROL_PASSWORD`, or named people with roles
+   (owner, approver, writer) from a users file; see *People and roles*.
 2. **Review queue**: one card per item in review, previewed the way its network shows it (image
    card, video player with poster, "…see more" fold), with the flags the quality gate, claim
    checker and novelty check wrote, the hook style and the content pillar. Big **Approve / Edit /
@@ -197,7 +198,8 @@ same way).
 - The browser gets an **HttpOnly, SameSite=Strict** session cookie (**Secure** when the request
   came over HTTPS, or always with `COOKIE_SECURE=true`) and a CSRF token that every POST must
   carry (htmx sends it as `X-CSRF-Token`). A POST without it is refused with `403`.
-- Login: constant-time comparison of user and password; after `LOGIN_MAX_FAILURES` (5) failures
+- Login: constant-time comparison of user and password (with a users file: one scrypt compare
+  per attempt, also for an unknown name); after `LOGIN_MAX_FAILURES` (5) failures
   within `LOGIN_WINDOW_MINUTES` (15) that address gets `429` (and all logins do after 4× that
   from everywhere). A new session id at every login; sessions end after
   `SESSION_IDLE_MINUTES` (120) idle or `SESSION_HOURS` (12) in total. Sessions live in memory:
@@ -213,7 +215,8 @@ same way).
   `/rules`) and every task-bridge call (88) get `X-API-Key`. Nothing gets `X-Approver-Key`.
 - **The owner-key rule.** `FACT_OWNER_KEY` is held by 05 and the control room only. The control
   room sends it (`X-Owner-Key`) on exactly these calls: confirm or retire a fact, import facts,
-  apply a starter kit, confirm or dismiss a kit rule. Adding or editing a fact never sends it, so an
+  apply a starter kit, confirm or dismiss a kit rule, confirm or dismiss a learned disclosure
+  wording. Adding or editing a fact never sends it, so an
   edit is always a draft until a person presses Confirm; AI output never becomes a fact on its
   own. The key is never rendered (tests search every page for it). Unset = those buttons are off
   and the control room refuses the call itself, before asking 05.
@@ -221,6 +224,47 @@ same way).
   `Range` passed on), so a phone on HTTPS never needs ports 8117/8171.
 - Strict headers: CSP without inline scripts or eval (`script-src 'self'`), `frame-ancestors
   'none'`, `no-store` on pages, HSTS over HTTPS.
+
+### People and roles
+
+Without a users file nothing changes: `CONTROL_USER` / `CONTROL_PASSWORD` is the only login, and
+that person is the **owner** (named `CONTROL_REVIEWER`, or `CONTROL_USER`, on decisions).
+
+To give several people their own login, add them to the users file (`CONTROL_USERS_FILE`,
+default `/data/users.json` when `/data` exists). **Add yourself as owner first**: once the file
+exists, it alone decides who can log in and `CONTROL_PASSWORD` stops working.
+
+```bash
+docker compose exec control-room python -m app.users add henos owner --display "Henos"
+docker compose exec control-room python -m app.users add abebe approver --display "Abebe Kebede"
+docker compose exec control-room python -m app.users add sara writer --display "Sara"
+docker compose exec control-room python -m app.users list
+docker compose exec control-room python -m app.users passwd abebe
+docker compose exec control-room python -m app.users remove sara
+```
+
+The password is asked twice and never echoed (or read from stdin with `--password-stdin`; at
+least 8 characters). The file holds only scrypt hashes (`scrypt$<salt>$<hash>`, n=2^14, r=8, p=1,
+16-byte salt), is written atomically with mode 600, and is read again when it changes: a new
+person can log in at once, a removed person is logged out at their next click, and a changed role
+applies at the next request. No restart is needed. The last owner can't be removed. A file that
+exists but can't be read refuses every login (it never falls back to `CONTROL_PASSWORD`).
+
+Keep the file on a volume, or it is lost when the container is recreated: mount one at `/data`
+(the image creates `/data` owned by the app user), e.g. in the stack's compose file
+`volumes: ["control-room-data:/data"]`.
+
+| Role | May |
+|---|---|
+| **writer** | read every page; write drafts: new tasks, paste, split, submit; add, edit and convert facts; answer questions; onboarding |
+| **approver** | everything a writer may, and: approve / edit / reject in the queue, undo, move items on the calendar, resume a pillar, accept a finding ("it's there, in other words"), make and withdraw client links |
+| **owner** | everything, and: confirm / retire facts, apply starter kits, confirm / dismiss kit rules and learned wordings, change the brand setup (including reset and the voice profile) |
+
+The server enforces this on every POST (`403`: "Your role (writer) can't do this; ask the
+owner."); the pages also hide buttons a role can't use. Every page shows who is signed in. The
+person's display name is what other services are told: the `reviewer` of each decision batch
+(decisions made by different people are sent in separate batches), `X-Actor` on calls to 05 and
+on client links (accents folded to ASCII for the header), and `by` on an accepted finding (88).
 
 ### Client approval links (`/c/...`, no login)
 
@@ -319,12 +363,14 @@ defaults there.
 | Env var | Default | Meaning |
 |---|---|---|
 | `CONTROL_USER` | `approver` | Login name |
-| `CONTROL_PASSWORD` | — | **Required.** Without it nobody can log in (`503`) |
+| `CONTROL_PASSWORD` | — | **Required** without a users file. Without either nobody can log in (`503`) |
+| `CONTROL_USERS_FILE` | `/data/users.json` if `/data` exists, else none | Named users and roles (see *People and roles*); set it empty to force the single `CONTROL_USER` login |
 | `TRUSTED_PROXIES` | empty | comma-separated IPs/CIDRs of your reverse proxy (e.g. `172.16.0.0/12` for the Docker network). Only then is `X-Forwarded-For` used for login rate limits, so one visitor's wrong passwords don't lock you out; without it every request behind a proxy counts as the proxy's address |
-| `CONTROL_REVIEWER` | `CONTROL_USER` | Name in the notes and learning events ("approved by …") |
+| `CONTROL_REVIEWER` | `CONTROL_USER` | Name in the notes and learning events ("approved by …") for the single `CONTROL_USER` login; with a users file each person's display name is used |
 | `CONTROL_ROOM_KEY` | — | Sent as `X-Control-Key` to the n8n webhook; n8n must have the same value (at least 16 characters, or the webhook refuses everything) |
 | `INTERNAL_API_KEY` | — | Moving calendar items (19) and resuming pillars (61) |
 | `N8N_BASE_URL` | `http://n8n:5678` | n8n inside the network (the webhook) |
+| `APPROVAL_URL` | empty | 90 approval service. Set (the stack uses `http://approval-service:8000` when `CONTROL_APPROVAL_URL` is set) = decisions go there instead of the n8n webhook, with the same payload and `X-Control-Key`; the control room still never holds the approver key |
 | `N8N_PUBLIC_URL` | `http://localhost:5678` | n8n as your browser reaches it (the chat link) |
 | `CALENDAR_URL` `CAMPAIGNS_URL` `LEARNING_URL` `ENGINE_URL` `RULES_URL` `STATUS_URL` `CARDS_URL` `VIDEO_URL` | the stack's container names | Services 19, 45, 46, 61, 14, 22, 17, 71 |
 | `ADS_URL` | empty (panel says "not installed") | 84 ads-sync, e.g. `http://ads-sync:8000` |
@@ -369,7 +415,8 @@ defaults there.
 | `GET /activity?filter=all\|ai\|content\|errors&ability=NN` | Activity page (works without JavaScript; the filters are links) |
 | `GET /activity/data` (same params) | The page's data as JSON: `{updated_at, profile, sources, now, timeline, models, abilities}`; `401` JSON when logged out |
 | `POST /brand/voice/generate`, `POST /brand/voice/save`, `POST /brand/reset` | Voice interview → profile to review → save (05 `PUT /voice`); reset needs `confirm=yes` |
-| `GET /facts?show=all\|attention\|drafts\|expiring\|expired\|due\|questions` | Facts (05 v2), grouped by subject, with open questions |
+| `GET /facts?show=all\|attention\|drafts\|expiring\|expired\|due\|questions\|wordings` | Facts (05 v2), grouped by subject, with open questions and learned wordings to confirm (05 `GET /disclosure-wordings?status=draft`) |
+| `POST /facts/wordings/{id}/confirm\|dismiss` | Owner only, owner key (05 `/disclosure-wordings/{id}/confirm\|dismiss`) |
 | `GET /facts/new`, `POST /facts/new`, `GET/POST /facts/{key}/edit` | Add / edit a fact (a draft; 05 `POST`/`PUT /facts/v2`) |
 | `POST /facts/{key}/confirm\|retire` | Owner key (05 `/facts/v2/{key}/confirm\|retire`) |
 | `POST /facts/{key}/convert` | A brand-profile fact → a new draft with `supersedes_key` |
@@ -382,6 +429,7 @@ defaults there.
 | `GET /tasks/{id}/pack`, `POST /tasks/{id}/paste` | Data-sharing preview, pack, paste box → the split |
 | `POST /tasks/{id}/split`, `POST /tasks/{id}/submit` | Manual split; submit → evidence and calendar items |
 | `GET /tasks/{id}`, `GET /tasks/{id}/export?format=md\|txt` | Pieces with evidence; download (88 refuses with `409` until ready) |
+| `POST /tasks/{id}/accept` (`piece_key`, `finding`, `sha`, `note`, optional `wording`) | Accept a missing-disclosure finding (88); a `wording` (3–200 characters, copied from the post) is saved as a draft for the owner to confirm |
 | `GET /blockers` | Blockers (88 `/blockers`) |
 | `GET /client-links`, `GET /client-links/new?items=N`, `POST /client-links/new` (`item_id`…, `label`, `days`), `POST /client-links/{id}/revoke` | Client links (19 `/client-links`): list, make (link + PIN shown once), withdraw |
 | `GET /c/{token}`, `POST /c/{token}` (`pin`), `POST /c/{token}/respond` (`item_id`, `body_sha256`, `decision` approve\|changes, `name`, `comment`), `GET /c/m/{kind}/{name}` | **No login.** The client's PIN form, posts and answers (19 `resolve` / `respond`), and that link's media |

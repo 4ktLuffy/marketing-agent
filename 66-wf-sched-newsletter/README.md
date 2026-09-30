@@ -1,6 +1,6 @@
 # 66 · Weekly newsletter
 
-Deploy **66 of 89** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **66 of 90** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Friday it builds this week's newsletter from the content you already published (JTBD #7): calendar items published in the last 7 days plus approved blog posts (up to 8; review replies, emails and newsletters are left out). The LLM (prompt `newsletter_issue`) writes a subject, preheader, intro and one short section per item; every link must be copied from the items, and the workflow removes any other URL (listed in the notes). The text goes through the quality gate (35) in report-only mode (a rewrite would flatten the headings and links; its problems go into the notes and the item stays `draft`), is rendered as email HTML (18) and sent to the Listmonk bridge (63, `NEWSLETTER_URL/campaigns`) as a **draft** campaign named `Newsletter <ISO week>`: a person reviews and sends it in Listmonk. It also saves a calendar item (channel `newsletter`, `in_review` when the gate passed, else `draft`) whose notes say where the Listmonk draft is; the publisher (39) never sends it. One issue per ISO week: if the calendar already has a `newsletter` item with the week in its title, it stops. With fewer than 2 items it stops with a message. With `NEWSLETTER_URL` empty it still saves the calendar item, to copy by hand.
 

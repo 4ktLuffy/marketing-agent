@@ -9,6 +9,7 @@
     const err = document.getElementById('cal-error');
     const show = msg => { err.textContent = msg; err.hidden = !msg; };
     const phone = window.matchMedia('(max-width: 700px)').matches;
+    const canMove = el.dataset.editable !== 'false';   // the server refuses a move without the role anyway
     const cal = new FullCalendar.Calendar(el, {
       timeZone: 'UTC',
       initialView: phone ? 'listWeek' : 'dayGridMonth',
@@ -18,15 +19,15 @@
       firstDay: 1,
       nowIndicator: true,
       eventDisplay: 'block',
-      editable: true,
-      eventStartEditable: true,
+      editable: canMove,
+      eventStartEditable: canMove,
       eventDurationEditable: false,
       events: (info, ok, fail) => {
         const q = new URLSearchParams({ start: info.startStr, end: info.endStr });
         fetch('/calendar/events?' + q, { credentials: 'same-origin' })
           .then(r => { if (r.status === 401) { location.href = '/login?next=/calendar'; return []; }
             if (!r.ok) throw new Error('calendar: HTTP ' + r.status); return r.json(); })
-          .then(evs => { show(''); ok(evs); })
+          .then(evs => { show(''); ok(canMove ? evs : evs.map(ev => Object.assign({}, ev, { editable: false }))); })
           .catch(e => { show('The calendar did not answer. ' + e.message); fail(e); });
       },
       eventDrop: info => {

@@ -199,7 +199,8 @@ def blocker_view(b: dict) -> dict:
             "link": link}
 
 
-def register(app, page, current, csrf, B):
+def register(app, page, current, csrf, B, need=None):
+    need = need or (lambda role: csrf)   # older callers: CSRF only, no roles
     s = app.state.settings
 
     def installed():
@@ -246,7 +247,7 @@ def register(app, page, current, csrf, B):
         return new_page(request, session, values=v, options=await options(), today=today().isoformat())
 
     @app.post("/tasks/new", response_class=HTMLResponse)
-    async def task_create(request: Request, session=Depends(csrf)):
+    async def task_create(request: Request, session=Depends(need("writer"))):
         if not installed():
             return off(request, session)
         form = await request.form()
@@ -302,7 +303,7 @@ def register(app, page, current, csrf, B):
                     withheld=withheld, chars=prev.get("chars"), providers=PROVIDERS, **ctx)
 
     @app.post("/tasks/{task_id}/paste", response_class=HTMLResponse)
-    async def task_paste(request: Request, task_id: str, session=Depends(csrf)):
+    async def task_paste(request: Request, task_id: str, session=Depends(need("writer"))):
         check_id(task_id)
         if not installed():
             return off(request, session)
@@ -349,7 +350,7 @@ def register(app, page, current, csrf, B):
                     split=sp, results=results, ready=ready, missing=missing, **ctx)
 
     @app.post("/tasks/{task_id}/split", response_class=HTMLResponse)
-    async def task_split(request: Request, task_id: str, session=Depends(csrf)):
+    async def task_split(request: Request, task_id: str, session=Depends(need("writer"))):
         check_id(task_id)
         if not installed():
             return off(request, session)
@@ -369,7 +370,7 @@ def register(app, page, current, csrf, B):
         return review_page(request, session, task, split=split)
 
     @app.post("/tasks/{task_id}/submit", response_class=HTMLResponse)
-    async def task_submit(request: Request, task_id: str, session=Depends(csrf)):
+    async def task_submit(request: Request, task_id: str, session=Depends(need("writer"))):
         check_id(task_id)
         if not installed():
             return off(request, session)
@@ -395,7 +396,7 @@ def register(app, page, current, csrf, B):
         return review_page(request, session, task, results=results, submitted=True)
 
     @app.post("/tasks/{task_id}/accept", response_class=HTMLResponse)
-    async def task_accept(request: Request, task_id: str, session=Depends(csrf)):
+    async def task_accept(request: Request, task_id: str, session=Depends(need("approver"))):
         """"It's there, in other words": the person overrules one missing-disclosure finding on the
         text they saw. 88 checks the hash, records who and why, and moves the piece to review only
         when nothing else blocks it."""
@@ -405,6 +406,9 @@ def register(app, page, current, csrf, B):
         form = await request.form()
         key, idx, sha = str(form.get("piece_key", "")), str(form.get("finding", "")), str(form.get("sha", ""))
         note = " ".join(str(form.get("note", "")).split())[:300]
+        # Optional: the exact words from the piece, saved as a draft wording for the owner (88 -> 05).
+        # Not normalised: 88 checks it is copied from the text, so it must stay as the person pasted it.
+        wording = str(form.get("wording", "")).strip()
         if not PIECE_KEY.match(key) or not idx.isdigit() or not SHA.match(sha):
             raise HTTPException(422, "piece_key, finding and sha are needed")
         try:
@@ -414,15 +418,30 @@ def register(app, page, current, csrf, B):
         if len(note) < 3:
             return review_page(request, session, task, 422,
                                accept_error="Say where the disclosure is (for example: “said as ‘frames extra’”).")
+        if wording and not 3 <= len(wording) <= 200:
+            return review_page(request, session, task, 422, accept_error=(
+                "The wording to save is 3 to 200 characters, copied exactly from the post (or leave it empty)."))
         try:
-            await B().task_accept(task_id, key, int(idx), sha, s.user or "control room", note)
+            out = await B().task_accept(task_id, key, int(idx), sha, session.display or s.reviewer or "control room",
+                                        note, wording or None)
             task = await B().task(task_id)
         except BackendError as e:
             if e.status in (409, 422):
-                return review_page(request, session, task, e.status, accept_error=(
-                    "The text changed since you looked, or this finding can't be accepted. Reload and check again."))
+                msg = ("The text changed since you looked, or this finding can't be accepted. Reload and check again."
+                       if not wording else
+                       "The text changed since you looked, this finding can't be accepted, or the wording to save "
+                       "is not copied exactly from the post. Check it and try again.")
+                return review_page(request, session, task, e.status, accept_error=msg)
             return fail(request, session, e)
-        return review_page(request, session, task, accepted=True)
+        proposal = out.get("wording_proposal") if isinstance(out, dict) else None
+        wording_saved = wording_error = None
+        if wording and isinstance(proposal, dict):
+            if proposal.get("error"):
+                wording_error = str(proposal.get("error"))[:300]
+            elif proposal.get("id") is not None:
+                wording_saved = True
+        return review_page(request, session, task, accepted=True, wording_saved=wording_saved,
+                           wording_error=wording_error)
 
     @app.get("/tasks/{task_id}", response_class=HTMLResponse)
     async def task_detail(request: Request, task_id: str, session=Depends(current)):

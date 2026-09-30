@@ -6,6 +6,8 @@
 <div class="chips"><span class="chip net-chip net-{{ c.channel }}">{{ c.channel }}</span>{% if c.hook %}<span class="chip">hook: {{ c.hook }}</span>{% endif %}<span class="chip" style="background: {{ STATUS_COLORS.get(c.item.status, '#5b6b82') }}; color: #fff">{{ c.item.status }}</span></div>
 {% if c.item.status != 'in_review' %}
   <p class="alert warn">Only items in review can be approved; #{{ c.id }} is <b>{{ c.item.status }}</b>. {% if pending %}A decision on it is being sent.{% endif %}</p>
+{% elif not can('approver') %}
+  <p class="alert warn">Your role ({{ me.role }}) can read this post but not approve or edit it; ask an approver or the owner.</p>
 {% elif pending %}
   <p class="alert warn">A decision on #{{ c.id }} is waiting to be sent. Undo it in the queue first.</p>
 {% else %}

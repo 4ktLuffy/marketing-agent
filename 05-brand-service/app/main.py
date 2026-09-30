@@ -410,7 +410,8 @@ def derived_facts(b: dict) -> list[dict]:
                  attribute="price" if origin.get("price") else None,
                  value_text=str(origin["price"]) if origin.get("price") else None,
                  source={"kind": "owner_statement", "ref": "brand profile (brand.yaml + saved edits)"})
-        f.update(status="active", version=1, latest_version=1, derived=True, superseded_by=None)
+        f.update(status="active", version=1, latest_version=1, derived=True, superseded_by=None,
+                 disclosure_wordings=[])
         out.append(f)
     return out
 
@@ -516,8 +517,8 @@ def list_facts_v2(status: store.Status | None = None, include_derived: bool = Tr
     with store.reading() as conn:
         derived, _ = _derived_state(b, conn)
         day = store.today()
-        succ = store.successor_map(conn)
-        stored = [store.render(row, data, day, succ) for row, data in store.stored_facts(conn)]
+        succ, wordings = store.successor_map(conn), store.active_wordings(conn)
+        stored = [store.render(row, data, day, succ, wordings) for row, data in store.stored_facts(conn)]
         fs = _fs(conn, derived)
     items = (derived if include_derived else []) + stored
     return {"fact_set_version": fs, "facts": [f for f in items if status is None or f["status"] == status]}
@@ -593,7 +594,7 @@ def query_facts(site: list[str] = Query([]), region: list[str] = Query([]), chan
     out, excluded = [], []
     with store.reading() as conn:
         derived, _ = _derived_state(b, conn, day)
-        succ = store.successor_map(conn)
+        succ, wordings = store.successor_map(conn), store.active_wordings(conn)
         for f in derived:
             if f["status"] != "active":
                 excluded.append({"key": f["key"], "reason": f["status"]})
@@ -604,7 +605,7 @@ def query_facts(site: list[str] = Query([]), region: list[str] = Query([]), chan
             if reason:
                 excluded.append({"key": data["key"], "reason": reason})
             else:
-                out.append(store.render(row, data, day, succ))
+                out.append(store.render(row, data, day, succ, wordings))
         fs = _fs(conn, derived)
     return {"fact_set_version": fs, "at": day, "facts": out, "excluded": excluded}
 
@@ -613,6 +614,46 @@ def query_facts(site: list[str] = Query([]), region: list[str] = Query([]), chan
 def fact_changes(since: int = Query(0, ge=0)):
     with store.reading() as conn:
         return store.changes_since(conn, since)
+
+
+# --- Disclosure wordings: the business's own words for a required disclosure ---
+# 88 proposes one when a person accepts a missing_disclosure finding ("it's there, in other words").
+# It is served on the fact (`disclosure_wordings`) only after the owner confirms it. Confirming or
+# dismissing never writes /facts/changes and never touches allowed_phrasing or legacy /facts.
+
+@app.post("/disclosure-wordings", dependencies=[Depends(require_key)])
+def propose_wording(w: store.WordingIn):
+    b = load_brand()
+    with store.reading() as conn:
+        found = next((f for f in derived_facts(b) if f["key"] == w.fact_key), None)
+        if found is None and conn is not None:
+            row = store._row(conn, w.fact_key)
+            found = store._version_data(conn, w.fact_key, row["current_version"]) if row is not None else None
+    if found is None:
+        raise HTTPException(404, f"no fact with key '{w.fact_key}'")
+    wanted = store.norm_text(w.disclosure)
+    match = next((str(d) for d in found.get("required_disclosures") or [] if store.norm_text(d) == wanted), None)
+    if match is None:
+        raise store.Invalid(("body", "disclosure"),
+                            f"'{w.disclosure}' is not a required disclosure of fact '{w.fact_key}'")
+    row, created = store.propose_wording(w, match)
+    return JSONResponse(row, status_code=201 if created else 200)
+
+
+@app.get("/disclosure-wordings", dependencies=[Depends(require_key)])
+def list_wordings(status: Literal["draft", "active", "dismissed"] | None = None, fact_key: str | None = None):
+    with store.reading() as conn:
+        return {"wordings": store.list_wordings(conn, status, fact_key)}
+
+
+@app.post("/disclosure-wordings/{wid}/confirm", dependencies=[Depends(require_key), Depends(require_owner)])
+def confirm_wording(wid: int, who: str | None = Depends(actor)):
+    return store.set_wording_status(wid, "active", who or "owner")
+
+
+@app.post("/disclosure-wordings/{wid}/dismiss", dependencies=[Depends(require_key), Depends(require_owner)])
+def dismiss_wording(wid: int, who: str | None = Depends(actor)):
+    return store.set_wording_status(wid, "dismissed", who or "owner")
 
 
 # --- Open questions ---

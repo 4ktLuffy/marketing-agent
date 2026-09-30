@@ -160,7 +160,8 @@ def client_item(item: dict, internal_urls: list[str]) -> tuple[dict, set]:
 # ---------- routes
 
 
-def register(app, page, current, csrf, B):
+def register(app, page, current, csrf, B, need=None):
+    need = need or (lambda role: csrf)   # older callers: CSRF only, no roles
     s = app.state.settings
     app.state.client_sessions = ClientSessions(s.client_session_minutes)
     # Wrong PINs and unknown links per address; the all-addresses cap is loose (many clients).
@@ -196,7 +197,7 @@ def register(app, page, current, csrf, B):
                     values={"label": "", "days": 7}, error=err)
 
     @app.post("/client-links/new", response_class=HTMLResponse)
-    async def make_link(request: Request, session=Depends(csrf)):
+    async def make_link(request: Request, session=Depends(need("approver"))):
         form = await request.form()
         picked = [int(x) for x in form.getlist("item_id")[:50] if str(x).isdigit() and len(str(x)) < 12]
         label = " ".join(str(form.get("label", ""))[:200].split())
@@ -224,7 +225,7 @@ def register(app, page, current, csrf, B):
                     pin=pin, link=made)
 
     @app.post("/client-links/{link_id}/revoke")
-    async def revoke_link(request: Request, link_id: int, session=Depends(csrf)):
+    async def revoke_link(request: Request, link_id: int, session=Depends(need("approver"))):
         try:
             await B().client_link_revoke(link_id)
         except BackendError as e:

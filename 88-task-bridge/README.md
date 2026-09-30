@@ -1,6 +1,6 @@
 # task-bridge
 
-Deploy **88 of 89** of the local-LLM marketing agent. It lets **any business use any chatbot**,
+Deploy **88 of 90** of the local-LLM marketing agent. It lets **any business use any chatbot**,
 free plans included, and still only publish **facts it can stand behind**. It needs **no model**.
 
 - **A task pack for any chatbot.** `POST /tasks` (goal, pieces, scope, publish date) builds plain
@@ -36,6 +36,12 @@ free plans included, and still only publish **facts it can stand behind**. It ne
   expired or out-of-scope fact or a blocked placeholder must be fixed. The acceptance is kept
   in the append-only events and listed in the export manifest and checklist; the piece moves to
   review only when nothing else blocks it, and approval is still bound to the text.
+  The person can also copy the exact words that say it (`wording`). 88 then proposes them to the
+  brand service (05) as the business's own wording for that disclosure (a draft there; if 05 is
+  down the acceptance still stands and the answer says why the proposal failed). Once the owner
+  confirms it in 05, the fact carries it in `disclosure_wordings`, and the next time those exact
+  words (case and spacing ignored) are in a piece, the disclosure counts as said: no finding to
+  accept again. A wording saved for one fact never counts for another.
 - **Ready-to-post export.** `GET /tasks/{id}/export` refuses (409) until every piece is
   approved, the approved text has the same hash as the checked text, and every fact of the
   pack is still valid at the publish date. The export is read back and compared before it is
@@ -109,7 +115,7 @@ All but `/health` need `X-API-Key`.
 | GET | `/tasks/{id}/drafts/{d}` | A draft with the pasted text and its split |
 | POST | `/tasks/{id}/drafts/{d}/split` | Split by hand → a new draft |
 | POST | `/tasks/{id}/submit` | `{draft_id}` → per piece `filled_text`, `filled_sha256`, `blocked`, `findings`, `calendar_item_id` |
-| POST | `/tasks/{id}/pieces/{key}/accept` | `{finding, expected_sha256, by, note}`: accept a missing-disclosure finding; 409 if the text changed, 422 for any other label |
+| POST | `/tasks/{id}/pieces/{key}/accept` | `{finding, expected_sha256, by, note, wording?}`: accept a missing-disclosure finding; 409 if the text changed, 422 for any other label, 422 when `wording` (3–200 chars) is not copied from the text; with a wording the answer has `wording_proposal: {id, status}` or `{error}` |
 | POST | `/check` | Stateless `{text, scope, publish_on, channel}` → `{findings, blocked, filled_text}` |
 | GET | `/tasks/{id}/export` | `?format=txt\|md`; 409 with reasons until ready |
 | POST | `/reconcile` | Run the fact-change reconcile now |
@@ -126,7 +132,7 @@ A finding is `{sentence, label, fact_key, quote, blocking, detail}`.
 | `conflict_or_expired` | the value is an expired, superseded or not-yet-valid fact's; or it differs from an in-scope fact about the same subject; or an expired offer is named; or a deadline is before the publish date | yes |
 | `no_source` | a claim word, price or percentage no fact supports | yes |
 | `forbidden_phrase` | a fact's forbidden phrasing, unless an in-scope fact allows it for the subject the sentence names | yes |
-| `missing_disclosure` | a fact is used (slot, value or claim word) and none of its required disclosures is in the piece | yes |
+| `missing_disclosure` | a fact is used (slot, value or claim word) and none of its required disclosures (nor a wording the owner confirmed for it, `disclosure_wordings`) is in the piece | yes |
 | `slot_blocked` | a slot that cannot be filled | yes |
 | `review` | a quantity no fact mentions, or a mention of an out-of-scope or expired subject with nothing checkable | no |
 
@@ -141,6 +147,46 @@ the tests raise no blocking finding.
 the claim checker (44) with the pack's public fact lines. It can only **add** non-blocking
 `review` or `no_source` findings. It never removes or unblocks one. The default is off: zero
 model calls.
+
+**Narrow model check (`MODEL_CHECK=review`, optional, off by default).** This mode sends only
+the sentences where the rules are unsure. A sentence goes when (a) it has a non-blocking
+`review` finding and nothing blocking, or (b) it has no finding at all but contains an offer,
+scope or claim cue: a number, a price or amount word, `%`, free / on us / two for one, every /
+all / any branch (shop, site, location ...), 24/7, day and night, weekends, award / rated /
+voted / best / No.1 / certified / approved, since <year>, or N+ customers. At most 12 sentences
+per piece go to 44 `/verify`, with the pack's public fact lines. Each line also carries its
+validity dates and scope ("valid until 30 September 2026; applies only to sites: porthleven").
+No `context` is sent: 44 turns context into evidence lines, so an instruction there would
+count as a fact. The model can only **add** one non-blocking `review` finding per sentence,
+with the detail `model check: <reason>`. It never blocks, and it never removes or changes a
+rule finding. The call uses `CLAIMS_TIMEOUT`. On any error the piece keeps its rule findings
+and gets a `model check skipped: ...` note. `auto` and `off` behave as before.
+
+Measured on 2026-09-30 with local Ollama `qwen2.5:7b` (03 gateway → 44 in lenient mode;
+`23-eval-suite: python -m evalsuite.task_bridge --claims-gateway ... --model-check-mode review`).
+Results are in `23-eval-suite/results/task-bridge-model-review-{v12,v13,v4}-qwen2.5-7b.json`.
+The scorer counts only blocking findings, so its numbers match the zero-model run. The model
+notes were counted separately:
+
+| set | rules (zero-model) | rule misses with a model note | false model notes | other notes | s/draft mean (max) |
+|---|---|---|---|---|---|
+| companies-v12 | 67/69, FW 0, MNF 0 | 2 of 2 | 0 | 0 | 3.5 (30.7, cold model) |
+| companies-v13 | 39/47, FW 0, MNF 3 | 4 of 8 | 2 (both in 02-paraphrase) | 0 | 2.3 (12.9) |
+| companies-v4 (control) | 95/95 | – | 1 (01-clean) | 0 | 3.5 (18.2) |
+
+Catches: "24/7" and "day and night, weekends included" (scope), "migrate your data for free,
+up to 10,000 contacts" (expired offer), "Trusted by 5,000+ sales teams", "Rated outstanding
+by ...", and "from age 3". The false notes were on "Nine stamps ... (fact: 9)", "Two weeks on
+us", and "your number one job this autumn". Four v13 misses were not reached. One is on a
+sentence that already blocks for another reason, so it is never sent. Two have no cue ("at
+their door today", "any day of the week"). One is a missing disclosure, which 44 does not
+check.
+
+Verdict: the mode catches 6 of 10 rule misses, with 3 false notes over 90 drafts. The notes are
+advice and never gate anything. It is worth turning on where a reviewer reads the `warnings:`
+line, but it stays **off by default**. This is one model and one run on small sets, and the
+cue list was written after seeing the v12 misses, so v12 is not a held-out result. v13 and v4
+are the fairer numbers.
 
 ## Configuration
 

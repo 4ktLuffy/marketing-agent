@@ -14,9 +14,9 @@ the bridge shows what it *would* send (`would_send`) and sends nothing.
 
 | Profile | What you get | Containers | RAM (idle, measured) | Images on disk |
 |---|---|---|---|---|
-| **core** | The agent: chat (24) with its writing tools, knowledge base, research, calendar, fact checker (44), quality gate, approval form (38), publisher to one webhook (39), campaigns (45), learning from your edits (46), weekly plan and report, monthly client report for approval (85), scoped facts and task packs for any chatbot with paste-back and evidence (05, 88), status page, control room (72) | 27 | 1.35 GB | ≈ 2.7 GB |
-| **growth** | core + content engine (61, a month from one pillar), Postiz / WordPress-Ghost / Listmonk bridges (54, 62, 63), Umami and Search Console sync (55, 67), experiments (74–76), reviews (58, 60), customer language (70), video (71), clips (73), paid-ads reporting (84, read-only) and lifecycle email flows with a holdout (86, dry run only) | 39 | 1.69 GB (before 84, 86) | ≈ 6.3 GB |
-| **full** | growth + competitor ads (78), website assistant (79) with its optional hosted gateway, lead hub (80), AI visibility (82, 83), product feed titles for Merchant Center (87) | 45 | 1.95 GB (40 measured) | ≈ 6.4 GB |
+| **core** | The agent: chat (24) with its writing tools, knowledge base, research, calendar, fact checker (44), quality gate, approval form (38), publisher to one webhook (39), campaigns (45), learning from your edits (46), weekly plan and report, monthly client report for approval (85), scoped facts and task packs for any chatbot with paste-back and evidence (05, 88), status page, control room (72), approval service (90) | 28 | 1.35 GB | ≈ 2.7 GB |
+| **growth** | core + content engine (61, a month from one pillar), Postiz / WordPress-Ghost / Listmonk bridges (54, 62, 63), Umami and Search Console sync (55, 67), experiments (74–76), reviews (58, 60), customer language (70), video (71), clips (73), paid-ads reporting (84, read-only) and lifecycle email flows with a holdout (86, dry run only) | 40 | 1.69 GB (before 84, 86) | ≈ 6.3 GB |
+| **full** | growth + competitor ads (78), website assistant (79) with its optional hosted gateway, lead hub (80), AI visibility (82, 83), product feed titles for Merchant Center (87) | 46 | 1.95 GB (40 measured) | ≈ 6.4 GB |
 
 Start with **core**. Moving up or down later is one command (section 9). Numbers are from
 `DOCKER-RUN.md` (colima on an M-series Mac). Ollama runs next to the stack and needs its own

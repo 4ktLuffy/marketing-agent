@@ -14,6 +14,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import threading
 import time
@@ -223,6 +224,9 @@ class AcceptIn(BaseModel):
     expected_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     by: str = Field(min_length=1, max_length=80)
     note: str = Field(min_length=3, max_length=300)
+    # optional: the exact words in the text that say the disclosure. Proposed to 05 as the
+    # business's own wording; it counts on later checks only after the owner confirms it there.
+    wording: str | None = Field(default=None, min_length=3, max_length=200)
 
 
 class CheckIn(BaseModel):
@@ -323,11 +327,103 @@ def model_findings(text: str, fact_lines: list[str], findings: list[dict]) -> tu
     return out, note
 
 
+# ---------- MODEL_CHECK=review: a narrow second look, only where the rules are unsure
+
+# Offer / scope / claim cues: a sentence with none of these and no rule finding is not sent.
+_NUMWORD = (r"two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|"
+            r"sixty|seventy|eighty|ninety|hundred|thousand|million|half|dozen|double|twice")
+REVIEW_CUE = re.compile(
+    r"\d|[£$€%]|\b(?:" + _NUMWORD + r")\b|\b(?:pounds?|quid|pence|dollars?|euros?|birr|cents?|per\s*cent|percent)\b|"
+    r"\bfree\b|\bon\s+(?:us|the\s+house)\b|\b(?:for|4)\s+(?:one|1|the\s+price\s+of)\b|\bbogo\b|\bhalf[\s-]+price\b|"
+    r"\bdiscount|\bsave\b|\boff\s+(?:your|the|all|every|any)\b|\bcheapest\b|\bguarantee|"
+    r"\b(?:every|all|any|each)\s+(?:(?:of\s+)?(?:our|the)\s+)?(?:branch|shop|store|site|location|clinic|outlet|"
+    r"venue|office|depot|restaurant|pub|salon|studio|centre|center)(?:e?s)?\b|"
+    r"\b24\s*/\s*7\b|\bround[\s-]the[\s-]clock\b|\b(?:day\s+and\s+night|night\s+and\s+day)\b|\bweekends?\b|"
+    r"\bevery\s+day\b|\b(?:award|awarded|award-winning|rated|voted|best|certified|accredited|approved|"
+    r"licensed|leading|trusted|official)\b|\bno\.?\s*1\b|\bnumber\s+one\b|#1\b|"
+    r"\bsince\s+(?:19|20)\d\d\b|\b\d[\d,]*\+?\s*(?:customers|clients|patients|members|users|households|"
+    r"businesses|families|people)\b", re.I)
+REVIEW_MAX = 12
+
+
+def _covers(a: str, b: str) -> bool:
+    a, b = " ".join(a.split()).lower(), " ".join(b.split()).lower()
+    return bool(a and b) and (a in b or b in a)
+
+
+def review_sentences(text: str, findings: list[dict]) -> list[str]:
+    """Sentences for MODEL_CHECK=review, at most REVIEW_MAX: (a) a sentence with a non-blocking
+    `review` finding and nothing blocking, then (b) a sentence with no finding at all
+    that carries an offer / scope / claim cue. Blocking or matched sentences are never sent."""
+    first, second = [], []
+    for a, b in F.sentence_spans(text):
+        s = text[a:b].strip()
+        if not re.search(r"[A-Za-z]{3}", s) or s.endswith("?"):
+            continue
+        mine = [x for x in findings if _covers(str(x.get("sentence") or ""), s)]
+        if not mine:
+            if REVIEW_CUE.search(s):
+                second.append(s)
+        elif any(x["label"] == "review" for x in mine) and not any(x["blocking"] for x in mine):
+            first.append(s)
+    return list(dict.fromkeys(first + second))[:REVIEW_MAX]
+
+
+def _day_words(v) -> str:
+    try:
+        d = date.fromisoformat(str(v)[:10])
+    except ValueError:
+        return ""
+    return d.strftime("%d %B %Y").lstrip("0")
+
+
+def review_fact_lines(fact_lines: list[str], known: dict) -> list[str]:
+    """The pack's public lines, each with its validity dates and scope, so the model can see that
+    an offer ends or covers one site. Lines stay public: nothing is added that the pack withheld."""
+    out = []
+    for line in fact_lines:
+        m = re.search(r"\[\[([a-z0-9-]+)\]\]", line)
+        f = known.get(m.group(1)) if m else None
+        extra = []
+        if f:
+            if f.get("valid_from"):
+                extra.append(f"valid from {_day_words(f['valid_from'])}")
+            if f.get("valid_to"):
+                extra.append(f"valid until {_day_words(f['valid_to'])}")
+            if F.scope_text(f):
+                extra.append(f"applies only to {F.scope_text(f)}")
+        out.append((line + (" (" + "; ".join(extra) + ")" if extra else ""))[:500])
+    return out
+
+
+def review_findings(text: str, fact_lines: list[str], findings: list[dict], known: dict) -> tuple[list[dict], str | None]:
+    """44 may only ADD one non-blocking `review` finding per chosen sentence: never block, never
+    remove or change a rule finding."""
+    chosen = review_sentences(text, findings)
+    if not chosen:
+        return [], None
+    claims, note = services.model_review(chosen, review_fact_lines(fact_lines, known))
+    out, seen = [], set()
+    for c in claims:
+        claim = str(c.get("claim") or "").strip()
+        s = next((x for x in chosen if _covers(claim, x)), None)
+        if not s or s in seen:
+            continue
+        seen.add(s)
+        reasons = [str(r) for r in c.get("reasons") or []]
+        out.append({"sentence": s[:500], "label": "review", "fact_key": None, "quote": None, "blocking": False,
+                    "detail": "model check: " + ("; ".join(reasons)[:300] or "not supported")})
+    return out, note
+
+
 def check_piece(text: str, snapshot: dict, known: dict, day: date, scope: dict, fact_lines: list[str]):
     fill = slots.fill(text, snapshot, known, day, scope)
     found, used = evidence.check_text(fill.text, list(known.values()), day, scope, fill.used)
     findings = fill.findings + found
-    extra, note = model_findings(fill.text, fact_lines, findings)
+    if services.model_check_mode() == "review":
+        extra, note = review_findings(fill.text, fact_lines, findings, known)
+    else:
+        extra, note = model_findings(fill.text, fact_lines, findings)
     return fill, findings + extra, used, note
 
 
@@ -338,6 +434,7 @@ def check_piece(text: str, snapshot: dict, known: dict, day: date, scope: dict, 
 def health():
     return {"status": "ok", "brand": bool(services.brand_url()), "calendar": bool(services.calendar_url()),
             "rules": bool(services.rules_url()), "model_check": services.model_check_on(),
+            "model_check_mode": services.model_check_mode(),
             "leads": bool(services.leads_url()), "pack_max_chars": pack_max_chars(),
             "paste_max_chars": paste_max_chars(), "reconcile_min": reconcile_minutes()}
 
@@ -615,6 +712,10 @@ def accept_finding(task_id: str, piece_key: str, req: AcceptIn):
     if not f.get("blocking") or f.get("label") not in ACCEPTABLE:
         raise HTTPException(422, f"a {f.get('label')} finding cannot be accepted here; "
                                  "fix the text or the fact and submit again")
+    wording = " ".join(req.wording.split()) if req.wording is not None else None
+    # the same exact, case / space folded, whole-word match the evidence check uses later
+    if wording is not None and (len(wording) < 3 or not evidence.phrase_in(wording, row["filled_text"] or "")):
+        raise HTTPException(422, "the wording must be copied from the text")
     accepted = {"by": " ".join(req.by.split()), "note": " ".join(req.note.split()), "at": now()}
     findings[req.finding] = {**f, "blocking": False, "accepted": accepted}
     checks = json.loads(row["checks"])
@@ -636,9 +737,19 @@ def accept_finding(task_id: str, piece_key: str, req: AcceptIn):
                      (json.dumps(findings), int(still), moved or row["state"], now(), task_id, piece_key))
         event(conn, task_id, "finding_accepted", piece_key=piece_key, finding=req.finding, label=f["label"],
               fact_key=f.get("fact_key"), sentence=_one_line(f.get("sentence") or "", 200),
-              sha256=row["filled_sha256"], by=accepted["by"], note=accepted["note"], moved_to=moved)
-    return {"task_id": task_id, "piece_key": piece_key, "finding": findings[req.finding], "blocked": still,
-            "status": moved or row["state"]}
+              sha256=row["filled_sha256"], by=accepted["by"], note=accepted["note"], moved_to=moved,
+              wording=wording)
+    out = {"task_id": task_id, "piece_key": piece_key, "finding": findings[req.finding], "blocked": still,
+           "status": moved or row["state"]}
+    if wording is not None:  # best effort: the acceptance above stands whatever 05 says
+        try:
+            if not f.get("fact_key") or not f.get("quote"):
+                raise services.ServiceError("the finding names no fact or disclosure")
+            prop = services.propose_wording(f["fact_key"], str(f["quote"]), wording, task_id, accepted["by"])
+            out["wording_proposal"] = {"id": prop.get("id"), "status": prop.get("status")}
+        except services.ServiceError as exc:
+            out["wording_proposal"] = {"error": str(exc)}
+    return out
 
 
 @app.post("/check", dependencies=[Depends(require_key), Depends(rate_limit)])

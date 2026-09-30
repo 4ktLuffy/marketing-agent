@@ -23,7 +23,7 @@
   {{ err(errors, "audience_secondary") }}
   <label>Tone in a few words (optional) <input name="tone" value="{{ values.tone }}" maxlength="200" placeholder="Warm, plain, a little dry"></label>
   {{ err(errors, "tone") }}
-  <div class="actions"><button class="btn primary big" type="submit">Save basics</button></div>
+  <div class="actions">{% if can('owner') %}<button class="btn primary big" type="submit">Save basics</button>{% endif %}</div>
 </form>
 
 {% elif step == 2 and rows %}
@@ -46,8 +46,8 @@
   </fieldset>
   {% endfor %}
   <div class="actions">
-    <button class="btn primary big" type="submit" name="action" value="save">Save products</button>
-    <button class="btn ghost" type="submit" name="action" value="add">Add another product</button>
+    {% if can('owner') %}<button class="btn primary big" type="submit" name="action" value="save">Save products</button>{% endif %}
+    {% if can('owner') %}<button class="btn ghost" type="submit" name="action" value="add">Add another product</button>{% endif %}
   </div>
 </form>
 
@@ -62,7 +62,7 @@
   <label for="key_messages">Key messages, one per line <span class="small muted">(what you want said often)</span></label>
   <textarea id="key_messages" name="key_messages" rows="4">{{ values.key_messages }}</textarea>
   {{ err(errors, "key_messages") }}
-  <div class="actions"><button class="btn primary big" type="submit">Save facts</button></div>
+  <div class="actions">{% if can('owner') %}<button class="btn primary big" type="submit">Save facts</button>{% endif %}</div>
 </form>
 
 {% elif step == 4 and values %}
@@ -86,7 +86,7 @@
   <textarea id="disclaimers" name="disclaimers" rows="4" placeholder="paid_social: #ad, Sponsored">{{ values.disclaimers }}</textarea>
   <p class="small muted">A post for that channel must contain one of the texts after the colon.</p>
   {{ err(errors, "disclaimers") }}
-  <div class="actions"><button class="btn primary big" type="submit">Save rules</button></div>
+  <div class="actions">{% if can('owner') %}<button class="btn primary big" type="submit">Save rules</button>{% endif %}</div>
 </form>
 
 {% elif step == 5 and review %}
@@ -110,7 +110,7 @@
   <label>Sample lines, one per line <textarea name="sample_lines" rows="3">{{ review.sample_lines }}</textarea></label>
   <p class="small muted">Kept for you to read; they are not sent to the writers.</p>
   {{ err(errors, "sample_lines") }}
-  <div class="actions"><button class="btn primary big" type="submit">Save voice profile</button>
+  <div class="actions">{% if can('owner') %}<button class="btn primary big" type="submit">Save voice profile</button>{% endif %}
     <a class="btn ghost" href="/brand/step/5">Start the interview again</a></div>
 </form>
 
@@ -125,7 +125,7 @@
   {% for q in questions %}
   <label>{{ loop.index }}. {{ q }} <textarea name="a{{ loop.index0 }}" rows="3" maxlength="2000">{{ answers[loop.index0] if answers else '' }}</textarea></label>
   {% endfor %}
-  <div class="actions"><button class="btn primary big" type="submit">Write my voice profile</button>
+  <div class="actions">{% if can('owner') %}<button class="btn primary big" type="submit">Write my voice profile</button>{% endif %}
     <span id="voice-wait" class="htmx-indicator small muted" role="status">Writing… this can take a few minutes.</span></div>
 </form>
 
@@ -153,7 +153,7 @@
     <input type="hidden" name="csrf" value="{{ csrf }}">
     {% if reset_error %}<p class="field-error small" role="alert">{{ reset_error }}</p>{% endif %}
     <label class="check"><input type="checkbox" name="confirm" value="yes"> Undo all changes made here (steps 1–4) and go back to the shipped profile. The voice profile stays.</label>
-    <button class="btn reject ghost" type="submit">Reset to the shipped profile</button>
+    {% if can('owner') %}<button class="btn reject ghost" type="submit">Reset to the shipped profile</button>{% endif %}
   </form>
 </section>
 {% endif %}

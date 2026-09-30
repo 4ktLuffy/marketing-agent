@@ -53,6 +53,7 @@ def five(mock):
     mock.get(f"{BRAND}/questions").respond(json={"questions": [
         {"id": 7, "kind": "missing_fact", "fact_key": None, "task_id": "T-ABC123", "text": "What is the Leeds weekday rate?",
          "status": "open", "created_at": "2026-09-28T10:00:00Z"}]})
+    mock.get(f"{BRAND}/disclosure-wordings").respond(json={"wordings": []})
     return mock
 
 
@@ -135,6 +136,7 @@ def test_owner_actions_refused_without_owner_key(monkeypatch, mock):
         token = csrf_of(client.get("/more").text)
         mock.get(f"{BRAND}/facts/v2").respond(json={"facts": FACTS})
         mock.get(f"{BRAND}/questions").respond(json={"questions": []})
+        mock.get(f"{BRAND}/disclosure-wordings").respond(json={"wordings": []})
         conf = mock.post(f"{BRAND}/facts/v2/quayside-delivery/confirm").respond(json={})
         h = client.get("/facts").text
         assert "Confirming is switched off" in h

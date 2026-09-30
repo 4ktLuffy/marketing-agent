@@ -67,6 +67,7 @@ class Settings:
     report_url: str = ""      # 21 report-builder (Download of an item as HTML); "" = not installed
     feed_url: str = ""        # 87 feed-optimizer (product feed page); "" = not installed
     extractor_url: str = ""   # 07 page-extractor (onboarding: web pages and PDFs); "" = paste text only
+    approval_url: str = ""    # 90 approval service; "" = decisions go to the n8n webhook
     tasks_url: str = ""       # 88 task-bridge (tasks, packs, evidence, blockers); "" = not installed
     # FACT_OWNER_KEY: sent as X-Owner-Key to 05 ONLY to confirm/retire facts, import, apply a starter
     # kit and confirm/dismiss its rules. Never rendered; "" = those buttons are switched off.
@@ -80,19 +81,27 @@ class Settings:
     client_max_failures: int = 10   # wrong PINs / unknown links per address per window
     client_window_s: float = 900
     client_session_minutes: float = 30
+    # CONTROL_USERS_FILE: named users and roles (app/users.py); "" = the single CONTROL_USER login.
+    users_file: str = ""
 
     @property
     def internal_urls(self) -> list[str]:
         return [u for u in [self.n8n_url, self.calendar_url, self.campaigns_url, self.learning_url, self.engine_url,
                 self.rules_url, self.status_url, self.cards_url, self.video_url, self.clips_url, self.ads_url,
-                self.brand_url, self.gateway_url, self.ad_library_url, self.report_url, self.feed_url, self.tasks_url, self.extractor_url,
+                self.brand_url, self.gateway_url, self.ad_library_url, self.report_url, self.feed_url, self.tasks_url, self.extractor_url, self.approval_url,
                 *(u for _, u in self.activity_gateways)] if u]
+
+
+def _users_file() -> str:
+    from .users import default_path
+    return default_path()
 
 
 def load() -> Settings:
     user = os.environ.get("CONTROL_USER", "").strip() or "approver"
     return Settings(
         user=user,
+        users_file=_users_file(),
         password=os.environ.get("CONTROL_PASSWORD", ""),
         reviewer=os.environ.get("CONTROL_REVIEWER", "").strip() or user,
         control_key=os.environ.get("CONTROL_ROOM_KEY", ""),
@@ -120,6 +129,8 @@ def load() -> Settings:
         extractor_url=_url("EXTRACTOR_URL", "http://page-extractor:8000"),
         # 88 task bridge (core): unset = the stack's container; empty = the Tasks pages say "not installed".
         tasks_url=_url("TASKS_URL", "http://task-bridge:8000"),
+        # 90 approval service: set = decisions go there instead of n8n (same payload, same key).
+        approval_url=_url("APPROVAL_URL", ""),
         fact_owner_key=os.environ.get("FACT_OWNER_KEY", "").strip(),
         activity_gateways=_gateways(os.environ.get("ACTIVITY_GATEWAYS", "")),
         install_profile=_profile(os.environ.get("INSTALL_PROFILE")),

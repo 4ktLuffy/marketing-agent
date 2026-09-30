@@ -1,6 +1,6 @@
 # review-hub
 
-Deploy **58 of 89** of the local-LLM marketing agent. It holds three things:
+Deploy **58 of 90** of the local-LLM marketing agent. It holds three things:
 
 - **A reviews inbox.** Reviews you import from Google, Trustpilot or by hand, each with a
   status (`new`, `drafted`, `replied`, `ignored`).

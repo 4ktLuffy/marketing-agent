@@ -16,7 +16,8 @@ network beyond 127.0.0.1.
 
 Optional model check (plan: Verification step 3), off unless asked for: `--claims-gateway URL`
 also starts 44 (claim checker) per company against that already-running gateway (03, e.g. on
-local Ollama) and runs 88 with MODEL_CHECK=auto, CLAIMS_URL=44. Without it nothing changes.
+local Ollama) and runs 88 with MODEL_CHECK=auto, CLAIMS_URL=44 (`--model-check-mode review` for
+88's narrow review mode). Without it nothing changes.
 
     python -m evalsuite.task_bridge --cases companies-v3 --claims-gateway http://127.0.0.1:8147 \
         --verifier-model mkt-writer --out-stem task-bridge-model-check-v3
@@ -273,7 +274,7 @@ class Stack:
                         RULES_URL=self.urls["rules"], LEADS_URL="", MODEL_CHECK="off", CLAIMS_URL="",
                         GATEWAY_URL="", RECONCILE_MIN="0", RATE_PER_MIN="1000")
             if MODEL_CHECK:
-                base.update(MODEL_CHECK="auto", CLAIMS_URL=self.urls["claims"],
+                base.update(MODEL_CHECK=MODEL_CHECK.get("mode") or "auto", CLAIMS_URL=self.urls["claims"],
                             CLAIMS_TIMEOUT=str(MODEL_CHECK["timeout"]))
         elif name == "claims":
             base.update(INTERNAL_API_KEY=API_KEY, GATEWAY_URL=MODEL_CHECK["gateway"], BRAND_URL=self.urls["brand"],
@@ -649,7 +650,7 @@ def _cell(s) -> str:
 def render_md(result: dict) -> str:
     S = result["summary"]
     mc = result.get("model_check")
-    mode = (f"MODEL_CHECK=auto → 44 via gateway {mc['gateway']} (model {mc.get('model') or 'gateway default'})"
+    mode = (f"MODEL_CHECK={(mc or {}).get('mode') or 'auto'} → 44 via gateway {mc['gateway']} (model {mc.get('model') or 'gateway default'})"
             if mc else "MODEL_CHECK=off, CLAIMS_URL empty · no Docker, no model calls")
     L = [f"# Task bridge — {'model check' if mc else 'zero-model'} end-to-end ({result['date']})", "",
          f"Runner: `23-eval-suite/evalsuite/task_bridge.py` · run at {result['run_at']} · services 05/14/19/88"
@@ -741,11 +742,13 @@ def main(argv=None) -> int:
     ap.add_argument("--claims-gateway", default="", help="optional model check: a running 03 gateway URL for 44")
     ap.add_argument("--verifier-model", default="", help="VERIFIER_MODEL for 44 (default: the gateway's MODEL)")
     ap.add_argument("--claims-timeout", type=float, default=300, help="CLAIMS_TIMEOUT for 88 and 44 (seconds)")
+    ap.add_argument("--model-check-mode", choices=("auto", "review"), default="auto",
+                    help="MODEL_CHECK for 88 with --claims-gateway: auto (whole piece) or review (unsure sentences)")
     a = ap.parse_args(argv)
     global COMPANIES, MODEL_CHECK
     if a.claims_gateway:
         MODEL_CHECK = {"gateway": a.claims_gateway.rstrip("/"), "model": a.verifier_model or None,
-                       "timeout": a.claims_timeout}
+                       "timeout": a.claims_timeout, "mode": a.model_check_mode}
     COMPANIES = SUITE / "cases" / a.cases
     slugs = sorted(p.name for p in COMPANIES.iterdir() if p.is_dir() and (p / "facts.yaml").exists())
     if a.only:

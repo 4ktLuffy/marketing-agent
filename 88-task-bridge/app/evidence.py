@@ -2990,7 +2990,9 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
         # 6. a stale offer / package named with nothing checkable
         ok_refs = {F.subject_ref(f).lower() for f in fs.ok}
         # a valid fact's required disclosure that names it ("excl. VAT and fuel surcharge") is not a use
-        disc_here = [str(d) for g in fs.ok for d in g.get("required_disclosures") or [] if phrase_in(str(d), s)]
+        disc_here = [str(d) for g in fs.ok
+                     for d in [*(g.get("required_disclosures") or []), *(g.get("disclosure_wordings") or [])]
+                     if phrase_in(str(d), s)]
         for f in fs.stale + fs.scope:
             ref = F.subject_ref(f)
             if len(ref) < 4 or f["key"] in flagged or ref.lower() in ok_refs:
@@ -3028,6 +3030,9 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
         if not disc:
             continue
         if any(_tokens(_disc_canon(d)) <= piece_tokens or disclosure_said(d, text) for d in disc):
+            continue
+        # the business's own wording for it, confirmed by the owner in 05 (exact, case / space folded)
+        if any(phrase_in(str(w), text) for w in (f or {}).get("disclosure_wordings") or [] if str(w).strip()):
             continue
         for sentence in sentences or [""]:
             findings.append(_finding(sentence or text.strip()[:200], "missing_disclosure", f, disc[0],

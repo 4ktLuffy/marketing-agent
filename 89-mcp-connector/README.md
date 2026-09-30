@@ -1,6 +1,6 @@
 # mcp-connector
 
-Deploy **89 of 89** of the local-LLM marketing agent. It is an **MCP server** that lets Claude use
+Deploy **89 of 90** of the local-LLM marketing agent. It is an **MCP server** that lets Claude use
 the business's facts and the task bridge directly: Claude Desktop and Claude Code on your machine,
 or claude.ai through **one custom remote connector** (the Free plan allows one). It needs no model
 and holds no key that can approve anything.

@@ -5,7 +5,7 @@
   <h1>Control room</h1>
   <p class="muted">Review what the marketing agent wrote. Nothing is published until you approve it.</p>
   {% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
-  {% if not configured %}<p class="alert warn">The server has no <code>CONTROL_PASSWORD</code>; nobody can log in until it is set.</p>{% endif %}
+  {% if not configured and not error %}<p class="alert warn">Nobody can log in yet: set <code>CONTROL_PASSWORD</code> on the server, or add a person with <code>python -m app.users add</code>.</p>{% endif %}
   <form method="post" action="/login" class="stack">
     <input type="hidden" name="csrf" value="{{ login_token }}">
     <input type="hidden" name="next" value="{{ next }}">

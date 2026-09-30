@@ -18,7 +18,7 @@
     {% if r.h.paused %}<dt>Paused because</dt><dd>{{ r.h.reason }}</dd>{% endif %}
   </dl>
   {% else %}<p class="muted small">Health not available.</p>{% endif %}
-  {% if r.p.status == 'paused' or (r.h and r.h.paused) %}
+  {% if (r.p.status == 'paused' or (r.h and r.h.paused)) and can('approver') %}
   <form method="post" action="/engine/{{ r.p.id }}/resume">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <button class="btn primary">Resume this pillar</button>

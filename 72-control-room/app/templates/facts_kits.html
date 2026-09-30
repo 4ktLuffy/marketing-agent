@@ -20,10 +20,10 @@
   <ul class="plain small">{% for d in kit.required_disclosures %}<li>{{ d.when }}: <b>“{{ d.text }}”</b></li>{% endfor %}</ul>
   <h3>Facts worth adding</h3>
   <ul class="plain small">{% for t in kit.fact_types %}<li>{{ t.fact_type|replace('_', ' ') }} of a {{ t.subject_kind|replace('_', ' ') }} ({{ t.attributes|join(', ') }}). Example: {{ t.example }}</li>{% endfor %}</ul>
-  <form method="post" action="/facts/kits/{{ kit.id }}/apply">
+  {% if can('owner') %}<form method="post" action="/facts/kits/{{ kit.id }}/apply">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <button class="btn primary" type="submit" {% if not owner_ready %}disabled{% endif %}>Add these rules as drafts</button>
-  </form>
+  </form>{% endif %}
 </section>
 {% elif kits %}<p class="muted">Pick a business type above.</p>{% endif %}
 
@@ -35,7 +35,7 @@
     <li class="fact{% if r.status == 'draft' %} needs{% endif %}">
       <p>{% if r.kind == 'forbidden_phrase' %}Avoid <b>“{{ r.phrase }}”</b>: {{ r.why }}{% else %}Always say <b>“{{ r.phrase }}”</b> when {{ r.why }}{% endif %}</p>
       <div class="chips"><span class="chip st-{{ 'ok' if r.status == 'active' else ('warn' if r.status == 'draft' else 'muted') }}">{{ 'draft: needs your confirmation' if r.status == 'draft' else r.status }}</span><span class="chip">{{ r.kit }}</span></div>
-      {% if r.status == 'draft' %}
+      {% if r.status == 'draft' and can('owner') %}
       <div class="row-actions">
         <form method="post" action="/facts/rules/{{ r.id }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn approve small" type="submit" {% if not owner_ready %}disabled{% endif %}>Confirm</button></form>
         <form method="post" action="/facts/rules/{{ r.id }}/dismiss"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost small" type="submit" {% if not owner_ready %}disabled{% endif %}>Dismiss</button></form>

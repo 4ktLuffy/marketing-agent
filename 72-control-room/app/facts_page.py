@@ -1,7 +1,7 @@
 """Facts page: the business's facts (05 v2), what needs the owner, starter kits and open questions.
 
 Everything goes through 05 with INTERNAL_API_KEY. Adding or editing a fact makes a DRAFT; only
-confirm / retire, a starter kit's apply and a kit rule's confirm / dismiss send FACT_OWNER_KEY
+confirm / retire, a starter kit's apply, a kit rule's and a learned wording's confirm / dismiss send FACT_OWNER_KEY
 (`X-Owner-Key`), and only from here, server-side. The key is never rendered. Facts from the
 brand profile (brand.yaml, "derived") are read-only; "turn into a scoped fact" copies one into a
 new draft that supersedes it once confirmed.
@@ -33,7 +33,7 @@ DIMS = [("sites", "Sites or branches"), ("regions", "Regions"), ("channels", "Ch
         ("segments", "Customer groups"), ("plan_tiers", "Plan tiers"), ("variants", "Variants")]
 DIM_WORD = {"sites": "branch", "regions": "region", "channels": "channel", "segments": "customers",
             "plan_tiers": "plan", "variants": "variant"}
-SHOWS = ("all", "attention", "drafts", "expiring", "expired", "due", "questions")
+SHOWS = ("all", "attention", "drafts", "expiring", "expired", "due", "questions", "wordings")
 MAX_FIELD = 2000
 MAX_CONDITIONS = 20
 
@@ -268,14 +268,32 @@ def errors_from(e: BackendError) -> dict[str, list[str]]:
     return out
 
 
+def wording_view(w: dict) -> dict:
+    """One draft wording as the list shows it (everything a string, lengths capped)."""
+    txt = lambda k, n=300: str(w.get(k) or "")[:n]  # noqa: E731
+    tid = txt("task_id", 80)
+    return {"id": w.get("id") if isinstance(w.get("id"), int) else None, "fact_key": txt("fact_key", 80),
+            "disclosure": txt("disclosure"), "wording": txt("wording"), "proposed_by": txt("proposed_by", 80),
+            "task_id": tid if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", tid) else "", "created_at": txt("created_at", 25)}
+
+
 # ------------------------------------------------------------------ routes
 
-def register(app, page, current, csrf, B):
+def register(app, page, current, csrf, B, need=None):
+    need = need or (lambda role: csrf)   # older callers: CSRF only, no roles
     s = app.state.settings
 
     def not_installed(request, session):
         return page(request, "facts.html", session, not_installed=True, nav="more", groups=[], counts={},
                     questions=[], show="all", owner_ready=bool(s.fact_owner_key))
+
+    async def draft_wordings() -> tuple[list[dict], str | None]:
+        """Draft learned wordings (05). An older 05 without the endpoint (404) = none, silently."""
+        try:
+            return [wording_view(w) for w in await B().disclosure_wordings("draft")
+                    if w.get("status", "draft") == "draft"], None
+        except BackendError as e:
+            return [], None if e.status == 404 else f"Wordings to confirm: the brand service (05) said {e.detail}"
 
     async def listing(request, session, show="all", status=200, done=None, error=None):
         show = show if show in SHOWS else "all"
@@ -289,19 +307,22 @@ def register(app, page, current, csrf, B):
             questions = await B().questions("open")
         except BackendError:
             questions = []
+        wordings, wordings_error = await draft_wordings()
         day = today()
         views = [fact_view(f, day) for f in facts]
         counts = {k: sum(1 for v in views if k in v["attention"]) for k in ("drafts", "expiring", "expired", "due")}
         counts["questions"] = len(questions)
+        counts["wordings"] = len(wordings)
         counts["attention"] = sum(1 for v in views if v["attention"])
         if show == "attention":
             views = [v for v in views if v["attention"]]
         elif show in ("drafts", "expiring", "expired", "due"):
             views = [v for v in views if show in v["attention"]]
-        elif show == "questions":
+        elif show in ("questions", "wordings"):
             views = []
         return page(request, "facts.html", session, status, nav="more", groups=group(views), counts=counts,
-                    questions=questions, show=show, error=err, done=done, total=len(facts),
+                    questions=questions, wordings=wordings, wordings_error=wordings_error,
+                    show=show, error=err, done=done, total=len(facts),
                     owner_ready=bool(s.fact_owner_key), sensitivity=SENSITIVITY)
 
     @app.get("/facts", response_class=HTMLResponse)
@@ -345,7 +366,7 @@ def register(app, page, current, csrf, B):
         return RedirectResponse(f"/facts?done=saved:{k or body['key']}", status_code=303)
 
     @app.post("/facts/new", response_class=HTMLResponse)
-    async def fact_create(request: Request, session=Depends(csrf)):
+    async def fact_create(request: Request, session=Depends(need("writer"))):
         if not s.brand_url:
             return not_installed(request, session)
         return await save(request, session, None)
@@ -369,7 +390,7 @@ def register(app, page, current, csrf, B):
                          versions=versions)
 
     @app.post("/facts/{key}/edit", response_class=HTMLResponse)
-    async def fact_update(request: Request, key: str, session=Depends(csrf)):
+    async def fact_update(request: Request, key: str, session=Depends(need("writer"))):
         if not KEY.match(key):
             raise HTTPException(404, "no such fact")
         return await save(request, session, key)
@@ -385,19 +406,19 @@ def register(app, page, current, csrf, B):
         return RedirectResponse(f"/facts?done={done}", status_code=303)
 
     @app.post("/facts/{key}/confirm")
-    async def fact_confirm(request: Request, key: str, session=Depends(csrf)):
+    async def fact_confirm(request: Request, key: str, session=Depends(need("owner"))):
         if not KEY.match(key):
             raise HTTPException(404, "no such fact")
         return await owner_action(request, session, lambda: B().fact_confirm(key), f"confirmed:{key}")
 
     @app.post("/facts/{key}/retire")
-    async def fact_retire(request: Request, key: str, session=Depends(csrf)):
+    async def fact_retire(request: Request, key: str, session=Depends(need("owner"))):
         if not KEY.match(key):
             raise HTTPException(404, "no such fact")
         return await owner_action(request, session, lambda: B().fact_retire(key), f"retired:{key}")
 
     @app.post("/facts/{key}/convert", response_class=HTMLResponse)
-    async def fact_convert(request: Request, key: str, session=Depends(csrf)):
+    async def fact_convert(request: Request, key: str, session=Depends(need("writer"))):
         """A derived (brand.yaml) fact -> a new draft that supersedes it; then edit its scope."""
         if not KEY.match(key):
             raise HTTPException(404, "no such fact")
@@ -439,7 +460,7 @@ def register(app, page, current, csrf, B):
                     error=err, owner_ready=bool(s.fact_owner_key), applied=None)
 
     @app.post("/facts/kits/{kit_id}/apply", response_class=HTMLResponse)
-    async def kit_apply(request: Request, kit_id: str, session=Depends(csrf)):
+    async def kit_apply(request: Request, kit_id: str, session=Depends(need("owner"))):
         if not re.fullmatch(r"[a-z0-9-]{2,40}", kit_id):
             raise HTTPException(404, "no such kit")
         if not s.brand_url:
@@ -458,7 +479,7 @@ def register(app, page, current, csrf, B):
         return RedirectResponse(f"/facts/kits?kit={kit_id}#rules", status_code=303)
 
     @app.post("/facts/rules/{rid}/{action}")
-    async def kit_rule(request: Request, rid: int, action: str, session=Depends(csrf)):
+    async def kit_rule(request: Request, rid: int, action: str, session=Depends(need("owner"))):
         if action not in ("confirm", "dismiss"):
             raise HTTPException(404, "not found")
         try:
@@ -468,9 +489,23 @@ def register(app, page, current, csrf, B):
             return page(request, "error.html", session, code, error=f"Not done: {e.detail}", nav="more")
         return RedirectResponse("/facts/kits#rules", status_code=303)
 
+    # ---- learned disclosure wordings (saved when a finding was accepted in 88; the owner confirms)
+    @app.post("/facts/wordings/{wid}/{action}")
+    async def wording(request: Request, wid: int, action: str, session=Depends(need("owner"))):
+        if action not in ("confirm", "dismiss"):
+            raise HTTPException(404, "not found")
+        if not s.brand_url:
+            return not_installed(request, session)
+        try:
+            await B().disclosure_wording_set(wid, action)
+        except BackendError as e:
+            code = e.status if e.status in (403, 404, 409, 503) else 502
+            return await listing(request, session, "wordings", code, error=f"Not done: {e.detail}")
+        return RedirectResponse(f"/facts?show=wordings&done=wording:{action}ed", status_code=303)
+
     # ---- open questions
     @app.post("/facts/questions/{qid}/{action}")
-    async def question(request: Request, qid: int, action: str, session=Depends(csrf)):
+    async def question(request: Request, qid: int, action: str, session=Depends(need("writer"))):
         if action not in ("answer", "dismiss"):
             raise HTTPException(404, "not found")
         form = await request.form()

@@ -2,6 +2,7 @@
 {% block title %}More{% endblock %}
 {% block main %}
 <h1>More</h1>
+{% if me %}<p class="small muted whoami-more">Signed in as <b>{{ me.display }}</b> ({{ me.role }}).{% if me.role != 'owner' %} Some buttons are hidden: {% if me.role == 'writer' %}approving and client links need an approver; {% endif %}confirming facts and changing the brand need the owner.{% endif %}</p>{% endif %}
 <ul class="menu">
   <li><a href="/tasks">Tasks <span class="muted">write with any AI chat, check every sentence</span></a></li>
   <li><a href="/facts">Facts <span class="muted">prices, rules and claims the agent may use</span></a></li>

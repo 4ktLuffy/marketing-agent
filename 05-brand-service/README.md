@@ -1,6 +1,6 @@
 # brand-service
 
-Deploy **05 of 89** of the local-LLM marketing agent. It holds one brand profile (voice,
+Deploy **05 of 90** of the local-LLM marketing agent. It holds one brand profile (voice,
 products, key messages, banned phrases, disclaimers) and serves it two ways: as JSON, and
 as a compact plain-text summary the LLM gateway (03) embeds in every prompt. `POST /check`
 lints any draft against the brand rules before it goes near the calendar.
@@ -193,6 +193,25 @@ retire or brand edit. 88 stamps packs with it.
 | POST | `/starter-kits/{id}/apply` | — | owner key; stores the kit's phrasings and disclosures as **draft rules** (idempotent): `{"kit","created","existing","rules","suggested_fact_types"}` |
 | GET | `/rules?status=&kit=` | — | `{"rules":[{"id","kit","kind":"forbidden_phrase\|required_disclosure","phrase","why","claim_class","needs","status"}]}` |
 | POST | `/rules/{id}/confirm` · `/dismiss` | — | owner key; rule status active / dismissed |
+| POST | `/disclosure-wordings` | `{"fact_key","disclosure","wording","task_id"?,"proposed_by"?}` | 201 a **draft** wording row; 404 unknown fact; 422 when `disclosure` is not one of the fact's current `required_disclosures` (case and spaces ignored) or `wording` is empty / over 200 chars; the same wording again → 200 with the existing row (a dismissed one stays dismissed) |
+| GET | `/disclosure-wordings?status=&fact_key=` | — | `{"wordings":[{"id","fact_key","disclosure","wording","status","proposed_by","task_id","created_at","decided_by","decided_at"}]}`, newest first, ≤ 500 |
+| POST | `/disclosure-wordings/{id}/confirm` · `/dismiss` | — | owner key (`X-Actor` → `decided_by`); the row, status active / dismissed; 404 unknown id |
+
+### The business's own words for a disclosure
+
+A fact can require a disclosure ("riders must be 16 or over"). Real copy often says it in other
+words ("for riders aged sixteen and up"), and the task bridge (88) then reports a missing
+disclosure. When a person accepts that finding there and copies the exact words from the text,
+88 proposes them here (`POST /disclosure-wordings`, a **draft**). Nothing changes until the owner
+confirms it (`/disclosure-wordings/{id}/confirm`, owner key). From then on every served fact
+(`/facts/query`, `/facts/v2`, `/facts/v2/{key}`) carries `disclosure_wordings`: the confirmed
+wordings for that key (an empty list when none), and 88 counts any of them, word for word, as the
+disclosure. A dismissed wording is never served and proposing it again keeps it dismissed.
+
+Wordings are kept apart from the fact itself: they are not a new version, never merged into
+`allowed_phrasing`, never in legacy `/facts`, and confirming or dismissing one writes nothing to
+`/facts/changes` (so approved posts do not go back to draft). `disclosure_wordings` is read-only:
+sending a listed fact back (import, PUT) ignores it.
 
 ### Legacy `/facts` compatibility guarantee
 

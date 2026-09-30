@@ -1,6 +1,6 @@
 # lead-hub
 
-Deploy **80 of 89** of the local-LLM marketing agent. It handles people who contacted you
+Deploy **80 of 90** of the local-LLM marketing agent. It handles people who contacted you
 (a website form, the site assistant, a form tool's webhook, or someone you typed in):
 
 1. **Capture.** It stores the lead, deduplicated by email. A second message from the same

@@ -216,7 +216,8 @@ def interview_text(questions: list[str], answers: list[str]) -> str:
 
 # ------------------------------------------------------------------ routes
 
-def register(app, page, current, csrf, B):
+def register(app, page, current, csrf, B, need=None):
+    need = need or (lambda role: csrf)   # older callers: CSRF only, no roles
     def render(request, session, step: int, status: int = 200, **ctx):
         htmx = bool(request.headers.get("HX-Request"))
         name = "_brand_step.html" if htmx and request.method == "POST" else "brand.html"
@@ -281,7 +282,7 @@ def register(app, page, current, csrf, B):
         return render(request, session, step, saved=bool(saved), **(await step_ctx(step)))
 
     @app.post("/brand/step/{step}", response_class=HTMLResponse)
-    async def brand_save(request: Request, step: int, session=Depends(csrf)):
+    async def brand_save(request: Request, step: int, session=Depends(need("owner"))):
         if step not in PARSERS:
             raise HTTPException(404, "no such step")
         form = await request.form()
@@ -311,7 +312,7 @@ def register(app, page, current, csrf, B):
 
     # ---- step 5: interview -> gateway voice_profile -> review -> 05 PUT /voice
     @app.post("/brand/voice/generate", response_class=HTMLResponse)
-    async def voice_generate(request: Request, session=Depends(csrf)):
+    async def voice_generate(request: Request, session=Depends(need("owner"))):
         form = await request.form()
         try:
             qs = await B().voice_questions()
@@ -328,7 +329,7 @@ def register(app, page, current, csrf, B):
         return render(request, session, 5, review=voice_values(profile), **ctx)
 
     @app.post("/brand/voice/save", response_class=HTMLResponse)
-    async def voice_save(request: Request, session=Depends(csrf)):
+    async def voice_save(request: Request, session=Depends(need("owner"))):
         form = await request.form()
         prof, raw = voice_from_form(form)
         try:
@@ -343,7 +344,7 @@ def register(app, page, current, csrf, B):
         return render(request, session, 5, saved=True, voice=saved)
 
     @app.post("/brand/reset")
-    async def brand_reset(request: Request, session=Depends(csrf)):
+    async def brand_reset(request: Request, session=Depends(need("owner"))):
         form = await request.form()
         if form.get("confirm") != "yes":
             return render(request, session, 6, 422, reset_error="Tick the box to confirm the reset.",

@@ -1,6 +1,6 @@
 # gsc-sync
 
-Deploy **67 of 89** of the local-LLM marketing agent. It reads your Google Search Console
+Deploy **67 of 90** of the local-LLM marketing agent. It reads your Google Search Console
 clicks, impressions, CTR and average position per page and per query for two consecutive
 windows: the last N days and the N days before. It keeps them in SQLite and answers two
 questions:

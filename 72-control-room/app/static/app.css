@@ -29,6 +29,9 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; backgro
 .topnav { display: none; gap: 14px; flex: 1; }
 .topnav a[aria-current] { text-decoration: underline; }
 .logout { margin-left: auto; }
+.top .whoami { margin-left: auto; color: #c9d3de; white-space: nowrap; }
+.top .whoami + .logout { margin-left: 0; }
+@media (max-width: 600px) { .top .whoami { display: none; } }
 .link { background: none; border: 0; color: inherit; cursor: pointer; font: inherit; }
 .tabbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--panel);
   border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 10; }
