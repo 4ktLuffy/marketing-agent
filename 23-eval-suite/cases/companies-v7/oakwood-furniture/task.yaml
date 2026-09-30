@@ -1,0 +1,17 @@
+# FICTIONAL. Scope variants=[oak], regions=[national] makes the walnut price and the local free delivery
+# scope traps; publish 2026-10-14 is after the Autumn Sale ends (2026-10-06).
+goal: Sell solid oak Harlow dining tables online to customers across England and Wales in October.
+pieces:
+- {key: p1, channel: instagram, kind: post, max_chars: 2200}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+- {key: p3, channel: pinterest, kind: pin, max_chars: 500}
+scope:
+  sites: []
+  regions: [national]
+  channels: []
+  segments: []
+  plan_tiers: []
+  variants: [oak]
+publish_on: '2026-10-14'
+audience: Home owners furnishing a dining room
+notes: Oak only; national online audience, not the local showroom.

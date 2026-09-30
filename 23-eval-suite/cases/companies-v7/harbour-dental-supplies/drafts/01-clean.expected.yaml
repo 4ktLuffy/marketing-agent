@@ -1,0 +1,13 @@
+# WHY: negative control: standard-account price with its VAT disclosure (LinkedIn says 'plus VAT', an equivalent of 'excluding VAT'), England & Wales cut-off with 'Monday to Friday', the gloves' own UKCA/CE Class I marking.
+blocked: false
+findings: []
+must_not_flag:
+  - "Running low on gloves on a Thursday afternoon?"
+  - "UKCA and CE marked as a Class I medical device"
+  - "they cost £5.40 per box of 100, plus VAT"
+  - "Order by 5pm, Monday to Friday, and they arrive the next working day"
+  - "Every trade account comes with a named account manager"
+  - "Subject: Gloves by tomorrow, one person to call"
+  - "Our nitrile exam gloves are"
+  - "Class I medical device, declaration of conformity HDS-DOC-2291"
+  - "Your named account manager will help you set up your first order"

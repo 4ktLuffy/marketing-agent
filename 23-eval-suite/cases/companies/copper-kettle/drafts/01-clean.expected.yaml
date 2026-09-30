@@ -1,0 +1,7 @@
+# WHY: delivery-channel price with its disclosure, current allergen matrix v4 with the kitchen disclosure, Riverside hours.
+blocked: false
+findings: []
+must_not_flag:
+  - "The pumpkin & sage risotto contains milk, celery and sulphites"
+  - "We deliver from 8am to 3pm every day"
+  - "Our new autumn menu is now on Deliveroo"

@@ -1,0 +1,10 @@
+# WHY: Zone 1 rate with "excl. VAT", 60-minute promise with its hours, account invoicing, capped transit cover and bike capacity, all in scope.
+blocked: false
+findings: []
+must_not_flag:
+  - "Zone 1 drops are"
+  - "Delivered within 60 minutes of pickup, weekdays 8am to 6pm"
+  - "Our e-cargo bikes carry up to 100kg"
+  - "Business account customers get"
+  - "goods-in-transit cover up to £1,000 per consignment"
+  - "£7.50 per drop excl. VAT"

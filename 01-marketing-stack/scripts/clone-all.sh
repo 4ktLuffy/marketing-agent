@@ -53,6 +53,8 @@ repos=(
   85-wf-sched-client-report
   86-flow-runner
   87-feed-optimizer
+  88-task-bridge
+  89-mcp-connector
 )
 for r in "${repos[@]}"; do
   if [ -d "$r" ]; then echo "skip $r (exists)"; continue; fi

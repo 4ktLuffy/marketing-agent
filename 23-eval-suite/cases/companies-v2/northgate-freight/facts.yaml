@@ -1,0 +1,289 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Task scope regions=[uk-mainland]: saturday-delivery (london-m25 only) is the scope trap; fuel-surcharge is valid
+# today (2026-09-29) but ends 2026-10-04, before publish_on 2026-10-08.
+company: {name: Northgate Freight, type: logistics, today: '2026-09-29'}
+facts:
+- key: uk-next-day
+  subject: {kind: service, ref: Next-day pallet delivery}
+  fact_type: price
+  attribute: price
+  value: 68
+  unit: pallet
+  currency: GBP
+  value_text: £68 per pallet
+  basis: per_unit
+  conditions:
+  - {key: pallet, op: '=', value: full pallet}
+  scope: {sites: [], regions: [uk-mainland], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-01'
+  valid_to: '2027-06-30'
+  review_by: null
+  source: {kind: doc, ref: Northgate tariff 2026-27 v2}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - excl. VAT and fuel surcharge
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Next-day pallet delivery on UK mainland costs £68 per full pallet, excl. VAT and fuel surcharge.
+- key: next-day-cutoff
+  subject: {kind: service, ref: Next-day pallet delivery}
+  fact_type: hours
+  attribute: order_cutoff
+  value: null
+  unit: null
+  currency: null
+  value_text: '16:00'
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [uk-mainland], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Northgate tariff 2026-27 v2}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Pallets booked by 16:00 Monday to Friday are delivered the next working day on UK mainland.
+- key: saturday-delivery
+  subject: {kind: service, ref: Saturday delivery}
+  fact_type: inclusion
+  attribute: saturday_delivery
+  value: null
+  unit: null
+  currency: null
+  value_text: Saturday delivery at no extra charge
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [london-m25], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Northgate tariff 2026-27 v2}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Saturday delivery at no extra charge is available inside the M25 only (London hub).
+- key: transit-cover
+  subject: {kind: policy, ref: Goods-in-transit cover}
+  fact_type: policy
+  attribute: cover_limit
+  value: 25000
+  unit: null
+  currency: GBP
+  value_text: £25,000
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Insurance schedule GIT-2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per consignment
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Goods-in-transit cover is included on every consignment up to £25,000 per consignment.
+- key: iso-9001
+  subject: {kind: business, ref: Northgate Freight}
+  fact_type: certification
+  attribute: quality_management
+  value: ISO 9001:2015
+  unit: null
+  currency: null
+  value_text: ISO 9001:2015 certified (certificate NGF-QMS-4471)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-03-15'
+  valid_to: '2028-03-14'
+  review_by: null
+  source: {kind: certificate, ref: Certificate NGF-QMS-4471}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: NGF-QMS-4471
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Quality manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Northgate Freight is ISO 9001:2015 certified for quality management, certificate NGF-QMS-4471. It holds no ISO 14001 certificate.
+- key: aeo-c
+  subject: {kind: business, ref: Northgate Freight}
+  fact_type: credential
+  attribute: customs_authorisation
+  value: AEO-C
+  unit: null
+  currency: null
+  value_text: AEO-C authorisation GBAEOC0042917
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2024-11-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: AEO-C authorisation GBAEOC0042917}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: GBAEOC0042917
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Customs lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Northgate Freight holds Authorised Economic Operator Customs Simplifications status (AEO-C), authorisation GBAEOC0042917. It does not hold AEO-S (security and safety).
+- key: fuel-surcharge
+  subject: {kind: policy, ref: Fuel surcharge}
+  fact_type: price
+  attribute: surcharge_rate
+  value: 11.5
+  unit: percent
+  currency: null
+  value_text: 11.5%
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Fuel surcharge notice 2026-09}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The fuel surcharge is 11.5% of the carriage charge from 1 September to 4 October 2026 (reviewed monthly).
+- key: storage-offer-2025
+  subject: {kind: offer, ref: New customer storage offer}
+  fact_type: price
+  attribute: free_storage
+  value: 4
+  unit: week
+  currency: null
+  value_text: 4 weeks' free pallet storage
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-10-01'
+  valid_to: '2025-12-31'
+  review_by: null
+  source: {kind: doc, ref: Peak 2025 promotion brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: New customers got 4 weeks' free pallet storage when they signed up between October and December 2025. Ended.
+- key: pallet-rate-floor
+  subject: {kind: service, ref: Next-day pallet delivery}
+  fact_type: price
+  attribute: floor_price
+  value: 52
+  unit: null
+  currency: GBP
+  value_text: £52 per pallet
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [uk-mainland], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Commercial director pricing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The lowest next-day pallet rate sales may quote without director sign-off is £52 per pallet.
+- key: keystone-contract-rate
+  subject: {kind: service, ref: Contract rate (Keystone Retail Ltd)}
+  fact_type: price
+  attribute: contract_price
+  value: 41
+  unit: null
+  currency: GBP
+  value_text: £41 per pallet
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Keystone Retail Ltd}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Keystone volume contract 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Keystone Retail Ltd pays £41 per pallet under its 2026 volume contract.

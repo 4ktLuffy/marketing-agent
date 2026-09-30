@@ -1,0 +1,10 @@
+# WHY: negative control. Same group facts reworded: "ten lessons, one a week"/"ten weekly lessons" for "10 weekly lessons", "If you haven't been to us before"/"Newcomers" for "for new students", the exam base moved to the front of the sentence; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "a term of group lessons costs £120, which covers ten lessons, one a week"
+  - "If you haven't been to us before, your first taster lesson is free"
+  - "Find us at Weaver's Yard, 4 till 8 on weekdays and 9 till 4 on Saturdays"
+  - "Of the 142 graded exams our students sat in 2025, 96% were passes"
+  - "A full term (ten weekly lessons) is £120 per child"
+  - "Newcomers get their first taster session free"

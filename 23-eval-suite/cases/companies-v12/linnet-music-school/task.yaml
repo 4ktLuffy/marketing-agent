@@ -1,0 +1,11 @@
+# FICTIONAL. Scope variants=[group] makes the one-to-one price and the parent & child class scope traps;
+# publish_on 2026-10-19 is after spring-early-enrol ends (2026-10-10), valid today (2026-09-29).
+goal: "Recruit children aged 7 to 12 into group lessons this autumn."
+pieces:
+  - {key: p1, channel: youtube, kind: video_description, max_chars: 5000}
+  - {key: p2, channel: threads, kind: post, max_chars: 500}
+  - {key: p3, channel: blog, kind: article, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+publish_on: "2026-10-19"
+audience: "Parents in Kelsby with children aged 7 to 12"
+notes: "Mention the exam results and the free taster."

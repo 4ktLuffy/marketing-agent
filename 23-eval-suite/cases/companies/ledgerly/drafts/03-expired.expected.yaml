@@ -1,0 +1,7 @@
+# WHY: the free Xero beta is valid today but ends 2026-10-01, before publish 2026-10-08; the 50% launch offer ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "free access to the Xero sync beta", label: conflict_or_expired, fact_key: xero-sync-beta}
+  - {contains: "50% off your first 3 months", label: conflict_or_expired, fact_key: launch-discount}
+must_not_flag:
+  - "Starter is £12 per user per month, excl. VAT"

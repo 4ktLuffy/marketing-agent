@@ -1,0 +1,11 @@
+# WHY: "best gym" and the 4.8 rating have no source; trainers hold Level 3, not Level 4; no fact says coaches are physiotherapists.
+blocked: true
+findings:
+  - {contains: "The best gym in the city, hands down", label: no_source, fact_key: null}
+  - {contains: "Rated 4.8 stars by over 2,000 members", label: no_source, fact_key: null}
+  - {contains: "Subject: Coached by Level 4 trainers", label: conflict_or_expired, fact_key: pt-qualification}
+  - {contains: "holds a Level 4 Personal Trainer qualification", label: conflict_or_expired, fact_key: pt-qualification}
+  - {contains: "Our coaches are also registered physiotherapists", label: no_source, fact_key: null}
+must_not_flag:
+  - "Unlimited spin, HIIT and yoga classes are included with Core at Northgate"
+  - "Core £34.99/month, 12-month minimum term"

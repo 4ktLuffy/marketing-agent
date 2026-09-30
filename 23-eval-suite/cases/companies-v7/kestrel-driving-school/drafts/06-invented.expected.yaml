@@ -1,0 +1,12 @@
+# WHY: 'DVSA approved driving school' is forbidden (DVSA approves instructors); 'highest pass rate in Norfolk', the 5-star rating and 'every instructor grade A' have no source; 'grade six' contradicts grade A; 417-358 is a look-alike of ADI 417385.
+blocked: true
+findings:
+  - {contains: "Norwich's only DVSA approved driving school", label: forbidden_phrase, fact_key: adi-grade}
+  - {contains: "The highest first-time pass rate in Norfolk", label: no_source, fact_key: null}
+  - {contains: "Learn with a grade six instructor", label: conflict_or_expired, fact_key: adi-grade}
+  - {contains: "Daniel is a grade six instructor", label: conflict_or_expired, fact_key: adi-grade}
+  - {contains: "His ADI number is 417-358", label: conflict_or_expired, fact_key: adi-grade}
+  - {contains: "Every one of our instructors is a grade A ADI", label: no_source, fact_key: null}
+  - {contains: "5-star rated on Google by over 300 pupils", label: no_source, fact_key: null}
+must_not_flag:
+  - "Automatic lessons are £44 per hour (minimum 2-hour booking)"

@@ -1,0 +1,8 @@
+# WHY: negative control; same private-customer facts reworded, disclosures kept. "Free up your day" and "a fleet of family cars" are look-alikes of the winter check and fleet price, not offers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Free up your day"
+  - "Got a fleet of family cars"
+  - "servicing with us won't affect your manufacturer warranty"
+  - "MOTs are £45"

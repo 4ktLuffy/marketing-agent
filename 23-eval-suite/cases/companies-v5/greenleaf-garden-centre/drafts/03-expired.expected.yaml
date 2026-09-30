@@ -1,0 +1,12 @@
+# WHY: the bulb offer is valid today but ends 2026-10-11, before publish 2026-10-15 (once only described, "for a tenner"); the furniture sale ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Spring bulbs are 3 bags for £10 this month", label: conflict_or_expired, fact_key: bulb-offer}
+  - {contains: "Any three bags for a tenner", label: conflict_or_expired, fact_key: bulb-offer}
+  - {contains: "our spring bulb offer makes it easy", label: conflict_or_expired, fact_key: bulb-offer}
+  - {contains: "Subject: Last chance for 20% off garden furniture", label: conflict_or_expired, fact_key: furniture-sale}
+  - {contains: "There's still time to save 20% off garden furniture", label: conflict_or_expired, fact_key: furniture-sale}
+  - {contains: "Greenleaf: 3 bags of spring bulbs for £10", label: conflict_or_expired, fact_key: bulb-offer}
+  - {contains: "20% off garden furniture this week only", label: conflict_or_expired, fact_key: furniture-sale}
+must_not_flag:
+  - "Japanese maples in 3-litre pots are £24.99"

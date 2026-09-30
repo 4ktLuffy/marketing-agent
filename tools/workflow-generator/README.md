@@ -2,7 +2,7 @@
 
 Every n8n workflow in this repo is generated. The Python here is the source; the
 `NN-wf-*/workflow.json` files (and each workflow deploy's `README.md`, `.gitignore` and
-`.github/workflows/ci.yml`, plus `24-wf-chat-agent/variants/hosted.json` and
+`.github/workflows/ci.yml`, plus `24-wf-chat-agent/variants/hosted.json` and `direct-ollama.json` and
 `72-control-room/n8n/workflow.json`, `84-ads-sync/n8n/` and `86-flow-runner/n8n/`) are its output. **Change a workflow here, never in the n8n
 editor or in the JSON**, then rebuild.
 

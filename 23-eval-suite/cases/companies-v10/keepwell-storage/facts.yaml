@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Three sites: Millgate, Ashby Road, Wexcombe. Task scope sites=[Millgate].
+company: {name: "Keepwell Self Storage", type: "self storage (3 sites)", today: '2026-09-29'}
+facts:
+- key: "unit-50-millgate"
+  subject: {kind: "product", ref: "50 sq ft unit"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 24
+  unit: "week"
+  currency: "GBP"
+  value_text: "£24 per week"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: ["Millgate"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Keepwell tariff Oct 2026 (all sites)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "At Millgate a 50 sq ft unit costs £24 per week."
+- key: "unit-50-ashby"
+  subject: {kind: "product", ref: "50 sq ft unit"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 21
+  unit: "week"
+  currency: "GBP"
+  value_text: "£21 per week"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: ["Ashby Road"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Keepwell tariff Oct 2026 (all sites)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "At Ashby Road a 50 sq ft unit costs £21 per week."
+- key: "half-price-8-weeks"
+  subject: {kind: "offer", ref: "New customer half price"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 50
+  unit: "percent"
+  currency: null
+  value_text: "50% off your first 8 weeks"
+  basis: null
+  conditions: [{key: "customer", op: "=", value: "new"}, {key: "min_stay_weeks", op: ">=", value: 12}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {kind: "doc", ref: "Winter offer brief 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["minimum 12-week stay"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "New customers get 50% off their first 8 weeks at any Keepwell site, with a minimum 12-week stay."
+- key: "millgate-access-hours"
+  subject: {kind: "site", ref: "Millgate"}
+  fact_type: "hours"
+  attribute: "access_hours"
+  value: null
+  unit: null
+  currency: null
+  value_text: "6am to 10pm, 7 days a week"
+  basis: null
+  conditions: []
+  scope: {sites: ["Millgate"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Keepwell tariff Oct 2026 (all sites)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Millgate customers can reach their unit from 6am to 10pm, 7 days a week, using their own PIN."
+- key: "contents-cover"
+  subject: {kind: "policy", ref: "Contents cover"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 2.5
+  unit: "week"
+  currency: "GBP"
+  value_text: "£2.50 per week per £1,000 of goods"
+  basis: "per_unit"
+  conditions: [{key: "cover_unit", op: "=", value: "£1,000 of goods"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Keepwell tariff Oct 2026 (all sites)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Stored goods must be insured. Keepwell contents cover costs £2.50 per week per £1,000 of goods."
+- key: "free-van-move-in"
+  subject: {kind: "offer", ref: "Free van on move-in day"}
+  fact_type: "inclusion"
+  attribute: "van_hire"
+  value: null
+  unit: null
+  currency: null
+  value_text: "free van hire on move-in day"
+  basis: null
+  conditions: [{key: "unit_size_sqft", op: ">=", value: 75}]
+  scope: {sites: ["Millgate", "Ashby Road"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-15"
+  valid_to: "2026-10-10"
+  review_by: null
+  source: {kind: "doc", ref: "Van offer brief Sep 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["units of 75 sq ft or more"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Free van hire on move-in day at Millgate and Ashby Road, for units of 75 sq ft or more, for move-ins booked by 10 October 2026."
+- key: "student-summer-rate"
+  subject: {kind: "offer", ref: "Student summer storage"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 15
+  unit: "week"
+  currency: "GBP"
+  value_text: "£15 per week"
+  basis: "per_unit"
+  conditions: [{key: "customer", op: "=", value: "student"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-09-15"
+  review_by: null
+  source: {kind: "doc", ref: "Student summer brief 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "Students could store a 25 sq ft locker for £15 per week over the summer (June to mid-September 2026)."
+- key: "site-security"
+  subject: {kind: "business", ref: "Keepwell sites"}
+  fact_type: "claim"
+  attribute: "security_features"
+  value: null
+  unit: null
+  currency: null
+  value_text: "24-hour CCTV, a PIN-controlled gate and individually alarmed units"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: "2027-01-01"
+  source: {kind: "doc", ref: "Security spec per site 2026"}
+  claim_class: "security"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: ["100% secure", "burglar-proof", "theft-proof"]
+  owner: "Operations manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Every Keepwell site has 24-hour recorded CCTV, a PIN-controlled gate and individually alarmed units. Keepwell does not claim that storage is theft-proof."
+- key: "discount-approval-floor"
+  subject: {kind: "policy", ref: "Manager discount limit"}
+  fact_type: "policy"
+  attribute: "max_discount"
+  value: 35
+  unit: "percent"
+  currency: null
+  value_text: "up to 35% off"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pricing authority memo 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Site managers may approve up to 35% off standard rates to fill empty units."
+- key: "halden-removals-rate"
+  subject: {kind: "offer", ref: "Halden Removals account"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 16
+  unit: "week"
+  currency: "GBP"
+  value_text: "£16 per week"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-03-01"
+  valid_to: "2027-02-28"
+  review_by: null
+  source: {kind: "doc", ref: "Halden Removals trade agreement"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Halden Removals pays £16 per week per 50 sq ft unit under its trade account."

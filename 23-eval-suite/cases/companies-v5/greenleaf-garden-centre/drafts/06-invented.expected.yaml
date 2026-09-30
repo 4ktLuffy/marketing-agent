@@ -1,0 +1,12 @@
+# WHY: "peat-free garden centre" is forbidden (only compost is peat-free); the café is rated 4 (Good), not 5, and FHRS ID 1487320 is a look-alike of 1487302; size, rating, favourite and staff claims have no source.
+blocked: true
+findings:
+  - {contains: "Cheshire's biggest garden centre", label: no_source, fact_key: null}
+  - {contains: "Rated 4.8 stars on Google from 1,200+ reviews", label: no_source, fact_key: null}
+  - {contains: "a 100% peat-free garden centre", label: forbidden_phrase, fact_key: peat-free-compost}
+  - {contains: "RHS-qualified horticulturists", label: no_source, fact_key: null}
+  - {contains: "5-star food hygiene rating", label: conflict_or_expired, fact_key: cafe-hygiene-rating}
+  - {contains: "FHRS ID 1487320", label: conflict_or_expired, fact_key: cafe-hygiene-rating}
+  - {contains: "Cheshire's favourite garden centre", label: no_source, fact_key: null}
+must_not_flag:
+  - "Japanese maples in 3-litre pots are £24.99"

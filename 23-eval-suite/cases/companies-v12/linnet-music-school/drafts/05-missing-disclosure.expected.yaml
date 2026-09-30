@@ -1,0 +1,8 @@
+# WHY: the group price requires "10 weekly lessons" and the pass rate requires "based on 142 exams taken in 2025"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Group lessons for ages 7 to 12 are just £120 a term", label: missing_disclosure, fact_key: group-term-price}
+  - {contains: "Ninety-six percent of our students passed their graded exams", label: missing_disclosure, fact_key: exam-pass-rate}
+  - {contains: "Our 96% pass rate at graded exams", label: missing_disclosure, fact_key: exam-pass-rate}
+must_not_flag:
+  - "Book a free taster lesson for new students."

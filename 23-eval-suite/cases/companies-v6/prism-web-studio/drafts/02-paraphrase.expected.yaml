@@ -1,0 +1,12 @@
+# WHY: negative control — same Starter facts reworded ("five pages", "3 weeks", "one payment"); the email has no heading; "Partnering with a small studio" is an everyday use of the word, not a partner-status claim; disclosures present in each piece.
+blocked: false
+findings: []
+must_not_flag:
+  - "Small business, big plans?"
+  - "For £1,800 excl. VAT, one payment"
+  - "Contact form and basic SEO setup are part of the package, not extras"
+  - "Three weeks from content sign-off to launch"
+  - "Prism is a Google Partner"
+  - "Your website, sorted in 3 weeks"
+  - "saw online orders go up 64% in six months"
+  - "Partnering with a small studio means you talk to the people doing the work"

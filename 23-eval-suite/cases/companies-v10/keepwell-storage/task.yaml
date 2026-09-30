@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[Millgate] makes the cheaper Ashby Road unit price a scope trap;
+# publish_on 2026-10-14 is after free-van-move-in ends (2026-10-10), valid today (2026-09-29).
+goal: "Fill empty 50 sq ft units at the Millgate site before winter."
+pieces:
+  - {key: p1, channel: facebook, kind: post, max_chars: null}
+  - {key: p2, channel: whatsapp, kind: broadcast, max_chars: 700}
+  - {key: p3, channel: flyer, kind: a5_flyer, max_chars: 600}
+scope: {sites: [Millgate], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-14"
+audience: "Households near Millgate who are moving, decluttering or renovating"
+notes: null

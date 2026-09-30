@@ -1,0 +1,16 @@
+# WHY: negative control: same in-scope facts reworded (five o'clock, 100-glove box, DoC); look-alikes 'Stock up', 'Gold-standard', 'Summer or winter' name no offer or tier price; every price keeps 'excluding VAT'.
+blocked: false
+findings: []
+must_not_flag:
+  - "Gloves, sorted, every weekday"
+  - "Why wait for consumables?"
+  - "Orders placed by 5pm Monday to Friday go out for next-working-day delivery across England and Wales"
+  - "Is your practice still chasing exam gloves every week?"
+  - "A box of 100 Harbour nitrile gloves costs £5.40 (excluding VAT) on a standard trade account"
+  - "Get your order in by five o'clock, Monday to Friday"
+  - "Stock up for winter without the storeroom stress"
+  - "Gold-standard service comes as standard: a named account manager for every account"
+  - "Subject: UKCA-marked gloves, next working day"
+  - "carry both the UKCA and CE marks and are a Class I medical device"
+  - "Standard trade price: £5.40 per 100-glove box, excluding VAT"
+  - "Summer or winter, your account manager is one call away"

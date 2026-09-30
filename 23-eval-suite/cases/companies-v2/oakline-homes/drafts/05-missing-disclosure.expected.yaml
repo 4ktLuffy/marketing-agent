@@ -1,0 +1,9 @@
+# WHY: the Rowan price appears (body and subject) without "selected plots, subject to contract"; the EPC B rating is stated without "predicted".
+blocked: true
+findings:
+  - {contains: "The Rowan on Phase 2 is just £389,995", label: missing_disclosure, fact_key: rowan-phase2-price}
+  - {contains: "The Rowan, £389,995 on Phase 2", label: missing_disclosure, fact_key: rowan-phase2-price}
+  - {contains: "It's an EPC B rated home", label: missing_disclosure, fact_key: rowan-epc}
+must_not_flag:
+  - "Each home is covered by a 10-year structural warranty (Keystone Build policy KBW-WM-2291)"
+  - "Homes are expected to be ready to move into from spring 2027"

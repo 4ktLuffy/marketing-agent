@@ -1,0 +1,13 @@
+# WHY: "main dealer standard" is forbidden on the warranty claim; only Dan is a Master Technician (the others are Level 3) and IMI ID 0214898 is a look-alike of 0214889; "best-rated" and the review rating have no source.
+blocked: true
+findings:
+  - {contains: "Hatfield's Best-Rated Garage", label: no_source, fact_key: null}
+  - {contains: "4.9★ From 800+ Reviews", label: no_source, fact_key: null}
+  - {contains: "Main Dealer Standard Servicing", label: forbidden_phrase, fact_key: warranty-safe}
+  - {contains: "Every technician at Redline Auto is an IMI Accredited Master Technician", label: conflict_or_expired, fact_key: imi-master-tech}
+  - {contains: "Servicing to main dealer standard", label: forbidden_phrase, fact_key: warranty-safe}
+  - {contains: "IMI ID 0214898", label: conflict_or_expired, fact_key: imi-master-tech}
+  - {contains: "Redline Auto: Hatfield's best-rated garage", label: no_source, fact_key: null}
+must_not_flag:
+  - "A full service is £179 for engines up to 1.6 litres"
+  - "MOT £45, book today"

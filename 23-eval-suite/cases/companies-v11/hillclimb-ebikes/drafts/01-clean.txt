@@ -1,0 +1,21 @@
+Here's a script, a description and a Threads post for the Trail E1. 🚵
+
+TikTok script
+[Shot 1: rider cresting a steep hill, not out of breath]
+VO: This is the Hillclimb Trail E1.
+VO: It's {{trail-e1-price}}, and it goes {{trail-e1-range}} in eco mode.
+VO: Spread the cost with 0% APR finance over 12 months: representative 0% APR, subject to status.
+[End card: Hillclimb Cycles, Wrenford]
+
+YouTube description
+Meet the Hillclimb Trail E1, our e-mountain bike for riders who want help on the hills.
+Price: £1,899.
+Range: up to 70 miles per charge in eco mode.
+The motor and battery have IPX4 water resistance, so a rainy ride is fine.
+Every new bike comes with a free 6-week safety check.
+Finance: 0% APR finance over 12 months (representative 0% APR, subject to status).
+
+Threads
+Hills? What hills. The Trail E1 is £1,899 with a free 6-week safety check with every new bike. Come and see it in the shop.
+
+Want me to write a second TikTok hook to test against this one?

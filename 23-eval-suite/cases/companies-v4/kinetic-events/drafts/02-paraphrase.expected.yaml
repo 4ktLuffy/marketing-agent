@@ -1,0 +1,8 @@
+# WHY: negative control — same corporate facts reworded ("£59 a head plus VAT", "up to 320 people theatre-style", access features in words); "All the best" and "proud to hold" are harmless look-alikes.
+blocked: false
+findings: []
+must_not_flag:
+  - "The Atrium Hall takes up to 320 people theatre-style, or 180 at cabaret tables"
+  - "Corporate groups of 20+ pay £59 a head plus VAT"
+  - "VenueMark Gold accreditation, certificate VM-G-20417"
+  - "All the best"

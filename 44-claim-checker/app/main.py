@@ -40,6 +40,9 @@ TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "300"))
 # Every sentence costs LLM calls (possibly on a paid hosted verifier): cap the work per request.
 MAX_TEXT_CHARS = int(os.getenv("MAX_TEXT_CHARS", "20000"))
 MAX_SENTENCES = int(os.getenv("MAX_SENTENCES", "80"))
+# A caller may send its own fact lines (88 task bridge: the facts that went into the task pack).
+MAX_FACTS = 200
+MAX_FACT_CHARS = 500
 
 app = FastAPI(title="claim-checker")
 
@@ -55,6 +58,8 @@ class VerifyRequest(BaseModel):
     text: str = Field(max_length=MAX_TEXT_CHARS)
     context: str | None = Field(default=None, max_length=MAX_TEXT_CHARS)  # brief / source text
     extra_facts: list[str] = Field(default=[], max_length=50)
+    # When given, these lines ARE the approved facts ([s1], [s2] ...): 05 /facts is not read.
+    facts: list[str] | None = Field(default=None, max_length=MAX_FACTS)
 
 
 def require_key(x_api_key: str | None = Header(default=None)):
@@ -96,13 +101,22 @@ def gateway(prompt: str, variables: dict) -> dict:
     return r.json()["output"]
 
 
+# Slot keys written by 88 ("- [[weekday-rate]] = £45 — ..."): names, not facts. Removed so a key
+# like [[rate-2026]] never counts as the number 2026 being in the facts.
+SLOT_KEY_RE = re.compile(r"^\s*[-*•]\s+|\[\[[^\]\n]*\]\]\s*(?:=\s*)?")
+
+
 def gather_evidence(req: VerifyRequest) -> list[str]:
-    try:
-        r = httpx.get(f"{BRAND_URL}/facts", headers=key_headers(), timeout=10)
-        r.raise_for_status()
-        lines = [f"[{f['id']}] {f['text']}" for f in r.json()["facts"]]
-    except httpx.HTTPError as exc:
-        raise CheckError(f"brand-service facts unavailable: {exc}") from exc
+    if req.facts is not None:
+        # The caller's facts replace 05's; brief, extra facts and KB still add to them as before.
+        lines = [f"[s{i + 1}] {t}" for i, f in enumerate(req.facts) if (t := " ".join(SLOT_KEY_RE.sub("", f).split()))]
+    else:
+        try:
+            r = httpx.get(f"{BRAND_URL}/facts", headers=key_headers(), timeout=10)
+            r.raise_for_status()
+            lines = [f"[{f['id']}] {f['text']}" for f in r.json()["facts"]]
+        except httpx.HTTPError as exc:
+            raise CheckError(f"brand-service facts unavailable: {exc}") from exc
     lines += [f"[x{i + 1}] {f}" for i, f in enumerate(req.extra_facts)]
     if req.context:
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", req.context) if s.strip()]
@@ -173,6 +187,41 @@ def in_evidence(quote: str, evidence: str) -> bool:
     if not parts:
         return False
     return all(any(len(p & e) >= 0.8 * len(p) for e in ev_lines) for p in parts)
+
+
+LINE_ID_RE = re.compile(r"^\[([^\]\s]+)\]\s*")
+
+
+def cite(line: str, quote: str | None = None) -> dict:
+    """{"id", "quote"} for an evidence line: the quote given, else the line's own text."""
+    m = LINE_ID_RE.match(line)
+    return {"id": m.group(1) if m else "", "quote": (quote if quote is not None else ID_RE.sub("", line)).strip()[:300]}
+
+
+def cite_quote(quote: str, evidence: str) -> list[dict]:
+    """Map a model quote (possibly several joined lines) back to the evidence lines it came from,
+    using the same 80%-of-words rule as in_evidence; each part goes to its best-matching line."""
+    ev = [line for line in evidence.splitlines() if line.strip()]
+    ev_words = [set(WORD_RE.findall(ID_RE.sub("", line.lower()))) for line in ev]
+    out = []
+    for part in (ID_RE.sub("", p).strip() for p in quote.splitlines()):
+        pw = set(WORD_RE.findall(part.lower()))
+        if not pw:
+            continue
+        best = max(range(len(ev)), key=lambda i: len(pw & ev_words[i]), default=None)
+        if best is not None and len(pw & ev_words[best]) >= 0.8 * len(pw):
+            out.append(cite(ev[best], part))
+    return out
+
+
+def cite_numbers(sentence: str, lines: list[str]) -> list[dict]:
+    """The first evidence line holding each number of the sentence."""
+    out = []
+    for n in sorted(numbers(sentence)):
+        line = next((line for line in lines if n in numbers(ID_RE.sub("", line))), None)
+        if line:
+            out.append(cite(line))
+    return out
 
 
 STOP = set("""a an the and or of to in on for with within from by at as is are be been our we us you
@@ -271,31 +320,32 @@ def closest_lines(text: str, evidence: str, k: int = 3) -> list[str]:
     return [line for _, _, line in sorted(scored, key=lambda x: (-x[0], x[1]))[:k]]
 
 
-def second_chance(detail: str, sentence: str, evidence: str) -> bool:
+def second_chance(detail: str, sentence: str, evidence: str) -> str | None:
     """Ask once more, narrowly, whether the closest evidence lines imply a rejected detail.
 
     Accepted only when the model says yes AND in code: the quote really is in those lines, the
     detail's numbers/days/months are all in the quote, its names/places are in the lines, and a
     detail with every/all/any is backed by a quote that also has one. So it can turn a paraphrase
-    false alarm into a pass but cannot approve a changed value or a wider scope.
+    false alarm into a pass but cannot approve a changed value or a wider scope. Returns the
+    accepted quote, or None when the detail stays unsupported.
     """
     lines = closest_lines(f"{detail} {sentence}", evidence)
     if not lines:
-        return False
+        return None
     block = "\n".join(lines)
     out = gateway("detail_entails", {"detail": detail, "sentence": sentence, "evidence": block})
     quote = str(out.get("quote") or "")
     if not (out.get("implied") is True and quote.strip() and in_evidence(quote, block)):
-        return False
+        return None
     dv, qv = values(detail), values(quote)
     if any(dv[kind] - qv[kind] for kind in dv):
-        return False
+        return None
     if capital_names(detail) - set(WORD_RE.findall(ID_RE.sub("", block.lower()))):
-        return False
+        return None
     qwords = set(re.findall(r"[a-z]+", quote.lower()))
     if set(re.findall(r"[a-z]+", detail.lower())) & UNIVERSAL and not qwords & UNIVERSAL:
-        return False
-    return True
+        return None
+    return quote
 
 
 def check_one(detail: str, evidence: str) -> dict | None:
@@ -304,15 +354,24 @@ def check_one(detail: str, evidence: str) -> dict | None:
     return checks[0] if len(checks) == 1 else None
 
 
-def check_sentence(sentence: str, evidence: str) -> list[str]:
+def check_sentence(sentence: str, evidence: str) -> tuple[list[str], list[dict]]:
+    """(reasons it is not supported, citations of the evidence that supported its details)."""
     details = [d for d in gateway("claim_details", {"claim": sentence}).get("details", []) if d.strip()]
     details = [d for d in details if not is_number_detail(d)]
     # A detail whose words all appear in one evidence line is supported without asking the
     # model (it rejected "roasted in small batches" although a fact says exactly that).
-    ev_lines = [words(line) for line in evidence.splitlines()]
-    details = [d for d in details if not (words(d) and any(words(d) <= line for line in ev_lines))]
+    ev_text = [line for line in evidence.splitlines() if line.strip()]
+    ev_lines = [words(line) for line in ev_text]
+    cited, rest = [], []
+    for d in details:
+        hit = next((i for i, line in enumerate(ev_lines) if words(d) and words(d) <= line), None)
+        if hit is None:
+            rest.append(d)
+        else:
+            cited.append(cite(ev_text[hit]))
+    details = rest
     if not details:
-        return []
+        return [], cited
     checks = gateway("detail_check", {"details": "\n".join(details), "evidence": evidence}).get("checks", [])
     by_detail = {c.get("detail", "").strip().lower(): c for c in checks}
     reasons = []
@@ -335,9 +394,13 @@ def check_sentence(sentence: str, evidence: str) -> list[str]:
         conflict = value_conflict(detail, quote) if ok else []
         if missing or conflict:
             reasons.append(f"value not in the facts: {', '.join(sorted(missing) or conflict)} ({detail})")
-        elif not ok and not (CHECK_MODE == "lenient" and second_chance(detail, sentence, evidence)):
+        elif ok:
+            cited += cite_quote(quote, evidence)
+        elif CHECK_MODE == "lenient" and (second := second_chance(detail, sentence, evidence)):
+            cited += cite_quote(second, evidence)
+        else:
             reasons.append(f"not in the facts: {detail}")
-    return reasons
+    return reasons, cited
 
 
 @app.get("/health")
@@ -353,6 +416,8 @@ def verify(req: VerifyRequest):
         raise HTTPException(413, f"more than {MAX_SENTENCES} sentences; check the copy in parts")
     if any(len(f) > 1000 for f in req.extra_facts):
         raise HTTPException(422, "each extra fact must be at most 1000 characters")
+    if req.facts is not None and any(len(f) > MAX_FACT_CHARS for f in req.facts):
+        raise HTTPException(422, f"each fact line must be at most {MAX_FACT_CHARS} characters")
     try:
         lines = gather_evidence(req)
         evidence = "\n".join(lines)
@@ -369,8 +434,11 @@ def verify(req: VerifyRequest):
             if bad:
                 flagged_numbers.update(bad)
                 reasons.append("numbers not in the facts: " + ", ".join(bad))
-            reasons += check_sentence(sentence, "\n".join(own))
-            results.append({"claim": sentence, "supported": not reasons, "reasons": reasons})
+            more, cited = check_sentence(sentence, "\n".join(own))
+            reasons += more
+            ev = [] if reasons else cite_numbers(sentence, own) + cited
+            ev = [e for i, e in enumerate(ev) if e not in ev[:i]]
+            results.append({"claim": sentence, "supported": not reasons, "reasons": reasons, "evidence": ev})
     except CheckError as exc:
         raise HTTPException(502, str(exc)) from exc
 

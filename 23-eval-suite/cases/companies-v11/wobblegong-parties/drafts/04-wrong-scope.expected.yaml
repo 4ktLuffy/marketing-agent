@@ -1,0 +1,9 @@
+# WHY: £260 is the Disco Party (variants=[disco-party]); the task is variants=[magic-show] -> wrong_scope.
+blocked: true
+findings:
+- {contains: 'two hours of magic, disco and party games for £260', label: wrong_scope, fact_key: disco-party-price}
+- {contains: The two-hour disco version is £260, label: wrong_scope, fact_key: disco-party-price}
+must_not_flag:
+- The Magic Show Party is £180 per party for up to 30 children
+- £180 per party · up to 30 children
+- Enhanced DBS checked

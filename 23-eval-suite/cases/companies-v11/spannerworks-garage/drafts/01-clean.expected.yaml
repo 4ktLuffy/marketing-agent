@@ -1,0 +1,11 @@
+# WHY: only public, in-scope Canal Street facts; the retest and engine-size disclosures are present; 'DVSA-authorised MOT test centre' is the allowed phrasing.
+blocked: false
+findings: []
+must_not_flag:
+- Our MOT test is
+- We're a DVSA-authorised MOT test centre
+- A full service at Canal Street is
+- MOT £45 with a free partial retest within 10 working days
+- 'Full service: £149 for cars up to 2.0 litres'
+- 12-month parts and labour warranty
+- Pop in on Saturdays 8am–1pm

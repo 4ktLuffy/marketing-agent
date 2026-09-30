@@ -1,0 +1,14 @@
+# WHY: negative control: same facts reworded ('Good' in quotes, ratio in words with the legal minimum from the fact); 'Good food' and 'Settling in takes time' are look-alikes that name no rating or offer.
+blocked: false
+findings: []
+must_not_flag:
+  - "Is your little one turning two?"
+  - "Ofsted rated our Canal Street nursery \"Good\" at its March 2025 inspection (URN EY574418)"
+  - "Full days run from 8am to 6pm and cost £66 for 2-year-olds, before funded hours"
+  - "Up to 30 funded hours a week are available for eligible working families"
+  - "Good food, cooked fresh every day: fees include freshly cooked meals, nappies and wipes"
+  - "Subject: Two-year-old places at Canal Street"
+  - "What does a day at Canal Street cost?"
+  - "We staff the two-year-old room at one adult to four children, better than the legal minimum of one to five"
+  - "Settling in takes time, and every child is different"
+  - "£66 per full day (8am to 6pm) before funded hours · rated Good by Ofsted"

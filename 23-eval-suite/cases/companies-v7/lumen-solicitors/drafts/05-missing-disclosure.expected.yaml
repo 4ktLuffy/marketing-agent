@@ -1,0 +1,10 @@
+# WHY: the band-1 fee requires 'excluding VAT and disbursements'; neither VAT nor disbursements is mentioned anywhere. The clean draft carried it (as 'plus VAT and disbursements' and verbatim).
+blocked: true
+findings:
+  - {contains: "Conveyancing for a fixed fee of £895", label: missing_disclosure, fact_key: conv-band-1}
+  - {contains: "First-home conveyancing for £895", label: missing_disclosure, fact_key: conv-band-1}
+  - {contains: "Our fixed fee for homes up to £250,000 is £895", label: missing_disclosure, fact_key: conv-band-1}
+  - {contains: "Your first purchase, one fixed fee of £895", label: missing_disclosure, fact_key: conv-band-1}
+must_not_flag:
+  - "Every fee includes a named solicitor and online case tracking"
+  - "Book a free 30-minute first consultation by phone or video (new clients only)"

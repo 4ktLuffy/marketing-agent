@@ -1,0 +1,10 @@
+# WHY: the £45 per month sole-trader fee requires "plus VAT"; the draft quotes it five times (incl. the blog heading) and never mentions VAT.
+blocked: true
+findings:
+  - {contains: "MTD sorted for £45 per month", label: missing_disclosure, fact_key: sole-trader-fee}
+  - {contains: "all for £45 per month", label: missing_disclosure, fact_key: sole-trader-fee}
+  - {contains: "MTD for sole traders, just £45/month", label: missing_disclosure, fact_key: sole-trader-fee}
+  - {contains: "£45 a month for peace of mind", label: missing_disclosure, fact_key: sole-trader-fee}
+  - {contains: "For £45 per month, a named accountant handles", label: missing_disclosure, fact_key: sole-trader-fee}
+must_not_flag:
+  - "Self assessment deadline: 31 January 2027"

@@ -1,0 +1,17 @@
+# FICTIONAL. Scope sites=[bristol], variants=[up-to-250k] makes the £1,195 band-2 fee and the Bath Saturday
+# opening scope traps; publish 2026-10-13 is after the Autumn Movers offer ends (2026-10-05).
+goal: Win conveyancing instructions from first-time buyers purchasing homes up to £250,000 through the Bristol office.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 3000}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+- {key: p3, channel: website, kind: blog, max_chars: 2500}
+scope:
+  sites: [bristol]
+  regions: []
+  channels: []
+  segments: []
+  plan_tiers: []
+  variants: [up-to-250k]
+publish_on: '2026-10-13'
+audience: First-time buyers in Bristol
+notes: Plain English; SRA number must appear in at least one piece.

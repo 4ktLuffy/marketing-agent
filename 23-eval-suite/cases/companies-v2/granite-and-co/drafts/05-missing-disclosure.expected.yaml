@@ -1,0 +1,8 @@
+# WHY: free delivery over £500 is used in the subject line and the body without "within 50 miles of our Stoke depot".
+blocked: true
+findings:
+  - {contains: "Free delivery on FireCore orders over £500", label: missing_disclosure, fact_key: free-delivery}
+  - {contains: "Every order over £500 ships free", label: missing_disclosure, fact_key: free-delivery}
+must_not_flag:
+  - "FireCore slab: Euroclass A2-s1,d0, UKCA and CE marked to EN 13162"
+  - "Trade price £18.40 per slab, excl. VAT"

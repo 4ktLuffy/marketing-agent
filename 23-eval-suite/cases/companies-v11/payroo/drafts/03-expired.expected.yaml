@@ -1,0 +1,9 @@
+# WHY: free payroll migration is valid today but ends 2026-10-09, before publish 2026-10-13; the 3-months-free offer ended 2026-08-31.
+blocked: true
+findings:
+- {contains: get free payroll migration when you switch by 9 October, label: conflict_or_expired, fact_key: free-migration}
+- {contains: We'll move your payroll history over for free, label: conflict_or_expired, fact_key: free-migration}
+- {contains: your first 3 months free, label: conflict_or_expired, fact_key: summer-three-months-free}
+must_not_flag:
+- Growth is £7 per employee per month, excl. VAT, minimum 5 employees
+- Growth includes automatic pension auto-enrolment and expense claims with receipt capture

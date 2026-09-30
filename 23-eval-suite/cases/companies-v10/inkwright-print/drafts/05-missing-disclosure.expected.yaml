@@ -1,0 +1,10 @@
+# WHY: next-day dispatch only applies when the artwork is approved by 12 noon; that condition is missing from the whole draft (no noon/midday cut-off in any wording).
+blocked: true
+findings:
+  - {contains: "Business cards, flyers and leaflets are dispatched the next working day", label: missing_disclosure, fact_key: next-day-dispatch}
+  - {contains: "Order today, dispatched tomorrow", label: missing_disclosure, fact_key: next-day-dispatch}
+  - {contains: "Order your flyers today and we'll dispatch them the next working day", label: missing_disclosure, fact_key: next-day-dispatch}
+  - {contains: "Next-working-day dispatch on business cards, flyers and leaflets", label: missing_disclosure, fact_key: next-day-dispatch}
+must_not_flag:
+  - "500 standard 400gsm business cards cost £29 excl. VAT"
+  - "Free UK delivery on orders over £75 excl. VAT"

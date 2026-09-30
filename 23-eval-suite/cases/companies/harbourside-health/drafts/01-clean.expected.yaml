@@ -1,0 +1,7 @@
+# WHY: Quayside-only prices, valid at publish; "specialist" used only in the allowed phrasing for Dr Rahman; X-ray disclosure present.
+blocked: false
+findings: []
+must_not_flag:
+  - "Dr Aisha Rahman, specialist orthodontist"
+  - "so you are in qualified hands"
+  - "Aches after the summer?"

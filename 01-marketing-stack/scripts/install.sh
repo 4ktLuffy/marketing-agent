@@ -175,7 +175,7 @@ fi
 
 # Every required secret: generated when empty or still the example placeholder.
 generated=0
-for key in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD CONTROL_PASSWORD CONTROL_ROOM_KEY; do
+for key in POSTGRES_PASSWORD N8N_ENCRYPTION_KEY INTERNAL_API_KEY APPROVER_KEY FORMS_PASSWORD CONTROL_PASSWORD CONTROL_ROOM_KEY FACT_OWNER_KEY MCP_TOKEN; do
   val="$(env_get "$key")"
   if [ -z "$val" ] || [[ "$val" == change-me* ]]; then
     if [ "$key" = N8N_ENCRYPTION_KEY ] && docker volume inspect "${PROJECT}_n8n_data" >/dev/null 2>&1; then

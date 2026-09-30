@@ -66,16 +66,26 @@ class Settings:
     ad_library_url: str = ""  # 78 ad-library-sync (positioning map); "" = not installed
     report_url: str = ""      # 21 report-builder (Download of an item as HTML); "" = not installed
     feed_url: str = ""        # 87 feed-optimizer (product feed page); "" = not installed
+    extractor_url: str = ""   # 07 page-extractor (onboarding: web pages and PDFs); "" = paste text only
+    tasks_url: str = ""       # 88 task-bridge (tasks, packs, evidence, blockers); "" = not installed
+    # FACT_OWNER_KEY: sent as X-Owner-Key to 05 ONLY to confirm/retire facts, import, apply a starter
+    # kit and confirm/dismiss its rules. Never rendered; "" = those buttons are switched off.
+    fact_owner_key: str = ""
     # Activity page: more gateways to read /v1/activity from, as (label, url); GATEWAY_URL is "main".
     activity_gateways: list = field(default_factory=list)
     install_profile: str = "full"   # core | growth | full: which workflows the installer imported
     activity_days: float = 7        # how far back the Activity timeline reads calendar changes
+    # Client approval links: the address clients open (https://review.example.com); "" = this request's.
+    control_public_url: str = ""
+    client_max_failures: int = 10   # wrong PINs / unknown links per address per window
+    client_window_s: float = 900
+    client_session_minutes: float = 30
 
     @property
     def internal_urls(self) -> list[str]:
         return [u for u in [self.n8n_url, self.calendar_url, self.campaigns_url, self.learning_url, self.engine_url,
                 self.rules_url, self.status_url, self.cards_url, self.video_url, self.clips_url, self.ads_url,
-                self.brand_url, self.gateway_url, self.ad_library_url, self.report_url, self.feed_url,
+                self.brand_url, self.gateway_url, self.ad_library_url, self.report_url, self.feed_url, self.tasks_url, self.extractor_url,
                 *(u for _, u in self.activity_gateways)] if u]
 
 
@@ -106,9 +116,18 @@ def load() -> Settings:
         report_url=_url("REPORT_URL", "http://report-builder:8000"),
         # Optional (full profile): unset or empty = the product feed page says "not installed".
         feed_url=_url("FEED_URL", ""),
+        # 07 page extractor (core): the onboarding page reads web pages and PDFs through it.
+        extractor_url=_url("EXTRACTOR_URL", "http://page-extractor:8000"),
+        # 88 task bridge (core): unset = the stack's container; empty = the Tasks pages say "not installed".
+        tasks_url=_url("TASKS_URL", "http://task-bridge:8000"),
+        fact_owner_key=os.environ.get("FACT_OWNER_KEY", "").strip(),
         activity_gateways=_gateways(os.environ.get("ACTIVITY_GATEWAYS", "")),
         install_profile=_profile(os.environ.get("INSTALL_PROFILE")),
         activity_days=max(1.0, _float("ACTIVITY_DAYS", 7)),
+        control_public_url=_url("CONTROL_PUBLIC_URL", ""),
+        client_max_failures=max(1, int(_float("CLIENT_PIN_MAX_FAILURES", 10))),
+        client_window_s=_float("CLIENT_PIN_WINDOW_MINUTES", 15) * 60,
+        client_session_minutes=max(1.0, _float("CLIENT_SESSION_MINUTES", 30)),
         voice_timeout_s=_float("VOICE_TIMEOUT_SECONDS", 300),
         session_hours=_float("SESSION_HOURS", 12),
         idle_minutes=_float("SESSION_IDLE_MINUTES", 120),

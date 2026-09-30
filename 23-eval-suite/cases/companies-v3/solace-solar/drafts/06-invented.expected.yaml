@@ -1,0 +1,11 @@
+# WHY: "number one" and the 4.9 rating have no source; SOL-48231 is not the MCS certificate (SOL-48213); no fact supports chartered engineers.
+blocked: true
+findings:
+  - {contains: "Yorkshire's number one solar installer", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9 out of 5 by over 800 homeowners", label: no_source, fact_key: null}
+  - {contains: "certificate SOL-48231", label: conflict_or_expired, fact_key: mcs-certification}
+  - {contains: "Subject: Fitted by chartered electrical engineers", label: no_source, fact_key: null}
+  - {contains: "Every system is designed by our chartered electrical engineers", label: no_source, fact_key: null}
+must_not_flag:
+  - "We install across Leeds, Bradford, Harrogate and York"
+  - "The Home 6 package costs £9,450 fully installed, subject to a home survey"

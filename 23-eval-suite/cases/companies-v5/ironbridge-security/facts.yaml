@@ -1,0 +1,283 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts section 1 Fact v2 shape.
+company: {"name": "Ironbridge Security", "type": "security_installer", "today": "2026-09-29"}
+facts:
+- key: "nsi-gold"
+  subject: {"kind": "business", "ref": "Ironbridge Security"}
+  fact_type: "certification"
+  attribute: "nsi_approval"
+  value: null
+  unit: null
+  currency: null
+  value_text: "NSI Gold approved (certificate NSI-7042189)"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-03-01"
+  valid_to: "2027-02-28"
+  review_by: null
+  source: {"kind": "certificate", "ref": "NSI certificate NSI-7042189"}
+  claim_class: "safety_cert"
+  requires_evidence: true
+  evidence_ref: "NSI certificate NSI-7042189"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: "nsi-silver"
+  text: "Ironbridge Security is NSI Gold approved for installing intruder alarms and CCTV, certificate NSI-7042189, valid 1 March 2026 to 28 February 2027."
+- key: "nsi-silver"
+  subject: {"kind": "business", "ref": "Ironbridge Security"}
+  fact_type: "certification"
+  attribute: "nsi_approval"
+  value: null
+  unit: null
+  currency: null
+  value_text: "NSI Silver approved"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2019-05-01"
+  valid_to: "2026-02-28"
+  review_by: null
+  source: {"kind": "certificate", "ref": "NSI certificate NSI-6118830 (replaced)"}
+  claim_class: "safety_cert"
+  requires_evidence: true
+  evidence_ref: "NSI certificate NSI-6118830"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: "high"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "Ironbridge held NSI Silver approval from May 2019 until 28 February 2026, when it was replaced by NSI Gold."
+- key: "grade-2-home"
+  subject: {"kind": "service", "ref": "Home intruder alarm installation"}
+  fact_type: "spec"
+  attribute: "security_grade"
+  value: 2
+  unit: null
+  currency: null
+  value_text: "BS EN 50131 Grade 2"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["residential"], "plan_tiers": [], "variants": []}
+  valid_from: "2024-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "System design standard IS-04"}
+  claim_class: "security"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Home intruder alarms are designed and installed to BS EN 50131 Grade 2. Commercial sites are designed separately."
+- key: "essential-monitoring-price"
+  subject: {"kind": "package", "ref": "Essential Monitoring"}
+  fact_type: "price"
+  attribute: "monthly_price"
+  value: 24.99
+  unit: "month"
+  currency: "GBP"
+  value_text: "£24.99 a month"
+  basis: "per_month"
+  conditions: [{"key": "contract_term_months", "op": ">=", "value": 12}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["residential"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Monitoring price list 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["12-month minimum term"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Essential Monitoring for homes costs £24.99 a month on a 12-month minimum term."
+- key: "complete-monitoring-inclusion"
+  subject: {"kind": "package", "ref": "Complete Monitoring"}
+  fact_type: "inclusion"
+  attribute: "includes"
+  value: null
+  unit: null
+  currency: null
+  value_text: "keyholding and an annual maintenance visit"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["residential"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "Monitoring price list 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Complete Monitoring for homes includes keyholding and an annual maintenance visit."
+- key: "response-north-west"
+  subject: {"kind": "service", "ref": "Keyholder response (North West)"}
+  fact_type: "policy"
+  attribute: "response_time"
+  value: 30
+  unit: "minute"
+  currency: null
+  value_text: "keyholder response within 30 minutes"
+  basis: null
+  conditions: [{"key": "area", "op": "in", "value": ["Greater Manchester", "Lancashire"]}]
+  scope: {"sites": [], "regions": ["north-west"], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "Keyholding service levels 2026"}
+  claim_class: "security"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "In the North West (Greater Manchester and Lancashire) our keyholders respond within 30 minutes, day or night."
+- key: "response-yorkshire"
+  subject: {"kind": "service", "ref": "Keyholder response (Yorkshire)"}
+  fact_type: "policy"
+  attribute: "response_time"
+  value: 20
+  unit: "minute"
+  currency: null
+  value_text: "keyholder response within 20 minutes"
+  basis: null
+  conditions: [{"key": "area", "op": "in", "value": ["Leeds", "Bradford"]}]
+  scope: {"sites": [], "regions": ["yorkshire"], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "Keyholding service levels 2026"}
+  claim_class: "security"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "In Yorkshire (Leeds and Bradford) our keyholders respond within 20 minutes, day or night."
+- key: "doorbell-offer"
+  subject: {"kind": "offer", "ref": "Autumn doorbell offer"}
+  fact_type: "price"
+  attribute: "free_gift"
+  value: null
+  unit: null
+  currency: null
+  value_text: "a free video doorbell with any home alarm installation"
+  basis: null
+  conditions: [{"key": "booked_by", "op": "<=", "value": "2026-10-05"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["residential"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-15"
+  valid_to: "2026-10-05"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn promo brief 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Autumn offer: a free video doorbell with any home alarm installation booked between 15 September and 5 October 2026."
+- key: "price-rise-2027"
+  subject: {"kind": "package", "ref": "Essential Monitoring"}
+  fact_type: "event"
+  attribute: "price_change"
+  value: 27.99
+  unit: "month"
+  currency: "GBP"
+  value_text: "£27.99 a month from 1 January 2027"
+  basis: "per_month"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["residential"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "owner_statement", "ref": "Board minutes September 2026 (not public)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Managing director"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Essential Monitoring rises to £27.99 a month on 1 January 2027. Not announced yet."
+- key: "castlegate-contract"
+  subject: {"kind": "service", "ref": "Monitoring and maintenance (Castlegate Retail Park)"}
+  fact_type: "price"
+  attribute: "contract_price"
+  value: 1850
+  unit: "month"
+  currency: "GBP"
+  value_text: "£1,850 a month"
+  basis: "per_month"
+  conditions: [{"key": "customer", "op": "=", "value": "Castlegate Retail Park"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["commercial"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-04-01"
+  valid_to: "2029-03-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Castlegate service contract"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Managing director"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Castlegate Retail Park pays £1,850 a month for monitoring and maintenance across 14 units."

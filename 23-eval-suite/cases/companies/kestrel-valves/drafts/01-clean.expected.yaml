@@ -1,0 +1,7 @@
+# WHY: every claim is an in-scope, valid-at-publish public fact (slotted or typed exactly) and the warranty disclosure is present.
+blocked: false
+findings: []
+must_not_flag:
+  - "3-year warranty when installed by a qualified engineer"
+  - "ISO 9001:2015 certified manufacturer"
+  - "Meet the manual KV-50 ball valve"

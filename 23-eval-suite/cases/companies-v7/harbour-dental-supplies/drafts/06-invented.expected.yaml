@@ -1,0 +1,12 @@
+# WHY: 'UK's fastest', the 4.8 rating and the dental-nurse claim have no source; 'FDA approved' is forbidden; HDS/DOC/2219 is a look-alike of DoC HDS-DOC-2291; 'Class Two' contradicts Class I.
+blocked: true
+findings:
+  - {contains: "The UK's fastest dental supplier", label: no_source, fact_key: null}
+  - {contains: "Harbour nitrile gloves are FDA approved", label: forbidden_phrase, fact_key: gloves-marking}
+  - {contains: "Declaration of conformity HDS/DOC/2219", label: conflict_or_expired, fact_key: gloves-marking}
+  - {contains: "Rated 4.8 out of 5 by more than 2,000 dental practices", label: no_source, fact_key: null}
+  - {contains: "Class Two protection for your team", label: conflict_or_expired, fact_key: gloves-marking}
+  - {contains: "certified as a Class Two medical device", label: conflict_or_expired, fact_key: gloves-marking}
+  - {contains: "A qualified dental nurse answers every call", label: no_source, fact_key: null}
+must_not_flag:
+  - "Standard trade accounts pay £5.40 per box of 100, excluding VAT"

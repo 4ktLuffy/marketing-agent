@@ -99,3 +99,45 @@ def test_feed_title_uses_only_the_row_and_description_is_optional():
         assert rule in without
     assert p["schema"]["properties"]["title"]["maxLength"] == 150   # 87 checks it again in code
     assert p["schema"]["required"] == ["title", "description"]
+
+
+def test_propose_facts_demands_verbatim_quotes_and_scope_words():
+    p = load(Path(__file__).parent.parent / "prompts" / "propose_facts.yaml")
+    assert p["vars"] == {"source_text": "required", "business_type": "optional", "known_facts": "optional"}
+    assert "{{ brand }}" not in p["system"] + p["template"]   # the brand profile is what this builds
+    base = {"source_text": "Open 9am to 5pm weekdays only.", "business_type": None, "known_facts": None}
+    plain = env.from_string(p["template"]).render(base)
+    assert "Open 9am to 5pm weekdays only." in plain
+    assert "Type of business" not in plain and "already has" not in plain
+    full = env.from_string(p["template"]).render(base | {"business_type": "Clinic", "known_facts": "- KNOWN-LINE"})
+    assert "Type of business: Clinic" in full and "KNOWN-LINE" in full
+    for rule in ("copied exactly", "Only facts stated in the source text", "Never infer a price",
+                 '"per person"', '"weekdays only"', '"at our Leeds branch"', "Never guess a year"):
+        assert rule in plain, rule
+    item = p["schema"]["properties"]["facts"]["items"]
+    assert {"source_quote", "subject", "fact_type", "value_text", "scope_hints", "text"} <= set(item["required"])
+    assert set(item["properties"]["scope_hints"]["properties"]) == {"sites", "regions", "channels", "segments",
+                                                                    "plan_tiers", "variants"}
+    # the enums are 05's fact model (contract §1), so 72 can post a proposal without mapping
+    assert item["properties"]["subject"]["properties"]["kind"]["enum"] == [
+        "business", "site", "product", "variant", "plan", "service", "package", "menu_item", "person", "policy", "offer"]
+    assert "certification" in item["properties"]["fact_type"]["enum"]
+    assert p["schema"]["properties"]["questions"]["items"]["required"] == ["text", "source_quote"]
+
+
+def test_propose_facts_example_output_validates_against_its_schema():
+    """A well-formed answer passes the schema; a fact without its quote does not (negative control)."""
+    p = load(Path(__file__).parent.parent / "prompts" / "propose_facts.yaml")
+    v = Draft202012Validator(p["schema"])
+    good = {"facts": [{"text": "Airport transfers cost £25 per person each way.",
+                       "subject": {"kind": "service", "ref": "Airport transfer"}, "fact_type": "price",
+                       "attribute": "transfer_price", "value_text": "£25 per person each way", "value": 25,
+                       "currency": "GBP", "basis": "per_person",
+                       "scope_hints": {"sites": [], "segments": []}, "valid_from": None, "valid_to": None,
+                       "source_quote": "Airport transfers £25 per person each way."}],
+            "questions": [{"text": "What does a dog stay cost?", "source_quote": "dogs are welcome"}]}
+    assert not list(v.iter_errors(good))
+    bad = {"facts": [{k: x for k, x in good["facts"][0].items() if k != "source_quote"}], "questions": []}
+    assert list(v.iter_errors(bad))
+    wrong_kind = {"facts": [good["facts"][0] | {"subject": {"kind": "branch", "ref": "Leeds"}}], "questions": []}
+    assert list(v.iter_errors(wrong_kind))

@@ -1,0 +1,12 @@
+# WHY: negative control — Starter price slotted and typed as "1,800 pounds plus VAT" with "excl. VAT"; Starter inclusions and delivery with "from content sign-off"; the plain Google Partner status; the consented Oakleaf result as "64 per cent" with "results from one client"; "99.9 percent" = the SLA.
+blocked: false
+findings: []
+must_not_flag:
+  - "Is your website working as hard as you are?"
+  - "up to 5 pages, a mobile-friendly design, a contact form and basic SEO setup"
+  - "goes live in three weeks from content sign-off"
+  - "We're a Google Partner, which matters if you also want to run Google Ads"
+  - "A website that looks right on a phone"
+  - "online orders rose 64 per cent in the six months after launch"
+  - "comes with a 99.9 percent monthly uptime SLA"
+  - "a fixed price of 1,800 pounds plus VAT"

@@ -1,0 +1,12 @@
+# WHY: negative control — Alder Court's own CQC rating (Good), fees typed as "1,250 pounds a week" and "£1,480 per week" with the assessment disclosure, visiting hours in words, respite availability (no offer); "good" as an everyday word is not a rating claim.
+blocked: false
+findings: []
+must_not_flag:
+  - "Looking for a care home near Ashcombe?"
+  - "our team would love to show you round"
+  - "and it's all included in the fee"
+  - "from nine in the morning until eight at night, every day"
+  - "We have rooms for respite stays of one to six weeks"
+  - "A good home, close to family"
+  - "Residential care is 1,250 pounds a week and nursing care is £1,480 per week"
+  - "There's always a good cup of tea waiting when you visit"

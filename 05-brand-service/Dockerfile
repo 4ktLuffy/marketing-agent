@@ -7,6 +7,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+# Industry starter kits (data read by GET /starter-kits); kept out of /config so mounting your
+# own brand over /config does not hide them.
+COPY config/starter-kits ./config/starter-kits
 # Example brand so the image works out of the box; mount your own over /config.
 COPY config/brand.yaml /config/brand.yaml
 RUN useradd --create-home --uid 10001 appuser && mkdir -p /data && chown appuser /data

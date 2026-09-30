@@ -1,0 +1,14 @@
+# WHY: the Autumn Two-for-One is valid today but ends 2026-10-04, before publish 2026-10-08 (named and loosely described, in heading, subject and body); Summer Shades ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "AUTUMN TWO-FOR-ONE", label: conflict_or_expired, fact_key: autumn-two-for-one}
+  - {contains: "get a second pair free with our Autumn Two-for-One", label: conflict_or_expired, fact_key: autumn-two-for-one}
+  - {contains: "two pairs of specs for the price of one this month", label: conflict_or_expired, fact_key: autumn-two-for-one}
+  - {contains: "Subject: Two pairs for the price of one at Aurora", label: conflict_or_expired, fact_key: autumn-two-for-one}
+  - {contains: "buy one pair of glasses and the second is on the house", label: conflict_or_expired, fact_key: autumn-two-for-one}
+  - {contains: "Summer Shades is back too", label: conflict_or_expired, fact_key: summer-shades-offer}
+  - {contains: "Autumn Two-for-One now on at Aurora Harrogate", label: conflict_or_expired, fact_key: autumn-two-for-one}
+must_not_flag:
+  - "A standard private eye test is £25."
+  - "Every pair of glasses includes free adjustments, free nose-pad and screw replacements, and a hard case."
+  - "Book your eye test online."

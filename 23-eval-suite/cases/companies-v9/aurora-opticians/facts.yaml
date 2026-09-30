@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Written from the contracts only; no checker code was read.
+company: {name: "Aurora Opticians Ltd", type: "optician", today: "2026-09-29"}
+facts:
+  - key: "eye-test-standard"
+    subject: {kind: "service", ref: "Standard private eye test"}
+    fact_type: "price"
+    attribute: "fee"
+    value: 25
+    unit: "test"
+    currency: "GBP"
+    value_text: "£25"
+    basis: "flat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: ["private"], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Aurora price list April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Practice manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "A standard private eye test costs £25 at both Aurora branches (Harrogate and Ripon)."
+  - key: "eye-test-oct"
+    subject: {kind: "service", ref: "Eye test with OCT 3D scan"}
+    fact_type: "price"
+    attribute: "fee"
+    value: 45
+    unit: "test"
+    currency: "GBP"
+    value_text: "£45"
+    basis: "flat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: ["private"], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Aurora price list April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Practice manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "A private eye test with an OCT 3D retinal scan costs £45 at both branches."
+  - key: "varifocal-lenses"
+    subject: {kind: "product", ref: "Aurora Clearview varifocal lenses"}
+    fact_type: "price"
+    attribute: "lens_price"
+    value: 149
+    unit: "pair"
+    currency: "GBP"
+    value_text: "£149 per pair"
+    basis: "per_unit"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Aurora price list April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["frames not included"]
+    allowed_phrasing: []
+    forbidden_phrasing: ["varifocal glasses for £149"]
+    owner: "Practice manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Aurora Clearview varifocal lenses cost £149 per pair; frames not included."
+  - key: "nhs-sight-test"
+    subject: {kind: "service", ref: "NHS sight test"}
+    fact_type: "price"
+    attribute: "fee"
+    value: 0
+    unit: "test"
+    currency: "GBP"
+    value_text: "free"
+    basis: "flat"
+    conditions: [{key: "eligibility", op: "in", value: ["under-16", "over-60", "diabetes", "glaucoma-risk", "qualifying-benefits"]}]
+    scope: {sites: [], regions: [], channels: [], segments: ["nhs-eligible"], plan_tiers: [], variants: []}
+    valid_from: "2025-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "url", ref: "nhs-eyecare.example/sight-test-eligibility"}
+    claim_class: "regulated_health"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Practice manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "NHS sight tests are free for eligible patients only (under 16s, over 60s, people with diabetes or glaucoma risk, and some benefit claimants)."
+  - key: "goc-registration"
+    subject: {kind: "person", ref: "Priya Nandakumar, optometrist"}
+    fact_type: "credential"
+    attribute: "registration_and_certificate"
+    value: null
+    unit: null
+    currency: null
+    value_text: "GOC registration 01-34817, Professional Certificate in Glaucoma"
+    basis: null
+    conditions: []
+    scope: {sites: ["harrogate"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2019-08-01"
+    valid_to: "2027-03-31"
+    review_by: "2027-03-01"
+    source: {kind: "certificate", ref: "GOC register entry 01-34817; College certificate PCG-2023-0912"}
+    claim_class: "regulated_health"
+    requires_evidence: true
+    evidence_ref: "GOC 01-34817"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: ["glaucoma specialist"]
+    owner: "Practice manager"
+    risk: "high"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Priya Nandakumar is a GOC-registered optometrist (registration 01-34817) at the Harrogate branch and holds the Professional Certificate in Glaucoma (not the Higher Certificate)."
+  - key: "autumn-two-for-one"
+    subject: {kind: "offer", ref: "Autumn Two-for-One"}
+    fact_type: "price"
+    attribute: "second_pair"
+    value: 0
+    unit: "pair"
+    currency: "GBP"
+    value_text: "second pair free"
+    basis: "flat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-09-01"
+    valid_to: "2026-10-04"
+    review_by: null
+    source: {kind: "doc", ref: "Autumn promotion brief v2"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["second pair of equal or lesser value"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Marketing lead"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Autumn Two-for-One: buy any complete pair of glasses and get a second pair of equal or lesser value free, until 4 October 2026."
+  - key: "summer-shades-offer"
+    subject: {kind: "offer", ref: "Summer Shades"}
+    fact_type: "price"
+    attribute: "sun_tint"
+    value: 0
+    unit: null
+    currency: "GBP"
+    value_text: "free prescription sun tint"
+    basis: "flat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-06-01"
+    valid_to: "2026-08-31"
+    review_by: null
+    source: {kind: "doc", ref: "Summer promotion brief"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Marketing lead"
+    risk: "low"
+    sensitivity: "public"
+    status: "expired"
+    supersedes_key: null
+    text: "Summer Shades: a free prescription sun tint on single-vision lenses, which ended on 31 August 2026."
+  - key: "glasses-aftercare"
+    subject: {kind: "policy", ref: "Aftercare with every pair"}
+    fact_type: "inclusion"
+    attribute: "aftercare"
+    value: null
+    unit: null
+    currency: null
+    value_text: "free adjustments, free nose-pad and screw replacements, and a hard case"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2025-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Aurora customer promise v4"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Practice manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Every pair of glasses bought at Aurora includes free adjustments, free nose-pad and screw replacements for the life of the glasses, and a hard case."
+  - key: "frame-markup"
+    subject: {kind: "business", ref: "Aurora Opticians Ltd"}
+    fact_type: "price"
+    attribute: "frame_markup"
+    value: 2.6
+    unit: "multiplier"
+    currency: null
+    value_text: "2.6x trade cost on designer frames"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Pricing policy 2026 (internal)"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "internal"
+    status: "active"
+    supersedes_key: null
+    text: "Designer frames are priced at 2.6x trade cost."
+  - key: "wharfedale-care-contract"
+    subject: {kind: "service", ref: "Domiciliary eye tests"}
+    fact_type: "price"
+    attribute: "contract_price"
+    value: 38.4
+    unit: "visit"
+    currency: "GBP"
+    value_text: "£38.40 per domiciliary visit"
+    basis: "per_unit"
+    conditions: [{key: "customer", op: "=", value: "Wharfedale Care Group"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-02-01"
+    valid_to: "2027-01-31"
+    review_by: null
+    source: {kind: "doc", ref: "Wharfedale Care Group contract WCG-2026-03"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "restricted"
+    status: "active"
+    supersedes_key: null
+    text: "Wharfedale Care Group pays £38.40 per domiciliary visit under its care-home contract."

@@ -1,0 +1,8 @@
+# WHY: £42 per hour is the true automatic price, but the task is variants=[manual]; the third piece has no heading at all.
+blocked: true
+findings:
+  - {contains: "Automatic lessons are £42 per hour", label: wrong_scope, fact_key: automatic-lesson-rate}
+  - {contains: "Automatic lessons at £42 per hour", label: wrong_scope, fact_key: automatic-lesson-rate}
+must_not_flag:
+  - "All our instructors are DVSA-approved driving instructors (ADIs)"
+  - "Book 10 hours of manual lessons for £350, paid in advance"

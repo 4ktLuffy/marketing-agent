@@ -1,0 +1,12 @@
+# WHY: negative control — manual facts reworded; "paid in advance" said as "upfront", the pass-rate period given in other words; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "An hour behind the wheel of one of our manual cars is £38"
+  - "Pay for ten hours upfront and the whole block comes to £350"
+  - "Every instructor on our team is a fully qualified ADI, approved by the DVSA"
+  - "More than half of our learners pass at the first attempt"
+  - "Pass Plus gives you six more hours of training after your test, for £185"
+  - "Lessons in a manual car are £38 an hour"
+  - "Ten hours paid upfront cost £350"
+  - "Our instructors are all DVSA-approved driving instructors"

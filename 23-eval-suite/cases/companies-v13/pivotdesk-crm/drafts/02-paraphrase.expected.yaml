@@ -1,0 +1,10 @@
+# WHY: negative control — same Team facts reworded (number words, "plus VAT, paid yearly", "£29/user/mo"); nothing new or out of scope.
+blocked: false
+findings: []
+must_not_flag:
+  - "For twenty-nine pounds per user a month (plus VAT, paid yearly)"
+  - "automated email sequences come with the Team plan"
+  - "You can try Pivotdesk free for 14 days"
+  - "We hold ISO 27001 certification"
+  - "14 days free, no card"
+  - "£29/user/mo, excl. VAT, billed annually"

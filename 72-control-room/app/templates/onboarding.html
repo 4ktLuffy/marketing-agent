@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Set up from your website or documents{% endblock %}
+{% block main %}
+<p><a href="/facts">← Facts</a></p>
+<h1>Set up from your website or documents</h1>
+{% if not_installed %}
+<p class="muted">The brand service (05) isn't installed, so there is nowhere to keep facts.</p>
+{% elif step == 'start' %}
+<p class="small muted">Give your website, a brochure or a price list. You get <b>proposed</b> facts, each with the exact words it came from. Nothing becomes a fact on its own: you tick what to keep, it is saved as a draft, and you confirm each draft on the Facts page.</p>
+{% if errors %}<div class="alert danger" role="alert"><p><b>Not started yet:</b></p><ul class="plain small">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" action="/facts/setup" enctype="multipart/form-data" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if extractor %}
+  <label for="urls">Web addresses <span class="muted small">(up to 5, one per line: home page, prices, opening hours, a PDF link)</span></label>
+  <textarea id="urls" name="urls" rows="3" maxlength="4000" placeholder="https://www.example.com/prices">{{ values.urls or '' }}</textarea>
+  <label for="pdfs">PDFs <span class="muted small">(brochure, price list, menu; up to 5, 10 MB and 50 pages each)</span></label>
+  <input id="pdfs" name="pdfs" type="file" accept="application/pdf,.pdf" multiple>
+  <p class="small muted">A scanned PDF (pictures of pages) has no text to read: paste the text below instead.</p>
+  {% else %}
+  <p class="alert warn small">Reading web pages and PDFs needs the page extractor (07), which isn't installed. Paste the text below.</p>
+  {% endif %}
+  <label for="text">Or paste text <span class="muted small">(copied from a page or a document)</span></label>
+  <textarea id="text" name="text" rows="8" maxlength="100000">{{ values.text or '' }}</textarea>
+  <label for="business_type">Type of business</label>
+  <select id="business_type" name="business_type">
+    <option value="">Not sure / other</option>
+    {% for id, label in kits %}<option value="{{ id }}" {% if values.business_type == id %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <div class="actions"><button class="btn primary big" type="submit">Read it</button></div>
+</form>
+<p class="small muted">The text is kept in the control room's memory for a few hours while you work, then forgotten.</p>
+
+{% elif step == 'work' %}
+<p class="small muted">{{ run.sources|length }} source{{ 's' if run.sources|length != 1 }}, {{ packs|length }} part{{ 's' if packs|length != 1 }}. {% if run.proposals %}<a href="/facts/setup/{{ sid }}/review">{{ run.proposals|length }} proposal{{ 's' if run.proposals|length != 1 }} to review →</a>{% endif %}</p>
+<ul class="plain small sources">{% for src in run.sources %}<li>{{ src.ref }}{% if src.title %} · {{ src.title }}{% endif %}{% if src.pages|length > 1 %} · {{ src.pages|length }} pages{% endif %}</li>{% endfor %}</ul>
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+
+<section class="panel" aria-labelledby="model-h">
+  <h2 id="model-h">Way 1 · Let the model propose facts</h2>
+  {% if model_ready %}
+  <p class="small">{{ model_words }}.</p>
+  <form method="post" action="/facts/setup/{{ sid }}/model">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% set left = packs|rejectattr('done')|list|length %}
+    <button class="btn primary" type="submit" {% if not left %}disabled{% endif %}>{% if not left %}All parts done{% elif left <= batch %}Propose facts from {{ 'the last part' if left == 1 else 'the ' ~ left ~ ' parts left' }}{% else %}Propose facts from the next {{ batch }} parts ({{ left }} left){% endif %}</button>
+  </form>
+  <p class="small muted">It can take a minute per part on a local model; {{ batch }} parts per click.</p>
+  {% else %}<p class="small muted">{{ model_words }} Use way 2: any free chatbot, no cost.</p>{% endif %}
+</section>
+
+<section class="panel" aria-labelledby="pack-h">
+  <h2 id="pack-h">Way 2 · Any free chatbot (ChatGPT, Claude, Gemini…), zero cost</h2>
+  <p class="small muted">For each part: copy the text into a new chat, then paste the chatbot's whole answer back here. The part holds the source text you gave and your <b>public</b> facts only.</p>
+  {% for p in packs %}
+  <details {% if not p.done and (loop.first or (paste_error and paste_error[0] == p.n)) %}open{% endif %}>
+    <summary>Part {{ p.n }} of {{ packs|length }} · {{ p.source }}{% if p.pages %} · page{{ 's' if p.pages|length > 1 }} {{ p.pages|join(', ') }}{% endif %} · {{ p.chars }} characters{% if p.done %} · <span class="chip st-ok">done</span>{% endif %}</summary>
+    <div class="stack">
+      <label for="pack{{ p.n }}" class="sr-only">Part {{ p.n }} to copy</label>
+      <textarea id="pack{{ p.n }}" class="pack" rows="10" readonly>{{ p.pack }}</textarea>
+      <p><button class="btn" type="button" data-copy="pack{{ p.n }}" hidden>Copy</button> <span class="small muted" data-copy-status="pack{{ p.n }}" aria-live="polite">Select all the text above and copy it.</span></p>
+      <form method="post" action="/facts/setup/{{ sid }}/paste" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="chunk" value="{{ p.n }}">
+        {% if paste_error and paste_error[0] == p.n %}<p class="alert danger" role="alert">{{ paste_error[1] }}</p>{% endif %}
+        <label for="answer{{ p.n }}">The chatbot's answer for part {{ p.n }}</label>
+        <textarea id="answer{{ p.n }}" name="answer" rows="8" maxlength="60000" required placeholder="FACT | ... | quote: &quot;...&quot;"></textarea>
+        <div class="actions"><button class="btn primary" type="submit">Check this answer</button></div>
+      </form>
+    </div>
+  </details>
+  {% endfor %}
+</section>
+
+{% elif step == 'review' %}
+<p class="small muted"><a href="/facts/setup/{{ sid }}">← Back to the parts</a>{% if left %} · parts not done yet: {{ left|join(', ') }}{% endif %}</p>
+{% if error %}<div class="alert danger" role="alert"><p>{{ error }}</p>{% if failed %}<ul class="plain small">{% for label, why in failed %}<li>{{ label }}: {{ why }}</li>{% endfor %}</ul>{% endif %}</div>{% endif %}
+{% if run.saved %}<p class="alert ok" role="status">{{ run.saved }} saved as drafts so far. <a href="/facts?show=drafts">Confirm them on the Facts page</a>.</p>{% endif %}
+{% if run.problems %}<div class="alert warn small"><ul class="plain">{% for p in run.problems %}<li>{{ p }}</li>{% endfor %}</ul></div>{% endif %}
+
+{% if run.proposals or run.questions %}
+<form method="post" action="/facts/setup/{{ sid }}/save" class="stack">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <section class="panel" aria-labelledby="keep-h">
+    <h2 id="keep-h">Proposed facts <span class="chip">{{ run.proposals|length }}</span></h2>
+    <p class="small muted">Each quote was found word for word in your source. Untick what is wrong, fix the wording, and say who may see it. Ticked facts are saved as <b>drafts</b>; you confirm each one on the Facts page.</p>
+    <ul class="fact-list">
+    {% for p in run.proposals %}{% set i = p.id %}
+      <li class="fact">
+        <label class="check"><input type="checkbox" name="keep_{{ i }}" value="yes" checked> Keep as a draft</label>
+        <label for="text_{{ i }}" class="sr-only">The fact</label>
+        <textarea id="text_{{ i }}" name="text_{{ i }}" rows="2" maxlength="500">{{ p.text }}</textarea>
+        <blockquote class="small quote">{{ p.context[0] }}<mark>{{ p.context[1] }}</mark>{{ p.context[2] }}</blockquote>
+        <dl class="facts small">
+          <dt>From</dt><dd>{{ p.where }} <span class="muted">({{ p.origin }})</span></dd>
+          <dt>About</dt><dd>{{ p.subject.ref or 'the business' }} <span class="chip">{{ p.subject.kind|replace('_', ' ') }}</span> <span class="chip">{{ p.fact_type }}</span></dd>
+          {% if p.value_text %}<dt>Value</dt><dd>{{ p.value_text }}{% if p.basis %} <span class="chip">{{ p.basis|replace('_', ' ') }}</span>{% endif %}</dd>{% endif %}
+          <dt>Where it applies</dt><dd>{{ p.scope_words }}</dd>
+          {% if p.disclosures %}<dt>Small print</dt><dd>{{ p.disclosures|join('; ') }}</dd>{% endif %}
+        </dl>
+        {% for n in p.notes %}<p class="small muted">{{ n }}</p>{% endfor %}
+        <div class="row2">
+          <div><label for="from_{{ i }}" class="small">Valid from</label><input id="from_{{ i }}" name="from_{{ i }}" type="date" value="{{ p.valid_from or '' }}"></div>
+          <div><label for="to_{{ i }}" class="small">Valid to</label><input id="to_{{ i }}" name="to_{{ i }}" type="date" value="{{ p.valid_to or '' }}"></div>
+        </div>
+        <label for="sens_{{ i }}" class="small">Who may see it</label>
+        <select id="sens_{{ i }}" name="sens_{{ i }}">
+          {% for k, label in sensitivity.items() %}<option value="{{ k }}" {% if k == 'internal' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </li>
+    {% endfor %}
+    </ul>
+    <p class="small muted">Scope and conditions can be changed on each draft before you confirm it.</p>
+  </section>
+
+  {% if run.questions %}
+  <section class="panel" aria-labelledby="ask-h">
+    <h2 id="ask-h">Mentioned without a value <span class="chip">{{ run.questions|length }}</span></h2>
+    <p class="small muted">Ticked ones go to your open questions on the Facts page.</p>
+    <ul class="plain">{% for q in run.questions %}
+      <li><label class="check"><input type="checkbox" name="ask_{{ q.id }}" value="yes" checked> {{ q.text }}</label>{% if q.quote %}<br><span class="small muted">{{ q.where }}: “{{ q.quote }}”</span>{% endif %}</li>
+    {% endfor %}</ul>
+  </section>
+  {% endif %}
+  <div class="actions"><button class="btn primary big" type="submit">Save ticked ones as drafts</button></div>
+</form>
+{% else %}
+<p class="muted">No proposals to review{% if run.saved %} any more{% endif %}. {% if left %}<a href="/facts/setup/{{ sid }}">Do the other parts</a>.{% endif %}</p>
+{% endif %}
+
+{% if run.rejected %}
+<section class="panel" aria-labelledby="rej-h">
+  <h2 id="rej-h">Set aside <span class="chip">{{ run.rejected|length }}</span></h2>
+  <p class="small muted">Not offered, with the reason. Add one by hand on the Facts page if it is right.</p>
+  <ul class="plain small">{% for r in run.rejected %}
+    <li><b>{{ r.label }}</b>{% if r.quote %} · “{{ r.quote }}”{% endif %}<br><span class="bad-text">{{ r.why }}</span> <span class="muted">({{ r.origin }})</span></li>
+  {% endfor %}</ul>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if step == 'work' %}<script src="/static/tasks.js" defer></script>{% endif %}{% endblock %}

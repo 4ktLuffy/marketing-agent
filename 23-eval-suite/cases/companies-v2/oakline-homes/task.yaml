@@ -1,0 +1,10 @@
+# FICTIONAL. Scope variants=[phase-2] makes the Aspen price (Phase 1 only) a scope trap; publish_on 2026-10-15 is
+# after the stamp duty contribution ends (2026-10-12), valid today (2026-09-29).
+goal: "Launch Phase 2 of Willowmere Park to families looking for a 4-bed home."
+pieces:
+  - {key: p1, channel: facebook, kind: post, max_chars: null}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-2]}
+publish_on: "2026-10-15"
+audience: "Local families and second-steppers within 20 miles"
+notes: null

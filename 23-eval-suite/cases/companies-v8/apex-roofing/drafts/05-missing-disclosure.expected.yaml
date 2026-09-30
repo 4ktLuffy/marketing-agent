@@ -1,0 +1,11 @@
+# WHY: the 'from £6,800' price requires 'final price confirmed after a free survey'; no line mentions a survey or a confirmed final price (flyer headline, page title and body).
+blocked: true
+findings:
+  - {contains: "Prices start from £6,800 for a typical 3-bed semi", label: missing_disclosure, fact_key: reroof-price}
+  - {contains: "NEW ROOF FROM £6,800", label: missing_disclosure, fact_key: reroof-price}
+  - {contains: "Pitched re-roofs from £6,800 in Bristol", label: missing_disclosure, fact_key: reroof-price}
+  - {contains: "A full pitched re-roof on a typical 3-bed semi costs from £6,800 inc VAT", label: missing_disclosure, fact_key: reroof-price}
+must_not_flag:
+  - "Every pitched re-roof comes with a 15-year insurance-backed guarantee"
+  - "TrustMark registered, licence number 2047815"
+  - "We work across Bristol, Bath and South Gloucestershire"

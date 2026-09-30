@@ -1,0 +1,11 @@
+# FICTIONAL. Scope segments=[business] makes the trade (reseller) business-card price a scope trap;
+# publish_on 2026-10-07 is after banner-autumn-offer ends (2026-10-04), valid today (2026-09-29).
+goal: "Win repeat autumn print orders from UK small-business accounts."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 3000}
+  - {key: p2, channel: email, kind: customer_email, max_chars: null}
+  - {key: p3, channel: website, kind: homepage_banner, max_chars: 400}
+scope: {sites: [], regions: [uk], channels: [], segments: [business], plan_tiers: [], variants: []}
+publish_on: "2026-10-07"
+audience: "Office managers and owners of UK small businesses with an Inkwright business account"
+notes: null

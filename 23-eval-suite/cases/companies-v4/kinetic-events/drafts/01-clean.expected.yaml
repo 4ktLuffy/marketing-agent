@@ -1,0 +1,7 @@
+# WHY: negative control — corporate rate with "plus VAT", catering inclusions, Atrium capacities by layout, access features and VenueMark Gold, all valid and in scope (segments=[corporate]) at 2026-10-07.
+blocked: false
+findings: []
+must_not_flag:
+  - "Corporate day delegate packages are £59 per delegate plus VAT"
+  - "Planning a team day this winter?"
+  - "Best regards"

@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[Market Square] makes the Harbour Street wreath workshop a scope trap;
+# publish_on 2026-10-12 is after subscription-half-price ends (2026-10-04), valid today (2026-09-29).
+goal: Bring more October walk-ins and delivery orders to the Market Square shop.
+pieces:
+- {key: p1, channel: instagram, kind: post, max_chars: 2200}
+- {key: p2, channel: pinterest, kind: pin, max_chars: 500}
+- {key: p3, channel: google_business, kind: update, max_chars: 1500}
+scope: {sites: [Market Square], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+publish_on: '2026-10-12'
+audience: Locals and office workers around Market Square
+notes: Mention the pet-friendly range.

@@ -1,0 +1,24 @@
+Sure! Here's a LinkedIn post and an email for UK Essentials prospects.
+
+=== 1 LINKEDIN ===
+IT that just works, so your team doesn't have to think about it. 💻
+
+Vantage Essentials is [[essentials-price]], excluding VAT, minimum 10 users.
+You get a [[essentials-sla]], and our UK service desk is open [[uk-support-hours]].
+We're a Microsoft Solutions Partner for Modern Work.
+
+=== 2 EMAIL ===
+Subject: Managed IT for growing UK teams
+
+Hi there,
+
+Vantage Cloud is ISO 27001:2022 certified (certificate IS 781204), which covers our service desk and hosting operations.
+Essentials costs £29 per user per month, excluding VAT, minimum 10 users.
+Priority 1 incidents get a 4-hour response.
+
+Would a short call next week be useful?
+
+Best regards,
+The Vantage Cloud team
+
+Let me know if you want a follow-up email too.

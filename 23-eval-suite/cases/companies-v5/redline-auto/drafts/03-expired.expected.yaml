@@ -1,0 +1,13 @@
+# WHY: the free winter check is valid today but ends 2026-10-07, before publish 2026-10-13 (once only described, "at no charge"); the £39 air-con regas ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Free Winter Check in Hatfield", label: conflict_or_expired, fact_key: winter-check-offer}
+  - {contains: "Air-Con Regas Just £39", label: conflict_or_expired, fact_key: aircon-regas}
+  - {contains: "we'll check your battery, tyres, lights and wipers at no charge", label: conflict_or_expired, fact_key: winter-check-offer}
+  - {contains: "Our free winter check is running now", label: conflict_or_expired, fact_key: winter-check-offer}
+  - {contains: "treat your car to an air-con regas for £39", label: conflict_or_expired, fact_key: aircon-regas}
+  - {contains: "Redline Auto: free winter check", label: conflict_or_expired, fact_key: winter-check-offer}
+  - {contains: "£39 air-con regas this month", label: conflict_or_expired, fact_key: aircon-regas}
+must_not_flag:
+  - "A Class 4 MOT costs £45"
+  - "Headline 3: MOT £45"

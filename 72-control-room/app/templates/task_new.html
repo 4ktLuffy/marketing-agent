@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}New task{% endblock %}
+{% macro err(name) %}{% for m in errors.get(name, []) %}<p class="field-error small" role="alert" id="err-{{ name }}">{{ m }}</p>{% endfor %}{% endmacro %}
+{% block main %}
+<p><a href="/tasks">← Tasks</a></p>
+<h1>New task</h1>
+<p class="small muted">Say what you need. The next page shows exactly what would leave your business before you copy anything.</p>
+{% if errors %}<p class="alert danger" role="alert">Not created yet: fix what is marked below.</p>{% endif %}
+{{ err("general") }}
+<form method="post" action="/tasks/new" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <button class="sr-only" type="submit" name="action" value="create" tabindex="-1" aria-hidden="true">Create</button>
+
+  <label for="goal">What is it for?</label>
+  <textarea id="goal" name="goal" rows="2" maxlength="1000" required placeholder="Fill midweek rooms in October" {% if errors.goal %}aria-invalid="true" aria-describedby="err-goal"{% endif %}>{{ values.goal }}</textarea>
+  {{ err("goal") }}
+
+  <fieldset class="product-row">
+    <legend>Pieces</legend>
+    {{ err("pieces") }}
+    {% for p in values.pieces %}
+    <div class="piece-row">
+      <span class="piece-n" aria-hidden="true">{{ loop.index }}</span>
+      <div>
+        <label for="p_channel{{ loop.index }}" class="small">Piece {{ loop.index }}: where</label>
+        <select id="p_channel{{ loop.index }}" name="p_channel">
+          {% for ch in (channels + options.channels)|unique %}<option value="{{ ch }}" {% if p.channel == ch %}selected{% endif %}>{{ ch }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="p_kind{{ loop.index }}" class="small">what</label>
+        <select id="p_kind{{ loop.index }}" name="p_kind">
+          {% for k in kinds %}<option value="{{ k }}" {% if p.kind == k %}selected{% endif %}>{{ k }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="p_max{{ loop.index }}" class="small">max characters</label>
+        <input id="p_max{{ loop.index }}" name="p_max" value="{{ p.max_chars }}" inputmode="numeric" maxlength="7" placeholder="any">
+      </div>
+      {% if values.pieces|length > 1 %}<button class="btn ghost small" type="submit" name="remove" value="{{ loop.index0 }}" aria-label="Remove piece {{ loop.index }}">Remove</button>{% endif %}
+    </div>
+    {% endfor %}
+    <button class="btn ghost small" type="submit" name="action" value="add">Add another piece</button>
+  </fieldset>
+
+  <label for="publish_on">Publish date</label>
+  <input id="publish_on" name="publish_on" type="date" value="{{ values.publish_on }}" min="{{ today }}" required {% if errors.publish_on %}aria-invalid="true" aria-describedby="err-publish_on"{% endif %}>
+  <p class="small muted">Facts are checked for this day: a price that ends before it will not be used.</p>
+  {{ err("publish_on") }}
+
+  <fieldset class="product-row">
+    <legend>Only for (optional)</legend>
+    <p class="small muted">Tick what this task is about. Leave a group empty if it is for all. Facts that only apply elsewhere stay out.</p>
+    {% for d, label in dims %}
+    <div class="scope-dim">
+      <p class="small"><b>{{ label }}</b></p>
+      {% for o in options[d] %}<label class="check"><input type="checkbox" name="scope_{{ d }}" value="{{ o }}" {% if o in values['scope_' ~ d] %}checked{% endif %}> {{ o }}</label>{% endfor %}
+      <label class="sr-only" for="scope_{{ d }}_other">{{ label }}: other names</label>
+      <input id="scope_{{ d }}_other" name="scope_{{ d }}_other" value="{{ values['scope_' ~ d ~ '_other'] }}" maxlength="1000" placeholder="{% if options[d] %}other, comma-separated{% else %}none in your facts yet; type names, comma-separated{% endif %}">
+    </div>
+    {% endfor %}
+  </fieldset>
+
+  <label for="audience">Who is it for? (optional)</label>
+  <input id="audience" name="audience" value="{{ values.audience }}" maxlength="300" placeholder="Couples within two hours' drive">
+  {{ err("audience") }}
+  <label for="notes">Anything else the writer should know? (optional)</label>
+  <textarea id="notes" name="notes" rows="2" maxlength="1000">{{ values.notes }}</textarea>
+  {{ err("notes") }}
+  <div class="actions"><button class="btn primary big" type="submit" name="action" value="create">Make the pack</button></div>
+</form>
+{% endblock %}

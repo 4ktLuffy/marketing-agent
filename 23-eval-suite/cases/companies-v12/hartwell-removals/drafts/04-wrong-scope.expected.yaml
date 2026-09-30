@@ -1,0 +1,9 @@
+# WHY: the £2.10 per-mile rate is regions=[national] and weekend moves without a surcharge are segments=[business]; the task is regions=[local], segments=[home].
+blocked: true
+findings:
+  - {contains: "anywhere in the country for £2.10 a mile", label: wrong_scope, fact_key: national-mileage}
+  - {contains: "SATURDAY MOVES WON'T COST YOU A PENNY MORE", label: wrong_scope, fact_key: office-weekend-moves}
+  - {contains: "Weekend moves at no extra charge", label: wrong_scope, fact_key: office-weekend-moves}
+must_not_flag:
+  - "A 2-bed local move is from £495, price confirmed after a free home survey."
+  - "30 free boxes with a confirmed booking"

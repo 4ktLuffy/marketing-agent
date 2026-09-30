@@ -1,0 +1,10 @@
+# WHY: the £59 corporate day delegate rate requires "plus VAT"; the draft quotes it four times (incl. the subject) and never mentions VAT.
+blocked: true
+findings:
+  - {contains: "Corporate away days at Kinetic Events Centre: £59 per delegate, all day", label: missing_disclosure, fact_key: ddr-corporate}
+  - {contains: "£59 per delegate, minimum 20 delegates", label: missing_disclosure, fact_key: ddr-corporate}
+  - {contains: "Subject: £59 per delegate for your next away day", label: missing_disclosure, fact_key: ddr-corporate}
+  - {contains: "Bring your team to Kinetic Events Centre for £59 per delegate", label: missing_disclosure, fact_key: ddr-corporate}
+must_not_flag:
+  - "The Atrium Hall seats 320 theatre-style or 180 cabaret"
+  - "Arrival tea and coffee, a two-course working lunch and afternoon refreshments are all included"

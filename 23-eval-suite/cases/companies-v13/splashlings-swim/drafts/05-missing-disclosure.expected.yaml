@@ -1,0 +1,8 @@
+# WHY: the group price requires "billed per term"; the draft never says how the lessons are billed.
+blocked: true
+findings:
+  - {contains: "Group lessons are just £9.50 per 30-minute lesson", label: missing_disclosure, fact_key: group-lesson-price}
+  - {contains: "Nine pound fifty a go for a group lesson", label: missing_disclosure, fact_key: group-lesson-price}
+must_not_flag:
+  - "No more than 6 children per teacher"
+  - "Every teacher holds the AquaTeach Level 2 swimming teacher certificate"

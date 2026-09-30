@@ -1,0 +1,9 @@
+# WHY: 'UK's best-selling' has no source; 'waterproof' is forbidden for the IPX4 fact; 100 miles conflicts with the 70-mile range.
+blocked: true
+findings:
+- {contains: The UK's best-selling e-mountain bike, label: no_source, fact_key: null}
+- {contains: The Trail E1 is 100% waterproof, label: forbidden_phrase, fact_key: ipx4-rating}
+- {contains: up to 100 miles per charge, label: conflict_or_expired, fact_key: trail-e1-range}
+must_not_flag:
+- The Hillclimb Trail E1 costs £1,899
+- 'Trail E1: £1,899, IPX4 water resistance'

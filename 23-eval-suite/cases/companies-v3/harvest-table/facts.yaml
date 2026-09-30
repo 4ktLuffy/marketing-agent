@@ -1,0 +1,292 @@
+# FICTIONAL company. Held-out eval fixture v3 (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: "Harvest Table", type: food_producer, today: '2026-09-29'}
+facts:
+- key: granola-retail-price
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: price
+  attribute: retail_price
+  value: 4.75
+  unit: null
+  currency: "GBP"
+  value_text: "£4.75 per 500 g bag"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: ["retail"], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Retail price list Oct 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Oat & Almond Granola retails at £4.75 per 500 g bag in the farm shop and on our website."
+- key: granola-trade-price
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: price
+  attribute: trade_price
+  value: 28.8
+  unit: null
+  currency: "GBP"
+  value_text: "£28.80 per case of 12"
+  basis: "per_unit"
+  conditions:
+  - {key: price_band, op: "=", value: "Tier 2"}
+  - {key: min_cases, op: ">=", value: 10}
+  scope: {sites: [], regions: [], channels: ["trade"], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Trade price list 2026-27 (Tier 2)"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Trade Tier 2 price: £28.80 per case of 12 bags, minimum order 10 cases."
+- key: granola-allergens
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: spec
+  attribute: allergens
+  value: null
+  unit: null
+  currency: null
+  value_text: "contains oats (gluten) and almonds"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Product spec sheet HT-GR-500 v5"}
+  claim_class: regulated_food
+  requires_evidence: true
+  evidence_ref: "Spec sheet HT-GR-500 v5"
+  consent_ref: null
+  required_disclosures:
+  - "made in a facility that also handles peanuts and sesame"
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - "gluten-free"
+  - "nut-free"
+  owner: "Technical manager"
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Oat & Almond Granola contains oats (gluten) and almonds. Made in a facility that also handles peanuts and sesame."
+- key: organic-cert
+  subject: {kind: business, ref: "Harvest Table"}
+  fact_type: certification
+  attribute: organic_licence
+  value: null
+  unit: null
+  currency: null
+  value_text: "certified organic by Albion Organic Certification (licence AOC-4417)"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-03-01"
+  valid_to: "2027-02-28"
+  review_by: null
+  source: {kind: certificate, ref: "Albion Organic Certification licence AOC-4417"}
+  claim_class: regulated_food
+  requires_evidence: true
+  evidence_ref: "Licence AOC-4417"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Technical manager"
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Harvest Table products are certified organic by Albion Organic Certification, licence AOC-4417."
+- key: shelf-life
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: spec
+  attribute: shelf_life
+  value: 9
+  unit: "month"
+  currency: null
+  value_text: "9 months unopened"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Product spec sheet HT-GR-500 v5"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "eat within 4 weeks of opening"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Technical manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Oat & Almond Granola keeps for 9 months unopened; eat within 4 weeks of opening."
+- key: honey-sweetened
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: spec
+  attribute: sweetener
+  value: null
+  unit: null
+  currency: null
+  value_text: "sweetened only with English honey"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Product spec sheet HT-GR-500 v5"}
+  claim_class: origin
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Technical manager"
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Oat & Almond Granola is sweetened only with English honey from Herefordshire hives."
+- key: harvest-bundle
+  subject: {kind: offer, ref: "Harvest Bundle"}
+  fact_type: price
+  attribute: bundle_price
+  value: 12
+  unit: null
+  currency: "GBP"
+  value_text: "3 bags for £12"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: ["retail"], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-20"
+  valid_to: "2026-10-06"
+  review_by: null
+  source: {kind: doc, ref: "Harvest Bundle promo plan"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "while stocks last"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Harvest Bundle: 3 bags of Oat & Almond Granola for £12, 20 Sept to 6 Oct 2026, while stocks last."
+- key: summer-free-delivery
+  subject: {kind: offer, ref: "Summer free delivery"}
+  fact_type: price
+  attribute: delivery_fee
+  value: 0
+  unit: null
+  currency: "GBP"
+  value_text: "free UK delivery on web orders over £25"
+  basis: null
+  conditions:
+  - {key: order_total, op: ">", value: 25}
+  scope: {sites: [], regions: [], channels: ["retail"], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {kind: doc, ref: "Summer delivery promo plan"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: "Summer 2026 (June to August): free UK delivery on web orders over £25."
+- key: unit-cost
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: price
+  attribute: unit_cost
+  value: 1.62
+  unit: null
+  currency: "GBP"
+  value_text: "£1.62 per bag"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Product costing Sept 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Finance"
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: "Oat & Almond Granola costs £1.62 per bag to make and pack."
+- key: marlow-contract
+  subject: {kind: product, ref: "Oat & Almond Granola 500 g"}
+  fact_type: price
+  attribute: contract_price
+  value: 2.05
+  unit: null
+  currency: "GBP"
+  value_text: "£2.05 per bag"
+  basis: "per_unit"
+  conditions:
+  - {key: customer, op: "=", value: "Marlow Fine Foods"}
+  scope: {sites: [], regions: [], channels: ["trade"], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {kind: doc, ref: "Marlow Fine Foods supply agreement"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Managing director"
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: "Marlow Fine Foods pays £2.05 per bag under its own-label supply deal."

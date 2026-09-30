@@ -1,0 +1,10 @@
+# FICTIONAL. Scope plan_tiers=[starter] makes Growth-only booking integration a scope trap; publish 2026-10-14 is
+# after hosting-offer ends (2026-10-10), valid today (2026-09-29).
+goal: Win small-business clients for the Starter website package.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 3000}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [starter], variants: []}
+publish_on: '2026-10-14'
+audience: Owners of small local businesses
+notes: null

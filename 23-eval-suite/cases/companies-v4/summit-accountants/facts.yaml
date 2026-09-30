@@ -1,0 +1,289 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Summit Accountants, type: accountancy firm, today: '2026-09-29'}
+facts:
+- key: sole-trader-fee
+  subject: {kind: package, ref: Sole Trader MTD package}
+  fact_type: price
+  attribute: monthly_fee
+  value: 45
+  unit: month
+  currency: GBP
+  value_text: £45 per month
+  basis: per_month
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [sole-trader], plan_tiers: [], variants: []}
+  valid_from: '2026-04-06'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fee schedule 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Our Sole Trader MTD package is £45 per month plus VAT: quarterly updates to HMRC, your final declaration and a named
+    accountant.'
+- key: ltd-accounts-fee
+  subject: {kind: package, ref: Limited company year-end package}
+  fact_type: price
+  attribute: annual_fee
+  value: 1150
+  unit: year
+  currency: GBP
+  value_text: £1,150 per year
+  basis: per_year
+  conditions:
+  - {key: turnover_gbp, op: <, value: 250000}
+  scope: {sites: [], regions: [], channels: [], segments: [limited-company], plan_tiers: [], variants: []}
+  valid_from: '2026-04-06'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fee schedule 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Year-end accounts and corporation tax return for limited companies with turnover under £250,000: £1,150 per year
+    plus VAT.'
+- key: icaew-firm
+  subject: {kind: business, ref: Summit Accountants}
+  fact_type: credential
+  attribute: professional_body
+  value: null
+  unit: null
+  currency: null
+  value_text: ICAEW Chartered Accountants (firm number C008812746)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2019-05-01'
+  valid_to: null
+  review_by: '2027-01-31'
+  source: {kind: url, ref: ICAEW directory listing}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: ICAEW directory listing
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [registered auditors]
+  owner: Managing partner
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Summit Accountants is an ICAEW-registered firm of Chartered Accountants, firm number C008812746. We are not registered
+    auditors.
+- key: tallyroo-partner
+  subject: {kind: business, ref: Summit Accountants}
+  fact_type: certification
+  attribute: software_partner_tier
+  value: null
+  unit: null
+  currency: null
+  value_text: Tallyroo Gold Partner (partner ID TR-GP-5521)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: certificate, ref: Tallyroo partner certificate 2026}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: Tallyroo partner certificate 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: MTD lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: We are a Tallyroo Gold Partner (partner ID TR-GP-5521). Tallyroo is HMRC-recognised software for Making Tax Digital.
+- key: sa-deadline
+  subject: {kind: policy, ref: HMRC self assessment deadline 2025-26}
+  fact_type: event
+  attribute: filing_deadline
+  value: null
+  unit: null
+  currency: null
+  value_text: 31 January 2027
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-06'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: url, ref: HMRC self assessment deadlines page}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Tax manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The online self assessment deadline for the 2025-26 tax year is 31 January 2027.
+- key: free-consultation
+  subject: {kind: offer, ref: First consultation}
+  fact_type: inclusion
+  attribute: free_first_meeting
+  value: null
+  unit: null
+  currency: null
+  value_text: a free first consultation, with no obligation
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Client engagement policy 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Your first consultation with us is free, with no obligation.
+- key: switch-offer
+  subject: {kind: offer, ref: Switch-by-October offer}
+  fact_type: price
+  attribute: discount
+  value: 50
+  unit: percent
+  currency: null
+  value_text: half price for your first three months
+  basis: null
+  conditions:
+  - {key: switched_by, op: <=, value: '2026-10-09'}
+  scope: {sites: [], regions: [], channels: [], segments: [sole-trader], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-09'
+  review_by: null
+  source: {kind: doc, ref: Autumn switching campaign brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Sole traders who switch to us by 9 October 2026 pay half price for their first three months.
+- key: summer-bookkeeping-offer
+  subject: {kind: offer, ref: Summer bookkeeping catch-up}
+  fact_type: inclusion
+  attribute: free_catch_up
+  value: null
+  unit: null
+  currency: null
+  value_text: a free bookkeeping catch-up for new clients
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer 2026 campaign brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: New clients who joined between June and August 2026 got a free bookkeeping catch-up.
+- key: partner-hourly-floor
+  subject: {kind: policy, ref: Ad-hoc advice}
+  fact_type: price
+  attribute: hourly_floor
+  value: 95
+  unit: hour
+  currency: GBP
+  value_text: £95 per hour
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Partners' meeting 2026-03}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We never bill partner time below £95 per hour.
+- key: corrie-contract
+  subject: {kind: package, ref: Corrie Bakeries Ltd retainer}
+  fact_type: price
+  attribute: contract_price
+  value: 640
+  unit: month
+  currency: GBP
+  value_text: £640 per month
+  basis: per_month
+  conditions:
+  - {key: customer, op: '=', value: Corrie Bakeries Ltd}
+  scope: {sites: [], regions: [], channels: [], segments: [limited-company], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Corrie Bakeries engagement letter 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Corrie Bakeries Ltd pays £640 per month for outsourced finance.

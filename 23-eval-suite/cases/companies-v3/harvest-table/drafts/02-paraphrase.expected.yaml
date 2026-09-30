@@ -1,0 +1,10 @@
+# WHY: negative control, the same retail facts reworded with harmless "most of our regulars", "best way to" and "free to ask"; allergen and shelf-life disclosures kept, no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Most of our regulars eat it straight from the bag"
+  - "The best way to start a chilly morning"
+  - "It's free to ask"
+  - "it contains oats (gluten) and almonds, and it's made in a facility that also handles peanuts and sesame"
+  - "A bag keeps for 9 months unopened; eat within 4 weeks of opening"
+  - "Certified by Albion Organic Certification, licence AOC-4417"

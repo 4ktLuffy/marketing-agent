@@ -18,7 +18,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import activity, brand_setup, config, feeds, positioning, views
+from . import activity, brand_setup, client_links, config, facts_page, feeds, onboarding, positioning, tasks, views
+from . import results as results_page
 from .backends import BackendError, Backends, gather_soft
 from .pending import PendingDecisions
 from .security import LoginLimiter, Session, Sessions, check_login, client_ip, same
@@ -38,6 +39,8 @@ class NotLoggedIn(Exception):
 
 
 def create_app() -> FastAPI:
+    from . import logredact
+    logredact.install()   # /c/<token> never reaches the access log
     settings = config.load()
 
     @asynccontextmanager
@@ -76,6 +79,8 @@ def create_app() -> FastAPI:
         resp.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         if not request.url.path.startswith(("/static/", "/media/")):
             resp.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/c/"):   # client approval pages: never indexed
+            resp.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
         if secure(request):
             resp.headers["Strict-Transport-Security"] = "max-age=31536000"
         return resp
@@ -184,14 +189,16 @@ def create_app() -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def queue(request: Request, tab: str = "all", toast: str = "", session: Session = Depends(current)):
         tab = "flagged" if tab == "flagged" else "all"
-        cards, total, n_flagged, err = await queue_cards(tab)
+        (cards, total, n_flagged, err), blockers = await asyncio.gather(
+            queue_cards(tab), tasks.compact_blockers(B(), settings))
         pending = P().items.get(toast) if toast else None
         return page(request, "queue.html", session, cards=cards, total=total, n_flagged=n_flagged, tab=tab,
-                    error=err, toast=pending, results=list(P().results)[:5], nav="queue")
+                    error=err, toast=pending, results=list(P().results)[:5], nav="queue", blockers=blockers)
 
     @app.post("/decide")
     async def decide(request: Request, id: int = Form(...), decision: str = Form(...), text: str = Form(""),
-                     reason: str = Form(""), publish_at: str = Form(""), session: Session = Depends(csrf)):
+                     reason: str = Form(""), publish_at: str = Form(""), seen: str = Form(""),
+                     session: Session = Depends(csrf)):
         if decision not in DECISIONS or id < 1:
             raise HTTPException(422, "unknown decision")
         if len(text) > 60000 or len(reason) > 500 or len(publish_at) > 40:
@@ -199,8 +206,11 @@ def create_app() -> FastAPI:
         publish_at = publish_at.strip()
         if publish_at and not ISO.match(publish_at):
             raise HTTPException(422, "publish time: YYYY-MM-DD HH:MM (UTC)")
+        # The body_sha256 of the text on the card (empty from an older page or calendar).
+        if seen and not views.SHA256.match(seen):
+            raise HTTPException(422, "seen: the text's sha256, 64 hex characters")
         d = P().add(id, decision, text=text if decision == "edit" else None, reason=reason.strip() or None,
-                    publish_at=publish_at or None)
+                    publish_at=publish_at or None, seen_sha256=seen or None)
         if request.headers.get("HX-Request"):
             return frag(request, "_decided.html", session, d=d)
         return RedirectResponse(f"/?toast={d.token}", status_code=303)
@@ -381,6 +391,15 @@ def create_app() -> FastAPI:
 
     # ------------------------------------------------------------------ 14 activity (03 gateways, 19; read-only)
     activity.register(app, page, current)
+
+    # ------------------------------------------------------------------ 15 facts (05 v2), 16 tasks + blockers (88)
+    onboarding.register(app, page, current, csrf, B)   # /facts/setup before /facts/{key}/...
+    facts_page.register(app, page, current, csrf, B)
+    results_page.register(app, page, current)       # /tasks/results before /tasks/{task_id}
+    tasks.register(app, page, current, csrf, B)
+
+    # ------------------------------------------------------------------ 17 client approval links (19; /c/ is public)
+    client_links.register(app, page, current, csrf, B)
 
     # ------------------------------------------------------------------ media (17 cards, 71 videos)
     @app.get("/media/{kind}/{name}")

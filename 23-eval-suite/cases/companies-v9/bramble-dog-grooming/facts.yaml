@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Written from the contracts only; no checker code was read.
+company: {name: "Bramble & Co Dog Grooming", type: "dog groomer", today: "2026-09-29"}
+facts:
+  - key: "full-groom-small-otley"
+    subject: {kind: "service", ref: "Full groom, small dog (Otley)"}
+    fact_type: "price"
+    attribute: "fee"
+    value: 38
+    unit: "dog"
+    currency: "GBP"
+    value_text: "£38"
+    basis: "per_unit"
+    conditions: [{key: "size", op: "=", value: "small"}, {key: "coat", op: "in", value: ["smooth", "short"]}]
+    scope: {sites: ["otley"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Otley price list April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Salon manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "At the Otley salon, a full groom for a small dog (under 10kg, smooth or short coat) is £38."
+  - key: "full-groom-small-ilkley"
+    subject: {kind: "service", ref: "Full groom, small dog (Ilkley)"}
+    fact_type: "price"
+    attribute: "fee"
+    value: 42
+    unit: "dog"
+    currency: "GBP"
+    value_text: "£42"
+    basis: "per_unit"
+    conditions: [{key: "size", op: "=", value: "small"}, {key: "coat", op: "in", value: ["smooth", "short"]}]
+    scope: {sites: ["ilkley"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Ilkley price list April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Salon manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "At the Ilkley salon, a full groom for a small dog (under 10kg, smooth or short coat) is £42."
+  - key: "full-groom-large-double"
+    subject: {kind: "service", ref: "Full groom, large double-coated dog"}
+    fact_type: "price"
+    attribute: "fee"
+    value: 64
+    unit: "dog"
+    currency: "GBP"
+    value_text: "£64"
+    basis: "per_unit"
+    conditions: [{key: "size", op: "=", value: "large"}, {key: "coat", op: "=", value: "double"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Price lists April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["matted coats cost extra"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Salon manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "A full groom for a large double-coated dog (over 25kg) is £64 at both salons; matted coats cost extra."
+  - key: "puppy-pamper"
+    subject: {kind: "package", ref: "Puppy Pamper"}
+    fact_type: "price"
+    attribute: "package_price"
+    value: 45
+    unit: "package"
+    currency: "GBP"
+    value_text: "£45 for three intro sessions"
+    basis: "flat"
+    conditions: [{key: "dog_age_months", op: "<", value: 6}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Price lists April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["for puppies under 6 months"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Salon manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "The Puppy Pamper package is three short intro sessions for £45, for puppies under 6 months."
+  - key: "jess-level3"
+    subject: {kind: "person", ref: "Jess Harlow, head groomer (Otley)"}
+    fact_type: "credential"
+    attribute: "grooming_qualification"
+    value: 3
+    unit: "level"
+    currency: null
+    value_text: "CGQB Level 3 Diploma in Dog Grooming, certificate CGQB-3-55120"
+    basis: null
+    conditions: []
+    scope: {sites: ["otley"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2022-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "certificate", ref: "CGQB certificate CGQB-3-55120"}
+    claim_class: "none"
+    requires_evidence: true
+    evidence_ref: "CGQB-3-55120"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: ["master groomer"]
+    owner: "Owner"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Head groomer Jess Harlow (Otley) holds the CGQB Level 3 Diploma in Dog Grooming, certificate CGQB-3-55120; the other groomers hold Level 2."
+  - key: "full-groom-inclusions"
+    subject: {kind: "service", ref: "Full groom"}
+    fact_type: "inclusion"
+    attribute: "inclusions"
+    value: null
+    unit: null
+    currency: null
+    value_text: "a bath, blow-dry, nail clip and ear clean"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2025-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Service menu v6"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Every full groom includes a bath, blow-dry, nail clip and ear clean."
+  - key: "muddy-paws-month"
+    subject: {kind: "offer", ref: "Muddy Paws Month"}
+    fact_type: "price"
+    attribute: "free_extra"
+    value: 0
+    unit: null
+    currency: "GBP"
+    value_text: "free blueberry facial with every full groom"
+    basis: "flat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-09-15"
+    valid_to: "2026-10-06"
+    review_by: null
+    source: {kind: "owner_statement", ref: "Owner: Muddy Paws Month dates"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Muddy Paws Month: a free blueberry facial with every full groom, from 15 September to 6 October 2026."
+  - key: "tuesday-club"
+    subject: {kind: "offer", ref: "Tuesday Club"}
+    fact_type: "price"
+    attribute: "discount"
+    value: 10
+    unit: "percent"
+    currency: null
+    value_text: "10% off full grooms on Tuesdays"
+    basis: null
+    conditions: [{key: "day", op: "=", value: "Tue"}]
+    scope: {sites: [], regions: [], channels: [], segments: ["over-65"], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Price lists April 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["Tuesdays only"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Tuesday Club: owners aged 65 and over get 10% off full grooms, Tuesdays only."
+  - key: "shampoo-cost"
+    subject: {kind: "business", ref: "Bramble & Co Dog Grooming"}
+    fact_type: "price"
+    attribute: "consumable_cost"
+    value: 1.4
+    unit: "wash"
+    currency: "GBP"
+    value_text: "£1.40 per wash"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2026-12-31"
+    review_by: null
+    source: {kind: "doc", ref: "Supplier invoices 2026 (internal)"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "medium"
+    sensitivity: "internal"
+    status: "active"
+    supersedes_key: null
+    text: "Shampoo and conditioner cost £1.40 per wash."
+  - key: "wharfe-kennels-contract"
+    subject: {kind: "service", ref: "Full groom, boarding dogs"}
+    fact_type: "price"
+    attribute: "contract_price"
+    value: 29
+    unit: "dog"
+    currency: "GBP"
+    value_text: "£29 per groom for Wharfe Kennels"
+    basis: "per_unit"
+    conditions: [{key: "customer", op: "=", value: "Wharfe Kennels"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-03-01"
+    valid_to: "2027-02-28"
+    review_by: null
+    source: {kind: "doc", ref: "Wharfe Kennels agreement WK-2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "high"
+    sensitivity: "restricted"
+    status: "active"
+    supersedes_key: null
+    text: "Wharfe Kennels pays £29 per groom for its boarding dogs."

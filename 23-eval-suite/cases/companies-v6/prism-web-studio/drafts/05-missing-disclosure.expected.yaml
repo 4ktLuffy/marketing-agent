@@ -1,0 +1,8 @@
+# WHY: the £1,800 Starter price requires "excl. VAT", which is absent from the whole draft (and no "plus VAT" either); the email has no heading.
+blocked: true
+findings:
+  - {contains: "A professional website for £1,800", label: missing_disclosure, fact_key: starter-price}
+  - {contains: "Your Starter website for £1,800", label: missing_disclosure, fact_key: starter-price}
+  - {contains: "The Starter package is £1,800, one-off", label: missing_disclosure, fact_key: starter-price}
+must_not_flag:
+  - "Up to 5 pages, mobile-friendly design, a contact form and basic SEO setup"

@@ -25,7 +25,7 @@ yours in the control room's **Brand setup** (or `05-brand-service/config/brand.y
 your FAQs in the knowledge-base form (42). After installing, [PILOT.md](PILOT.md) is the
 day-by-day plan.
 
-## The 87 deploys: each folder is one GitHub repo
+## The 89 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -54,6 +54,8 @@ day-by-day plan.
 | **Client report** | 85 monthly report (1st of the month) for a client or whoever you report to: last month vs the month before from the sources you have installed (20, 55, 67, 45, 84), "what we did" and "what changed" built in code, and a short summary by the model that is checked in code (sentences with a number not in the data, or an unhedged cause, are dropped). It waits for approval as a `client_report` item and is never sent to the client: a person forwards it | n8n (schedule) |
 | **Email flows** | 86 flow-runner: triggered lifecycle emails (welcome on `subscribed`, onboarding on `trial_started`, win-back on `inactive`, or your own). Only contacts with recorded consent enter; `unsubscribed` stops every flow forever; exit events (e.g. `purchased`) are checked right before each send. A person approves each flow version once (the whole sequence is one `email_flow` item in the control room); an edit needs approval again. A random 15% holdout gets nothing, and `/results` compares clicks, purchases and unsubscribes between the arms with a 95% interval (never opens); an A/A mode is the check that the tracking works. Daily cap and kill switch. **Always a dry run in this stack**: sends go to an outbox; the real send path is a stub | container (its 15-minute workflow → n8n) |
 | **Product feed** | 87 feed-optimizer: upload your Google Merchant Center feed file (CSV/TSV); the model proposes a title per product (brand, product, colour/size/material first), checked in code against that product's own row (an invented number, colour, material, size, claim or other brand is rejected and a rule-based title used instead); a person approves with the approver key; the export is your file with only the approved titles/descriptions changed, or a supplemental feed. Nothing is uploaded to Merchant Center | container (full profile) |
+| **Any chatbot, facts you can trust** | 88 task-bridge + scoped facts in 05: pick a task, copy a pack into free ChatGPT/Claude/Gemini (you see exactly what leaves the business; internal values go only as placeholders), paste the answer back; every sentence is checked against facts with scope and dates (wrong branch, plan, variant or channel; expired or not yet valid on the publish date; missing disclosures; certifications and ratings with no source); approval binds to the exact text; export when approved. Works with no model at all | container (core) |
+| **Claude connector** | 89 mcp-connector (profile `claude`): Claude uses your agent directly (public facts, packs, submit answers, checks) over MCP (stdio or HTTP with a token). It can't approve, confirm facts or publish: a person approves in the control room | container (optional) |
 | **Experiments** | the agent proposes one-variable A/B tests weekly (74), a person approves them (76), 61 gives the two versions to planned slots balanced by weekday and hour, 45 decides at weekly looks in code (HDI + ROPE on clicks per post within 72 h; 75); a winner becomes a provisional rule in 46 that writers only get after a later experiment agrees and a person approves it (51) | 45, 46, 61 → containers · 74–76 → n8n |
 | **Safety net** | 43 error handler | n8n |
 

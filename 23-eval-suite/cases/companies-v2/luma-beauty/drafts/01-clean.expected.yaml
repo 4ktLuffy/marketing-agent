@@ -1,0 +1,7 @@
+# WHY: Richmond price, Maya's Level 4 credential as held, lash lift with the patch-test disclosure, survey result with "survey of 120 clients, results vary"; no Chelsea price, no expired offer.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our Glow Facial is £85 for 60 minutes, and every facial comes with a free skin consultation"
+  - "Book with Maya Okafor, who holds a Level 4 Diploma in Advanced Skin Treatments"
+  - "9 in 10 clients said their skin felt more hydrated after one Glow Facial (survey of 120 clients, results vary)"

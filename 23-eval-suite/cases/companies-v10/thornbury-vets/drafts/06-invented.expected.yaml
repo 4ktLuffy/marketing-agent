@@ -1,0 +1,10 @@
+# WHY: "Veterinary Hospital" and "open 24 hours" are forbidden phrasings (the practice is General Practice level and emergencies go to Vetline); "award-winning" and "Voted the best vets" have no source fact.
+blocked: true
+findings:
+  - {contains: "Thornbury Vets is a fully equipped Veterinary Hospital", label: forbidden_phrase, fact_key: rcvs-psp-accredited}
+  - {contains: "we're open 24 hours for emergencies", label: forbidden_phrase, fact_key: out-of-hours-partner}
+  - {contains: "Our award-winning nursing team", label: no_source, fact_key: null}
+  - {contains: "Voted the best vets in the county three years running", label: no_source, fact_key: null}
+must_not_flag:
+  - "Our Essential plan for dogs is £16.50 a month on a 12-month minimum term"
+  - "Essential dog plan £16.50 a month (12-month minimum term)"

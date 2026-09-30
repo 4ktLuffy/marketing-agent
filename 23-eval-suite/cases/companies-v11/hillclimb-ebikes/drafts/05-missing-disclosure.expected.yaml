@@ -1,0 +1,10 @@
+# WHY: the range needs 'in eco mode' and the finance needs 'representative 0% APR' / 'subject to status'; none of them appears in the draft.
+blocked: true
+findings:
+- {contains: Up to 70 miles per charge, label: missing_disclosure, fact_key: trail-e1-range}
+- {contains: gives you up to 70 miles per charge, label: missing_disclosure, fact_key: trail-e1-range}
+- {contains: spread the cost with 0% APR finance over 12 months, label: missing_disclosure, fact_key: finance-zero-apr}
+- {contains: Pay over 12 months with 0% APR finance, label: missing_disclosure, fact_key: finance-zero-apr}
+- {contains: Ask about 0% APR finance over 12 months in store, label: missing_disclosure, fact_key: finance-zero-apr}
+must_not_flag:
+- Every new bike comes with a free 6-week safety check

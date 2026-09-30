@@ -1,0 +1,58 @@
+# Starter kit: software as a service. Data, not code; applying creates DRAFT rules only.
+# Marketing-hygiene prompts, not legal or compliance advice.
+label: SaaS / software
+description: Plans and tiers, features that depend on the plan, integrations in beta, security attestations and uptime commitments.
+fact_types:
+  - fact_type: price
+    subject_kind: plan
+    attributes: [monthly_price, annual_price, seats_included, currency]
+    example: "Pro costs GBP 29 per seat per month, billed annually."
+  - fact_type: spec
+    subject_kind: plan
+    attributes: [feature, limit, availability_by_tier]
+    example: "Multi-currency invoicing is available on Pro and Enterprise."
+  - fact_type: availability
+    subject_kind: service
+    attributes: [integration, status_beta_ga, regions]
+    example: "The Xero integration is in open beta until 2026-10-31."
+  - fact_type: certification
+    subject_kind: business
+    attributes: [attestation, type, period, auditor]
+    example: "SOC 2 Type I report dated 2026-03-01."
+  - fact_type: policy
+    subject_kind: plan
+    attributes: [uptime_sla, support_hours, data_residency]
+    example: "Enterprise includes a 99.9% monthly uptime SLA."
+claim_classes: [security, ai_capability, comparative, result]
+forbidden_phrasing:
+  - phrase: SOC 2 Type II
+    why: Type I and Type II are different reports; name only the report you actually hold.
+    claim_class: security
+    needs: a certification fact naming Type II
+  - phrase: ISO 27001 certified
+    why: Certification covers a defined scope; only claim it with a current certificate.
+    claim_class: security
+    needs: a current certification fact
+  - phrase: 99.9% uptime
+    why: An uptime figure reads as a promise; it needs an SLA fact and usually applies to one tier.
+    needs: a policy fact with the SLA and the plans it covers
+  - phrase: unlimited
+    why: Most "unlimited" plans have fair-use limits; readers take it literally.
+    needs: a spec fact confirming no limit applies
+  - phrase: bank-grade security
+    why: Vague security claims invite scrutiny and can't be checked.
+    claim_class: security
+  - phrase: GDPR compliant
+    why: Compliance is an ongoing obligation, not a badge; describe the specific measures instead.
+    claim_class: security
+  - phrase: AI-powered
+    why: Claims about AI capability need to describe what the feature actually does.
+    claim_class: ai_capability
+    needs: a spec fact describing the feature
+required_disclosures:
+  - when: a feature available only on some plans is mentioned
+    text: Available on selected plans.
+  - when: a beta feature or integration is mentioned
+    text: Currently in beta.
+  - when: a price is mentioned
+    text: Prices exclude VAT.

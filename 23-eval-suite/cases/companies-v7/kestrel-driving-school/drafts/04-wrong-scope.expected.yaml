@@ -1,0 +1,10 @@
+# WHY: £38 is the true manual price (task variants=[automatic], £44); refresher lessons at £48 are for full licence holders (task segments=[learners]).
+# 'Subject: Back behind the wheel' names no price or segment, so it is not listed.
+blocked: true
+findings:
+  - {contains: "Lessons start at just £38 per hour", label: wrong_scope, fact_key: manual-hourly}
+  - {contains: "Refresher lessons are £48 per hour", label: wrong_scope, fact_key: refresher-hourly}
+  - {contains: "lessons are £38 an hour", label: wrong_scope, fact_key: manual-hourly}
+must_not_flag:
+  - "Daniel Okafor is a DVSA Approved Driving Instructor, grade A (ADI number 417385)"
+  - "Free pick-up and drop-off from home, college or work in Norwich"

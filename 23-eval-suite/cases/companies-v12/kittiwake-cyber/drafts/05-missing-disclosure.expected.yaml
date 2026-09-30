@@ -1,0 +1,10 @@
+# WHY: the Essentials price and the onboarding fee both require "excl. VAT", which appears nowhere in the draft (not even as "plus VAT").
+blocked: true
+findings:
+  - {contains: "Kittiwake Essentials is just £35 per user per month", label: missing_disclosure, fact_key: essentials-price}
+  - {contains: "Proper security for £35 a head", label: missing_disclosure, fact_key: essentials-price}
+  - {contains: "Thirty-five quid per user a month", label: missing_disclosure, fact_key: essentials-price}
+  - {contains: "one-off £450 onboarding fee", label: missing_disclosure, fact_key: onboarding-fee}
+must_not_flag:
+  - "You'll get a 4-hour response, Mon–Fri, 8am–6pm."
+  - "Every plan includes Microsoft 365 backup with 1-year retention."

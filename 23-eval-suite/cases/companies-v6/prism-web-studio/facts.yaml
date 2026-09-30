@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Prism Web Studio, type: agency, today: '2026-09-29'}
+facts:
+- key: starter-price
+  subject: {kind: package, ref: Starter website}
+  fact_type: price
+  attribute: price
+  value: 1800
+  unit: null
+  currency: GBP
+  value_text: £1,800
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [starter], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Package sheet 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excl. VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Starter website package costs £1,800 excl. VAT, paid once.
+- key: starter-inclusions
+  subject: {kind: package, ref: Starter website}
+  fact_type: inclusion
+  attribute: included
+  value: null
+  unit: null
+  currency: null
+  value_text: up to 5 pages, a mobile-friendly design, a contact form and basic SEO setup
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [starter], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Package sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Starter includes up to 5 pages, a mobile-friendly design, a contact form and basic SEO setup.
+- key: starter-delivery
+  subject: {kind: package, ref: Starter website}
+  fact_type: spec
+  attribute: delivery_time
+  value: 3
+  unit: week
+  currency: null
+  value_text: 3 weeks
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [starter], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Package sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [from content sign-off]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Starter sites go live 3 weeks from content sign-off.
+- key: growth-booking
+  subject: {kind: package, ref: Growth website}
+  fact_type: inclusion
+  attribute: included
+  value: null
+  unit: null
+  currency: null
+  value_text: online booking integration
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [growth], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Package sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Online booking integration is included in the Growth package only, not in Starter.
+- key: hosting-sla
+  subject: {kind: service, ref: Managed hosting}
+  fact_type: spec
+  attribute: uptime_sla
+  value: 99.9
+  unit: percent
+  currency: null
+  value_text: 99.9% monthly uptime
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-06-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Hosting terms v3}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Hosting terms v3
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Technical lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Managed hosting comes with a 99.9% monthly uptime SLA.
+- key: google-partner
+  subject: {kind: business, ref: Prism Web Studio}
+  fact_type: certification
+  attribute: google_partner
+  value: 518-204-7731
+  unit: null
+  currency: null
+  value_text: Google Partner
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-03-01'
+  valid_to: null
+  review_by: '2027-03-01'
+  source: {kind: url, ref: Google Partners directory listing}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: Partner ID 518-204-7731
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [Premier Partner]
+  owner: Studio director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Prism Web Studio is a Google Partner (company ID 518-204-7731). It is not a Premier Partner.
+- key: oakleaf-case-study
+  subject: {kind: business, ref: Oakleaf Bakery (client)}
+  fact_type: result
+  attribute: online_orders_growth
+  value: 64
+  unit: percent
+  currency: null
+  value_text: online orders up 64% in six months
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-10'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Oakleaf order reports Mar-Sep 2026}
+  claim_class: result
+  requires_evidence: true
+  evidence_ref: Oakleaf order reports Mar-Sep 2026
+  consent_ref: Oakleaf Bakery written consent 2026-09-10
+  required_disclosures: [results from one client]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Oakleaf Bakery's online orders rose 64% in the six months after its new site launched (one client).
+- key: hosting-offer
+  subject: {kind: offer, ref: First month of hosting free}
+  fact_type: price
+  attribute: discount
+  value: null
+  unit: null
+  currency: null
+  value_text: first month of hosting free
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-10'
+  review_by: null
+  source: {kind: doc, ref: Autumn offer email 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn offer: first month of hosting free for Starter sites signed by 10 October 2026.'
+- key: day-rate-floor
+  subject: {kind: service, ref: Consulting day}
+  fact_type: price
+  attribute: floor_price
+  value: 420
+  unit: null
+  currency: GBP
+  value_text: £420 per day
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Director pricing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The lowest day rate we will agree is £420 per day.
+- key: marlow-retainer
+  subject: {kind: service, ref: Retainer}
+  fact_type: price
+  attribute: contract_price
+  value: 1150
+  unit: null
+  currency: GBP
+  value_text: £1,150 per month
+  basis: per_month
+  conditions:
+  - {key: customer, op: '=', value: Marlow & Finch}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Marlow & Finch retainer agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Studio director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Marlow & Finch pays a retainer of £1,150 per month.

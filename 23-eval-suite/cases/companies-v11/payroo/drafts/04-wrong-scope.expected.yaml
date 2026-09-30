@@ -1,0 +1,8 @@
+# WHY: the open API is Scale only and £4 is the Essentials price; the task is plan_tiers=[growth] -> wrong_scope.
+blocked: true
+findings:
+- {contains: Payroo Growth comes with our open API and custom integrations, label: wrong_scope, fact_key: open-api}
+- {contains: Connect Payroo Growth to any tool with our open API, label: wrong_scope, fact_key: open-api}
+- {contains: Start on Essentials at £4 per employee per month, label: wrong_scope, fact_key: essentials-price}
+must_not_flag:
+- Growth includes automatic pension auto-enrolment and expense claims with receipt capture

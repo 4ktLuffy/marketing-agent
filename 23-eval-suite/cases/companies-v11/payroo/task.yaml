@@ -1,0 +1,12 @@
+# FICTIONAL. Scope plan_tiers=[growth] makes the open API (Scale only) and the Essentials price scope traps;
+# publish_on 2026-10-13 is after free-migration ends (2026-10-09), valid today (2026-09-29).
+# Basis trap: Growth is priced per employee per month, not per company.
+goal: Grow sign-ups to the Growth plan among UK businesses with 5 to 50 staff in October.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+- {key: p2, channel: newsletter, kind: section, max_chars: null}
+- {key: p3, channel: x, kind: post, max_chars: 280}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [growth], variants: []}
+publish_on: '2026-10-13'
+audience: Owners and office managers who run payroll in spreadsheets
+notes: Lead with time saved on pensions and expenses.

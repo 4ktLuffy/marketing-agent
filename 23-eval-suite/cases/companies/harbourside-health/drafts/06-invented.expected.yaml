@@ -1,0 +1,8 @@
+# WHY: "NHS approved" is a regulated-health claim with no source fact; "FDA approved" is a forbidden phrasing on whitening.
+blocked: true
+findings:
+  - {contains: "NHS approved clinic", label: no_source, fact_key: null}
+  - {contains: "FDA approved whitening", label: forbidden_phrase, fact_key: whitening-gel}
+must_not_flag:
+  - "An initial physio assessment at Quayside costs £55"
+  - "All our physiotherapists are HCPC registered"

@@ -1,0 +1,11 @@
+# WHY: the £49 new-account offer is valid today but ends 2026-10-04, before publish 2026-10-08; the £5 scan-switch rebate (mentioned in passing) ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Opening offer: your first three zirconia crowns at £49 per unit", label: conflict_or_expired, fact_key: intro-offer}
+  - {contains: "£49 crowns for new accounts", label: conflict_or_expired, fact_key: intro-offer}
+  - {contains: "your first three zirconia crowns are £49 per unit", label: conflict_or_expired, fact_key: intro-offer}
+  - {contains: "The £5 scan-switch rebate is on us too", label: conflict_or_expired, fact_key: scan-rebate}
+must_not_flag:
+  - "Crowns and bridges come back in 5 working days from receipt of the scan or impression"
+  - "ISO 13485:2016 certificate QMS-44817"
+  - "Crown and bridge cases collected free across the North West"

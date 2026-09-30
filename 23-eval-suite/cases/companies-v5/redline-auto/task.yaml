@@ -1,0 +1,12 @@
+# FICTIONAL. Scope segments=[private]: the £35 MOT is the fleet-account price (scope trap).
+# publish_on 2026-10-13 is after the free winter check ends (2026-10-07), which is valid today (2026-09-29).
+# The £39 air-con regas ended 2026-08-31 (expired fact).
+goal: "Get private motorists in Hatfield to book MOTs and full services before winter."
+pieces:
+  - {key: p1, channel: google, kind: search_ad, max_chars: 300}
+  - {key: p2, channel: website, kind: page_section, max_chars: 1500}
+  - {key: p3, channel: sms, kind: text, max_chars: 160}
+scope: {sites: [], regions: [], channels: [], segments: [private], plan_tiers: [], variants: []}
+publish_on: "2026-10-13"
+audience: "Private car owners within 10 miles of Hatfield"
+notes: "Private customers only; fleet accounts get their own prices."

@@ -1,0 +1,11 @@
+# WHY: "greenest" printer (post and subject), the 4.8 Trustpilot rating and the G7 Expert staff credential have no source; "GC2" changes the GC1 board grade; NFP-COC-008231 is a look-alike of certificate NFP-COC-008213.
+blocked: true
+findings:
+  - {contains: "Northfold is the greenest packaging printer in Yorkshire", label: no_source, fact_key: null}
+  - {contains: "Subject: Yorkshire's greenest packaging printer", label: no_source, fact_key: null}
+  - {contains: "Rated 4.8 on Trustpilot by 250 brands", label: no_source, fact_key: null}
+  - {contains: "Every job is proofed by our G7 Expert certified colour team", label: no_source, fact_key: null}
+  - {contains: "350gsm GC2 folding boxboard", label: conflict_or_expired, fact_key: carton-board}
+  - {contains: "certificate is NFP-COC-008231", label: conflict_or_expired, fact_key: fsc-certification}
+must_not_flag:
+  - "1,000 printed cartons cost £640 plus VAT"

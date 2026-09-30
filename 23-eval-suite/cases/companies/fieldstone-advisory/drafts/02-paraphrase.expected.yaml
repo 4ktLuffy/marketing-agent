@@ -1,0 +1,7 @@
+# WHY: negative control — same enterprise facts reworded ("a quarter", "rise 212% over six months"); disclosures kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "Fieldstone brings 14 consultants and HubSpot Gold Solutions Partner status"
+  - "Programmes begin at £18,000 a quarter"
+  - "a human strategist reviews every finding"

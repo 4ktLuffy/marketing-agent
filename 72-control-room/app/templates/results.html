@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Results{% endblock %}
+{% block main %}
+<h1>Results</h1>
+<p class="small muted">Is this saving you time, and which AI works best for you? Worked out from what the task bridge and the calendar already record. Nothing new is stored.</p>
+{% if not_installed %}<p class="muted">The task bridge (88) isn't installed.</p>{% else %}
+<nav class="tabs" aria-label="Period">
+  <a href="/tasks/results" {% if range == '30d' %}aria-current="page"{% endif %}>Last {{ window_days or 30 }} days</a>
+  <a href="/tasks/results?range=all" {% if range == 'all' %}aria-current="page"{% endif %}>All</a>
+</nav>
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% else %}
+{% set o = data.overall %}
+{% for p in raw.problems %}<p class="alert warn">{{ p }}</p>{% endfor %}
+{% if capped %}<p class="small muted">Only your newest {{ max_tasks }} tasks are counted.</p>{% endif %}
+{% if not o.tasks %}
+<div class="empty">
+  <p>No tasks {% if range == '30d' %}in the last {{ window_days }} days{% else %}yet{% endif %}.</p>
+  <p class="small">Results appear once a task has an AI answer pasted and submitted.</p>
+  <p><a class="btn primary" href="/tasks/new">New task</a>{% if range == '30d' %} <a class="btn" href="/tasks/results?range=all">See all</a>{% endif %}</p>
+</div>
+{% else %}
+
+<section class="panel" aria-labelledby="h-time">
+  <h2 id="h-time">Is it saving time?</h2>
+  <dl class="facts">
+    <dt>Tasks</dt><dd>{{ o.tasks }} ({{ o.pieces }} piece{{ 's' if o.pieces != 1 }}; {{ o.submitted }} submitted)</dd>
+    <dt>Task to first usable draft</dt>
+    <dd>{% if o.to_usable_median is not none %}typically {{ duration(o.to_usable_median) }} <span class="muted">(median; {{ o.usable.text }} tasks got there; fastest {{ duration(o.to_usable_min) }}, slowest {{ duration(o.to_usable_max) }})</span>{% else %}none yet <span class="muted">(no task has had every piece pass on one submit)</span>{% endif %}</dd>
+    <dt>Pastes per task</dt><dd>{% if o.pastes_median is not none %}typically {{ '%g'|format(o.pastes_median) }} <span class="muted">({{ o.pastes }} in all)</span>{% else %}–{% endif %}</dd>
+    <dt>Blocked on first paste</dt><dd>{{ o.blocked_first.text }} <span class="muted">pieces</span></dd>
+    <dt>Waiting for approval</dt><dd>{% if o.turnaround_median is not none %}typically {{ duration(o.turnaround_median) }} <span class="muted">(median, from sent for review to approved; {{ o.turnaround_n }} piece{{ 's' if o.turnaround_n != 1 }})</span>{% else %}none approved yet{% endif %}</dd>
+    <dt>Approved</dt><dd>{{ o.approved.text }} <span class="muted">pieces</span></dd>
+    <dt>Reviewer edits after submit</dt><dd>{{ o.edits_total }} edit{{ 's' if o.edits_total != 1 }} <span class="muted">({{ o.edited_pieces.text }} pieces edited in review)</span></dd>
+    <dt>Exported</dt><dd>{{ o.pieces_exported }} piece{{ 's' if o.pieces_exported != 1 }} <span class="muted">({{ o.tasks_exported }} task{{ 's' if o.tasks_exported != 1 }})</span></dd>
+    <dt>Facts changed after approval</dt><dd>{{ o.facts_changed }} <span class="muted">(pieces sent back because a fact they used changed)</span></dd>
+  </dl>
+  {% if o.not_readable %}<p class="small muted">{{ o.not_readable }} submitted piece{{ 's' if o.not_readable != 1 }} could not be matched to a calendar item, so their approval and edits are not counted.</p>{% endif %}
+</section>
+
+<section class="panel" aria-labelledby="h-why">
+  <h2 id="h-why">Why pieces were blocked on first paste</h2>
+  {% if not o.blocked_first.k %}<p class="alert ok">No piece was blocked on its first paste.</p>{% else %}
+  <h3 class="small">Evidence</h3>
+  {% if o.reasons_label %}<ul class="plain">{% for words, n in o.reasons_label %}<li>{{ words }}: {{ n }}</li>{% endfor %}</ul>{% else %}<p class="small muted">No fact problem: only brand or channel rules.</p>{% endif %}
+  <h3 class="small">Brand and channel rules</h3>
+  {% if o.reasons_rule %}<ul class="plain">{% for words, n in o.reasons_rule %}<li>{{ words }}: {{ n }}</li>{% endfor %}</ul>{% else %}<p class="small muted">None recorded.</p>{% endif %}
+  {% if o.rules_unknown %}<p class="small muted">For {{ o.rules_unknown }} piece{{ 's' if o.rules_unknown != 1 }} the rule detail is gone because it was submitted again; the evidence above still counts.</p>{% endif %}
+  {% endif %}
+</section>
+
+<section class="panel" aria-labelledby="h-ai">
+  <h2 id="h-ai">By AI</h2>
+  <p class="small muted">The AI you said you used when pasting. Each piece counts for the AI whose answer was first submitted for it. Under {{ min_compare }} pieces an AI is not compared.</p>
+  {% for r in data.by_ai.rows %}
+  <article class="ai-row">
+    <h3>{{ r.name }} <span class="muted small">{{ r.pieces }} piece{{ 's' if r.pieces != 1 }}</span></h3>
+    {% if not r.enough %}<p class="small muted">Too few to compare (under {{ min_compare }} pieces).</p>{% endif %}
+    <dl class="facts">
+      <dt>Blocked on first paste</dt><dd>{{ r.blocked_first.text }}</dd>
+      <dt>Approved</dt><dd>{{ r.approved.text }}</dd>
+      <dt>Reviewer edits</dt><dd>{% if r.edits_median is not none %}median {{ '%g'|format(r.edits_median) }} per piece <span class="muted">({{ r.edits_n }} piece{{ 's' if r.edits_n != 1 }})</span>{% else %}–{% endif %}</dd>
+    </dl>
+  </article>
+  {% endfor %}
+  {% if data.by_ai.fewest_blocked %}<p class="small">Among AIs with {{ min_compare }} or more pieces, <b>{{ data.by_ai.fewest_blocked }}</b> had the fewest pieces blocked on first paste.</p>
+  {% elif data.by_ai.comparable < 2 %}<p class="small muted">Not enough pieces yet to say which AI works best: that needs {{ min_compare }} or more pieces from at least two AIs.</p>{% endif %}
+</section>
+
+<section class="panel" aria-labelledby="h-cost">
+  <h2 id="h-cost">Cost</h2>
+  <dl class="facts">
+    <dt>Pasted drafts</dt><dd>Model calls: 0 <span class="muted">(written in a chat you already have; nothing billed here)</span></dd>
+  </dl>
+  {% if gw is none %}<p class="small muted">AI-assisted steps (model check, fact setup): not measured, no gateway is set up.</p>
+  {% else %}
+  {% if gw.failed %}<p class="small muted">Not measured for: {{ gw.failed|join(', ') }} gateway (did not answer).</p>{% endif %}
+  {% if gw.steps %}
+  <ul class="plain">{% for st in gw.steps %}<li>{{ st.name }}: {{ st.calls }} model call{{ 's' if st.calls != 1 }}, {{ st.time }} in all <span class="muted">({{ st.local }} local, {{ st.hosted }} hosted{% if st.failed %}, {{ st.failed }} failed{% endif %})</span></li>{% endfor %}</ul>
+  {% elif not gw.failed %}<p class="small muted">No model calls for these steps.</p>{% endif %}
+  {% if gw.log_rows %}<p class="small muted">From the gateway's recent log ({{ gw.log_rows }} calls, back to {{ gw.oldest }}); older calls are not kept, so this may be less than the period.</p>{% endif %}
+  {% endif %}
+  <p class="small muted">Your own time is not measured automatically.</p>
+</section>
+
+<section aria-labelledby="h-tasks">
+  <h2 id="h-tasks">Per task</h2>
+  <ul class="menu">
+    {% for t in data.tasks %}
+    {% set sub = t.pieces|selectattr('submitted')|list %}
+    <li><a href="/tasks/{{ t.id }}">{{ t.goal or t.id }}
+      <span class="muted">{{ t.id }} · {{ (t.created_at or '')[:10] }} · {{ t.pastes }} paste{{ 's' if t.pastes != 1 }} · usable {{ duration(t.to_usable) if t.to_usable is not none else 'not yet' }} · blocked first {{ sub|selectattr('blocked_first')|list|length }} of {{ sub|length }} · approved {{ sub|selectattr('approved')|list|length }} of {{ t.pieces|length }}{% if t.exported %} · exported{% endif %}{% if t.facts_changed_after_approval %} · {{ t.facts_changed_after_approval }} fact change{{ 's' if t.facts_changed_after_approval != 1 }} after approval{% endif %}</span></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<details class="small">
+  <summary>How these are worked out</summary>
+  <ul class="plain">
+    <li><b>First usable draft</b>: the first submit where no piece was blocked, timed from when the task was created.</li>
+    <li><b>Pastes</b>: answers pasted back into the task (fixing the split by hand is not a new paste).</li>
+    <li><b>Blocked on first paste</b>: the first time a piece was submitted, a fact problem or a brand or channel rule stopped it.</li>
+    <li><b>Waiting for approval</b>: in the calendar's history of the piece, from sent for review to approved.</li>
+    <li><b>Reviewer edits</b>: new versions of the text saved while the piece was waiting for review.</li>
+    <li><b>Facts changed after approval</b>: an approved piece sent back to draft because a fact it used changed.</li>
+    <li>Read every minute from the task bridge (88) and the calendar (19); the newest {{ max_tasks }} tasks.</li>
+  </ul>
+</details>
+{% endif %}
+{% endif %}
+{% endblock %}

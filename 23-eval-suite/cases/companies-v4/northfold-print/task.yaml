@@ -1,0 +1,11 @@
+# FICTIONAL. Scope segments=[direct]: £520 per 1,000 cartons is the trade (reseller) price (segments=[trade]),
+# so quoting it to direct brand owners is a scope trap.
+# publish_on 2026-10-14 is after foil-offer ends (2026-10-06), valid today (2026-09-29).
+goal: "Win first carton orders from small food and cosmetics brands buying direct."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: email, kind: outreach, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [direct], plan_tiers: [], variants: []}
+publish_on: "2026-10-14"
+audience: "Founders of small food, drink and cosmetics brands who need their first printed cartons"
+notes: null

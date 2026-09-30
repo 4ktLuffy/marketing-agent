@@ -1,0 +1,11 @@
+# WHY: the A-Board Autumn Deal (buy 2, 3rd free) is valid today but ends 2026-10-11, before publish 2026-10-15; lines naming or describing it are expired.
+blocked: true
+findings:
+  - {contains: "Take a third one on us", label: conflict_or_expired, fact_key: aboard-offer}
+  - {contains: "The A-Board Autumn Deal means you buy 2 A-boards and get the 3rd free", label: conflict_or_expired, fact_key: aboard-offer}
+  - {contains: "Our A-board multibuy is still running", label: conflict_or_expired, fact_key: aboard-offer}
+  - {contains: "The A-Board Autumn Deal is here", label: conflict_or_expired, fact_key: aboard-offer}
+must_not_flag:
+  - "Every sign includes a free digital proof and a fixing kit"
+  - "We install across Croydon, Sutton, Bromley and Merton"
+  - "An A1 aluminium composite panel is £64 ex VAT"

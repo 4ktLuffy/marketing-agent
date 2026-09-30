@@ -1,6 +1,6 @@
 # llm-gateway
 
-Deploy **3 of 87** of the local-LLM marketing agent. Every LLM call the agent makes
+Deploy **3 of 89** of the local-LLM marketing agent. Every LLM call the agent makes
 goes through this service. You call it with a **prompt name and variables**, and it
 returns **validated text or JSON**.
 
@@ -55,6 +55,8 @@ PROMPTS_DIR=../04-prompt-library/prompts OLLAMA_URL=http://localhost:11434 MODEL
 | GET | `/v1/prompts` | — | `[{"name","description","output","required_vars","optional_vars"}]` |
 | POST | `/v1/run` | `{"prompt","vars":{},"model"?,"temperature"?}` | `{"prompt","model","output","attempts","duration_ms"}` |
 | GET | `/v1/activity?since=&limit=` | — | calls in flight, the last calls and today's totals per model (see *Activity log*). Needs `X-API-Key` like `/v1/run` |
+| POST | `/v1/chat/completions` | an OpenAI Chat Completions body | the provider's answer, unchanged (see *OpenAI-compatible chat*) |
+| GET | `/v1/models` | — | `{"object":"list","data":[{"id":...}]}`: the models a caller may use here |
 
 Errors: `404` unknown prompt · `422` missing required vars · `502` Ollama unreachable or
 no valid output after the last attempt (the detail says what was wrong).
@@ -66,6 +68,50 @@ curl -s localhost:8103/v1/run -H 'content-type: application/json' -d '{
 }'
 # {"prompt":"ad_copy","model":"mkt-writer","output":{"headlines":[...],"descriptions":[...]},"attempts":1,"duration_ms":6200}
 ```
+
+## OpenAI-compatible chat
+
+`POST /v1/chat/completions` lets a client that speaks the OpenAI API use whatever model the
+gateway serves, and still show on the Activity page. The n8n chat agent (24) uses it through
+n8n's OpenAI chat model node.
+
+- **Auth.** `X-API-Key: <INTERNAL_API_KEY>` like `/v1/run`, or `Authorization: Bearer
+  <INTERNAL_API_KEY>` (what n8n's OpenAI credential and OpenAI clients send). Both are compared in
+  constant time. Open when `INTERNAL_API_KEY` is unset, like the rest.
+- **Passthrough.** The body goes unchanged to the provider's own OpenAI-compatible endpoint:
+  `{OLLAMA_URL}/v1/chat/completions` for `LLM_PROVIDER=ollama`, `{OPENAI_BASE_URL}/chat/completions`
+  with `OPENAI_API_KEY` for `openai`. Messages, `tools`, `tool_calls`, temperature and the rest are
+  not touched, and no prompt, brand text or retries are added: the caller owns the conversation.
+  The answer comes back byte for byte.
+- **Model.** `model` must be allowed, exactly as for `/v1/run` (`MODEL`, `ALLOWED_MODELS`, models
+  named in prompt files); otherwise `403` with code `model_not_allowed`. No `model` = `MODEL`.
+  The stack adds `AGENT_MODEL` to `ALLOWED_MODELS`. With Ollama, the context size comes from the
+  model's Modelfile (`num_ctx`), because Ollama's `/v1` API takes none: `mkt-agent` sets 16384.
+- **Streaming.** `"stream": true` streams the provider's server-sent events through unchanged.
+- **Limits.** Bodies over `MAX_CHAT_BYTES` (1 MB) get `413`; a body that is not a JSON object with
+  a non-empty `messages` list gets `400`. Each call waits at most `REQUEST_TIMEOUT` seconds.
+- **Errors** are in OpenAI's shape (`{"error": {"message", "type", "code"}}`). A provider `4xx`
+  keeps its status and body (a `429` keeps `retry-after`, so the client can wait and retry); a
+  provider `5xx` or an unreachable provider is `502`; a timeout is `504`. The gateway does not
+  retry chat calls itself.
+- **Activity.** Each call is logged like a `/v1/run` call with prompt name `chat`: caller (from
+  `X-Caller`; n8n's credential sends `X-Caller: 24 Chat agent` as a custom header), model,
+  provider, time, ok or the error kind, and tokens from `usage` (for a stream, from the final chunk
+  when the client asked for `stream_options.include_usage`, as n8n does). Never the messages, the
+  tools or the answer. A stream the client drops early is logged as `client_closed`.
+- `GET /v1/models` (same key) lists the allowed models; n8n's credential test calls it.
+
+```bash
+curl -s localhost:8103/v1/chat/completions -H "Authorization: Bearer $INTERNAL_API_KEY" \
+  -H 'X-Caller: my script' -H 'content-type: application/json' \
+  -d '{"model":"mkt-agent","messages":[{"role":"user","content":"Say hi"}]}'
+```
+
+Measured with local Ollama `mkt-agent` (qwen2.5 7B, M-series Mac): one tool-choosing turn with the
+chat agent's 17 tools took 2.43 s through the gateway vs 2.37 s straight to Ollama's `/v1`
+(3 runs each, warm model), with the same tool call. The chat agent's tool-selection eval
+(23 `evalsuite.tools`, 24 requests × 3) scored 69/72 through the gateway and 70/72 on Ollama's
+native API; the one request both miss is the same.
 
 ## Activity log
 
@@ -87,7 +133,9 @@ The gateway remembers what it did, so the control room (72, **Activity** page) c
 - `provider` is `ollama`, or only the host name of `OPENAI_BASE_URL` (e.g. `api.groq.com`).
 - `error` is a fixed word, never an upstream message: `timeout`, `unreachable`, `upstream_5xx`,
   `upstream_4xx`, `rate_limited`, `daily_limit`, `not_configured`, `invalid_json`,
-  `schema_mismatch`, `too_long`, `empty_output`, `internal`.
+  `schema_mismatch`, `too_long`, `empty_output`, `internal`, `client_closed` (a chat stream the
+  client dropped).
+- `prompt` is the prompt name, or `chat` for `/v1/chat/completions`.
 - **Metadata only.** The log never holds prompt text, vars or model output. A test puts a marker
   string in the vars and the output and checks it never appears.
 - **Memory only.** It keeps the last `ACTIVITY_SIZE` (500) calls. A restart empties it.
@@ -105,7 +153,7 @@ The gateway remembers what it did, so the control room (72, **Activity** page) c
 | `RATE_LIMIT_RETRIES` | `4` | 429 retries, waiting as long as the API's reset headers say (max 60 s each). A daily-limit 429 stops immediately with a clear error |
 | `OLLAMA_URL` | `http://host.docker.internal:11434` | Ollama server |
 | `EMOJI_POLICY_SKIP` | `claim_details,detail_check,voice_judge,reflect_rule` | prompts whose output is NOT cleaned. For every other prompt the brand's `emoji_policy` (05 `/profile`: `allowed` set, `max_per_post`) is enforced in code on every string of the output: emoji outside the set are removed, then each string keeps at most `max_per_post`. Removed emoji are listed in the response as `emoji_removed`. Models ignored this rule in the prompt (most brand errors in the evals were emoji); if the brand service is down, nothing is changed |
-| `INTERNAL_API_KEY` | empty | when set (the stack sets it), `POST /v1/run` requires header `X-API-Key` with this value. `/health` and `/v1/prompts` stay open |
+| `INTERNAL_API_KEY` | empty | when set (the stack sets it), `POST /v1/run` and `GET /v1/activity` require header `X-API-Key` with this value; `/v1/chat/completions` and `/v1/models` take it as `X-API-Key` or `Authorization: Bearer`. `/health` and `/v1/prompts` stay open |
 | `ALLOWED_MODELS` | empty | extra models a caller may request in `model` (comma-separated). Always allowed: `MODEL` and models named in prompt files. Anything else gets 403, so nothing on the network can run arbitrary (paid) models through the gateway |
 | `MAX_VARS_CHARS` | `60000` | largest `vars` (as JSON) accepted; 413 above it. `temperature` must be 0–2 |
 | `MODEL` | `qwen2.5:7b` | default model; the stack sets `mkt-writer` (deploy 02) |
@@ -113,6 +161,7 @@ The gateway remembers what it did, so the control room (72, **Activity** page) c
 | `BRAND_URL` | empty | brand service; its summary is injected as `{{ brand }}` (cached 60 s; last good value kept if it goes down). Prompts that declare a `facts` var also get its `/facts` as `[id] text` lines, one per fact: cached 60 s, last good value kept if it goes down, empty string before the first success (never an error). Not fetched for prompts without the var, and not touched when the caller passes `facts` in `vars` (pass `""` to send none) |
 | `LEARNING_URL` | empty | learning service (deploy 46); its `/rules/summary` (active rules learned from reviewer edits) is appended to `{{ brand }}` after the brand summary, separated by a blank line. Cached 60 s; last good value kept if it goes down; ignored when empty or unavailable. Neither summary is added when the caller passes `brand` in `vars` |
 | `MAX_ATTEMPTS` | `3` | tries per call |
+| `MAX_CHAT_BYTES` | `1000000` | largest `/v1/chat/completions` body accepted; 413 above it |
 | `ACTIVITY_SIZE` | `500` | how many finished calls `/v1/activity` remembers (in memory) |
 | `NUM_CTX` | `8192` | context window sent to Ollama |
 | `REQUEST_TIMEOUT` | `240` | seconds per Ollama call |
@@ -126,3 +175,5 @@ measured separately by `23-eval-suite`.
 ## CI
 
 Runs the tests, then pushes `ghcr.io/<you>/<repo>:latest` on every push to `main`.
+
+**Facts that leave the machine.** Prompts with a `facts` var get 05's approved facts up to `FACTS_MAX_SENSITIVITY` (`public` or `internal`). Unset: `internal` with Ollama, `public` with a hosted provider, so internal facts (margins, floor prices) never reach a hosted model. Restricted facts are never sent.

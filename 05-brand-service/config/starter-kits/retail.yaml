@@ -1,0 +1,51 @@
+# Starter kit: shop (online or high street). Data, not code; applying creates DRAFT rules only.
+# Marketing-hygiene prompts, not legal advice: price and promotion rules differ by country.
+label: Retail shop
+description: Products and prices, sales with start and end dates, reference prices, returns that differ by channel (own site vs marketplace).
+fact_types:
+  - fact_type: price
+    subject_kind: product
+    attributes: [price, sale_price, currency, channel]
+    example: "Oak side table costs GBP 149 on our website."
+  - fact_type: price
+    subject_kind: offer
+    attributes: [reference_price, reference_period, discount]
+    example: "Oak side table was sold at GBP 189 for 28 days before the sale."
+  - fact_type: event
+    subject_kind: offer
+    attributes: [start_date, end_date, eligible_products]
+    example: "Autumn sale runs 2026-09-20 to 2026-09-28."
+  - fact_type: policy
+    subject_kind: policy
+    attributes: [returns_window, channel, conditions]
+    example: "Website orders can be returned within 30 days; Amazon orders follow Amazon's policy."
+  - fact_type: availability
+    subject_kind: product
+    attributes: [stock_status, delivery_time, regions]
+    example: "UK mainland delivery in 3-5 working days."
+claim_classes: [price_reference, comparative, origin]
+forbidden_phrasing:
+  - phrase: was £
+    why: A reference price must be one you genuinely charged; it needs evidence of that price and period.
+    claim_class: price_reference
+    needs: a price_reference fact with the earlier price and period
+  - phrase: ends Sunday
+    why: Urgency wording must match the real end date of the offer.
+    needs: an event fact with the offer dates
+  - phrase: lowest price
+    why: A comparative price claim needs a current comparison you can show.
+    claim_class: comparative
+  - phrase: free returns
+    why: Returns terms often differ by channel (own site vs marketplace).
+    needs: a policy fact scoped to the channel
+  - phrase: last chance
+    why: Scarcity claims must be true at the time of posting.
+    needs: an availability or event fact
+  - phrase: handmade
+    why: Describes how the product is made; needs a fact from the maker.
+    claim_class: origin
+required_disclosures:
+  - when: a sale or discount is mentioned
+    text: Offer ends on the stated date; while stocks last.
+  - when: returns are mentioned
+    text: Returns terms depend on where you bought.

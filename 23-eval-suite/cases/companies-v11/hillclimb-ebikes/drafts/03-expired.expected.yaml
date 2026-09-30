@@ -1,0 +1,10 @@
+# WHY: the demo day is valid today but is on 2026-10-03, before publish 2026-10-08; the £200 summer sale ended 2026-08-31.
+blocked: true
+findings:
+- {contains: free test-ride demo day on Saturday 3 October, label: conflict_or_expired, fact_key: demo-day}
+- {contains: Demo day this Saturday, label: conflict_or_expired, fact_key: demo-day}
+- {contains: 'Free test rides on the Trail E1, 3 October', label: conflict_or_expired, fact_key: demo-day}
+- {contains: £200 off the Trail E1, label: conflict_or_expired, fact_key: summer-sale}
+must_not_flag:
+- The Trail E1 is £1,899
+- Every new bike comes with a free 6-week safety check

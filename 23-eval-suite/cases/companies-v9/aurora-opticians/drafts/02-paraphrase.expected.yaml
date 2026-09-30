@@ -1,0 +1,15 @@
+# WHY: negative control. Same facts reworded with values typed out; the varifocal disclosure is given in everyday wording ("frames extra", "frames charged separately"); short product labels and questions carry no new claim.
+blocked: false
+findings: []
+must_not_flag:
+  - "Is your eye test overdue?"
+  - "Private eye exams at our Harrogate practice are just £25."
+  - "Add a 3D OCT scan of your retina and it's £45 all in."
+  - "Clearview varifocal lenses: £149 a pair (frames extra)."
+  - "New specs come with free tweaks and adjustments, replacement nose pads and screws, and a sturdy case."
+  - "Top tip: book a morning slot if you want a quieter waiting room."
+  - "is on the GOC register under number 01-34817"
+  - "She also holds the Professional Certificate in Glaucoma."
+  - "Private patients pay £25 for a standard eye exam, or £45 when an OCT 3D scan is included."
+  - "Clearview varifocals cost £149 for the pair of lenses, with frames charged separately."
+  - "£149 a pair, frames extra."

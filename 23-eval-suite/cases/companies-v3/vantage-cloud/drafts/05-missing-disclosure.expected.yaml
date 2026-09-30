@@ -1,0 +1,10 @@
+# WHY: the price needs "excluding VAT, minimum 10 users" and the ISO claim needs "covers our service desk and hosting operations"; neither appears in the draft.
+blocked: true
+findings:
+  - {contains: "Managed IT for £29 per user per month", label: missing_disclosure, fact_key: essentials-price}
+  - {contains: "Vantage Cloud is ISO 27001:2022 certified (certificate IS 781204)", label: missing_disclosure, fact_key: iso-27001}
+  - {contains: "Subject: Managed IT at £29 per user", label: missing_disclosure, fact_key: essentials-price}
+  - {contains: "Essentials costs £29 per user per month", label: missing_disclosure, fact_key: essentials-price}
+  - {contains: "We are ISO 27001:2022 certified, so your data is in safe hands", label: missing_disclosure, fact_key: iso-27001}
+must_not_flag:
+  - "That's Vantage Essentials, with a 4-hour response to priority 1 incidents"

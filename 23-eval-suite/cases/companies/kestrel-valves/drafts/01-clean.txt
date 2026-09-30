@@ -1,0 +1,27 @@
+Here are the two pieces for the manual KV-50, using the markers you asked for.
+
+=== 1 LINKEDIN ===
+Meet the manual KV-50 ball valve from Kestrel Valves.
+
+Rated [[kv50-pressure-rating]] and made in sizes [[kv50-size-range]], it is built for UK plant rooms and process lines.
+Every KV-50 comes with a 3-year warranty when installed by a qualified engineer.
+We are an ISO 9001:2015 certified manufacturer, so every valve is built to a documented quality system.
+The standard lead time is [[lead-time-standard]].
+
+#Valves #Maintenance #Engineering
+
+=== 2 EMAIL ===
+Subject: The manual KV-50 is ready for your next shutdown
+
+Hi there,
+
+If you are planning October maintenance, the manual KV-50 is worth a look.
+It is rated [[kv50-pressure-rating]] and comes in sizes [[kv50-size-range]].
+Every KV-50 comes with a 3-year warranty when installed by a qualified engineer.
+Orders placed now have a standard lead time of [[lead-time-standard]].
+
+Reply to this email and our sales team will send you a quote.
+
+The Kestrel Valves team
+
+Let me know if you'd like a shorter version of the email or a different call to action.

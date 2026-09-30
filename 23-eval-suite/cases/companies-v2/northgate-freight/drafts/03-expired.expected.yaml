@@ -1,0 +1,10 @@
+# WHY: the 11.5% fuel surcharge is valid today but ends 2026-10-04 (publish 2026-10-08); the free-storage offer ended in December 2025 (the subject line names it by description only).
+blocked: true
+findings:
+  - {contains: "our fuel surcharge is just 11.5% right now", label: conflict_or_expired, fact_key: fuel-surcharge}
+  - {contains: "With the fuel surcharge at 11.5%", label: conflict_or_expired, fact_key: fuel-surcharge}
+  - {contains: "4 weeks' free pallet storage", label: conflict_or_expired, fact_key: storage-offer-2025}
+  - {contains: "Free storage for new accounts this autumn", label: conflict_or_expired, fact_key: storage-offer-2025}
+must_not_flag:
+  - "Next-day pallets across UK mainland for £68 per pallet, excl. VAT and fuel surcharge"
+  - "Book by 16:00 and your pallet arrives the next working day on UK mainland"

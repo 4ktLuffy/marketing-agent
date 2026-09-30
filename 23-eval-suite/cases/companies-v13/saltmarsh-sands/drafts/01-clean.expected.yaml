@@ -1,0 +1,10 @@
+# WHY: touring price with its disclosure, dogs with the per-dog charge, season and pool hours, lodge finance with the full finance disclosure.
+blocked: false
+findings: []
+must_not_flag:
+  - "Touring pitches are"
+  - "Up to 2 dogs per pitch, £3 per dog per night"
+  - "touring open 1 March to 3 January"
+  - "Indoor pool open every day 9am to 7pm"
+  - "Holiday lodges for sale with a 10% deposit and finance available"
+  - "The indoor pool is"

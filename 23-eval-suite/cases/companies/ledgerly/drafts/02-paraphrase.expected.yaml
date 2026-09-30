@@ -1,0 +1,7 @@
+# WHY: negative control — same Starter facts reworded; numbers match facts, VAT disclosure kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "reminders go out to late payers automatically"
+  - "Take 14 days to try it, and you don't need a card to sign up"
+  - "independently reviewed in a SOC 2 Type I audit"

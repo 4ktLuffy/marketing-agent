@@ -1,0 +1,11 @@
+# WHY: taproom-scoped and all-channel facts only; "0.5% ABV" and "brewed with barley" appear with Tailrace and Low Weir; "gluten-reduced" and "low-alcohol" are the allowed phrasings.
+blocked: false
+findings: []
+must_not_flag:
+  - "We're open"
+  - "Millrace Pale is"
+  - "at 0.5% ABV, so you don't miss out"
+  - "Low Weir Lager is gluten-reduced, tested below 20ppm, and brewed with barley."
+  - "The taproom is open Thursday to Saturday 4pm–11pm, Sunday 12–6pm."
+  - "Our tasting flight is £9 for four thirds"
+  - "Tailrace, our low-alcohol IPA, is just 0.5% ABV."

@@ -1,0 +1,10 @@
+# WHY: "leading" and the 4.9/5 rating have no source; "Gold Partner" is a forbidden phrasing (the designation is Solutions Partner for Modern Work); IS 781240 is not the certificate (IS 781204); no fact supports engineer certifications.
+blocked: true
+findings:
+  - {contains: "The UK's leading managed IT provider", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9/5 by our clients on Clutch", label: no_source, fact_key: null}
+  - {contains: "Vantage Cloud is a Microsoft Gold Partner", label: forbidden_phrase, fact_key: microsoft-partner}
+  - {contains: "certificate IS 781240", label: conflict_or_expired, fact_key: iso-27001}
+  - {contains: "Every engineer on our team is a Microsoft Certified Solutions Expert", label: no_source, fact_key: null}
+must_not_flag:
+  - "Essentials costs £29 per user per month, excluding VAT, minimum 10 users"

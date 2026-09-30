@@ -1,0 +1,11 @@
+# WHY: negative control. Same local/home facts reworded: the survey disclosure as "we'll pin down the exact price once we've surveyed your home"/"final price after a free survey", the booking condition as "Once you've booked"/"Book with us and", "thirty" in words; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Two-bedroom local moves begin at £495"
+  - "Once you've booked with us, thirty boxes are yours free of charge"
+  - "Whatever we carry is covered in transit for up to £50,000"
+  - "Local 2-bed moves: from £495, final price after a free survey at your home"
+  - "Book with us and get 30 boxes on the house"
+  - "We're members of the Removals Trade Standard"
+  - "every move includes up to £50,000 of goods-in-transit cover"

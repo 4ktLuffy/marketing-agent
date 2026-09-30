@@ -1,0 +1,7 @@
+# WHY: negative control — same in-scope facts reworded; delivery price and allergens exact; both disclosures kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "Order through Deliveroo any day between 8am and 3pm"
+  - "Get the brunch box on Deliveroo for £14.90"
+  - "our new pumpkin & sage risotto contains milk, celery and sulphites"

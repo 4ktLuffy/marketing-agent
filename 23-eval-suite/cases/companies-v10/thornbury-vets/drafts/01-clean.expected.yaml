@@ -1,0 +1,12 @@
+# WHY: Essential-tier dog facts only, "12-month minimum term" beside every price, out-of-hours care named as the partner clinic (Vetline Emergency, Carrow Road), RCVS wording as accredited.
+blocked: false
+findings: []
+must_not_flag:
+  - "One simple plan for your dog's routine care"
+  - "Our Essential Pet Health Plan for dogs is"
+  - "on a 12-month minimum term"
+  - "It includes"
+  - "Thornbury Vets is"
+  - "If your dog is poorly when we're closed"
+  - "A standard consultation during our opening hours costs"
+  - "Meet the Essential plan"

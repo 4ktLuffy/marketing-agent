@@ -1,0 +1,8 @@
+# WHY: the inspectorate rating has no source; "drown-proof" is forbidden on the teacher-certificate fact; group classes are for ages 4 to 11, not from age 3.
+blocked: true
+findings:
+  - {contains: "Rated outstanding by the National Swim Inspectorate", label: no_source, fact_key: null}
+  - {contains: "make your child drown-proof", label: forbidden_phrase, fact_key: teacher-qualification}
+  - {contains: "Toddlers from age 3 are welcome in our group classes", label: conflict_or_expired, fact_key: group-ages}
+must_not_flag:
+  - "Every teacher holds the AquaTeach Level 2 swimming teacher certificate"

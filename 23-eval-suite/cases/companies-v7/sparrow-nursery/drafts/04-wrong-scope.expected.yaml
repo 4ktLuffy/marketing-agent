@@ -1,0 +1,10 @@
+# WHY: Outstanding is Elm Road's Ofsted rating (Canal Street is Good) and 7:30am to 6:30pm are Elm Road's hours; task sites=[canal-street].
+blocked: true
+findings:
+  - {contains: "Sparrow Nursery is rated Outstanding by Ofsted", label: wrong_scope, fact_key: ofsted-elm}
+  - {contains: "Doors open from 7:30am", label: wrong_scope, fact_key: elm-road-hours}
+  - {contains: "An Outstanding nursery for your 2-year-old", label: wrong_scope, fact_key: ofsted-elm}
+  - {contains: "Our nursery is open 7:30am to 6:30pm", label: wrong_scope, fact_key: elm-road-hours}
+  - {contains: "Canal Street nursery for 2-year-olds, rated Outstanding by Ofsted", label: wrong_scope, fact_key: ofsted-elm}
+must_not_flag:
+  - "Fees include freshly cooked meals, nappies and wipes"

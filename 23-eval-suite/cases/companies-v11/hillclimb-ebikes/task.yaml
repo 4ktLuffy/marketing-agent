@@ -1,0 +1,12 @@
+# FICTIONAL. Scope variants=[trail-e1] makes the City C2 price (£1,499) a scope trap;
+# publish_on 2026-10-08 is after demo-day (2026-10-03), valid today (2026-09-29).
+# 'waterproof' is forbidden for the true IPX4 fact.
+goal: Sell more Trail E1 e-mountain bikes before winter.
+pieces:
+- {key: p1, channel: tiktok, kind: video_script, max_chars: null}
+- {key: p2, channel: youtube, kind: video_description, max_chars: 5000}
+- {key: p3, channel: threads, kind: post, max_chars: 500}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [trail-e1]}
+publish_on: '2026-10-08'
+audience: Riders aged 35 to 65 who want help on the hills
+notes: Mention finance and the aftercare.

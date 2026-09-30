@@ -1,0 +1,295 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Hartwell & Daughters Removals, type: removals company (home and business moves), today: '2026-09-29'}
+facts:
+- key: local-two-bed-price
+  subject: {kind: package, ref: Local 2-bed move}
+  fact_type: price
+  attribute: from_price
+  value: 495
+  unit: null
+  currency: GBP
+  value_text: from £495
+  basis: flat
+  conditions:
+  - {key: bedrooms, op: '=', value: 2}
+  - {key: distance_miles, op: <=, value: 25}
+  scope: {sites: [], regions: [local], channels: [], segments: [home], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://hartwell.example/prices'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - price confirmed after a free home survey
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A local move of a 2-bedroom home (within 25 miles) starts from £495; the price is confirmed after a free home survey.
+- key: national-mileage
+  subject: {kind: service, ref: Long-distance moves}
+  fact_type: price
+  attribute: rate
+  value: 2.1
+  unit: mile
+  currency: GBP
+  value_text: £2.10 per mile
+  basis: per_unit
+  conditions:
+  - {key: distance_miles, op: '>', value: 25}
+  scope: {sites: [], regions: [national], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://hartwell.example/prices'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Moves over 25 miles are charged at £2.10 per mile on top of the base price (national service only).
+- key: free-boxes
+  subject: {kind: offer, ref: Free boxes}
+  fact_type: inclusion
+  attribute: boxes
+  value: 30
+  unit: box
+  currency: null
+  value_text: 30 free boxes
+  basis: null
+  conditions:
+  - {key: booking, op: '=', value: confirmed}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: 'Customer terms 2026, clause 4'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - with a confirmed booking
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Customers with a confirmed booking get 30 free boxes delivered before moving day.
+- key: transit-cover
+  subject: {kind: policy, ref: Goods-in-transit insurance}
+  fact_type: policy
+  attribute: cover_limit
+  value: 50000
+  unit: null
+  currency: GBP
+  value_text: goods-in-transit cover up to £50,000
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: certificate, ref: Insurance schedule GIT-2026-118 (fictional)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - fully insured for everything
+  - unlimited cover
+  owner: Operations director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every move includes goods-in-transit cover up to £50,000. Exclusions apply (e.g. cash, jewellery, items packed by the customer). Never say 'fully insured for everything' or 'unlimited cover'.
+- key: rts-member
+  subject: {kind: business, ref: Hartwell & Daughters}
+  fact_type: certification
+  attribute: trade_membership
+  value: null
+  unit: null
+  currency: null
+  value_text: Removals Trade Standard member
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: certificate, ref: RTS membership certificate 2026 (fictional scheme)}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: RTS certificate 2026-0457
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing:
+  - Removals Trade Standard member
+  forbidden_phrasing:
+  - government approved
+  owner: Director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Hartwell & Daughters is a member of the Removals Trade Standard scheme for 2026. It is a trade scheme, not government approval.
+- key: midweek-discount
+  subject: {kind: offer, ref: Midweek moves}
+  fact_type: price
+  attribute: discount
+  value: 25
+  unit: percent
+  currency: null
+  value_text: 25% off Tuesday to Thursday moves
+  basis: null
+  conditions:
+  - {key: days, op: in, value: [Tue, Wed, Thu]}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-14'
+  valid_to: '2026-10-07'
+  review_by: null
+  source: {kind: doc, ref: September quiet-weeks brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Moves on a Tuesday, Wednesday or Thursday booked by 7 October 2026 get 25% off.
+- key: student-van-offer
+  subject: {kind: offer, ref: Student man-and-van}
+  fact_type: price
+  attribute: offer_price
+  value: 99
+  unit: null
+  currency: GBP
+  value_text: £99 student man-and-van move
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-08-01'
+  valid_to: '2026-09-20'
+  review_by: null
+  source: {kind: doc, ref: Student move flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The £99 student man-and-van move ran from August to 20 September 2026 and has ended.
+- key: office-weekend-moves
+  subject: {kind: service, ref: Office moves}
+  fact_type: policy
+  attribute: weekend_surcharge
+  value: null
+  unit: null
+  currency: null
+  value_text: weekend office moves at no extra charge
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Commercial moves brochure 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Business customers can move their office at weekends at no extra charge. Home moves at weekends carry a surcharge.
+- key: crew-day-rate
+  subject: {kind: service, ref: Crew cost}
+  fact_type: price
+  attribute: cost_rate
+  value: 640
+  unit: day
+  currency: GBP
+  value_text: £640 per crew day
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Cost model 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance manager
+  risk: medium
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: A three-person crew with a Luton van costs the business £640 per day. Not for publication.
+- key: brightmoor-relocation-rate
+  subject: {kind: package, ref: Local 2-bed move (Brightmoor Relocation)}
+  fact_type: price
+  attribute: contract_price
+  value: 410
+  unit: null
+  currency: GBP
+  value_text: £410 per local move
+  basis: flat
+  conditions:
+  - {key: customer, op: '=', value: Brightmoor Relocation}
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Brightmoor framework agreement FA-2026-03}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Brightmoor Relocation pays £410 per local 2-bed move for its corporate relocations.

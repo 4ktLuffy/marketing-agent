@@ -1,0 +1,11 @@
+# WHY: only manual-variant facts, all valid on 2026-10-12; "paid in advance" and "July 2025 to June 2026" are present; ADIs named as instructors, not as an approved school.
+blocked: false
+findings: []
+must_not_flag:
+  - "POV: you finally booked your first driving lesson"
+  - "Manual lessons with Pellow are"
+  - "paid in advance"
+  - "of our learners who took their practical test from July 2025 to June 2026 passed first time"
+  - "Pass Plus is six hours of post-test training for £185"
+  - "All Pellow instructors are DVSA-approved driving instructors (ADIs)"
+  - "and you can book one or two hours at a time"

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Starter kits{% endblock %}
+{% block main %}
+<p><a href="/facts">← Facts</a></p>
+<h1>Starter kits</h1>
+<p class="small muted">Pick your kind of business to see the rules that usually matter: words to avoid and what must always be said. Applying a kit adds them as drafts; you confirm or dismiss each one.</p>
+{% if not_installed %}<p class="muted">The brand service (05) isn't installed.</p>{% else %}
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+{% if not owner_ready %}<p class="alert warn small">Applying a kit is switched off: the control room has no owner key (FACT_OWNER_KEY).</p>{% endif %}
+<nav class="tabs" aria-label="Business type">
+  {% for k in kits %}<a href="/facts/kits?kit={{ k.id }}" {% if kit and kit.id == k.id %}aria-current="page"{% endif %}>{{ k.label }}</a>{% endfor %}
+</nav>
+{% if kit %}
+<section class="panel">
+  <h2>{{ kit.label }}</h2>
+  {% if kit.description %}<p class="small">{{ kit.description }}</p>{% endif %}
+  <h3>Avoid these words ({{ kit.forbidden_phrasing|length }})</h3>
+  <ul class="plain small">{% for p in kit.forbidden_phrasing %}<li><b>“{{ p.phrase }}”</b>: {{ p.why }}{% if p.needs %} <span class="muted">Fine with: {{ p.needs }}.</span>{% endif %}</li>{% endfor %}</ul>
+  <h3>Always say ({{ kit.required_disclosures|length }})</h3>
+  <ul class="plain small">{% for d in kit.required_disclosures %}<li>{{ d.when }}: <b>“{{ d.text }}”</b></li>{% endfor %}</ul>
+  <h3>Facts worth adding</h3>
+  <ul class="plain small">{% for t in kit.fact_types %}<li>{{ t.fact_type|replace('_', ' ') }} of a {{ t.subject_kind|replace('_', ' ') }} ({{ t.attributes|join(', ') }}). Example: {{ t.example }}</li>{% endfor %}</ul>
+  <form method="post" action="/facts/kits/{{ kit.id }}/apply">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn primary" type="submit" {% if not owner_ready %}disabled{% endif %}>Add these rules as drafts</button>
+  </form>
+</section>
+{% elif kits %}<p class="muted">Pick a business type above.</p>{% endif %}
+
+<section class="panel" id="rules">
+  <h2>Rules from kits</h2>
+  {% if not rules %}<p class="muted small">None yet.</p>{% endif %}
+  <ul class="fact-list">
+  {% for r in rules %}
+    <li class="fact{% if r.status == 'draft' %} needs{% endif %}">
+      <p>{% if r.kind == 'forbidden_phrase' %}Avoid <b>“{{ r.phrase }}”</b>: {{ r.why }}{% else %}Always say <b>“{{ r.phrase }}”</b> when {{ r.why }}{% endif %}</p>
+      <div class="chips"><span class="chip st-{{ 'ok' if r.status == 'active' else ('warn' if r.status == 'draft' else 'muted') }}">{{ 'draft: needs your confirmation' if r.status == 'draft' else r.status }}</span><span class="chip">{{ r.kit }}</span></div>
+      {% if r.status == 'draft' %}
+      <div class="row-actions">
+        <form method="post" action="/facts/rules/{{ r.id }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn approve small" type="submit" {% if not owner_ready %}disabled{% endif %}>Confirm</button></form>
+        <form method="post" action="/facts/rules/{{ r.id }}/dismiss"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost small" type="submit" {% if not owner_ready %}disabled{% endif %}>Dismiss</button></form>
+      </div>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

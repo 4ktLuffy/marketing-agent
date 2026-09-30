@@ -1,6 +1,6 @@
 # 85 · Monthly client report
 
-Deploy **85 of 87** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **85 of 89** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 On the 1st of every month it builds a report on the month before, for a client (agencies) or for whoever the owner reports to. It compares the last calendar month with the month before, from every source that is installed: analytics (20 `/kpis`, all sources, plus the Umami rows of 55 and the Search Console rows of 67 when `UMAMI_SYNC_URL` / `GSC_URL` are set), tracked posts and their clicks (45 `/insights/posts`), campaigns and experiments (45), and paid ads (84 `/summary`, when `ADS_URL` is set). A source whose URL is empty (not installed on this profile) is skipped; one that fails is left out. Both are named in the reviewer notes.
 

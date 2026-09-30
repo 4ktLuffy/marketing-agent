@@ -1,0 +1,9 @@
+# WHY: both weekly fees require "subject to a care needs assessment", which is absent from the whole draft; the email piece has no heading.
+blocked: true
+findings:
+  - {contains: "Residential care at Alder Court is £1,250 per week", label: missing_disclosure, fact_key: fee-residential-alder}
+  - {contains: "Nursing care at Alder Court costs £1,480 per week", label: missing_disclosure, fact_key: fee-nursing-alder}
+  - {contains: "and residential care is £1,250 per week", label: missing_disclosure, fact_key: fee-residential-alder}
+must_not_flag:
+  - "Visiting hours are 9am to 8pm, every day"
+  - "Both include a weekly minibus outing"

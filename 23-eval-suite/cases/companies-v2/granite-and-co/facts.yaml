@@ -1,0 +1,290 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Task scope segments=[trade], variants=[firecore-slab]: thermaboard-bba (thermaboard) and firecore-retail-price
+# (retail) are scope traps; trade-discount is valid today (2026-09-29) but ends 2026-10-03, before publish_on 2026-10-06.
+company: {name: Granite & Co., type: manufacturing, today: '2026-09-29'}
+facts:
+- key: firecore-fire-rating
+  subject: {kind: product, ref: FireCore mineral wool slab}
+  fact_type: certification
+  attribute: reaction_to_fire
+  value: A2-s1,d0
+  unit: null
+  currency: null
+  value_text: Euroclass A2-s1,d0
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-02-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: Classification report GC-FR-2291 (EN 13501-1)}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: GC-FR-2291
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Technical manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: FireCore mineral wool slab is classified Euroclass A2-s1,d0 to EN 13501-1 (not A1).
+- key: firecore-ukca
+  subject: {kind: product, ref: FireCore mineral wool slab}
+  fact_type: certification
+  attribute: product_marking
+  value: EN 13162
+  unit: null
+  currency: null
+  value_text: UKCA and CE marked to EN 13162
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-02-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: Declaration of performance GC-DoP-045}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: GC-DoP-045
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Technical manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: FireCore slab (G45 grade) is UKCA and CE marked to EN 13162. It has no BBA certificate.
+- key: thermaboard-bba
+  subject: {kind: product, ref: ThermaBoard PIR insulation board}
+  fact_type: certification
+  attribute: bba_certificate
+  value: 25/6120
+  unit: null
+  currency: null
+  value_text: BBA Certificate 25/6120
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [thermaboard]}
+  valid_from: '2025-06-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: BBA Certificate 25/6120}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: 25/6120
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Technical manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: ThermaBoard PIR insulation board holds BBA Certificate 25/6120.
+- key: firecore-trade-price
+  subject: {kind: product, ref: FireCore mineral wool slab}
+  fact_type: price
+  attribute: trade_price
+  value: 18.4
+  unit: slab
+  currency: GBP
+  value_text: £18.40 per slab
+  basis: per_unit
+  conditions:
+  - {key: account, op: '=', value: trade account}
+  scope: {sites: [], regions: [], channels: [], segments: [trade], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-07-01'
+  valid_to: '2027-06-30'
+  review_by: null
+  source: {kind: doc, ref: Granite & Co. price list 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - excl. VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Trade account holders pay £18.40 per FireCore slab, excl. VAT.
+- key: firecore-retail-price
+  subject: {kind: product, ref: FireCore mineral wool slab}
+  fact_type: price
+  attribute: retail_price
+  value: 24.99
+  unit: slab
+  currency: GBP
+  value_text: £24.99 per slab
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [retail], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-07-01'
+  valid_to: '2027-06-30'
+  review_by: null
+  source: {kind: doc, ref: Granite & Co. price list 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - incl. VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Retail (walk-in and DIY) customers pay £24.99 per FireCore slab, incl. VAT.
+- key: free-delivery
+  subject: {kind: policy, ref: Delivery}
+  fact_type: policy
+  attribute: free_delivery
+  value: 500
+  unit: null
+  currency: GBP
+  value_text: free delivery on orders over £500
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://graniteandco.example/delivery'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - within 50 miles of our Stoke depot
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Logistics manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Delivery is free on orders over £500 within 50 miles of our Stoke depot; further away is quoted.
+- key: trade-discount
+  subject: {kind: offer, ref: FireCore trade discount}
+  fact_type: price
+  attribute: discount
+  value: 10
+  unit: percent
+  currency: null
+  value_text: 10% off FireCore
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [trade], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: doc, ref: September trade promotion}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Trade accounts get 10% off FireCore slab until 3 October 2026.
+- key: firecore-g40
+  subject: {kind: variant, ref: FireCore G40 grade}
+  fact_type: availability
+  attribute: grade
+  value: null
+  unit: null
+  currency: null
+  value_text: FireCore G40 grade
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2022-01-01'
+  valid_to: '2026-06-30'
+  review_by: null
+  source: {kind: doc, ref: Granite & Co. price list 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product manager
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The FireCore G40 grade was discontinued on 30 June 2026 and replaced by G45. None left in stock.
+- key: firecore-unit-cost
+  subject: {kind: product, ref: FireCore mineral wool slab}
+  fact_type: price
+  attribute: unit_cost
+  value: 9.1
+  unit: slab
+  currency: GBP
+  value_text: £9.10 per slab
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Plant cost model Q3 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: FireCore costs us £9.10 per slab to make at current energy prices.
+- key: hollins-rate
+  subject: {kind: product, ref: Contract price (Hollins Construction)}
+  fact_type: price
+  attribute: contract_price
+  value: 15.75
+  unit: slab
+  currency: GBP
+  value_text: £15.75 per slab
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Hollins Construction}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [firecore-slab]}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Hollins framework agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hollins Construction pays £15.75 per FireCore slab under its framework agreement.

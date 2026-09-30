@@ -1,0 +1,12 @@
+# WHY: "number one RIB dealer", the 5-star rating and the "Master Certified technicians" credential have no source; Design Category B changes the certified Category C; TW-UK-0139 is a look-alike of dealer code TW-UK-0193.
+blocked: true
+findings:
+  - {contains: "the South Coast's number one RIB dealer", label: no_source, fact_key: null}
+  - {contains: "Our customers rate us 5 stars on Google", label: no_source, fact_key: null}
+  - {contains: "Subject: Serviced by Tidewater Master Certified technicians", label: no_source, fact_key: null}
+  - {contains: "is serviced by Tidewater Master Certified technicians", label: no_source, fact_key: null}
+  - {contains: "RCD Design Category B", label: conflict_or_expired, fact_key: sr65-design-category}
+  - {contains: "dealer code TW-UK-0139", label: conflict_or_expired, fact_key: tidewater-dealer}
+must_not_flag:
+  - "The ex-demo Solent Rider 6.5 in Poole is £44,950 including VAT"
+  - "Ex-demo Solent Rider 6.5 now in at Poole with 38 engine hours"

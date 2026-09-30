@@ -1,0 +1,292 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Harbourside Physio & Dental, type: clinic, today: '2026-09-29'}
+facts:
+- key: physio-assessment-quayside
+  subject: {kind: service, ref: Initial physio assessment}
+  fact_type: price
+  attribute: price
+  value: 55
+  unit: null
+  currency: GBP
+  value_text: £55
+  basis: flat
+  conditions: []
+  scope: {sites: [Quayside], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list Oct 2026 (both branches)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: At Quayside an initial physio assessment (45 minutes) costs £55.
+- key: physio-assessment-millbrook
+  subject: {kind: service, ref: Initial physio assessment}
+  fact_type: price
+  attribute: price
+  value: 49
+  unit: null
+  currency: GBP
+  value_text: £49
+  basis: flat
+  conditions: []
+  scope: {sites: [Millbrook], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list Oct 2026 (both branches)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: At Millbrook an initial physio assessment (45 minutes) costs £49.
+- key: dental-checkup-new-patient
+  subject: {kind: service, ref: New patient dental check-up}
+  fact_type: price
+  attribute: price
+  value: 39
+  unit: null
+  currency: GBP
+  value_text: £39
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list Oct 2026 (both branches)}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - X-rays charged separately
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A new patient dental check-up costs £39 at both branches; X-rays are charged separately.
+- key: dr-rahman-specialist
+  subject: {kind: person, ref: Dr Aisha Rahman}
+  fact_type: credential
+  attribute: gdc_specialist_list
+  value: null
+  unit: null
+  currency: null
+  value_text: specialist orthodontist
+  basis: null
+  conditions: []
+  scope: {sites: [Quayside], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2019-03-01'
+  valid_to: null
+  review_by: '2027-03-01'
+  source: {kind: url, ref: 'GDC register entry (specialist list: orthodontics)'}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: 'GDC specialist list: orthodontics'
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing:
+  - Dr Aisha Rahman, specialist orthodontist
+  forbidden_phrasing:
+  - our specialists
+  - specialist team
+  - specialist dentists
+  owner: Clinical lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Dr Aisha Rahman (Quayside) is on the GDC specialist list for orthodontics. No other dentist may be called a specialist.
+- key: hcpc-physios
+  subject: {kind: business, ref: Harbourside physio team}
+  fact_type: credential
+  attribute: registration
+  value: null
+  unit: null
+  currency: null
+  value_text: HCPC registered
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: '2027-01-01'
+  source: {kind: url, ref: HCPC register checks Jan 2026}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: HCPC register checks Jan 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Clinical lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: All Harbourside physiotherapists are HCPC registered.
+- key: posture-screen-offer
+  subject: {kind: offer, ref: September posture screen}
+  fact_type: inclusion
+  attribute: free_extra
+  value: null
+  unit: null
+  currency: null
+  value_text: a free posture screen with any physio booking
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-09-30'
+  review_by: null
+  source: {kind: doc, ref: September offers sheet}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Throughout September 2026, any physio booking includes a free posture screen.
+- key: whitening-offer
+  subject: {kind: offer, ref: Summer whitening offer}
+  fact_type: price
+  attribute: discount
+  value: 100
+  unit: null
+  currency: GBP
+  value_text: £100 off teeth whitening
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer offers sheet}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Summer 2026 offer: £100 off teeth whitening. Ended 31 August 2026.'
+- key: whitening-gel
+  subject: {kind: service, ref: Teeth whitening}
+  fact_type: claim
+  attribute: method
+  value: null
+  unit: null
+  currency: null
+  value_text: dentist-prescribed home whitening
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Clinical protocol DW-3}
+  claim_class: regulated_health
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - FDA approved
+  - pain-free
+  - clinically proven
+  owner: Clinical lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Whitening is dentist-prescribed home whitening with custom trays, after a check-up. It must not be called FDA approved or pain-free.
+- key: invisalign-floor
+  subject: {kind: service, ref: Invisalign}
+  fact_type: price
+  attribute: floor_price
+  value: 2950
+  unit: null
+  currency: GBP
+  value_text: £2,950
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Partners' pricing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The lowest Invisalign price we will agree is £2,950.
+- key: harbour-port-contract
+  subject: {kind: service, ref: Corporate physio sessions}
+  fact_type: price
+  attribute: contract_price
+  value: 38
+  unit: null
+  currency: GBP
+  value_text: £38 per session
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Harbour Port Authority}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: HPA occupational health contract}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Harbour Port Authority staff get physio at £38 per session under our contract.

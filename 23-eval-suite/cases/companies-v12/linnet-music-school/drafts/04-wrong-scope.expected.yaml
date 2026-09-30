@@ -1,0 +1,8 @@
+# WHY: the £150 parent & child class is variants=[parent-child] and the £32 lesson is variants=[one-to-one]; the task is variants=[group].
+blocked: true
+findings:
+  - {contains: "£150 a term for the pair of you", label: wrong_scope, fact_key: parent-child-class}
+  - {contains: "Private lessons are just £32 for half an hour", label: wrong_scope, fact_key: one-to-one-price}
+must_not_flag:
+  - "Group lessons for ages 7 to 12 are £120 per term, 10 weekly lessons."
+  - "Our studios at Weaver's Yard are open weekdays 4pm–8pm and Saturdays 9am–4pm."

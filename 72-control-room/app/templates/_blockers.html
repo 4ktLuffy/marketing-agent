@@ -1,0 +1,7 @@
+{# Compact blockers line for the queue header: blockers = tasks.compact_blockers(...) #}
+{% if blockers %}
+<p class="blockers-line small" aria-label="Blockers">
+  {% for b in blockers %}{% if b.link %}<a href="{{ b.link }}">{{ b.text }}</a>{% else %}{{ b.text }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+  · <a href="/blockers">all blockers</a>
+</p>
+{% endif %}

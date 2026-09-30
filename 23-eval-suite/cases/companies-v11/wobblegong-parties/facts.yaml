@@ -1,0 +1,292 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Wobblegong Parties, type: children's party entertainer (sole trader), today: '2026-09-29'}
+facts:
+- key: magic-show-price
+  subject: {kind: package, ref: Magic Show Party}
+  fact_type: price
+  attribute: price
+  value: 180
+  unit: party
+  currency: GBP
+  value_text: £180 per party
+  basis: flat
+  conditions:
+  - {key: children, op: <=, value: 30}
+  - {key: duration_minutes, op: '=', value: 60}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [magic-show]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://wobblegong.example/prices'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [up to 30 children]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The one-hour Magic Show Party costs £180 per party (a flat fee, not per child) for up to 30 children.
+- key: disco-party-price
+  subject: {kind: package, ref: Disco Party}
+  fact_type: price
+  attribute: price
+  value: 260
+  unit: party
+  currency: GBP
+  value_text: £260 per party
+  basis: flat
+  conditions:
+  - {key: children, op: <=, value: 30}
+  - {key: duration_minutes, op: '=', value: 120}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [disco-party]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://wobblegong.example/prices'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [up to 30 children]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The two-hour Disco Party (magic, disco and party games) costs £260 per party for up to 30 children.
+- key: free-travel
+  subject: {kind: policy, ref: Travel}
+  fact_type: policy
+  attribute: travel_charge
+  value: 10
+  unit: mile
+  currency: null
+  value_text: free travel within 10 miles of Ashcombe
+  basis: null
+  conditions:
+  - {key: distance_miles, op: <=, value: 10}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-06-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://wobblegong.example/faq'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Travel is free within 10 miles of Ashcombe; further away is quoted per booking.
+- key: dbs-check
+  subject: {kind: person, ref: Jess Pryor (Wobbly Wanda)}
+  fact_type: credential
+  attribute: dbs_check
+  value: null
+  unit: null
+  currency: null
+  value_text: enhanced DBS check
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-10'
+  valid_to: null
+  review_by: '2027-02-10'
+  source: {kind: certificate, ref: Enhanced DBS certificate issued 2026-02-10}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: Enhanced DBS certificate 2026-02-10
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: [enhanced DBS check, enhanced DBS checked]
+  forbidden_phrasing: [police approved, child-safety certified]
+  owner: Jess Pryor (owner)
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Jess Pryor, who performs as Wobbly Wanda, holds an enhanced DBS certificate issued February 2026. A DBS
+    check is not an approval by the police, so we must not say 'police approved' or 'child-safety certified'.
+- key: public-liability
+  subject: {kind: business, ref: Wobblegong Parties}
+  fact_type: policy
+  attribute: insurance
+  value: 5000000
+  unit: null
+  currency: GBP
+  value_text: £5 million public liability insurance
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2027-02-28'
+  review_by: null
+  source: {kind: certificate, ref: Insurance schedule 2026-27}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Insurance schedule 2026-27
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Wobblegong Parties carries £5 million public liability insurance, renewed each March.
+- key: halloween-balloons
+  subject: {kind: offer, ref: Halloween balloon add-on}
+  fact_type: inclusion
+  attribute: free_add_on
+  value: null
+  unit: null
+  currency: null
+  value_text: free balloon-modelling add-on for Halloween parties
+  basis: null
+  conditions:
+  - {key: party_theme, op: '=', value: Halloween}
+  - {key: booked_by, op: <=, value: '2026-10-05'}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: owner_statement, ref: 'Instagram story plan, September 2026'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Halloween parties booked by 5 October 2026 get the balloon-modelling add-on free.
+- key: summer-garden-special
+  subject: {kind: offer, ref: Summer Garden Party special}
+  fact_type: price
+  attribute: price
+  value: 150
+  unit: party
+  currency: GBP
+  value_text: £150 Summer Garden Party
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: owner_statement, ref: Summer flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The Summer Garden Party special (£150 for an outdoor magic party) ran June to 31 August 2026 and has ended.
+- key: booking-deposit
+  subject: {kind: policy, ref: Booking deposit}
+  fact_type: policy
+  attribute: deposit
+  value: 50
+  unit: null
+  currency: GBP
+  value_text: £50 deposit to secure your date
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-06-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Booking terms v2}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [non-refundable]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A £50 deposit secures the date; the deposit is non-refundable and comes off the final price.
+- key: school-fair-floor
+  subject: {kind: service, ref: School fair appearance}
+  fact_type: price
+  attribute: floor_price
+  value: 120
+  unit: event
+  currency: GBP
+  value_text: £120 minimum for school fairs
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [schools], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Owner pricing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The lowest price Jess accepts for a school fair appearance is £120. Not published.
+- key: parkside-pta-rate
+  subject: {kind: service, ref: Magic Show (Parkside Primary PTA)}
+  fact_type: price
+  attribute: contract_price
+  value: 140
+  unit: show
+  currency: GBP
+  value_text: £140 per show
+  basis: flat
+  conditions:
+  - {key: customer, op: '=', value: Parkside Primary PTA}
+  scope: {sites: [], regions: [], channels: [], segments: [schools], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: doc, ref: 'Email agreement with Parkside PTA, 2026-08-28'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Jess Pryor (owner)
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Parkside Primary PTA pays £140 per show under a standing arrangement for its termly events.

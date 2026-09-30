@@ -1,6 +1,6 @@
 # 64 · Content engine (plan a month)
 
-Deploy **64 of 87** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **64 of 89** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Plans a month of content from one pillar (a topic plus, ideally, the long piece it comes from: pasted text or a URL read by 07). It creates the pillar in the content engine (61), extracts 15–30 small self-contained ideas ("atoms": claims, stories, FAQs with their answer, tips, stats, objections, quotes) with the `pillar_atoms` prompt through the gateway (03, with the approved facts), drops in code the FAQ/objection atoms without an answer, and checks every atom with the claim checker (44), one at a time, with the pillar as evidence. Only verified atoms are stored as usable. 61 then plans 4 weeks in code (atoms × hook styles × formats × channels, platform cadences, no repeats) and this workflow creates one `idea` item per slot in the calendar (19) (on a re-plan, the idea items of the planned slots 61 replaced are moved to `rejected` with the note `re-planned`), with its date, channel, hook style and the note `engine pillar #P slot #S atom #A (<kind>)`. The drafter (65) writes those items each morning. It takes a while on a local model: one LLM call for the atoms plus one claim check per atom (tens of minutes for 25 atoms).
 

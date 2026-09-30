@@ -1,0 +1,11 @@
+# WHY: the allergen statement needs "made in a facility that also handles peanuts and sesame" and the shelf life needs "eat within 4 weeks of opening"; neither appears in the draft.
+blocked: true
+findings:
+  - {contains: "Our Oat & Almond Granola contains oats (gluten) and almonds", label: missing_disclosure, fact_key: granola-allergens}
+  - {contains: "Subject: Contains oats and almonds, and a lot of flavour", label: missing_disclosure, fact_key: granola-allergens}
+  - {contains: "our granola contains oats (gluten) and almonds", label: missing_disclosure, fact_key: granola-allergens}
+  - {contains: "Each bag keeps for 9 months unopened", label: missing_disclosure, fact_key: shelf-life}
+  - {contains: "Contains oats (gluten) and almonds", label: missing_disclosure, fact_key: granola-allergens}
+  - {contains: "Shelf life: 9 months unopened", label: missing_disclosure, fact_key: shelf-life}
+must_not_flag:
+  - "Oat & Almond Granola, £4.75 per 500 g bag"

@@ -1,0 +1,8 @@
+# WHY: the Home 6 price requires "subject to a home survey"; it is absent from both pieces, including the subject line.
+blocked: true
+findings:
+  - {contains: "Solar + battery for £9,450 fully installed", label: missing_disclosure, fact_key: home-6-price}
+  - {contains: "Subject: Solar and a battery for £9,450", label: missing_disclosure, fact_key: home-6-price}
+  - {contains: "The Home 6 package costs £9,450 fully installed", label: missing_disclosure, fact_key: home-6-price}
+must_not_flag:
+  - "We install across Leeds, Bradford, Harrogate and York"

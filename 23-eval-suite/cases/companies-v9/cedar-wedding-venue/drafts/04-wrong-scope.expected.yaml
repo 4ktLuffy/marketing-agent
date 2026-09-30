@@ -1,0 +1,11 @@
+# WHY: the Tithe Barn's 180 seats are real but only for the summer packages (variants summer-saturday/summer-weekday); the task is variants=[winter-weekday], so every winter Tithe Barn line is wrong_scope.
+blocked: true
+findings:
+  - {contains: "Host up to 180 guests in our Tithe Barn for your winter wedding.", label: wrong_scope, fact_key: tithe-barn-capacity}
+  - {contains: "Winter wedding in the Tithe Barn at Cedar Hall", label: wrong_scope, fact_key: tithe-barn-capacity}
+  - {contains: "Subject: Your winter wedding in the Tithe Barn", label: wrong_scope, fact_key: tithe-barn-capacity}
+  - {contains: "Our Tithe Barn seats 180 for a winter wedding breakfast", label: wrong_scope, fact_key: tithe-barn-capacity}
+must_not_flag:
+  - "Big family?"
+  - "Our Winter Weekday package is £6,950, based on 60 day guests."
+  - "Extra day guests are £62 per person."

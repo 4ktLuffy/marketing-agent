@@ -1,0 +1,12 @@
+# WHY: only the Magic Show price (with 'up to 30 children'), travel, deposit (with 'non-refundable'), DBS and insurance; all public and in scope.
+blocked: false
+findings: []
+must_not_flag:
+- Magic Show Party is a full hour of tricks and giggles
+- Wobbly Wanda has an enhanced DBS check
+- we carry £5 million public liability insurance
+- It's £180 per party for up to 30 children
+- travel is free within 10 miles of Ashcombe
+- the deposit is non-refundable
+- 'One hour of magic for up to 30 children: £180 per party'
+- Enhanced DBS checked

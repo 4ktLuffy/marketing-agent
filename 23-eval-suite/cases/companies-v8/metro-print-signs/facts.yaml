@@ -1,0 +1,400 @@
+# FICTIONAL sign maker. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company:
+  name: Metro Print & Signs
+  type: sign_maker
+  today: '2026-09-29'
+facts:
+- key: acm-a1-price
+  subject:
+    kind: variant
+    ref: A1 aluminium composite sign (3mm)
+  fact_type: price
+  attribute: list_price
+  value: 64
+  unit: null
+  currency: GBP
+  value_text: £64 per A1 panel
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - acm
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://metroprintsigns.example/prices
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - ex VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: An A1 (594 × 841 mm) 3mm aluminium composite sign costs £64 ex VAT, printed full colour.
+- key: foamex-a1-price
+  subject:
+    kind: variant
+    ref: A1 Foamex board (5mm)
+  fact_type: price
+  attribute: list_price
+  value: 38
+  unit: null
+  currency: GBP
+  value_text: £38 per A1 board
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - foamex
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://metroprintsigns.example/prices
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - ex VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: An A1 (594 × 841 mm) 5mm Foamex board costs £38 ex VAT.
+- key: fire-rating
+  subject:
+    kind: variant
+    ref: FR-core aluminium composite panel
+  fact_type: certification
+  attribute: reaction_to_fire
+  value: null
+  unit: null
+  currency: null
+  value_text: Euroclass B-s1,d0 to EN 13501-1, test report MPS-FR-2291
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - acm
+  valid_from: '2025-11-01'
+  valid_to: null
+  review_by: '2027-11-01'
+  source:
+    kind: certificate
+    ref: Fire classification report MPS-FR-2291
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: MPS-FR-2291
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing:
+  - fire-rated
+  forbidden_phrasing:
+  - fireproof
+  - non-combustible
+  owner: Production manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our FR-core aluminium composite panels are classified Euroclass B-s1,d0 to EN 13501-1 (test report MPS-FR-2291). They are fire-rated, not fireproof or non-combustible.
+- key: turnaround
+  subject:
+    kind: service
+    ref: Sign production
+  fact_type: spec
+  attribute: turnaround
+  value: 3
+  unit: working_day
+  currency: null
+  value_text: 3 working days from artwork approval
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://metroprintsigns.example/faq
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Production manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Signs are ready in 3 working days from artwork approval.
+- key: install-areas
+  subject:
+    kind: service
+    ref: Sign installation
+  fact_type: availability
+  attribute: install_areas
+  value: null
+  unit: null
+  currency: null
+  value_text: installation across Croydon, Sutton, Bromley and Merton
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://metroprintsigns.example/installation
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Installation lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: We install signs across Croydon, Sutton, Bromley and Merton; elsewhere we deliver only.
+- key: trade-discount
+  subject:
+    kind: policy
+    ref: Trade account
+  fact_type: price
+  attribute: trade_discount
+  value: 15
+  unit: percent
+  currency: null
+  value_text: 15% trade discount
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - trade
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Trade terms 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Registered sign makers and design agencies with a trade account get a 15% trade discount.
+- key: proof-and-fixings
+  subject:
+    kind: service
+    ref: Every sign order
+  fact_type: inclusion
+  attribute: included_items
+  value: null
+  unit: null
+  currency: null
+  value_text: a free digital proof and a fixing kit
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://metroprintsigns.example/faq
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every sign includes a free digital proof before printing and a fixing kit.
+- key: aboard-offer
+  subject:
+    kind: offer
+    ref: A-Board Autumn Deal
+  fact_type: price
+  attribute: multibuy
+  value: null
+  unit: null
+  currency: null
+  value_text: buy 2 A-boards, get the 3rd free
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-11'
+  review_by: null
+  source:
+    kind: doc
+    ref: Autumn promotions sheet 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'A-Board Autumn Deal: buy 2 A-boards and get the 3rd free, for orders by 11 October 2026.'
+- key: foamex-cost
+  subject:
+    kind: variant
+    ref: A1 Foamex board (5mm)
+  fact_type: price
+  attribute: material_cost
+  value: 9.4
+  unit: null
+  currency: GBP
+  value_text: £9.40 per A1 sheet
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: owner_statement
+    ref: Supplier invoice summary 2026-07
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our material cost for Foamex is £9.40 per A1 sheet. Internal.
+- key: kingsmere-contract
+  subject:
+    kind: variant
+    ref: A1 aluminium composite panel (Kingsmere Retail Parks)
+  fact_type: price
+  attribute: contract_price
+  value: 29
+  unit: null
+  currency: GBP
+  value_text: £29 per A1 panel
+  basis: per_unit
+  conditions:
+  - key: customer
+    op: '='
+    value: Kingsmere Retail Parks
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - framework
+    plan_tiers: []
+    variants:
+    - acm
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Kingsmere framework KRP-2026-11
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Kingsmere Retail Parks pays £29 per A1 aluminium composite panel under its 2026 framework.

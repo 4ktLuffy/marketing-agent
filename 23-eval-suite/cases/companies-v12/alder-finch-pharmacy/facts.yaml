@@ -1,0 +1,294 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Alder & Finch Pharmacy, type: community pharmacy (two branches), today: '2026-09-29'}
+facts:
+- key: flu-jab-price
+  subject: {kind: service, ref: Private flu vaccination}
+  fact_type: price
+  attribute: price
+  value: 16
+  unit: vaccination
+  currency: GBP
+  value_text: £16
+  basis: per_person
+  conditions:
+  - {key: age, op: '>=', value: 18}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: url, ref: 'https://alderfinch.example/flu'}
+  claim_class: regulated_health
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - adults 18 and over
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - guaranteed protection
+  - no side effects
+  owner: Superintendent pharmacist
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A private flu vaccination costs £16 per person at both branches, for adults 18 and over. Never promise guaranteed protection or no side effects.
+- key: castle-green-walk-in
+  subject: {kind: site, ref: Castle Green}
+  fact_type: hours
+  attribute: walk_in_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: walk-in flu jabs on Saturdays, 9am to 1pm
+  basis: null
+  conditions: []
+  scope: {sites: [Castle Green], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: owner_statement, ref: 'Castle Green branch rota, autumn 2026'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Castle Green branch manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Castle Green branch runs walk-in flu jabs on Saturdays from 9am to 1pm; no appointment needed.
+- key: market-street-late-opening
+  subject: {kind: site, ref: Market Street}
+  fact_type: hours
+  attribute: opening_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: open until 8pm Monday to Friday
+  basis: null
+  conditions: []
+  scope: {sites: [Market Street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://alderfinch.example/branches'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Market Street branch manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Only the Market Street branch stays open until 8pm on weekdays. Castle Green closes at 6pm.
+- key: nhs-flu-eligible
+  subject: {kind: service, ref: NHS flu vaccination}
+  fact_type: policy
+  attribute: eligibility
+  value: null
+  unit: null
+  currency: null
+  value_text: free NHS flu jab if you're eligible
+  basis: null
+  conditions:
+  - {key: nhs_eligible, op: '=', value: true}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: NHS seasonal flu service spec 2026-27 (branch copy)}
+  claim_class: regulated_health
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - if you're eligible
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - free flu jabs for everyone
+  owner: Superintendent pharmacist
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Patients who meet the NHS criteria (for example aged 65 or over, pregnant, or with certain long-term conditions) get a free NHS flu jab at both branches. Never say the jab is free for everyone.
+- key: early-bird-flu
+  subject: {kind: offer, ref: Early-bird flu jab}
+  fact_type: price
+  attribute: offer_price
+  value: 12
+  unit: null
+  currency: GBP
+  value_text: £12 flu jab when you book online
+  basis: per_person
+  conditions:
+  - {key: booking_channel, op: '=', value: online}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Autumn campaign brief 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Superintendent pharmacist
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Until 4 October 2026, a private flu jab booked online costs £12 instead of £16.
+- key: travel-consult-free
+  subject: {kind: offer, ref: Free travel health consultation}
+  fact_type: price
+  attribute: offer_price
+  value: 0
+  unit: null
+  currency: GBP
+  value_text: free travel health consultation
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2026-06-30'
+  review_by: null
+  source: {kind: doc, ref: Spring travel clinic flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Superintendent pharmacist
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: From April to 30 June 2026 the travel health consultation was free. It now costs £15 and the offer has ended.
+- key: prescription-delivery
+  subject: {kind: service, ref: Prescription delivery}
+  fact_type: policy
+  attribute: delivery
+  value: 0
+  unit: null
+  currency: GBP
+  value_text: free prescription delivery
+  basis: null
+  conditions:
+  - {key: distance_miles, op: <=, value: 3}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://alderfinch.example/delivery'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - within 3 miles of the branch
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Both branches deliver prescriptions free of charge to addresses within 3 miles of the branch.
+- key: independent-prescriber
+  subject: {kind: person, ref: Priya Okafor}
+  fact_type: credential
+  attribute: prescriber
+  value: null
+  unit: null
+  currency: null
+  value_text: independent prescriber
+  basis: null
+  conditions: []
+  scope: {sites: [Market Street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: 'Prescriber annotation, professional register (fictional ref IP-40213)'}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: Register annotation IP-40213
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Superintendent pharmacist
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Priya Okafor is an independent prescriber pharmacist and sees patients at the Market Street branch only, on Tuesdays and Thursdays.
+- key: flu-stock-order
+  subject: {kind: site, ref: Castle Green}
+  fact_type: availability
+  attribute: vaccine_stock
+  value: 1200
+  unit: dose
+  currency: null
+  value_text: 1,200 doses
+  basis: null
+  conditions: []
+  scope: {sites: [Castle Green], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-08-15'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Wholesaler order note Aug 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Superintendent pharmacist
+  risk: medium
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Castle Green has ordered 1,200 doses of flu vaccine for the 2026-27 season. Not for publication.
+- key: hollybank-care-contract
+  subject: {kind: service, ref: Care-home flu vaccination (Hollybank House)}
+  fact_type: price
+  attribute: contract_price
+  value: 9.5
+  unit: null
+  currency: GBP
+  value_text: £9.50 per resident
+  basis: per_person
+  conditions:
+  - {key: customer, op: '=', value: Hollybank House}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Hollybank House service agreement SA-2026-07}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hollybank House care home pays £9.50 per resident vaccinated under its 2026-27 contract.

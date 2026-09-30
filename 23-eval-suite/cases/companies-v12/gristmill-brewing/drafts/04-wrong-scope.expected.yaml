@@ -1,0 +1,9 @@
+# WHY: the £36 mixed case with free delivery is a webshop-only fact; the task is channels=[taproom], and "at the bar"/"pick up" sell it in the taproom. The UK-mainland disclosure is present, so the label is wrong_scope.
+blocked: true
+findings:
+  - {contains: "twelve-can mixed case at the bar for £36", label: wrong_scope, fact_key: webshop-mixed-case}
+  - {contains: "mixed case of twelve cans for thirty-six pounds", label: wrong_scope, fact_key: webshop-mixed-case}
+must_not_flag:
+  - "Millrace Pale is £4.80 a pint."
+  - "Tasting flight: £9 for four thirds."
+  - "We're open Thursday to Saturday 4pm–11pm, Sunday 12–6pm."

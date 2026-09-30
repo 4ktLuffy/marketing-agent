@@ -1,0 +1,16 @@
+Here are the three pieces. I've kept the SMS under 160 characters.
+
+**Google Business Profile post**
+
+Self assessment deadline: {{sa-deadline}}. Don't leave it to the last week of January.
+Our Sole Trader MTD package is {{sole-trader-fee}} plus VAT, including quarterly updates to HMRC and your final declaration.
+We're [[icaew-firm]], and a [[tallyroo-partner]].
+
+**Text message**
+
+Summit Accountants: your tax return is due 31 January 2027. Book a free first consultation: reply YES.
+
+**Blog intro**
+
+Making Tax Digital changes how sole traders report their income, and your number one job this autumn is getting your records into shape.
+Start with a free first consultation, with no obligation, and we'll show you what quarterly updates look like in practice.

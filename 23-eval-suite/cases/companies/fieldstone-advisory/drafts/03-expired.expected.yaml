@@ -1,0 +1,9 @@
+# WHY: Google Partner status lapsed 2026-06-30; the free pipeline audit is valid today but ends 2026-10-02, before publish 2026-10-07.
+# CORRECTED 2026-09-29: added subject line "A free pipeline audit for your team" (conflict_or_expired, pipeline-audit-offer): it names the free audit, which ends 2026-10-02, before publish 2026-10-07.
+blocked: true
+findings:
+  - {contains: "As a Google Partner agency", label: conflict_or_expired, fact_key: google-partner}
+  - {contains: "Book a free 30-minute pipeline audit", label: conflict_or_expired, fact_key: pipeline-audit-offer}
+  - {contains: "Subject: A free pipeline audit for your team", label: conflict_or_expired, fact_key: pipeline-audit-offer}
+must_not_flag:
+  - "We are a HubSpot Gold Solutions Partner too"

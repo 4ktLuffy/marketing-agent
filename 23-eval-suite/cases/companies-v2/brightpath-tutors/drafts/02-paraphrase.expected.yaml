@@ -1,0 +1,7 @@
+# WHY: negative control; the same rate, result (with cohort), credential and term dates reworded; no new numbers, no out-of-scope inclusion.
+blocked: false
+findings: []
+must_not_flag:
+  - "Price: £38 per hour, billed monthly in advance"
+  - "Of our 2026 cohort of 212 students, 87% achieved grade 4 or above in GCSE maths"
+  - "This autumn term (7 September to 18 December 2026)"

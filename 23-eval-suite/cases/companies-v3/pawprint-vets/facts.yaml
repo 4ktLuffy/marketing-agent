@@ -1,0 +1,287 @@
+# FICTIONAL company. Held-out eval fixture v3 (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: "Pawprint Vets", type: veterinary, today: '2026-09-29'}
+facts:
+- key: consult-price-ashby
+  subject: {kind: site, ref: "Ashby"}
+  fact_type: price
+  attribute: consultation
+  value: 48
+  unit: null
+  currency: "GBP"
+  value_text: "£48"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: ["Ashby"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Ashby price list Sept 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "medicines and tests charged separately"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "A standard consultation at the Ashby branch costs £48; medicines and tests charged separately."
+- key: consult-price-millford
+  subject: {kind: site, ref: "Millford"}
+  fact_type: price
+  attribute: consultation
+  value: 42
+  unit: null
+  currency: "GBP"
+  value_text: "£42"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: ["Millford"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Millford price list Sept 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "medicines and tests charged separately"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "A standard consultation at the Millford branch costs £42; medicines and tests charged separately."
+- key: rcvs-accreditation
+  subject: {kind: site, ref: "Ashby"}
+  fact_type: certification
+  attribute: pss_level
+  value: null
+  unit: null
+  currency: null
+  value_text: "RCVS-accredited General Practice"
+  basis: null
+  conditions: []
+  scope: {sites: ["Ashby"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2025-11-01"
+  valid_to: "2029-10-31"
+  review_by: null
+  source: {kind: certificate, ref: "RCVS PSS certificate PSS-71954"}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: "RCVS PSS certificate PSS-71954"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Clinical director"
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Pawprint Vets Ashby is accredited under the RCVS Practice Standards Scheme at General Practice level (practice ref PSS-71954). Millford is accredited at Core Standards level."
+- key: starter-pack-price
+  subject: {kind: package, ref: "Puppy & Kitten Starter"}
+  fact_type: price
+  attribute: price
+  value: 89
+  unit: null
+  currency: "GBP"
+  value_text: "£89"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Starter pack leaflet 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "The Puppy & Kitten Starter costs £89 at both branches."
+- key: starter-pack-inclusions
+  subject: {kind: package, ref: "Puppy & Kitten Starter"}
+  fact_type: inclusion
+  attribute: includes
+  value: null
+  unit: null
+  currency: null
+  value_text: "two vaccinations, a microchip and a nurse health check"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Starter pack leaflet 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Head nurse"
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "The Puppy & Kitten Starter includes two vaccinations, a microchip and a nurse health check."
+- key: out-of-hours-partner
+  subject: {kind: business, ref: "Pawprint Vets"}
+  fact_type: contact
+  attribute: out_of_hours_partner
+  value: null
+  unit: null
+  currency: null
+  value_text: "NightPaws Emergency Vets in Coleford"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "NightPaws out-of-hours agreement 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "emergency fees apply"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Clinical director"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Out-of-hours emergencies for both branches are handled by NightPaws Emergency Vets in Coleford; emergency fees apply."
+- key: senior-check-offer
+  subject: {kind: offer, ref: "Golden Years check"}
+  fact_type: price
+  attribute: discount
+  value: 0
+  unit: null
+  currency: "GBP"
+  value_text: "free health check for dogs and cats aged 8 and over"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-15"
+  valid_to: "2026-10-03"
+  review_by: null
+  source: {kind: doc, ref: "Golden Years campaign brief"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Golden Years check: a free health check for dogs and cats aged 8 and over, 15 Sept to 3 Oct 2026."
+- key: summer-flea-offer
+  subject: {kind: offer, ref: "Summer Flea Amnesty"}
+  fact_type: price
+  attribute: discount
+  value: null
+  unit: null
+  currency: null
+  value_text: "3 months of flea treatment free with a new Health Plan"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {kind: doc, ref: "Summer Flea Amnesty terms"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: "Summer Flea Amnesty (June to August 2026): 3 months of flea treatment free with a new Health Plan."
+- key: medicine-markup
+  subject: {kind: policy, ref: "Medicine pricing"}
+  fact_type: price
+  attribute: markup
+  value: 110
+  unit: "percent"
+  currency: null
+  value_text: "110% markup on medicines"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Pricing policy 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice owner"
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: "Dispensed medicines are priced at a 110% markup on cost."
+- key: greenacre-contract
+  subject: {kind: service, ref: "Boarding kennel consultations"}
+  fact_type: price
+  attribute: contract_price
+  value: 31
+  unit: null
+  currency: "GBP"
+  value_text: "£31 per consultation"
+  basis: "per_unit"
+  conditions:
+  - {key: customer, op: "=", value: "Greenacre Kennels"}
+  scope: {sites: ["Millford"], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {kind: doc, ref: "Greenacre Kennels service agreement"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice owner"
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: "Greenacre Kennels pays £31 per consultation for boarded dogs."

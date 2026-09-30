@@ -135,3 +135,33 @@ def test_rule_title_stays_under_150():
 def test_front_coverage():
     assert front_coverage("Harbour Lane Oxford Shirt - Navy, Size M, Cotton", SHIRT) == (4, 4)
     assert front_coverage("Oxford Shirt " + "x" * 70 + " Harbour Lane Navy M Cotton", SHIRT) == (0, 4)
+
+
+CABLE = {"id": "C1", "title": "USB-C cable 3 m", "description": "Braided USB-C charging cable, 3 m long.",
+         "brand": "Brightwave", "color": "Black", "material": "Nylon", "product_type": "Electronics > Cables"}
+JARS = {"id": "J1", "title": "Glass storage jars, set of 3", "description": "Three glass jars with bamboo lids.",
+        "brand": "Kiln & Co", "material": "Glass", "product_type": "Home > Kitchen > Storage"}
+SOCKS = {"id": "K1", "title": "Wool socks", "description": "Merino wool socks, 6 pairs per pack.",
+         "brand": "Harbour Lane", "material": "Wool", "product_type": "Apparel > Socks"}
+
+
+@pytest.mark.parametrize("title", [
+    "Brightwave 3-Pack USB-C Cable, Black",          # 3 is the length, not a count
+    "Brightwave USB-C Cable, Pack of 3, Black",
+    "Brightwave USB-C Cable 3 pcs",
+    "Kiln & Co Glass Storage Jars, 6-Pack",          # the set has 3
+])
+def test_pack_count_needs_a_count_in_the_row(title):
+    row = CABLE if title.startswith("Brightwave") else JARS
+    assert "number" in codes(title, row)
+
+
+@pytest.mark.parametrize("title,row", [
+    ("Kiln & Co Glass Storage Jars, 3-Pack", JARS),      # "set of 3" is the same claim
+    ("Kiln & Co Glass Storage Jars, Set of 3", JARS),
+    ("Harbour Lane Merino Wool Socks, 6 Pairs", SOCKS),
+    ("Harbour Lane Merino Wool Socks, 6-Pack", SOCKS),
+    ("Brightwave USB-C Cable, 3 m, Black Nylon", CABLE),  # the length itself stays fine
+])
+def test_pack_count_matching_the_row_is_kept(title, row):
+    assert "number" not in codes(title, row)

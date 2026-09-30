@@ -1,0 +1,11 @@
+# WHY: Muddy Paws Month is valid today but ends 2026-10-06, before publish 2026-10-10; it is used by name (SMS, heading, caption) and loosely ("face-pampering treat on us", "free with every groom this month").
+blocked: true
+findings:
+  - {contains: "Muddy Paws Month at Bramble & Co Otley: free blueberry facial with every full groom!", label: conflict_or_expired, fact_key: muddy-paws-month}
+  - {contains: "MUDDY PAWS MONTH", label: conflict_or_expired, fact_key: muddy-paws-month}
+  - {contains: "comes with a free blueberry facial during Muddy Paws Month", label: conflict_or_expired, fact_key: muddy-paws-month}
+  - {contains: "Your pup gets a little face-pampering treat on us when you book a groom this month.", label: conflict_or_expired, fact_key: muddy-paws-month}
+  - {contains: "Blueberry facial glow-up, free with every groom this month!", label: conflict_or_expired, fact_key: muddy-paws-month}
+must_not_flag:
+  - "Every full groom includes a bath, blow-dry, nail clip and ear clean."
+  - "A full groom for a small dog at our Otley salon is £38."

@@ -1,0 +1,9 @@
+# WHY: 15% off the first month is valid today but ends 2026-10-03, before publish 2026-10-07; the free first week ended 2026-07-31.
+blocked: true
+findings:
+  - {contains: "New accounts get 15% off your first month", label: conflict_or_expired, fact_key: first-month-offer}
+  - {contains: "your first week's deliveries are on us", label: conflict_or_expired, fact_key: free-week-pilot}
+must_not_flag:
+  - "Zone 1 drops are £7.50 excl. VAT"
+  - "one monthly invoice with 30-day payment terms"
+  - "Our e-cargo bikes carry up to 100kg"

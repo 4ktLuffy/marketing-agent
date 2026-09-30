@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Business-to-business printer; separate trade (reseller) price list. Task scope segments=[business], regions=[uk].
+company: {name: "Inkwright Print", type: "B2B commercial printer", today: '2026-09-29'}
+facts:
+- key: "business-cards-500"
+  subject: {kind: "product", ref: "500 business cards, 400gsm"}
+  fact_type: "price"
+  attribute: "price"
+  value: 29
+  unit: null
+  currency: "GBP"
+  value_text: "£29"
+  basis: "flat"
+  conditions: [{key: "quantity", op: "=", value: 500}]
+  scope: {sites: [], regions: [], channels: [], segments: ["business"], plan_tiers: [], variants: []}
+  valid_from: "2026-10-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Inkwright price list Q4 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["excl. VAT"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "500 standard 400gsm business cards cost £29 excl. VAT on a business account."
+- key: "business-cards-500-trade"
+  subject: {kind: "product", ref: "500 business cards, 400gsm"}
+  fact_type: "price"
+  attribute: "trade_price"
+  value: 19
+  unit: null
+  currency: "GBP"
+  value_text: "£19"
+  basis: "flat"
+  conditions: [{key: "quantity", op: "=", value: 500}]
+  scope: {sites: [], regions: [], channels: [], segments: ["trade"], plan_tiers: [], variants: []}
+  valid_from: "2026-10-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Inkwright trade price list Q4 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["excl. VAT"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Trade (reseller) accounts pay £19 excl. VAT for 500 standard 400gsm business cards."
+- key: "next-day-dispatch"
+  subject: {kind: "policy", ref: "Next-day dispatch"}
+  fact_type: "availability"
+  attribute: "dispatch"
+  value: null
+  unit: null
+  currency: null
+  value_text: "dispatched the next working day"
+  basis: null
+  conditions: [{key: "artwork_approved_by", op: "<=", value: "12:00"}, {key: "product", op: "in", value: ["business cards", "flyers", "leaflets"]}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Production SLA 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["artwork approved by 12 noon"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Production manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Business cards, flyers and leaflets with artwork approved by 12 noon are dispatched the next working day."
+- key: "free-uk-delivery"
+  subject: {kind: "policy", ref: "UK delivery"}
+  fact_type: "policy"
+  attribute: "free_delivery"
+  value: 75
+  unit: null
+  currency: "GBP"
+  value_text: "free UK delivery on orders over £75 excl. VAT"
+  basis: null
+  conditions: [{key: "order_value_ex_vat", op: ">", value: 75}]
+  scope: {sites: [], regions: ["uk"], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Inkwright price list Q4 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Delivery to UK addresses is free on orders over £75 excl. VAT."
+- key: "fsc-paper"
+  subject: {kind: "business", ref: "Inkwright Print"}
+  fact_type: "certification"
+  attribute: "fsc_chain_of_custody"
+  value: null
+  unit: null
+  currency: null
+  value_text: "FSC-certified paper on all standard stocks"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2025-06-01"
+  valid_to: "2030-05-31"
+  review_by: "2027-06-01"
+  source: {kind: "certificate", ref: "FSC chain-of-custody certificate IW-COC-0417 (fictional)"}
+  claim_class: "origin"
+  requires_evidence: true
+  evidence_ref: "FSC chain-of-custody certificate IW-COC-0417 (fictional)"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: ["carbon neutral", "carbon-neutral", "100% recycled"]
+  owner: "Sales director"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "All standard paper stocks are FSC-certified (chain of custody). Inkwright makes no carbon-neutral or recycled-content claim."
+- key: "iso-9001"
+  subject: {kind: "business", ref: "Inkwright Print"}
+  fact_type: "certification"
+  attribute: "iso_9001"
+  value: null
+  unit: null
+  currency: null
+  value_text: "ISO 9001 certified"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2024-06-01"
+  valid_to: "2027-05-31"
+  review_by: "2027-04-01"
+  source: {kind: "certificate", ref: "ISO 9001:2015 certificate QMS-88213 (fictional)"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "ISO 9001:2015 certificate QMS-88213 (fictional)"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Production manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Inkwright's quality management system is ISO 9001:2015 certified."
+- key: "banner-autumn-offer"
+  subject: {kind: "offer", ref: "Autumn roller banner offer"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 15
+  unit: "percent"
+  currency: null
+  value_text: "15% off roller banners"
+  basis: null
+  conditions: [{key: "code", op: "=", value: "AUTUMN15"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-15"
+  valid_to: "2026-10-04"
+  review_by: null
+  source: {kind: "doc", ref: "Autumn promo brief 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "15% off roller banners with code AUTUMN15, orders placed by 4 October 2026."
+- key: "free-sample-pack"
+  subject: {kind: "offer", ref: "Free paper sample pack"}
+  fact_type: "inclusion"
+  attribute: "sample_pack"
+  value: null
+  unit: null
+  currency: null
+  value_text: "free paper sample pack"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {kind: "doc", ref: "Summer promo brief 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "A free paper sample pack for new business accounts (June to August 2026)."
+- key: "card-margin-target"
+  subject: {kind: "policy", ref: "Business card margin"}
+  fact_type: "policy"
+  attribute: "target_margin"
+  value: 42
+  unit: "percent"
+  currency: null
+  value_text: "42% gross margin"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pricing model 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Target gross margin on business cards is 42%."
+- key: "brightwell-contract"
+  subject: {kind: "offer", ref: "Brightwell Estates contract"}
+  fact_type: "price"
+  attribute: "contract_price"
+  value: 14
+  unit: null
+  currency: "GBP"
+  value_text: "£14 per 500 cards"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: "2027-03-31"
+  review_by: null
+  source: {kind: "doc", ref: "Brightwell Estates framework contract"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Brightwell Estates pays £14 per 500 business cards under its framework contract."

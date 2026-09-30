@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Blockers{% endblock %}
+{% block main %}
+<h1>Blockers</h1>
+<p class="small muted">What stops a post from going out, and what waits for you.</p>
+{% if not_installed %}<p class="muted">The task bridge (88) isn't installed.</p>{% else %}
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+{% if blockers %}
+<ul class="menu">
+  {% for b in blockers %}
+  <li>{% if b.link %}<a href="{{ b.link }}">{% else %}<span class="menu-row">{% endif %}{% if b.count is not none %}<span class="count-badge">{{ b.count }}</span> {% endif %}{{ b.text }}{% if b.link %}</a>{% else %}</span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% elif not error %}<p class="alert ok">Nothing is blocked.</p>{% endif %}
+{% endif %}
+{% endblock %}

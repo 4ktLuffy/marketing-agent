@@ -1,0 +1,11 @@
+# WHY: the summer timetable (eight sailings) and the bring-a-friend offer are valid today but both end 2026-10-04, before publish 2026-10-10; the offer is also given in words only ("two for the price of one", "costs nothing").
+blocked: true
+findings:
+  - {contains: "Eight return sailings a day to Gull Island", label: conflict_or_expired, fact_key: timetable-summer}
+  - {contains: "a second adult travels free", label: conflict_or_expired, fact_key: bring-a-friend-offer}
+  - {contains: "Two for the price of one to Gull Island", label: conflict_or_expired, fact_key: bring-a-friend-offer}
+  - {contains: "your companion's ticket costs nothing", label: conflict_or_expired, fact_key: bring-a-friend-offer}
+  - {contains: "eight times a day", label: conflict_or_expired, fact_key: timetable-summer}
+must_not_flag:
+  - "An adult return to Gull Island is £14 this winter"
+  - "Dogs travel free on the open deck, on a lead"

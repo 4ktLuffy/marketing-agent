@@ -1,0 +1,7 @@
+# WHY: negative control; same Richmond facts reworded ("sixty minutes" typed out), patch-test and survey disclosures kept, no new numbers or claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "The Glow Facial is sixty minutes for £85, with a free skin consultation included"
+  - "Lash lift and tint is £55 — patch test required at least 48 hours before your appointment"
+  - "Maya Okafor is qualified to Level 4"

@@ -1,0 +1,13 @@
+# WHY: "FHRS 11.88.24" is a look-alike of reference 118842 and "Four (Good)" is a different grade from 5 (Very Good) (both conflict with food-hygiene-rating); "most romantic in Yorkshire", the 5-star rating, a dedicated coordinator and the on-site florist/free rooms have no source fact.
+blocked: true
+findings:
+  - {contains: "Voted the most romantic wedding venue in Yorkshire", label: no_source, fact_key: null}
+  - {contains: "Rated 5 stars by over 300 couples.", label: no_source, fact_key: null}
+  - {contains: "dedicated wedding coordinator from first viewing to last dance", label: no_source, fact_key: null}
+  - {contains: "food hygiene certificate is FHRS 11.88.24", label: conflict_or_expired, fact_key: food-hygiene-rating}
+  - {contains: "Our kitchen is rated Four (Good) for food hygiene.", label: conflict_or_expired, fact_key: food-hygiene-rating}
+  - {contains: "our own on-site florist and free overnight rooms for every guest", label: no_source, fact_key: null}
+must_not_flag:
+  - "Our Winter Weekday package is £6,950, based on 60 day guests."
+  - "includes a mulled-wine drinks reception by the log fire and the bridal suite for the wedding night"
+  - "Subject: Why couples choose Cedar Hall"

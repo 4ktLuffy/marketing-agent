@@ -1,0 +1,9 @@
+# WHY: the office rate requires 'plus VAT' and 'minimum 2 hours per visit' (its condition); neither appears anywhere in the draft, including the subject line.
+blocked: true
+findings:
+- {contains: Brightfold office cleaning is just £21 per cleaner per hour, label: missing_disclosure, fact_key: office-cleaning-rate}
+- {contains: Our office cleaning rate is £21 per cleaner per hour, label: missing_disclosure, fact_key: office-cleaning-rate}
+- {contains: Office cleaning from £21 an hour, label: missing_disclosure, fact_key: office-cleaning-rate}
+- {contains: 'At Brightfold, it''s £21 per cleaner per hour', label: missing_disclosure, fact_key: office-cleaning-rate}
+must_not_flag:
+- Every cleaner on a commercial contract is security screened to BS 7858

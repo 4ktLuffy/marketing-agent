@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Tasks{% endblock %}
+{% block main %}
+<h1>Tasks</h1>
+<p class="small muted">Write with any AI chat without handing it your business. You get a pack to paste into the chat; only the facts you see in the preview leave. Paste the answer back and every sentence is checked against your facts.</p>
+{% if not_installed %}<p class="muted">The task bridge (88) isn't installed.</p>{% else %}
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+<p><a class="btn primary" href="/tasks/new">New task</a> <a class="btn" href="/blockers">Blockers</a> <a class="btn" href="/tasks/results">Results</a></p>
+{% if tasks %}
+<ul class="menu">
+  {% for t in tasks %}
+  <li><a href="/tasks/{{ t.id }}">{{ t.goal or t.id }}
+    <span class="muted">{{ t.id }} · publish {{ t.publish_on or '—' }} · {{ (t.status or 'open')|replace('_', ' ') }}{% if t.pieces is iterable and t.pieces is not string %} · {{ t.pieces|length }} piece{{ 's' if t.pieces|length != 1 }}{% endif %}</span></a></li>
+  {% endfor %}
+</ul>
+{% elif not error %}<p class="muted">No tasks yet.</p>{% endif %}
+{% endif %}
+{% endblock %}

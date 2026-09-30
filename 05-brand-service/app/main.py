@@ -5,13 +5,19 @@ import json
 import logging
 import os
 import re
+import sqlite3
 import tempfile
 import threading
-from typing import Annotated
+from datetime import date
+from typing import Annotated, Literal
 
 import yaml
-from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, field_validator
+
+from . import facts_store as store
 
 log = logging.getLogger("brand-service")
 
@@ -353,21 +359,321 @@ def profile():
     return load_brand()
 
 
+def legacy_items(b: dict) -> list[tuple[str, dict]]:
+    """(text, origin) for every statement copy may rely on, in the legacy /facts order:
+    explicit facts, the one-liner, products (price line, then description), key messages."""
+    items = [(str(f).strip(), {}) for f in b.get("facts") or []]
+    if b.get("one_liner"):
+        items.append((str(b["one_liner"]).strip(), {}))  # the brand's own approved positioning line
+    for prod in b.get("products") or []:
+        if prod.get("price"):
+            items.append((f"{prod.get('name')} costs {prod.get('price')}.",
+                          {"product": prod.get("name"), "price": prod.get("price")}))
+        items.append((f"{prod.get('name')}: {prod.get('one_line', '')}".strip(), {"product": prod.get("name")}))
+    items += [(str(m).strip(), {}) for m in b.get("key_messages") or []]
+    return [(t, o) for t, o in items if t]
+
+
 def build_facts(b: dict) -> list[dict]:
     """Every statement copy may rely on: explicit facts, products, key messages."""
-    facts = [str(f).strip() for f in b.get("facts") or []]
-    if b.get("one_liner"):
-        facts.append(str(b["one_liner"]).strip())  # the brand's own approved positioning line
-    for prod in b.get("products") or []:
-        line = f"{prod.get('name')} costs {prod.get('price')}." if prod.get("price") else ""
-        facts += [s for s in (line, f"{prod.get('name')}: {prod.get('one_line', '')}".strip()) if s]
-    facts += [str(m).strip() for m in b.get("key_messages") or []]
-    return [{"id": f"f{i + 1}", "text": f} for i, f in enumerate(f for f in facts if f)]
+    return [{"id": f"f{i + 1}", "text": t} for i, (t, _) in enumerate(legacy_items(b))]
+
+
+def keyed_items(b: dict) -> list[tuple[str, str, dict]]:
+    """legacy_items with the derived fact key of each line: `price-<product-slug>` for a price
+    line, else `legacy-<sha8(text)>` (also when two price lines would share a slug)."""
+    out, seen = [], {}
+    for text, origin in legacy_items(b):
+        key = None
+        if origin.get("price"):
+            s = store.slug(str(origin["product"]))
+            key = f"price-{s}" if len(s) >= 2 else None
+        if key is None or seen.get(key, text) != text:
+            key = f"legacy-{store.sha8(text)}"
+        seen[key] = text
+        out.append((text, key, origin))
+    return out
+
+
+def derived_facts(b: dict) -> list[dict]:
+    """The brand profile's facts as read-only v2 facts (scope all, public, always valid)."""
+    out, seen = [], set()
+    for text, key, origin in keyed_items(b):
+        if key in seen:
+            continue
+        seen.add(key)
+        f = copy.deepcopy(store.BLANK_FACT)
+        product = origin.get("product")
+        f.update(key=key, text=text, sensitivity="public", risk="low",
+                 subject={"kind": "product" if product else "business", "ref": str(product or b.get("name") or "")},
+                 fact_type="price" if origin.get("price") else "claim",
+                 attribute="price" if origin.get("price") else None,
+                 value_text=str(origin["price"]) if origin.get("price") else None,
+                 source={"kind": "owner_statement", "ref": "brand profile (brand.yaml + saved edits)"})
+        f.update(status="active", version=1, latest_version=1, derived=True, superseded_by=None)
+        out.append(f)
+    return out
+
+
+def _derived_state(b: dict, conn, day: str | None = None) -> tuple[list[dict], dict[str, str]]:
+    derived, hidden = derived_facts(b), store.hidden_derived(conn, day)
+    for f in derived:
+        if f["key"] in hidden:
+            f.update(status="superseded", superseded_by=hidden[f["key"]])
+    return derived, hidden
+
+
+def _fs(conn, derived: list[dict]) -> str:
+    return store.fact_set_version(conn, [f["text"] for f in derived if f["status"] == "active"])
 
 
 @app.get("/facts", dependencies=[Depends(require_key)])
-def facts():
-    return {"facts": build_facts(load_brand())}
+def facts(max_sensitivity: store.Sensitivity = "internal"):
+    """Legacy shape, ids f1..fN. With an empty or absent fact store the response is exactly
+    what it was before the store existed. Stored facts are appended only when active, valid
+    today and not restricted (restricted never appears here, whatever max_sensitivity says)."""
+    b = load_brand()
+    if not store.exists():
+        return {"facts": build_facts(b)}
+    try:
+        with store.reading() as conn:
+            hidden, rows = store.hidden_derived(conn), store.stored_facts(conn)
+            succ = store.successor_map(conn)
+    except (store.StoreError, sqlite3.Error) as exc:  # the brand's own facts still work
+        log.warning("fact store unreadable, serving brand profile facts only: %s", exc)
+        return {"facts": build_facts(b)}
+    texts = [t for t, key, _ in keyed_items(b) if key not in hidden]
+    out = [{"id": f"f{i + 1}", "text": t} for i, t in enumerate(texts)]
+    limit = "internal" if max_sensitivity == "restricted" else max_sensitivity
+    day = store.today()
+    for row, data in rows:
+        if store.exclusion_reason(store.status_on(row, day, succ), data, day, limit, {}) not in (None, "scope_unspecified"):
+            continue
+        note = store.scope_note(data["scope"])
+        out.append({"id": f"f{len(out) + 1}", "text": store.with_scope_note(data["text"], note),
+                    "key": data["key"], "version": row["current_version"], "scope_note": note})
+    return {"facts": out}
+
+
+# --- Fact store v2 (contract: _dev/phase1-contracts.md §1-§2) --------------------------------
+
+@app.exception_handler(store.StoreError)
+def _store_error(request: Request, exc: store.StoreError):
+    return JSONResponse({"detail": str(exc)}, status_code=500)
+
+
+@app.exception_handler(store.NotFound)
+def _not_found(request: Request, exc: store.NotFound):
+    return JSONResponse({"detail": f"not found: {exc}"}, status_code=404)
+
+
+@app.exception_handler(store.Conflict)
+def _conflict(request: Request, exc: store.Conflict):
+    return JSONResponse({"detail": str(exc)}, status_code=409)
+
+
+@app.exception_handler(store.Invalid)
+def _invalid(request: Request, exc: store.Invalid):
+    return JSONResponse({"detail": [{"loc": list(exc.loc), "msg": exc.msg, "type": "value_error"}]},
+                        status_code=422)
+
+
+def require_owner(x_owner_key: str | None = Header(default=None)):
+    """A human's key (FACT_OWNER_KEY, held by 05 and the control room only). Refuses when unset,
+    so a stack without it can draft facts but nothing becomes a fact on its own."""
+    expected = os.environ.get("FACT_OWNER_KEY")
+    if not expected:
+        raise HTTPException(503, "FACT_OWNER_KEY is not set: confirming facts is switched off")
+    if not (x_owner_key and hmac.compare_digest(x_owner_key.encode(), expected.encode())):
+        raise HTTPException(403, "missing or wrong X-Owner-Key")
+
+
+def actor(x_actor: str | None = Header(default=None)) -> str | None:
+    """Optional `X-Actor` (who made the change, for the version history), max 80 chars."""
+    return (x_actor or "").strip()[:80] or None
+
+
+def _derived_keys() -> set[str]:
+    return {f["key"] for f in derived_facts(load_brand())}
+
+
+def _parse_fact(body, loc=("body",)) -> store.FactIn:
+    try:
+        return store.FactIn.model_validate(body)
+    except ValidationError as exc:
+        errs = exc.errors(include_url=False, include_context=False)
+        raise RequestValidationError([e | {"loc": (*loc, *e["loc"])} for e in errs]) from exc
+
+
+class ImportIn(store._Strict):
+    facts: list[store.FactIn] = Field(default=[], max_length=500)
+    confirm: bool = False
+
+
+@app.get("/facts/v2", dependencies=[Depends(require_key)])
+def list_facts_v2(status: store.Status | None = None, include_derived: bool = True):
+    b = load_brand()
+    with store.reading() as conn:
+        derived, _ = _derived_state(b, conn)
+        day = store.today()
+        succ = store.successor_map(conn)
+        stored = [store.render(row, data, day, succ) for row, data in store.stored_facts(conn)]
+        fs = _fs(conn, derived)
+    items = (derived if include_derived else []) + stored
+    return {"fact_set_version": fs, "facts": [f for f in items if status is None or f["status"] == status]}
+
+
+@app.get("/facts/v2/{key}", dependencies=[Depends(require_key)])
+def get_fact_v2(key: str):
+    b = load_brand()
+    with store.reading() as conn:
+        derived, _ = _derived_state(b, conn)
+        for f in derived:
+            if f["key"] == key:
+                data = {k: v for k, v in f.items() if k not in store.READ_ONLY and k != "status"}
+                return f | {"versions": [{"version": 1, "status": f["status"], "data": data,
+                                          "created_by": "brand profile", "created_at": None, "confirmed_by": None}]}
+        if conn is None:
+            raise store.NotFound(key)
+        return store.get(conn, key)
+
+
+@app.post("/facts/v2", dependencies=[Depends(require_key)])
+def create_fact_v2(fact: store.FactIn, who: str | None = Depends(actor)):
+    return store.create(fact, _derived_keys(), who or "api")
+
+
+@app.put("/facts/v2/{key}", dependencies=[Depends(require_key)])
+def update_fact_v2(key: str, body: dict = Body(...), who: str | None = Depends(actor)):
+    body = {"key": key, **body}
+    fact = _parse_fact(body)
+    if fact.key != key:
+        raise store.Invalid(("body", "key"), f"key '{fact.key}' does not match the URL ('{key}')")
+    return store.update(key, fact, _derived_keys(), who or "api")
+
+
+@app.post("/facts/v2/import", dependencies=[Depends(require_key), Depends(require_owner)])
+def import_facts_v2(body: ImportIn, who: str | None = Depends(actor)):
+    keys = [f.key for f in body.facts]
+    dup = sorted({k for k in keys if keys.count(k) > 1})
+    if dup:
+        raise store.Invalid(("body", "facts"), f"keys used twice: {', '.join(dup)}")
+    return store.import_facts(body.facts, body.confirm, _derived_keys(), who or "owner")
+
+
+@app.post("/facts/v2/{key}/confirm", dependencies=[Depends(require_key), Depends(require_owner)])
+def confirm_fact_v2(key: str, who: str | None = Depends(actor)):
+    return store.confirm(key, _derived_keys(), who or "owner")
+
+
+@app.post("/facts/v2/{key}/retire", dependencies=[Depends(require_key), Depends(require_owner)])
+def retire_fact_v2(key: str, who: str | None = Depends(actor)):
+    return store.retire(key, _derived_keys(), who or "owner")
+
+
+DAY_RE = re.compile(store.DATE_PATTERN)
+
+
+@app.get("/facts/query", dependencies=[Depends(require_key)])
+def query_facts(site: list[str] = Query([]), region: list[str] = Query([]), channel: list[str] = Query([]),
+                segment: list[str] = Query([]), plan_tier: list[str] = Query([]), variant: list[str] = Query([]),
+                at: str | None = None, max_sensitivity: store.Sensitivity = "internal"):
+    """Facts usable for a task with this scope on day `at`, and why every other fact is not."""
+    if at is not None:
+        try:
+            if not DAY_RE.match(at):
+                raise ValueError
+            date.fromisoformat(at)
+        except ValueError:
+            raise HTTPException(422, f"at: expected a date YYYY-MM-DD, got {at!r}")
+    day = at or store.today()
+    task = {"sites": site, "regions": region, "channels": channel, "segments": segment,
+            "plan_tiers": plan_tier, "variants": variant}
+    b = load_brand()
+    out, excluded = [], []
+    with store.reading() as conn:
+        derived, _ = _derived_state(b, conn, day)
+        succ = store.successor_map(conn)
+        for f in derived:
+            if f["status"] != "active":
+                excluded.append({"key": f["key"], "reason": f["status"]})
+            else:
+                out.append(f)
+        for row, data in store.stored_facts(conn):
+            reason = store.exclusion_reason(store.status_on(row, day, succ), data, day, max_sensitivity, task)
+            if reason:
+                excluded.append({"key": data["key"], "reason": reason})
+            else:
+                out.append(store.render(row, data, day, succ))
+        fs = _fs(conn, derived)
+    return {"fact_set_version": fs, "at": day, "facts": out, "excluded": excluded}
+
+
+@app.get("/facts/changes", dependencies=[Depends(require_key)])
+def fact_changes(since: int = Query(0, ge=0)):
+    with store.reading() as conn:
+        return store.changes_since(conn, since)
+
+
+# --- Open questions ---
+
+@app.get("/questions", dependencies=[Depends(require_key)])
+def list_questions(status: Literal["open", "answered", "dismissed"] | None = None):
+    with store.reading() as conn:
+        return {"questions": store.list_questions(conn, status)}
+
+
+@app.post("/questions", dependencies=[Depends(require_key)])
+def add_question(q: store.QuestionIn):
+    return store.add_question(q)
+
+
+@app.post("/questions/{qid}/answer", dependencies=[Depends(require_key)])
+def answer_question(qid: int, body: store.AnswerIn | None = None):
+    return store.close_question(qid, "answered", body.answer if body else None)
+
+
+@app.post("/questions/{qid}/dismiss", dependencies=[Depends(require_key)])
+def dismiss_question(qid: int):
+    return store.close_question(qid, "dismissed")
+
+
+# --- Industry starter kits: data, not code; applying one creates DRAFT rules only ---
+
+def _kits() -> dict[str, dict]:
+    try:
+        return store.load_starter_kits()
+    except (OSError, ValueError) as exc:
+        raise HTTPException(500, str(exc)) from exc
+
+
+@app.get("/starter-kits", dependencies=[Depends(require_key)])
+def starter_kits():
+    return list(_kits().values())
+
+
+@app.post("/starter-kits/{kit_id}/apply", dependencies=[Depends(require_key), Depends(require_owner)])
+def apply_starter_kit(kit_id: str):
+    kit = _kits().get(kit_id)
+    if kit is None:
+        raise HTTPException(404, f"no starter kit '{kit_id}'")
+    return store.apply_kit(kit)
+
+
+@app.get("/rules", dependencies=[Depends(require_key)])
+def list_rules(status: Literal["draft", "active", "dismissed"] | None = None, kit: str | None = None):
+    with store.reading() as conn:
+        return {"rules": store.list_rules(conn, status, kit)}
+
+
+@app.post("/rules/{rid}/confirm", dependencies=[Depends(require_key), Depends(require_owner)])
+def confirm_rule(rid: int):
+    return store.set_rule_status(rid, "active")
+
+
+@app.post("/rules/{rid}/dismiss", dependencies=[Depends(require_key), Depends(require_owner)])
+def dismiss_rule(rid: int):
+    return store.set_rule_status(rid, "dismissed")
 
 
 @app.get("/profile/summary", dependencies=[Depends(require_key)])

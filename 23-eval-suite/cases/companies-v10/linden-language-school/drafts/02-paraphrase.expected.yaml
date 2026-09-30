@@ -1,0 +1,13 @@
+# WHY: negative control — evening-group facts reworded; "coursebook not included" said as "buy the coursebook separately" / "an extra purchase" / "bought on top"; the result basis given in other words; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Ten Tuesday evenings, 6:30 to 8:30pm, from 20 October"
+  - "£240 each, and you buy the coursebook separately"
+  - "The course runs for ten weeks and costs £240 a head; the coursebook is an extra purchase"
+  - "We meet every Tuesday from half six to half eight in the evening at Mill Street"
+  - "All of our teachers are qualified to teach languages"
+  - "The evening group costs £240 per learner for ten weeks, with the coursebook bought on top"
+  - "Groups go ahead once five or more people have enrolled"
+  - "91% of adult evening learners went up at least one level"
+  - "You can check your level with a free online test before you sign up"

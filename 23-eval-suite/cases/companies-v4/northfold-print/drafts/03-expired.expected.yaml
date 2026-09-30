@@ -1,0 +1,11 @@
+# WHY: free gold foil is valid today but only for orders by 2026-10-06, before publish 2026-10-14; free sample packs (mentioned in passing) ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Gold foil on us", label: conflict_or_expired, fact_key: foil-offer}
+  - {contains: "Order printed cartons by 6 October and we'll add free gold foil on the lid", label: conflict_or_expired, fact_key: foil-offer}
+  - {contains: "Grab one of our free sample packs first", label: conflict_or_expired, fact_key: sample-pack-offer}
+  - {contains: "Subject: Free gold foil on your next carton order", label: conflict_or_expired, fact_key: foil-offer}
+  - {contains: "the gold foil on the lid is free", label: conflict_or_expired, fact_key: foil-offer}
+must_not_flag:
+  - "1,000 printed cartons cost £640 plus VAT, our minimum run"
+  - "Printed on 350gsm GC1 folding boxboard"

@@ -1,0 +1,288 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Larkspur & Stem, type: florist (2 shops), today: '2026-09-29'}
+facts:
+- key: hand-tied-bouquet
+  subject: {kind: product, ref: Seasonal hand-tied bouquet}
+  fact_type: price
+  attribute: price
+  value: 35
+  unit: null
+  currency: GBP
+  value_text: £35
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Autumn price list 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head florist
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our seasonal hand-tied bouquet costs £35 at both shops.
+- key: same-day-delivery
+  subject: {kind: service, ref: Local delivery}
+  fact_type: policy
+  attribute: same_day_cutoff
+  value: null
+  unit: null
+  currency: null
+  value_text: same-day delivery when you order by 1pm, Monday to Saturday
+  basis: null
+  conditions:
+  - {key: order_time, op: <=, value: '13:00'}
+  - {key: days, op: in, value: [Mon, Tue, Wed, Thu, Fri, Sat]}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://larkspurstem.example/delivery'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [£6.50 delivery fee within 5 miles]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Order by 1pm Monday to Saturday for same-day delivery from either shop. £6.50 delivery fee within 5 miles. No deliveries on Sundays.
+- key: market-square-sunday
+  subject: {kind: site, ref: Market Square}
+  fact_type: hours
+  attribute: sunday_opening
+  value: null
+  unit: null
+  currency: null
+  value_text: open Sundays 10am to 2pm
+  basis: null
+  conditions: []
+  scope: {sites: [Market Square], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Rota 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Market Square shop is open on Sundays from 10am to 2pm (Harbour Street is closed on Sundays).
+- key: harbour-street-workshop
+  subject: {kind: service, ref: Wreath-making workshop}
+  fact_type: event
+  attribute: price
+  value: 45
+  unit: null
+  currency: GBP
+  value_text: £45 per person
+  basis: per_person
+  conditions:
+  - {key: days, op: in, value: [Thu]}
+  scope: {sites: [Harbour Street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-12-18'
+  review_by: null
+  source: {kind: doc, ref: Workshop programme winter 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head florist
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Wreath-making workshops run at the Harbour Street shop on Thursday evenings in November and December, £45 per person, all materials included.
+- key: subscription-half-price
+  subject: {kind: offer, ref: Weekly flower subscription launch offer}
+  fact_type: price
+  attribute: discount
+  value: 50
+  unit: percent
+  currency: null
+  value_text: half price on your first month
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Subscription launch plan}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [new subscribers only]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New subscribers get half price on the first month of a weekly flower subscription, 15 September to 4 October 2026.
+- key: peony-sale
+  subject: {kind: offer, ref: Summer peony sale}
+  fact_type: price
+  attribute: discount
+  value: 25
+  unit: percent
+  currency: null
+  value_text: 25% off peony bunches
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-07-31'
+  review_by: null
+  source: {kind: doc, ref: Summer promo sheet}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 25% off peony bunches, June and July 2026.
+- key: pet-friendly-range
+  subject: {kind: product, ref: Pet-friendly bouquet range}
+  fact_type: claim
+  attribute: excluded_plants
+  value: null
+  unit: null
+  currency: null
+  value_text: no lilies or other plants on our supplier's list of plants toxic to cats and dogs
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Supplier plant list PL-2026}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: Supplier plant list PL-2026
+  consent_ref: null
+  required_disclosures: [keep all plants away from pets]
+  allowed_phrasing: []
+  forbidden_phrasing: [non-toxic, 100% pet-safe, vet approved]
+  owner: Head florist
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our pet-friendly bouquets contain no lilies or other plants on our supplier's list of plants toxic to cats and dogs. Keep all plants away from pets.
+- key: loyalty-card
+  subject: {kind: policy, ref: Stamp card}
+  fact_type: policy
+  attribute: reward
+  value: null
+  unit: null
+  currency: null
+  value_text: your 10th hand-tied bouquet free
+  basis: null
+  conditions:
+  - {key: stamps, op: '>=', value: 9}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Stamp card terms v2}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [in-shop purchases only]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Collect a stamp with every hand-tied bouquet bought in either shop; the 10th hand-tied bouquet is free. In-shop purchases only.
+- key: rose-cost-price
+  subject: {kind: product, ref: Imported roses}
+  fact_type: price
+  attribute: cost_price
+  value: 0.62
+  unit: null
+  currency: GBP
+  value_text: £0.62 per stem
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Wholesaler invoice Sept 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We buy imported roses at £0.62 per stem.
+- key: grandholt-hotel-contract
+  subject: {kind: service, ref: Lobby arrangements}
+  fact_type: price
+  attribute: contract_price
+  value: 420
+  unit: null
+  currency: GBP
+  value_text: £420 per week
+  basis: flat
+  conditions:
+  - {key: customer, op: '=', value: Grandholt Hotel}
+  scope: {sites: [Harbour Street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Grandholt supply agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: The Grandholt Hotel pays £420 per week for lobby arrangements.

@@ -1,0 +1,11 @@
+# FICTIONAL. Scope channels=[taproom] makes the webshop mixed case (free delivery) a scope trap;
+# publish_on 2026-10-16 is after oktoberfest-steins ends (2026-10-04), valid today (2026-09-29).
+goal: "Bring more people into the Gristmill taproom on October weekends."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: tiktok, kind: caption, max_chars: 300}
+  - {key: p3, channel: newsletter, kind: newsletter, max_chars: null}
+scope: {sites: [], regions: [], channels: [taproom], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-16"
+audience: "Adults (18+) within half an hour's drive of the brewery"
+notes: "Feature the Tailrace low-alcohol IPA for drivers."

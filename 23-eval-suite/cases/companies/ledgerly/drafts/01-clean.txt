@@ -1,0 +1,24 @@
+Here are the two pieces for the Starter plan campaign.
+
+=== 1 LINKEDIN ===
+Still chasing invoices by hand?
+
+Ledgerly Starter sends [[payment-reminders]] for you, so you can stop writing awkward "just checking in" emails.
+Starter is [[starter-price]], excl. VAT.
+Ledgerly has completed a SOC 2 Type I audit, so your invoice data is handled to an independently checked standard.
+Try it with a [[free-trial]].
+
+=== 2 EMAIL ===
+Subject: Get paid without the chasing
+
+Hi there,
+
+Ledgerly Starter is built for small businesses that are tired of spreadsheets.
+It includes \[\[payment-reminders\]\], so late payers get a polite nudge without you lifting a finger.
+Starter costs \[\[starter-price\]\], excl. VAT.
+Start with a \[\[free-trial\]\] and see how it fits.
+
+Cheers,
+The Ledgerly team
+
+I kept both pieces short. Want a version with a customer quote?

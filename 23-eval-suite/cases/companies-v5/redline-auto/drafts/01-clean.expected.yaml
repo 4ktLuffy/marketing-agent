@@ -1,0 +1,7 @@
+# WHY: only private-customer facts valid on 2026-10-13; the warranty claim carries "using OE-quality parts" and the courtesy car "subject to availability"; only Dan is called a Master Technician.
+blocked: false
+findings: []
+must_not_flag:
+  - "A Class 4 MOT at Redline Auto costs £45"
+  - "using OE-quality parts, so your manufacturer warranty stays valid"
+  - "an IMI Accredited Master Technician (IMI ID 0214889)"

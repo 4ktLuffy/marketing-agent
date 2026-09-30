@@ -1,0 +1,7 @@
+# WHY: £12.95 is the true dine-in price (delivery is £14.90, +15%); the 7pm Thursday opening is High St dine-in only. Task is Riverside + delivery.
+blocked: true
+findings:
+  - {contains: "delivered for just £12.95", label: wrong_scope, fact_key: brunch-box-dine-in}
+  - {contains: "open until 7pm on Thursdays", label: wrong_scope, fact_key: high-st-late-opening}
+must_not_flag:
+  - "Riverside delivers from 8am to 3pm every day"

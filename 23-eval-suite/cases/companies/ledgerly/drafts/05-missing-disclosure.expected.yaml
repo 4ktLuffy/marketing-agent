@@ -1,0 +1,6 @@
+# WHY: the Starter price requires the disclosure "excl. VAT", which is missing everywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Ledgerly Starter is just £12 per user per month", label: missing_disclosure, fact_key: starter-price}
+must_not_flag:
+  - "includes automatic payment reminders and a 14-day free trial"

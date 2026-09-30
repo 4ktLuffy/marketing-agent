@@ -1,0 +1,10 @@
+# WHY: 15% off roller banners (AUTUMN15) is valid today but ends 2026-10-04, before publish 2026-10-07; the free sample pack ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Get 15% off roller banners with code AUTUMN15", label: conflict_or_expired, fact_key: banner-autumn-offer}
+  - {contains: "15% off roller banners with code AUTUMN15 · Free UK delivery", label: conflict_or_expired, fact_key: banner-autumn-offer}
+  - {contains: "Your free paper sample pack is waiting", label: conflict_or_expired, fact_key: free-sample-pack}
+  - {contains: "Ask for your free paper sample pack", label: conflict_or_expired, fact_key: free-sample-pack}
+must_not_flag:
+  - "500 standard 400gsm business cards cost £29 excl. VAT"
+  - "Orders with artwork approved by 12 noon are dispatched the next working day"

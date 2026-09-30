@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Client links{% endblock %}
+{% block main %}
+<h1>Client links</h1>
+<p class="muted">A link and a PIN let a client read chosen posts and approve them or ask for changes. Their answer is
+recorded next to the post; it does not approve it. You still approve in the queue.</p>
+<p><a class="btn primary" href="/client-links/new">New link</a></p>
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+{% if links %}
+<ul class="client-links">
+  {% for l in links %}
+  <li>
+    <b>{{ l.label or ('Link #' ~ l.id) }}</b>
+    <span class="chip {{ 'good' if l.state == 'active' else 'bad' if l.state == 'locked' else '' }}" data-state="{{ l.state }}">{{ l.state }}</span>
+    <span class="small muted">posts {% for i in l.item_ids %}<a href="/items/{{ i }}">#{{ i }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+      · until {{ (l.expires_at or '')[:16]|replace('T', ' ') }} UTC · opened {{ l.uses }}× {% if l.wrong_pins %}· {{ l.wrong_pins }} wrong PIN{{ 's' if l.wrong_pins != 1 }}{% endif %}
+      {% if l.created_by %}· made by {{ l.created_by }}{% endif %}</span>
+    {% if l.state in ('active', 'locked') %}
+    <form method="post" action="/client-links/{{ l.id }}/revoke" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn small reject ghost" type="submit">Withdraw</button>
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% elif not error %}<p class="muted">No links yet.</p>{% endif %}
+<p class="small muted">A link's address and PIN are shown once, when it is made. Lost one? Withdraw it and make a new one.</p>
+{% endblock %}

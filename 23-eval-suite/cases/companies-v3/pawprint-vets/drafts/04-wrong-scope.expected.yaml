@@ -1,0 +1,10 @@
+# WHY: £42 is the true Millford consultation price (sites=[Millford]); the task is sites=[Ashby], where it costs £48.
+blocked: true
+findings:
+  - {contains: "Consultations from just £42", label: wrong_scope, fact_key: consult-price-millford}
+  - {contains: "Subject: Consultations for £42", label: wrong_scope, fact_key: consult-price-millford}
+  - {contains: "A standard consultation costs £42", label: wrong_scope, fact_key: consult-price-millford}
+  - {contains: "See a vet at Ashby for £42", label: wrong_scope, fact_key: consult-price-millford}
+must_not_flag:
+  - "Our Puppy & Kitten Starter costs £89"
+  - "NightPaws Emergency Vets in Coleford look after our patients, and emergency fees apply"

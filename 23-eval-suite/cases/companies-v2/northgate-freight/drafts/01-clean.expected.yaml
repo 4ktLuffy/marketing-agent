@@ -1,0 +1,8 @@
+# WHY: in-scope next-day rate with "excl. VAT and fuel surcharge", cover with "per consignment", ISO 9001 and AEO-C exactly as certified; no expired or London-only fact.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our next-day rate is £68 per pallet, excl. VAT and fuel surcharge"
+  - "Every consignment travels with goods-in-transit cover up to £25,000 per consignment"
+  - "We are ISO 9001:2015 certified (certificate NGF-QMS-4471)"
+  - "Book by 16:00 for next working-day delivery"

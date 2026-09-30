@@ -1,0 +1,7 @@
+# WHY: negative control — same weekend facts reworded; values exact; both disclosures kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "Each of our lodges comes with its own wood-fired hot tub"
+  - "Weekend nights are £210 per room per night, room only"
+  - "arrange your station transfer at £25 per person, each way"

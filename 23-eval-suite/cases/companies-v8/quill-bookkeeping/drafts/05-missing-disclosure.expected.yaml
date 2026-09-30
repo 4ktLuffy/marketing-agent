@@ -1,0 +1,11 @@
+# WHY: the £18 Sole Trader price requires 'plus VAT'; VAT is not mentioned anywhere in the draft (subject and body).
+blocked: true
+findings:
+  - {contains: "Bookkeeping for sole traders, for £18 a month", label: missing_disclosure, fact_key: sole-trader-price}
+  - {contains: "The Sole Trader plan costs £18 a month", label: missing_disclosure, fact_key: sole-trader-price}
+  - {contains: "Sole trader bookkeeping for £18 a month", label: missing_disclosure, fact_key: sole-trader-price}
+  - {contains: "For £18 a month, the Sole Trader plan keeps your records ready for Making Tax Digital", label: missing_disclosure, fact_key: sole-trader-price}
+must_not_flag:
+  - "Every plan includes a free onboarding call"
+  - "Support is available Monday to Friday, 8am to 6pm, by chat and phone"
+  - "Getting started with Quill as a sole trader"

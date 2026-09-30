@@ -10,6 +10,7 @@ KEYS = {
     "CONTROL_ROOM_KEY": "ctl-key-7f3a9c1e5b2d4f6a8c0e",
     "INTERNAL_API_KEY": "int-key-2b4d6f8a0c1e3a5c7e9b",
     "APPROVER_KEY": "appr-key-9e8d7c6b5a4f3e2d1c0b",
+    "FACT_OWNER_KEY": "owner-key-5c4b3a2918f7e6d5c4b3",
 }
 PASSWORD = "pw-" + "q7Lm2Xv9Rt4Kz8Wn"
 URLS = {
@@ -47,6 +48,7 @@ def env(monkeypatch):
     monkeypatch.setenv("CONTROL_PASSWORD", PASSWORD)
     monkeypatch.setenv("N8N_PUBLIC_URL", "https://n8n.example.test/")
     monkeypatch.setenv("UNDO_SECONDS", "30")   # tests flush explicitly
+    monkeypatch.setenv("TASKS_URL", "")         # 88 off unless a test turns it on (tests/test_tasks.py)
 
 
 @pytest.fixture

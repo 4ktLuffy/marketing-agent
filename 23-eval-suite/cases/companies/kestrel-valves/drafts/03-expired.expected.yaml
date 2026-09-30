@@ -1,0 +1,7 @@
+# WHY: 5-day stock lead time is valid today but ends 2026-10-02, before publish 2026-10-06; WRAS approval lapsed 2026-03-31.
+blocked: true
+findings:
+  - {contains: "ships in 5 working days from UK stock", label: conflict_or_expired, fact_key: lead-time-stock}
+  - {contains: "KV-50B is WRAS approved", label: conflict_or_expired, fact_key: wras-approval-brass}
+must_not_flag:
+  - "3-year warranty when installed by a qualified engineer"

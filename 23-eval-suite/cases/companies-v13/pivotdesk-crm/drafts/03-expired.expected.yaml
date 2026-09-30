@@ -1,0 +1,9 @@
+# WHY: free spreadsheet migration is valid today but ends 2026-10-06, before publish 2026-10-14; the 40% launch discount ended 2026-06-30.
+blocked: true
+findings:
+  - {contains: "We'll migrate your data for free", label: conflict_or_expired, fact_key: migration-offer}
+  - {contains: "Forty percent off your first year", label: conflict_or_expired, fact_key: launch-discount}
+must_not_flag:
+  - "Pivotdesk Team includes automated email sequences"
+  - "Try it free for 14 days, no card needed"
+  - "Pivotdesk is ISO 27001 certified"

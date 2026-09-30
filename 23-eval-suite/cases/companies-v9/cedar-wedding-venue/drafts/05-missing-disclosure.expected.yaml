@@ -1,0 +1,10 @@
+# WHY: the £6,950 package price requires "based on 60 day guests"; no piece gives the guest basis in any wording (subject and body). The Orangery's 120-guest ceremony licence is a different fact and does not disclose the package basis.
+blocked: true
+findings:
+  - {contains: "Your whole winter wedding at Cedar Hall for £6,950.", label: missing_disclosure, fact_key: winter-weekday-package}
+  - {contains: "Winter Weekday wedding package, £6,950, Cedar Hall.", label: missing_disclosure, fact_key: winter-weekday-package}
+  - {contains: "Subject: A Cedar Hall winter wedding for £6,950", label: missing_disclosure, fact_key: winter-weekday-package}
+  - {contains: "Our Winter Weekday package costs £6,950, Monday to Thursday", label: missing_disclosure, fact_key: winter-weekday-package}
+must_not_flag:
+  - "includes a mulled-wine drinks reception by the log fire and the bridal suite for the wedding night"
+  - "licensed for civil ceremonies for up to 120 guests"

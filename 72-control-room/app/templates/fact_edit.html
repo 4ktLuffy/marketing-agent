@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edit fact{% else %}Add a fact{% endif %}{% endblock %}
+{% macro err(name) %}{% for m in errors.get(name, []) %}<p class="field-error small" role="alert" id="err-{{ name }}">{{ m }}</p>{% endfor %}{% endmacro %}
+{% macro inv(name) %}{% if errors.get(name) %}aria-invalid="true" aria-describedby="err-{{ name }}"{% endif %}{% endmacro %}
+{% macro select(name, options, labels=None) %}<select id="{{ name }}" name="{{ name }}" {{ inv(name) }}>{% for o in options %}<option value="{{ o }}" {% if values[name] == o %}selected{% endif %}>{{ (labels or {}).get(o) or (o|replace('_', ' ')) or '—' }}</option>{% endfor %}</select>{% endmacro %}
+{% block main %}
+<p><a href="/facts">← Facts</a></p>
+<h1>{% if mode == 'edit' %}Edit {{ values.key }}{% else %}Add a fact{% endif %}</h1>
+<p class="small muted">Saving makes a draft. Nothing is used until you confirm it on the Facts page.{% if values.supersedes_key %} Once confirmed, this replaces <code>{{ values.supersedes_key }}</code>.{% endif %}</p>
+{% if errors %}<p class="alert danger" role="alert">Not saved yet: fix what is marked below.</p>{% endif %}
+{{ err("general") }}
+<form method="post" action="{% if mode == 'edit' %}/facts/{{ values.key }}/edit{% else %}/facts/new{% endif %}" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="supersedes_key" value="{{ values.supersedes_key }}">
+  <button class="sr-only" type="submit" name="action" value="save" tabindex="-1" aria-hidden="true">Save</button>
+
+  <label for="text">The fact, as one plain sentence</label>
+  <textarea id="text" name="text" rows="3" maxlength="500" required {{ inv("text") }} placeholder="Midweek Escape costs £180 per room per night, 2 sharing, Sunday to Thursday.">{{ values.text }}</textarea>
+  {{ err("text") }}
+  <div class="row2">
+    <div><label for="subject_kind">It is about a</label>{{ select("subject_kind", subject_kinds) }}{{ err("subject_kind") }}</div>
+    <div><label for="subject_ref">Name</label><input id="subject_ref" name="subject_ref" value="{{ values.subject_ref }}" maxlength="120" placeholder="Midweek Escape" {{ inv("subject_ref") }}>{{ err("subject_ref") }}</div>
+  </div>
+  <div class="row2">
+    <div><label for="fact_type">Kind of fact</label>{{ select("fact_type", fact_types) }}{{ err("fact_type") }}</div>
+    <div><label for="value_text">The value, as written in copy</label><input id="value_text" name="value_text" value="{{ values.value_text }}" maxlength="200" placeholder="£180 per room per night" {{ inv("value_text") }}>{{ err("value_text") }}</div>
+  </div>
+  <div class="row2">
+    <div><label for="valid_from">Valid from</label><input id="valid_from" name="valid_from" type="date" value="{{ values.valid_from }}" {{ inv("valid_from") }}>{{ err("valid_from") }}</div>
+    <div><label for="valid_to">Valid to</label><input id="valid_to" name="valid_to" type="date" value="{{ values.valid_to }}" {{ inv("valid_to") }}>{{ err("valid_to") }}</div>
+  </div>
+  <p class="small muted">Leave the dates blank if it is always true.</p>
+  <div><label for="sensitivity">Who may see it</label>{{ select("sensitivity", sensitivity.keys()|list, sensitivity) }}{{ err("sensitivity") }}</div>
+  <p class="small muted">Public: may be sent to an AI chat as text. Internal: only a placeholder is sent; the value is filled in here. Restricted: never leaves.</p>
+
+  <fieldset class="product-row">
+    <legend>Where it applies</legend>
+    <p class="small muted">Leave a line blank if it applies to all. Separate names with commas.</p>
+    {% for d, label in dims %}
+    <label for="scope_{{ d }}">{{ label }}</label>
+    <input id="scope_{{ d }}" name="scope_{{ d }}" value="{{ values['scope_' ~ d] }}" maxlength="2000" {{ inv('scope_' ~ d) }}>
+    {{ err('scope_' ~ d) }}
+    {% endfor %}
+  </fieldset>
+
+  <details {% if errors and (errors.keys()|list|reject('in', ['text', 'subject_kind', 'subject_ref', 'fact_type', 'value_text', 'valid_from', 'valid_to', 'sensitivity', 'general'])|list) %}open{% endif %}>
+    <summary>More details (value, conditions, source, wording rules)</summary>
+    <div class="stack">
+    <div><label for="key">Short name (key)</label><input id="key" name="key" value="{{ values.key }}" maxlength="60" pattern="[a-z0-9-]{2,60}" {% if mode == 'edit' %}readonly{% endif %} placeholder="made from the name if blank" {{ inv("key") }}>{{ err("key") }}</div>
+    <div class="row2">
+      <div><label for="attribute">What about it</label><input id="attribute" name="attribute" value="{{ values.attribute }}" maxlength="60" placeholder="rate" {{ inv("attribute") }}>{{ err("attribute") }}</div>
+      <div><label for="basis">Per</label>{{ select("basis", bases) }}{{ err("basis") }}</div>
+    </div>
+    <div class="row2">
+      <div><label for="value">Value (number)</label><input id="value" name="value" value="{{ values.value }}" maxlength="200" placeholder="180" {{ inv("value") }}>{{ err("value") }}</div>
+      <div class="row2">
+        <div><label for="unit">Unit</label><input id="unit" name="unit" value="{{ values.unit }}" maxlength="30" placeholder="night" {{ inv("unit") }}>{{ err("unit") }}</div>
+        <div><label for="currency">Currency</label><input id="currency" name="currency" value="{{ values.currency }}" maxlength="3" placeholder="GBP" autocapitalize="characters" {{ inv("currency") }}>{{ err("currency") }}</div>
+      </div>
+    </div>
+
+    <fieldset class="product-row">
+      <legend>Conditions</legend>
+      <p class="small muted">When the fact holds, e.g. guests = 2, or days in Sun, Mon, Tue.</p>
+      {{ err("conditions") }}
+      {% for c in conds %}
+      <div class="cond-row">
+        <label class="sr-only" for="c_key{{ loop.index }}">Condition {{ loop.index }}: depends on</label>
+        <input id="c_key{{ loop.index }}" name="c_key" value="{{ c.key }}" maxlength="60" placeholder="guests">
+        <label class="sr-only" for="c_op{{ loop.index }}">comparison</label>
+        <select id="c_op{{ loop.index }}" name="c_op">{% for o in ops %}<option value="{{ o }}" {% if c.op == o %}selected{% endif %}>{{ o|replace('_', ' ') }}</option>{% endfor %}</select>
+        <label class="sr-only" for="c_value{{ loop.index }}">value</label>
+        <input id="c_value{{ loop.index }}" name="c_value" value="{{ c.value }}" maxlength="500" placeholder="2">
+      </div>
+      {% endfor %}
+      <button class="btn ghost small" type="submit" name="action" value="add_condition">Add another condition</button>
+    </fieldset>
+
+    <div class="row2">
+      <div><label for="review_by">Check again by</label><input id="review_by" name="review_by" type="date" value="{{ values.review_by }}" {{ inv("review_by") }}>{{ err("review_by") }}</div>
+      <div><label for="owner">Who owns it</label><input id="owner" name="owner" value="{{ values.owner }}" maxlength="80" placeholder="Front office manager" {{ inv("owner") }}>{{ err("owner") }}</div>
+    </div>
+    <div class="row2">
+      <div><label for="source_kind">Source</label>{{ select("source_kind", [''] + source_kinds) }}{{ err("source_kind") }}</div>
+      <div><label for="source_ref">Which one</label><input id="source_ref" name="source_ref" value="{{ values.source_ref }}" maxlength="300" placeholder="Rate sheet 2026-27 v3" {{ inv("source_ref") }}>{{ err("source_ref") }}</div>
+    </div>
+    <div class="row2">
+      <div><label for="claim_class">Kind of claim</label>{{ select("claim_class", claim_classes) }}{{ err("claim_class") }}</div>
+      <div><label for="risk">Risk if wrong</label>{{ select("risk", risks) }}{{ err("risk") }}</div>
+    </div>
+    <label class="check"><input type="checkbox" name="requires_evidence" value="yes" {% if values.requires_evidence %}checked{% endif %}> Needs evidence on file</label>
+    <div><label for="evidence_ref">Evidence</label><input id="evidence_ref" name="evidence_ref" value="{{ values.evidence_ref }}" maxlength="200" placeholder="certificate number, report name" {{ inv("evidence_ref") }}>{{ err("evidence_ref") }}</div>
+    <label for="required_disclosures">Must always be said with it, one per line</label>
+    <textarea id="required_disclosures" name="required_disclosures" rows="2" {{ inv("required_disclosures") }} placeholder="per room per night, 2 sharing">{{ values.required_disclosures }}</textarea>
+    {{ err("required_disclosures") }}
+    <label for="allowed_phrasing">Good ways to say it, one per line</label>
+    <textarea id="allowed_phrasing" name="allowed_phrasing" rows="2" {{ inv("allowed_phrasing") }}>{{ values.allowed_phrasing }}</textarea>
+    {{ err("allowed_phrasing") }}
+    <label for="forbidden_phrasing">Never say, one per line</label>
+    <textarea id="forbidden_phrasing" name="forbidden_phrasing" rows="2" {{ inv("forbidden_phrasing") }} placeholder="from £180">{{ values.forbidden_phrasing }}</textarea>
+    {{ err("forbidden_phrasing") }}
+    </div>
+  </details>
+  <div class="actions"><button class="btn primary big" type="submit" name="action" value="save">Save as draft</button><a class="btn ghost" href="/facts">Cancel</a></div>
+</form>
+{% if versions %}
+<h2>Versions</h2>
+<ol class="timeline">{% for x in versions %}<li><b>version {{ x.version }}</b> {{ x.status }}{% if x.created_at %} · <time>{{ x.created_at|replace('T', ' ') }}</time>{% endif %}{% if x.created_by %} · by {{ x.created_by }}{% endif %}{% if x.confirmed_by %} · confirmed by {{ x.confirmed_by }}{% endif %}</li>{% endfor %}</ol>
+{% endif %}
+{% endblock %}

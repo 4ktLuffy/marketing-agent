@@ -1,6 +1,6 @@
 # claim-checker
 
-Deploy **44 of 87** of the local-LLM marketing agent. It flags statements in marketing copy
+Deploy **44 of 89** of the local-LLM marketing agent. It flags statements in marketing copy
 that your **approved facts don't support**: invented tasting notes, wrong prices, made-up
 policies, awards and statistics.
 
@@ -134,7 +134,20 @@ GATEWAY_URL=http://localhost:8103 BRAND_URL=http://localhost:8105 uvicorn app.ma
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok","mode"}` |
-| POST | `/verify` | `{"text","context"?,"extra_facts"?:[]}` | `{"ok","unsupported":[...],"claims":[{"claim","supported","reasons"}],"numbers":[{"value","supported"}],"evidence_lines"}` |
+| POST | `/verify` | `{"text","context"?,"extra_facts"?:[],"facts"?:[]}` | `{"ok","unsupported":[...],"claims":[{"claim","supported","reasons","evidence":[{"id","quote"}]}],"numbers":[{"value","supported"}],"evidence_lines"}` |
+
+**Your own facts (`facts`, used by the task bridge 88).** Up to 200 lines, each at most 500
+characters. When given, they are the approved facts (labelled `[s1]`, `[s2]` …) and 05 `/facts`
+is **not** read; the brief (`context`), `extra_facts` and knowledge-base excerpts still add to them
+as before, and product scoping (05 `/profile`) still applies. Slot keys (`[[weekday-rate]] =`) and
+list dashes are removed from each line first, so a key is never counted as a number in the facts.
+Without `facts` nothing changes.
+
+**`evidence` per claim**: the lines that supported it, as `{"id": "s3", "quote": "..."}` (ids:
+`f`/`s` facts, `x` extra facts, `c` brief, `k` knowledge base). It comes from the checks already
+made: the line holding each number, the line a detail was literally found in, and the model's
+quote (mapped back to its line) for details the model or the second chance accepted. Empty when
+the claim is not supported.
 
 ```bash
 curl -s localhost:8144/verify -H 'content-type: application/json' -d '{

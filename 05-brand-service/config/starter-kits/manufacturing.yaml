@@ -1,0 +1,62 @@
+# Starter kit: manufacturer (industrial or consumer products). Data, not code.
+# POST /starter-kits/manufacturing/apply stores the phrasings and disclosures below as DRAFT
+# rules; nothing is enforced until the owner confirms them. These are marketing-hygiene
+# prompts, not legal advice: check what applies to your products and markets.
+label: Manufacturer
+description: Products with models and variants, certifications that apply to specific variants, lead times and country of origin.
+fact_types:
+  - fact_type: spec
+    subject_kind: variant
+    attributes: [pressure_rating, material, dimensions, operating_temperature]
+    example: "KV-200 electric actuator is rated to 16 bar."
+  - fact_type: certification
+    subject_kind: variant
+    attributes: [mark, standard, certificate_number, listed_models]
+    example: "UL listing covers the KV-200 electric actuator only (certificate on file)."
+  - fact_type: availability
+    subject_kind: product
+    attributes: [lead_time, minimum_order, stock_status]
+    example: "Standard lead time for KV-100 is 6 weeks (valid to end of quarter)."
+  - fact_type: price
+    subject_kind: variant
+    attributes: [list_price, volume_break, currency, incoterm]
+    example: "KV-100 list price is EUR 420 per unit ex works."
+  - fact_type: claim
+    subject_kind: product
+    attributes: [country_of_origin, recycled_content, warranty_years]
+    example: "KV-100 bodies are cast and machined in Sheffield, UK."
+claim_classes: [safety_cert, origin, regulated_food, comparative]
+forbidden_phrasing:
+  - phrase: UL Listed
+    why: A listing covers named models; saying it for the range or another variant can mislead.
+    claim_class: safety_cert
+    needs: a certification fact that names this exact variant
+  - phrase: CE marked
+    why: Marking applies per product; only state it for products with a declaration on file.
+    claim_class: safety_cert
+    needs: a certification fact for this product
+  - phrase: FDA approved
+    why: Food-contact compliance is not an approval; "approved" overstates what most materials have.
+    claim_class: regulated_food
+    needs: a certification fact with the exact wording of the approval
+  - phrase: Made in USA
+    why: Origin claims usually have strict tests (e.g. "all or virtually all"); state only what an origin fact supports.
+    claim_class: origin
+    needs: an origin fact for this product
+  - phrase: Made in UK
+    why: Origin claims need evidence of where the product was substantially made.
+    claim_class: origin
+    needs: an origin fact for this product
+  - phrase: in stock
+    why: Stock and lead times change weekly; stale availability is the most common complaint.
+    needs: a current availability fact
+  - phrase: industry-leading
+    why: A comparative claim needs a comparison you can show.
+    claim_class: comparative
+    needs: a result or claim fact with the comparison source
+required_disclosures:
+  - when: a lead time or delivery date is mentioned
+    text: Lead times are estimates and may change.
+  - when: a certification is mentioned
+    text: Certification applies to the listed models only.
+    claim_class: safety_cert

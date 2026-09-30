@@ -1,0 +1,10 @@
+# WHY: free delivery over £40 requires "within 10 miles of the centre", which appears nowhere in the draft.
+blocked: true
+findings:
+  - {contains: "Spend over £40 and delivery is free", label: missing_disclosure, fact_key: local-delivery}
+  - {contains: "Subject: Free delivery on orders over £40", label: missing_disclosure, fact_key: local-delivery}
+  - {contains: "Every order over £40 comes with free delivery", label: missing_disclosure, fact_key: local-delivery}
+  - {contains: "Greenleaf: free delivery on orders over £40 this October", label: missing_disclosure, fact_key: local-delivery}
+must_not_flag:
+  - "carry your compost round to the back garden"
+  - "Every bag of compost we sell is peat-free"

@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Castlebrook driving school; manual and automatic cars. Task scope variants=[manual].
+company: {name: "Pellow Driving School", type: "driving school", today: '2026-09-29'}
+facts:
+- key: "manual-lesson-rate"
+  subject: {kind: "service", ref: "Manual driving lesson"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 38
+  unit: "hour"
+  currency: "GBP"
+  value_text: "£38 per hour"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["manual"]}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pellow lesson price list 2026 v2"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "A manual driving lesson costs £38 per hour; lessons are booked as 1 or 2 hours."
+- key: "automatic-lesson-rate"
+  subject: {kind: "service", ref: "Automatic driving lesson"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 42
+  unit: "hour"
+  currency: "GBP"
+  value_text: "£42 per hour"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["automatic"]}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pellow lesson price list 2026 v2"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "An automatic driving lesson costs £42 per hour; lessons are booked as 1 or 2 hours."
+- key: "manual-block-10"
+  subject: {kind: "package", ref: "10-hour manual block"}
+  fact_type: "price"
+  attribute: "price"
+  value: 350
+  unit: null
+  currency: "GBP"
+  value_text: "£350"
+  basis: "flat"
+  conditions: [{key: "payment", op: "=", value: "in advance"}, {key: "hours", op: "=", value: 10}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["manual"]}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pellow lesson price list 2026 v2"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["paid in advance"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "A block of 10 hours of manual lessons costs £350 when paid in advance."
+- key: "first-time-pass-rate"
+  subject: {kind: "business", ref: "Pellow Driving School"}
+  fact_type: "result"
+  attribute: "first_time_pass_rate"
+  value: 58
+  unit: "percent"
+  currency: null
+  value_text: "58%"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-07-15"
+  valid_to: null
+  review_by: "2027-07-15"
+  source: {kind: "doc", ref: "DVSA test results export Jul 2025 - Jun 2026"}
+  claim_class: "result"
+  requires_evidence: true
+  evidence_ref: "DVSA test results export Jul 2025 - Jun 2026"
+  consent_ref: null
+  required_disclosures: ["July 2025 to June 2026"]
+  allowed_phrasing: []
+  forbidden_phrasing: ["guaranteed pass", "pass guaranteed", "guarantee you pass"]
+  owner: "School owner"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "58% of Pellow learners who took their practical test between July 2025 and June 2026 passed first time. Pellow never guarantees a pass."
+- key: "adi-instructors"
+  subject: {kind: "business", ref: "Pellow instructor team"}
+  fact_type: "credential"
+  attribute: "dvsa_adi"
+  value: null
+  unit: null
+  currency: null
+  value_text: "DVSA-approved driving instructors (ADIs)"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: "2027-01-01"
+  source: {kind: "certificate", ref: "ADI certificates on file (9)"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "ADI certificates on file (9)"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: ["DVSA-approved driving school", "DVSA approved driving school", "DVSA-approved school"]
+  owner: "School owner"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "All 9 Pellow instructors are fully qualified DVSA-approved driving instructors (ADIs); none are trainees. DVSA approves instructors, not schools."
+- key: "intensive-autumn-offer"
+  subject: {kind: "offer", ref: "Autumn intensive discount"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 60
+  unit: null
+  currency: "GBP"
+  value_text: "£60 off"
+  basis: "flat"
+  conditions: [{key: "course", op: "=", value: "20-hour intensive"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: "2026-10-05"
+  review_by: null
+  source: {kind: "doc", ref: "Autumn offer sheet 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["20-hour intensive course"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "£60 off a 20-hour intensive course, for bookings made by 5 October 2026."
+- key: "summer-free-first-lesson"
+  subject: {kind: "offer", ref: "Summer free first lesson"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 0
+  unit: null
+  currency: "GBP"
+  value_text: "first 1-hour lesson free"
+  basis: "flat"
+  conditions: [{key: "customer", op: "=", value: "new learner"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {kind: "doc", ref: "Summer offer sheet 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "medium"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "New learners got their first 1-hour lesson free (June to August 2026)."
+- key: "pass-plus-course"
+  subject: {kind: "service", ref: "Pass Plus"}
+  fact_type: "price"
+  attribute: "price"
+  value: 185
+  unit: null
+  currency: "GBP"
+  value_text: "£185"
+  basis: "flat"
+  conditions: [{key: "licence", op: "=", value: "full"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pellow lesson price list 2026 v2"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Pass Plus is six hours of post-test training for £185, for drivers who hold a full licence."
+- key: "instructor-franchise-fee"
+  subject: {kind: "policy", ref: "Instructor franchise fee"}
+  fact_type: "price"
+  attribute: "fee"
+  value: 230
+  unit: "week"
+  currency: "GBP"
+  value_text: "£230 per week"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Franchise agreement 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Franchised instructors pay Pellow £230 per week."
+- key: "college-learner-rate"
+  subject: {kind: "offer", ref: "Ferrybridge College learner rate"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 31
+  unit: "hour"
+  currency: "GBP"
+  value_text: "£31 per hour"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: "2027-07-31"
+  review_by: null
+  source: {kind: "doc", ref: "Ferrybridge College agreement 2026-27"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "School owner"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Under its contract with Ferrybridge College, Pellow charges college learners £31 per hour."

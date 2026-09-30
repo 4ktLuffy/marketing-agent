@@ -1,0 +1,9 @@
+# WHY: "in stock in size S" is true for Quay Street only (sites=[quay-street]); the task is sites=[canal-street], which has M and L. The value matches the other store's fact, so wrong_scope. The email has no heading.
+blocked: true
+findings:
+  - {contains: "The Tempo 3 is in stock in size S at Canal Street", label: wrong_scope, fact_key: tempo3-stock-quay}
+  - {contains: "Size S Tempo 3s in stock now", label: wrong_scope, fact_key: tempo3-stock-quay}
+  - {contains: "we have the Tempo 3 in stock in size S", label: wrong_scope, fact_key: tempo3-stock-quay}
+must_not_flag:
+  - "The Forge Tempo 3 hybrid costs £1,200"
+  - "A Full Service is £110, parts charged extra"

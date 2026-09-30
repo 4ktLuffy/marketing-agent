@@ -1,0 +1,27 @@
+Absolutely! Here's a Google search ad and an October email for homeowners in the North West. 🔒
+
+## 1) Google Search Ad
+
+Headline 1: NSI Gold Approved Installer
+Headline 2: Grade 2 Home Alarms
+Headline 3: Greater Manchester & Lancashire
+Description: {{nsi-gold}}, fitting home alarms to [[grade-2-home]]. Book your survey today.
+
+## 2) Email
+
+Subject: Is your home alarm ready for the dark evenings?
+
+Hi there,
+
+The clocks go back this month, so it's a good time to check your home is protected.
+Ironbridge Security is NSI Gold approved, certificate NSI-7042189.
+Every home system we fit is designed to BS EN 50131 Grade 2.
+Essential Monitoring costs £24.99 a month on a 12-month minimum term.
+Choose Complete Monitoring and keyholding and an annual maintenance visit are included.
+Across Greater Manchester and Lancashire, our keyholders respond within 30 minutes, day or night.
+Reply to this email to book a survey with our Bolton team.
+
+Stay safe,
+The Ironbridge Security team
+
+Want me to write a second subject line to A/B test?

@@ -1,0 +1,7 @@
+# WHY: online GCSE rate with "billed monthly in advance", the 87% result with its cohort disclosure, the Level 2 safeguarding credential as held, term dates; no trial lesson, no centre-only mock exam.
+blocked: false
+findings: []
+must_not_flag:
+  - "Online sessions are £38 per hour, billed monthly in advance"
+  - "87% achieved grade 4 or above in GCSE maths (2026 cohort of 212 students)"
+  - "Every tutor has an enhanced DBS check and Level 2 Safeguarding Children certificate"

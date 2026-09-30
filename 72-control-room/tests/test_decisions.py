@@ -155,3 +155,74 @@ def test_pending_decisions_are_sent_on_shutdown(app, mock):
         c.post("/decide", data={"id": 2, "decision": "approve"}, headers={**HX, "X-CSRF-Token": token})
         assert not hook.called
     assert hook.call_count == 1
+
+
+# ---------- version-bound approval: the hash of the text on the card travels to 19
+
+SEEN = "ab" * 32
+
+
+def test_card_and_edit_page_carry_the_body_hash(authed, mock):
+    c, _ = authed
+    mock.get(f"{CAL}/items").respond(json=[item(7, body_sha256=SEEN), item(8)])   # 8: an older calendar
+    page = c.get("/").text
+    assert f'"seen": "{SEEN}"' in page and f'name="seen" value="{SEEN}"' in page
+    assert 'name="seen" value=""' in page
+    mock.get(f"{CAL}/items/7").respond(json=item(7, body_sha256=SEEN))
+    mock.get("http://rules.internal:8000/rules").respond(json={"channels": {}})
+    assert f'name="seen" value="{SEEN}"' in c.get("/items/7/edit").text
+
+
+def test_card_ignores_a_malformed_body_hash(authed, mock):
+    c, _ = authed
+    mock.get(f"{CAL}/items").respond(json=[item(7, body_sha256='x" onmouseover="alert(1)')])
+    page = c.get("/").text
+    assert "onmouseover" not in page and 'name="seen" value=""' in page
+
+
+def test_seen_hash_is_forwarded_with_the_decision(authed, app, mock):
+    c, token = authed
+    hook = mock.post(WEBHOOK).mock(return_value=n8n_ok(["ok"]))
+    h = {**HX, "X-CSRF-Token": token}
+    c.post("/decide", data={"id": 1, "decision": "approve", "seen": SEEN}, headers=h)
+    c.post("/decide", data={"id": 2, "decision": "edit", "text": "New", "seen": SEEN}, headers=h)
+    c.post("/decide", data={"id": 3, "decision": "approve", "seen": ""}, headers=h)
+    flush(c, app)
+    assert json.loads(hook.calls.last.request.content)["decisions"] == [
+        {"id": 1, "decision": "approve", "seen_sha256": SEEN},
+        {"id": 2, "decision": "edit", "text": "New", "seen_sha256": SEEN},
+        {"id": 3, "decision": "approve"},
+    ]
+
+
+def test_malformed_seen_hash_is_422(authed, app, mock):
+    c, token = authed
+    h = {"X-CSRF-Token": token}
+    for bad in ["abc", "AB" * 32, "g" * 64, SEEN + "0"]:
+        assert c.post("/decide", data={"id": 1, "decision": "approve", "seen": bad}, headers=h).status_code == 422
+    assert not app.state.pending.items
+
+
+def test_changed_since_you_looked_is_one_clear_line(authed, app, mock):
+    c, token = authed
+    mock.post(WEBHOOK).mock(return_value=httpx.Response(200, json={
+        "ok": False, "summary": ["#4: approved for 2026-10-01 09:00 UTC",
+                                 "#3: NOT approved: changed since you looked — reopen the card"],
+        "not_in_review": [], "stale": [3], "failed": [], "message": ""}))
+    c.post("/decide", data={"id": 3, "decision": "approve", "seen": SEEN}, headers={**HX, "X-CSRF-Token": token})
+    flush(c, app)
+    res = c.get("/results").text
+    assert res.count("changed since you looked — reopen the card") == 1 and "#4: approved" in res
+    assert app.state.pending.results[0].ok is False
+
+
+def test_raw_409_from_an_older_workflow_is_translated(authed, app, mock):
+    c, token = authed
+    mock.post(WEBHOOK).mock(return_value=httpx.Response(200, json={
+        "ok": False, "summary": ["#5: approved for 2026-10-01 09:00 UTC"], "not_in_review": [],
+        "failed": [{"status": 409, "detail": {"message": "changed since you looked", "current_sha256": "cd" * 32}}],
+        "message": ""}))
+    c.post("/decide", data={"id": 5, "decision": "approve", "seen": SEEN}, headers={**HX, "X-CSRF-Token": token})
+    flush(c, app)
+    res = c.get("/results").text
+    assert "changed since you looked — reopen the card" in res and "current_sha256" not in res

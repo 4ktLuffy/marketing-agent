@@ -1,0 +1,13 @@
+# WHY: the 25-year guarantee is for flat roofs (variants=[flat-roof]) and £85 is the landlord inspection price (segments=[landlord]); the task is pitched-roof for homeowners.
+blocked: true
+findings:
+  - {contains: "Every roof we fit is covered for 25 years", label: wrong_scope, fact_key: flat-guarantee}
+  - {contains: "Our EPDM rubber flat roofs come with a 25-year insurance-backed guarantee", label: wrong_scope, fact_key: flat-guarantee}
+  - {contains: "ROOF INSPECTION – JUST £85", label: wrong_scope, fact_key: landlord-rate}
+  - {contains: "A roof inspection with a written report costs £85 per property", label: wrong_scope, fact_key: landlord-rate}
+  - {contains: "Roof replacement with a 25-year guarantee", label: wrong_scope, fact_key: flat-guarantee}
+  - {contains: "We back it with our 25-year insurance-backed guarantee", label: wrong_scope, fact_key: flat-guarantee}
+must_not_flag:
+  - "Full pitched re-roofs start from £6,800 for a typical 3-bed semi"
+  - "Scaffolding, skip hire and a full clear-up are included in every re-roof price"
+  - "Thinking about a new pitched roof?"

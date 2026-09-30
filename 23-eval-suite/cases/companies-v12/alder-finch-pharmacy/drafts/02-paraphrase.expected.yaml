@@ -1,0 +1,11 @@
+# WHY: negative control. Same Castle Green facts in everyday words: "eighteen or over"/"18+" for "adults 18 and over", "if you qualify" for "if you're eligible", "within three miles" for "within 3 miles of the branch"; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Anyone aged eighteen or over can have a private flu jab with us for sixteen pounds"
+  - "Saturday mornings are walk-in time at Castle Green"
+  - "If you qualify for the NHS jab, you won't pay a penny for it"
+  - "We'll bring your prescriptions round for free"
+  - "flu jab £16 (adults 18+), walk-ins Sat 9-1"
+  - "Flu jabs, no booking needed: Saturdays 9am–1pm, Castle Green"
+  - "Adults (18+) pay £16 for a private jab"

@@ -1,0 +1,11 @@
+# WHY: only Growth-scoped or all-plan public facts; the Growth price carries 'excl. VAT' and 'minimum 5 employees'; 'HMRC-recognised' is the allowed phrasing.
+blocked: false
+findings: []
+must_not_flag:
+- Still running payroll in a spreadsheet?
+- Payroo Growth handles
+- Your team gets
+- Growth is
+- Payroo is HMRC-recognised payroll software
+- The price is
+- £7 per employee per month, excl. VAT, minimum 5 employees

@@ -1,0 +1,10 @@
+# WHY: Tailrace requires "0.5% ABV" and Low Weir requires "brewed with barley"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Tailrace is our low-alcohol IPA, so you can still join the round", label: missing_disclosure, fact_key: tailrace-ipa}
+  - {contains: "A low-alcohol IPA worth staying for", label: missing_disclosure, fact_key: tailrace-ipa}
+  - {contains: "Tailrace, our low-alcohol IPA, is one for the drivers", label: missing_disclosure, fact_key: tailrace-ipa}
+  - {contains: "Low Weir Lager is gluten-reduced, tested below 20ppm", label: missing_disclosure, fact_key: low-weir-lager}
+must_not_flag:
+  - "We're open Thursday to Saturday 4pm–11pm, Sunday 12–6pm."
+  - "Millrace Pale is £4.80 a pint."

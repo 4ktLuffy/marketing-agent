@@ -1,0 +1,12 @@
+# WHY: negative control — "1200 pounds" = £1,200 (same price in every size), Canal Street's own M/L stock, cycle-to-work with its condition, Full Service slot with "parts charged extra", the real Cytech level; questions and seasonal words name no offer.
+blocked: false
+findings: []
+must_not_flag:
+  - "Thinking about a new bike?"
+  - "The Forge Tempo 3 hybrid is 1200 pounds, whichever size you ride"
+  - "we have the Tempo 3 in stock in sizes M and L"
+  - "You can pay through the cycle-to-work scheme"
+  - "Is your bike ready for the dark evenings?"
+  - "It covers gear and brake adjustment, wheel truing and a proper degrease"
+  - "Every one of our mechanics holds Cytech Technical Two"
+  - "Lights, mudguards and a tuned-up drivetrain make the ride a lot nicer"

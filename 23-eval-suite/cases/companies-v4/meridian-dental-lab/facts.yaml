@@ -1,0 +1,289 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Meridian Dental Laboratory, type: dental laboratory (B2B), today: '2026-09-29'}
+facts:
+- key: zirconia-crown-price
+  subject: {kind: product, ref: Monolithic zirconia crown}
+  fact_type: price
+  attribute: unit_price
+  value: 68
+  unit: unit
+  currency: GBP
+  value_text: £68 per unit
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Lab price list 2026 v2}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Lab manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A monolithic zirconia crown costs £68 per unit.
+- key: crown-turnaround
+  subject: {kind: product, ref: Crowns and bridges}
+  fact_type: spec
+  attribute: turnaround
+  value: 5
+  unit: working_days
+  currency: null
+  value_text: 5 working days
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Service levels sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [from receipt of the scan or impression]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Lab manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Crowns and bridges are returned in 5 working days from receipt of the scan or impression.
+- key: zirconia-material
+  subject: {kind: product, ref: Monolithic zirconia crown}
+  fact_type: spec
+  attribute: material_grade
+  value: null
+  unit: null
+  currency: null
+  value_text: ISO 6872 Class 5 zirconia
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: NordZir HT material data sheet rev 4}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: NordZir HT data sheet rev 4
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head technician
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our zirconia crowns are milled from NordZir HT, an ISO 6872 Class 5 zirconia.
+- key: iso-13485
+  subject: {kind: business, ref: Meridian Dental Laboratory}
+  fact_type: certification
+  attribute: qms_certificate
+  value: null
+  unit: null
+  currency: null
+  value_text: ISO 13485:2016 certificate QMS-44817
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges, dentures]}
+  valid_from: '2025-03-14'
+  valid_to: '2028-03-13'
+  review_by: null
+  source: {kind: certificate, ref: 'Certificate QMS-44817, Albion Certification Ltd'}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: Certificate QMS-44817
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Quality lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our quality management system is certified to ISO 13485:2016 (certificate QMS-44817) for the design and manufacture
+    of custom-made crowns, bridges and dentures. Implant components are outside the certificate scope.
+- key: ukca-abutments
+  subject: {kind: product, ref: ProLink titanium implant abutments}
+  fact_type: certification
+  attribute: conformity_marking
+  value: null
+  unit: null
+  currency: null
+  value_text: UKCA and CE marked
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [implant-components]}
+  valid_from: '2025-11-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: ProLink declaration of conformity 2025}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: ProLink DoC 2025
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Quality lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: ProLink titanium implant abutments carry the UKCA and CE marks. Custom-made crowns and bridges do not carry these
+    marks; they are supplied with a statement of manufacture.
+- key: intro-offer
+  subject: {kind: offer, ref: New account introductory offer}
+  fact_type: price
+  attribute: offer_price
+  value: 49
+  unit: unit
+  currency: GBP
+  value_text: £49 per unit for your first three zirconia crowns
+  basis: per_unit
+  conditions:
+  - {key: account, op: '=', value: new}
+  - {key: cases, op: <=, value: 3}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: September practice campaign brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New accounts pay £49 per unit for their first three zirconia crowns when the cases arrive by 4 October 2026.
+- key: scan-rebate
+  subject: {kind: offer, ref: Summer scan-switch rebate}
+  fact_type: price
+  attribute: rebate
+  value: 5
+  unit: case
+  currency: GBP
+  value_text: £5 off every digital scan case
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer 2026 campaign brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: Practices switching from impressions to digital scans got £5 off every digital scan case until 31 August 2026.
+- key: case-inclusions
+  subject: {kind: service, ref: Crown and bridge cases (North West accounts)}
+  fact_type: inclusion
+  attribute: included_services
+  value: null
+  unit: null
+  currency: null
+  value_text: free courier collection, a printed model and a shade photo report
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [north-west], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Account terms 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Lab manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: North West accounts get free courier collection, a printed model and a shade photo report with every crown and bridge
+    case.
+- key: unit-cost
+  subject: {kind: product, ref: Monolithic zirconia crown}
+  fact_type: price
+  attribute: unit_cost
+  value: 21
+  unit: unit
+  currency: GBP
+  value_text: £21 per unit
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Costing sheet Q3 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our technician and material cost per zirconia crown is £21 per unit.
+- key: pennine-contract
+  subject: {kind: package, ref: Pennine Smiles Group framework}
+  fact_type: price
+  attribute: contract_price
+  value: 54
+  unit: unit
+  currency: GBP
+  value_text: £54 per unit
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Pennine Smiles Group}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Pennine Smiles framework agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Pennine Smiles Group pays £54 per unit for zirconia crowns under its framework agreement.

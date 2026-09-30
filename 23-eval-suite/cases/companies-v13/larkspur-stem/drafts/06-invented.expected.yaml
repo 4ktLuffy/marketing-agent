@@ -1,0 +1,8 @@
+# WHY: the award has no source; "100% pet-safe" is a forbidden phrasing on the pet-friendly range; same-day delivery is Monday to Saturday only, not "any day of the week".
+blocked: true
+findings:
+  - {contains: "Winner of the Golden Stem Award 2025", label: no_source, fact_key: null}
+  - {contains: "100% pet-safe", label: forbidden_phrase, fact_key: pet-friendly-range}
+  - {contains: "Same-day delivery any day of the week", label: conflict_or_expired, fact_key: same-day-delivery}
+must_not_flag:
+  - "Our seasonal hand-tied bouquet is £35"

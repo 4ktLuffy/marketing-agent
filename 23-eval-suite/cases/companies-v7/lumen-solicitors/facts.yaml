@@ -1,0 +1,346 @@
+# FICTIONAL company. Held-out eval fixture (companies-v7, see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Lumen Solicitors, type: 'law firm (residential property, family, wills)', today: '2026-09-29'}
+facts:
+- key: conv-band-1
+  subject: {kind: service, ref: 'Residential conveyancing (purchase), price up to £250,000'}
+  fact_type: price
+  attribute: fixed_fee
+  value: 895
+  unit: null
+  currency: GBP
+  value_text: £895 fixed fee
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [up-to-250k]
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Conveyancing fee schedule 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excluding VAT and disbursements]
+  allowed_phrasing: []
+  forbidden_phrasing: [no hidden costs, all-inclusive]
+  owner: Head of property
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Buying a home priced up to £250,000: conveyancing fixed fee £895, excluding VAT and disbursements (searches,
+    Land Registry fee, SDLT).'
+- key: conv-band-2
+  subject: {kind: service, ref: 'Residential conveyancing (purchase), £250,001 to £500,000'}
+  fact_type: price
+  attribute: fixed_fee
+  value: 1195
+  unit: null
+  currency: GBP
+  value_text: £1,195 fixed fee
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [250k-to-500k]
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Conveyancing fee schedule 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excluding VAT and disbursements]
+  allowed_phrasing: []
+  forbidden_phrasing: [no hidden costs, all-inclusive]
+  owner: Head of property
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Buying a home priced £250,001 to £500,000: conveyancing fixed fee £1,195, excluding VAT and disbursements.'
+- key: sra-number
+  subject: {kind: business, ref: Lumen Solicitors LLP}
+  fact_type: credential
+  attribute: sra_number
+  value: 804517
+  unit: null
+  currency: null
+  value_text: authorised and regulated by the Solicitors Regulation Authority (SRA number 804517)
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2019-05-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: SRA register entry 804517}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: SRA 804517
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Compliance officer (COLP)
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Lumen Solicitors LLP is authorised and regulated by the Solicitors Regulation Authority, SRA number 804517.
+- key: lexcel
+  subject: {kind: business, ref: Lumen Solicitors LLP}
+  fact_type: certification
+  attribute: lexcel
+  value: v6.1
+  unit: null
+  currency: null
+  value_text: Lexcel accredited (Lexcel v6.1, certificate LX-30958)
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2024-06-01'
+  valid_to: '2027-05-31'
+  review_by: '2027-04-30'
+  source: {kind: certificate, ref: Lexcel certificate LX-30958}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: LX-30958
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Compliance officer (COLP)
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Lumen Solicitors holds Lexcel accreditation, the Law Society's practice management standard (Lexcel v6.1,
+    certificate LX-30958). Lexcel has no gold or tiered levels.
+- key: free-consultation
+  subject: {kind: offer, ref: First consultation}
+  fact_type: price
+  attribute: consultation_fee
+  value: 0
+  unit: null
+  currency: null
+  value_text: a free 30-minute first consultation by phone or video
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: lumen-solicitors.example/consultation}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [new clients only]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New clients get a free 30-minute first consultation by phone or video.
+- key: bath-saturday
+  subject: {kind: site, ref: Bath office}
+  fact_type: hours
+  attribute: saturday_opening
+  value: null
+  unit: null
+  currency: null
+  value_text: open Saturdays 9am to 12pm
+  basis: null
+  conditions: []
+  scope:
+    sites: [bath]
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Office rota 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Practice manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Bath office is open on Saturdays from 9am to 12pm. The Bristol office is closed at weekends.
+- key: case-inclusion
+  subject: {kind: service, ref: Residential conveyancing}
+  fact_type: inclusion
+  attribute: included
+  value: null
+  unit: null
+  currency: null
+  value_text: a named solicitor and online case tracking
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Client care letter template 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of property
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every conveyancing fixed fee includes a named solicitor and online case tracking.
+- key: autumn-movers
+  subject: {kind: offer, ref: Autumn Movers offer}
+  fact_type: price
+  attribute: discount
+  value: 100
+  unit: null
+  currency: GBP
+  value_text: £100 off our conveyancing fee
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: doc, ref: Marketing plan Q3 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of property
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn Movers offer: £100 off the conveyancing fixed fee for purchases instructed by 5 October 2026.'
+- key: cost-rate
+  subject: {kind: business, ref: Lumen Solicitors LLP}
+  fact_type: price
+  attribute: internal_cost_rate
+  value: 185
+  unit: hour
+  currency: GBP
+  value_text: £185 per hour
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Management accounts 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Internal cost rate for a property fee earner is £185 per hour.
+- key: severnside-panel
+  subject: {kind: service, ref: New-build conveyancing panel}
+  fact_type: price
+  attribute: contract_price
+  value: 640
+  unit: null
+  currency: GBP
+  value_text: £640 per plot
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Severnside Homes}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Severnside Homes panel agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing partner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Severnside Homes pays a panel fee of £640 per plot for new-build purchases.

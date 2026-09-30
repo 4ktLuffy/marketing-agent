@@ -1,0 +1,11 @@
+# WHY: Autumn Stock-Up is valid today but ends 2026-10-03, before publish 2026-10-08 (named, in the subject, and described loosely); the Summer Clearance ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Autumn Stock-Up is here: a free box of 100 nitrile gloves", label: conflict_or_expired, fact_key: stock-up-offer}
+  - {contains: "Spend £250, get gloves on us", label: conflict_or_expired, fact_key: stock-up-offer}
+  - {contains: "we'll add a box of gloves to your order for free", label: conflict_or_expired, fact_key: stock-up-offer}
+  - {contains: "prophy paste at a quarter off in our Summer Clearance", label: conflict_or_expired, fact_key: summer-clearance}
+must_not_flag:
+  - "Standard trade accounts pay £5.40 per box of 100, excluding VAT"
+  - "Order by 5pm, Monday to Friday, for next-working-day delivery in England and Wales"
+  - "Your named account manager can help you plan the order"

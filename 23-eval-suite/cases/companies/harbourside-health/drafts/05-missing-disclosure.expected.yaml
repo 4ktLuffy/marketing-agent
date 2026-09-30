@@ -1,0 +1,7 @@
+# WHY: the £39 check-up fact requires "X-rays charged separately", which is missing from both pieces.
+blocked: true
+findings:
+  - {contains: "first dental check-up at Quayside is just £39", label: missing_disclosure, fact_key: dental-checkup-new-patient}
+  - {contains: "check-up is only £39", label: missing_disclosure, fact_key: dental-checkup-new-patient}
+must_not_flag:
+  - "An initial physio assessment at Quayside costs £55"

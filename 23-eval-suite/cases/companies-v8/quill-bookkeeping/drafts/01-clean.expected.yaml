@@ -1,0 +1,16 @@
+# WHY: negative control: Sole Trader facts only, 'plus VAT' on every price, MTD wording matches the fact, the AAT licence number and MAAT grade are exact; video timestamps are look-alikes.
+blocked: false
+findings: []
+must_not_flag:
+  - "Self-employed and dreading January?"
+  - "Quill's Sole Trader plan is"
+  - "Our service team is an AAT licensed practice, licence number 1049733"
+  - "00:00 Intro · 01:45 Importing your records · 04:30 Your first MTD submission"
+  - "Sole Trader plan: £18 a month plus VAT"
+  - "Subscribe for a new bookkeeping tip every Tuesday"
+  - "Your books, sorted before January"
+  - "Why wait until January to sort your records?"
+  - "costs £18 a month plus VAT and is compatible with Making Tax Digital for VAT and for Income Tax"
+  - "We'll import your old spreadsheets on a free onboarding call"
+  - "led by Priya Doshi MAAT, and the practice is AAT licensed"
+  - "chat to us Monday to Friday, 8am to 6pm"

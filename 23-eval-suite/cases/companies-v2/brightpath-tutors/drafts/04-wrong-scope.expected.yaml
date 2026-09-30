@@ -1,0 +1,9 @@
+# WHY: the free termly mock exam is a Leeds-centre (in-person) inclusion, not online; the £46 rate is for segment a-level, the task is sites=[online], segments=[gcse].
+blocked: true
+findings:
+  - {contains: "a free mock exam every term in exam conditions", label: wrong_scope, fact_key: centre-mock-exams}
+  - {contains: "Online GCSE maths tutoring with a free mock exam every term", label: wrong_scope, fact_key: centre-mock-exams}
+  - {contains: "A-level sessions are £46 per hour", label: wrong_scope, fact_key: alevel-rate}
+must_not_flag:
+  - "Online GCSE maths, £38 per hour, billed monthly in advance"
+  - "Autumn term runs 7 September to 18 December 2026"

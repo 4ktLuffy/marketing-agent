@@ -1,0 +1,291 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Lake Ember Lodge, type: hospitality, today: '2026-09-29'}
+facts:
+- key: weekend-rate
+  subject: {kind: package, ref: Weekend Break}
+  fact_type: price
+  attribute: rate
+  value: 210
+  unit: night
+  currency: GBP
+  value_text: £210 per room per night
+  basis: per_room
+  conditions:
+  - {key: days, op: in, value: [Fri, Sat]}
+  - {key: board, op: '=', value: room only}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [weekend-break]}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Rate sheet 2026-27 v3}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per room per night, room only
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Front office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Weekend Break: £210 per room per night, Friday and Saturday nights, room only (no breakfast).'
+- key: midweek-rate
+  subject: {kind: package, ref: Midweek Escape}
+  fact_type: price
+  attribute: rate
+  value: 180
+  unit: night
+  currency: GBP
+  value_text: £180 per room per night
+  basis: per_room
+  conditions:
+  - {key: guests, op: '=', value: 2}
+  - {key: days, op: in, value: [Sun, Mon, Tue, Wed, Thu]}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [midweek-escape]}
+  valid_from: '2026-10-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Rate sheet 2026-27 v3}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per room per night, 2 sharing
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Front office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Midweek Escape costs £180 per room per night, 2 sharing, Sun-Thu, Oct-Mar, breakfast included.
+- key: breakfast-included
+  subject: {kind: package, ref: Midweek Escape}
+  fact_type: inclusion
+  attribute: breakfast
+  value: null
+  unit: null
+  currency: null
+  value_text: full breakfast included
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [midweek-escape]}
+  valid_from: '2026-10-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Rate sheet 2026-27 v3}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Front office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Breakfast is included on the Midweek Escape only; Weekend Break is room only.
+- key: lake-transfer
+  subject: {kind: service, ref: Station transfer (tour desk)}
+  fact_type: price
+  attribute: price
+  value: 25
+  unit: null
+  currency: GBP
+  value_text: £25
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Tour desk price list 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per person, each way
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Tour desk lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The tour desk books station transfers at £25 per person, each way.
+- key: kayak-tour
+  subject: {kind: service, ref: Guided kayak tour}
+  fact_type: price
+  attribute: price
+  value: 45
+  unit: null
+  currency: GBP
+  value_text: £45 per person
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Tour desk price list 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Tour desk lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Guided kayak tours cost £45 per person and run until 4 October 2026 (end of season).
+- key: summer-package
+  subject: {kind: package, ref: Summer Lakes package}
+  fact_type: price
+  attribute: package_price
+  value: 499
+  unit: null
+  currency: GBP
+  value_text: £499 for 3 nights
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Rate sheet 2026-27 v3}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Front office manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Summer Lakes package: £499 for 3 nights, June to August 2026. Ended.'
+- key: hot-tub
+  subject: {kind: business, ref: Lake Ember Lodge}
+  fact_type: inclusion
+  attribute: hot_tub
+  value: null
+  unit: null
+  currency: null
+  value_text: a private wood-fired hot tub
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: 'Owner, lodge spec'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every lodge has a private wood-fired hot tub.
+- key: dogs-welcome
+  subject: {kind: policy, ref: Dogs}
+  fact_type: policy
+  attribute: dogs
+  value: 20
+  unit: null
+  currency: GBP
+  value_text: dogs welcome in the Heron and Otter lodges, £20 per dog per stay
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://lakeember.example/dogs'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Front office manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Dogs are welcome in the Heron and Otter lodges only, at £20 per dog per stay.
+- key: weekend-rate-floor
+  subject: {kind: package, ref: Weekend Break}
+  fact_type: price
+  attribute: floor_price
+  value: 165
+  unit: null
+  currency: GBP
+  value_text: £165 per room per night
+  basis: per_room
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [weekend-break]}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Owner revenue note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The lowest weekend rate we will accept on a last-minute deal is £165 per room per night.
+- key: northfell-group-rate
+  subject: {kind: package, ref: Group rate (Northfell Walking Co.)}
+  fact_type: price
+  attribute: contract_price
+  value: 140
+  unit: null
+  currency: GBP
+  value_text: £140 per room per night
+  basis: per_room
+  conditions:
+  - {key: customer, op: '=', value: Northfell Walking Co.}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2027-02-28'
+  review_by: null
+  source: {kind: doc, ref: Northfell allocation agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Northfell Walking Co. groups pay £140 per room per night under their allocation agreement.

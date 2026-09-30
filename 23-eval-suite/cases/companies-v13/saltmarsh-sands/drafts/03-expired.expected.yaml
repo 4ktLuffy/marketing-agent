@@ -1,0 +1,8 @@
+# WHY: the 20% touring offer is valid today but ends 2026-10-09, before publish 2026-10-16; the 10% early-bird ended 2026-01-31.
+blocked: true
+findings:
+  - {contains: "A fifth off touring pitches for stays of 3 nights or more", label: conflict_or_expired, fact_key: half-term-offer}
+  - {contains: "book now for 10% off 2026 stays", label: conflict_or_expired, fact_key: early-bird-2026}
+must_not_flag:
+  - "Touring pitches are £32 per pitch per night, up to 4 people, electric hook-up included"
+  - "The indoor pool is open every day 9am to 7pm"

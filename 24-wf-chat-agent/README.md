@@ -1,8 +1,8 @@
 # 24 · Marketing chat agent
 
-Deploy **24 of 87** of the local-LLM marketing agent. This deploy is an n8n workflow.
+Deploy **24 of 89** of the local-LLM marketing agent. This deploy is an n8n workflow.
 
-The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) with 8 turns of memory and 17 tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.
+The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) through the LLM gateway (03), so every model call shows on the control room's Activity page, with 8 turns of memory and 17 tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.
 
 ## Where to deploy
 
@@ -51,23 +51,41 @@ n8n hosted chat at `<N8N_PUBLIC_URL>/webhook/mkt-marketing-chat/chat` (n8n login
 
 ## Model settings
 
-- Model `mkt-agent:latest`, built by `02-ollama-models`. To use another model, change it in the *Local model* node.
-- `numCtx` 16384. n8n's default of 2048 silently cuts off the tool definitions.
+- The *Model (via LLM gateway)* node is n8n's OpenAI chat model node pointed at the gateway
+  (`03-llm-gateway`, `POST /v1/chat/completions`). Its credential *LLM gateway (chat)* is
+  created by `01-marketing-stack/scripts/import-n8n.sh`: base URL `http://llm-gateway:8000/v1`
+  (`CHAT_GATEWAY_URL` to change it), API key = `INTERNAL_API_KEY` (from `.env`, never written
+  to the repo) and a custom header `X-Caller: 24 Chat agent`. Every model call of the chat then
+  shows on the control room's **Activity** page as *Chat agent asked mkt-agent (local) for a chat step*.
+- The gateway forwards the request unchanged (messages, tools, tool calls, streaming) to its
+  provider: Ollama's OpenAI-compatible `/v1` by default, or the hosted API when the gateway runs
+  with `LLM_PROVIDER=openai`. It logs metadata only, never your messages or the answers.
+- Model `AGENT_MODEL` (default `mkt-agent`, built by `02-ollama-models`), read from n8n's env.
+  It must be on the gateway's allowlist; the stack's compose file adds `AGENT_MODEL` to it.
+- Context 16384 tokens, from the `mkt-agent` Modelfile (`num_ctx`): Ollama's `/v1` API takes no
+  context size, and 2048 would silently cut off the tool definitions. Another model needs
+  `num_ctx` in its own Modelfile too.
 - Temperature 0.2: the agent chooses tools, it doesn't write copy.
 
-## Hosted model variant (optional)
+## Variants (optional)
 
-`variants/hosted.json` is the same agent on a hosted OpenAI-compatible model (Groq
-`openai/gpt-oss-120b` by default, `reasoning_effort` low). It has the same workflow id, so
-importing it replaces the local one. `01-marketing-stack/scripts/import-n8n.sh` does this when
-`CHAT_PROVIDER=hosted` and `CHAT_API_KEY` are set in `.env`. Your chat messages and tool
-results then go to that provider; the writing tools still use the gateway's model.
+Both have the same workflow id, so importing one replaces `workflow.json`.
+
+- `variants/direct-ollama.json`: n8n talks to Ollama directly (*Local model (Ollama)* node,
+  `numCtx` 16384, credential *Ollama (local)*), as before the gateway route. The chat then does
+  not show on the Activity page. `import-n8n.sh` imports it when `CHAT_PROVIDER=direct`.
+- `variants/hosted.json`: a hosted OpenAI-compatible model directly (Groq
+  `openai/gpt-oss-120b` by default, `reasoning_effort` low), local Ollama as fallback.
+  `import-n8n.sh` imports it when `CHAT_PROVIDER=hosted` and `CHAT_API_KEY` are set in `.env`.
+  Your chat messages and tool results then go to that provider; the writing tools still use
+  the gateway's model. These calls bypass the gateway, so they don't show on the Activity page.
 
 ## Depends on
 
+- `03-llm-gateway (`/v1/chat/completions`)`
 - `02-ollama-models (mkt-agent)`
 - `25–35 sub-workflows`
-- `Ollama credential (imported by 01)`
+- `LLM gateway (chat) credential (imported by 01)`
 
 Service URLs come from env vars on the n8n container (`GATEWAY_URL`, `CALENDAR_URL`, …),
 which `01-marketing-stack` sets. `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` must be set so

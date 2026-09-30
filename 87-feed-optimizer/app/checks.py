@@ -111,6 +111,16 @@ def tidy(text: str) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", text or "")).strip()
 
 
+# A pack count is a claim about how many come in the box, not just a number: "3-Pack", "pack of 3",
+# "3 pcs", "6 pairs". It needs a count in the row, not any 3 ("3 m" cable).
+QTY_RE = re.compile(r"\b(\d+)\s*[- ]?\s*(?:pack|pk|pcs|pieces|piece|pairs|pair|count|ct)\b"
+                    r"|\b(?:pack|set|box|case|bundle) of (\d+)\b", re.I)
+
+
+def counts(text: str) -> set[str]:
+    return {(a or b).lstrip("0") or "0" for a, b in QTY_RE.findall(text or "")}
+
+
 def _num_forms(tok: str) -> set[str]:
     t = tok.replace(",", ".")
     out = {tok, tok.replace(",", ""), t}
@@ -142,6 +152,7 @@ class Context:
         for w in words(_evidence(row, NUMBER_FIELDS)):
             if w in NUMBER_WORDS:
                 self.numbers.add(NUMBER_WORDS[w])
+        self.counts = counts(_evidence(row, NUMBER_FIELDS))
         self.number_words = {w for w in self.all_words if w in NUMBER_WORDS} | {
             w for w, d in NUMBER_WORDS.items() if d in self.numbers}
         # Taxonomy words are product nouns ("Irons", "Glass Jars"), allowed in every category.
@@ -182,6 +193,8 @@ def check(text: str, ctx: Context, kind: str = "title") -> list[dict]:
     for tok in NUM_RE.findall(text):
         if not _num_forms(tok) & ctx.numbers:
             reasons.append(_reason("number", f"{tok!r} is not in this product's data"))
+    for n in sorted(counts(text) - ctx.counts):
+        reasons.append(_reason("number", f"a pack of {n} is not in this product's data"))
     raw_words = WORD_RE.findall(unicodedata.normalize("NFKC", text))
     # The brand's own words ("Lumen & Oak", "Black Diamond") are not attribute claims.
     unbranded = text

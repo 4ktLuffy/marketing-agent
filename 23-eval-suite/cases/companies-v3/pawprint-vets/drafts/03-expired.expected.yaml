@@ -1,0 +1,10 @@
+# WHY: the Golden Years free senior check is valid today but ends 2026-10-03, before publish 2026-10-07 (line 5 describes it without its name); the Summer Flea Amnesty ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "can come in for a free health check this month", label: conflict_or_expired, fact_key: senior-check-offer}
+  - {contains: "Subject: The Golden Years check is here", label: conflict_or_expired, fact_key: senior-check-offer}
+  - {contains: "Our Golden Years check gives older pets a free once-over with a vet", label: conflict_or_expired, fact_key: senior-check-offer}
+  - {contains: "get 3 months of flea treatment free", label: conflict_or_expired, fact_key: summer-flea-offer}
+  - {contains: "Free health checks for dogs and cats aged 8 and over at Pawprint Ashby", label: conflict_or_expired, fact_key: senior-check-offer}
+must_not_flag:
+  - "two vaccinations, a microchip and a nurse health check for £89"

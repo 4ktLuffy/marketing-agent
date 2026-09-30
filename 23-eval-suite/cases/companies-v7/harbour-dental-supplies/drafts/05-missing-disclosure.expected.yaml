@@ -1,0 +1,10 @@
+# WHY: the standard price requires 'excluding VAT' and the cut-off requires 'Monday to Friday'; neither (nor any equivalent such as 'plus VAT' or 'weekdays') appears anywhere. The clean draft carried them.
+blocked: true
+findings:
+  - {contains: "Harbour nitrile gloves are £5.40 per box of 100", label: missing_disclosure, fact_key: gloves-box-standard}
+  - {contains: "Nitrile gloves, £5.40 a box", label: missing_disclosure, fact_key: gloves-box-standard}
+  - {contains: "Switch your glove order to Harbour: £5.40 per box of 100", label: missing_disclosure, fact_key: gloves-box-standard}
+  - {contains: "Order by 5pm for next-working-day delivery anywhere", label: missing_disclosure, fact_key: cutoff-england-wales}
+must_not_flag:
+  - "UKCA and CE marked as a Class I medical device"
+  - "Every trade account includes a named account manager"

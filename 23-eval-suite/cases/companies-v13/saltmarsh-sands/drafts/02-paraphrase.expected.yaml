@@ -1,0 +1,10 @@
+# WHY: negative control — same facts in everyday words ("for the pair of you", "any day of the week", "10% down", abbreviated finance disclosure); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "Just £32 a night gets the pair of you a pitch by the sea"
+  - "bring up to two dogs, it's £3 per dog per night"
+  - "pool open any day of the week 9am-7pm"
+  - "With 10% down you could own a holiday lodge"
+  - "The touring field opens on 1 March"
+  - "Four-legged friends welcome"

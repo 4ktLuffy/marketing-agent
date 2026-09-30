@@ -1,0 +1,8 @@
+# WHY: "award-winning" and "4.9 stars from 10,000+" have no source; "hand-woven" is a forbidden phrasing on the origin fact.
+blocked: true
+findings:
+  - {contains: "award-winning homeware shop", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9 stars from 10,000+", label: no_source, fact_key: null}
+  - {contains: "hand-woven in Lancashire", label: forbidden_phrase, fact_key: wool-origin}
+must_not_flag:
+  - "The Hebden linen throw is £45 on our website"

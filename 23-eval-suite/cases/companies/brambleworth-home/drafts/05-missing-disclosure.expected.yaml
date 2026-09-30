@@ -1,0 +1,9 @@
+# WHY: the free-delivery fact requires "UK mainland only", which appears nowhere in the draft.
+# CORRECTED 2026-09-29: added subject line "Free delivery on your autumn favourites" (missing_disclosure, free-delivery-threshold): it offers free delivery and "UK mainland only" appears nowhere in the draft.
+blocked: true
+findings:
+  - {contains: "Free UK delivery on orders over £50!", label: missing_disclosure, fact_key: free-delivery-threshold}
+  - {contains: "get free UK delivery on orders over £50", label: missing_disclosure, fact_key: free-delivery-threshold}
+  - {contains: "Subject: Free delivery on your autumn favourites", label: missing_disclosure, fact_key: free-delivery-threshold}
+must_not_flag:
+  - "woven in Lancashire from British wool"

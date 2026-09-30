@@ -1,0 +1,7 @@
+# WHY: kayak tours are valid today but the season ends 2026-10-04, before publish 2026-10-09; the summer package ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "guided kayak tour to your weekend for £45", label: conflict_or_expired, fact_key: kayak-tour}
+  - {contains: "Summer Lakes package: £499 for 3 nights", label: conflict_or_expired, fact_key: summer-package}
+must_not_flag:
+  - "A Weekend Break is £210 per room per night, room only"

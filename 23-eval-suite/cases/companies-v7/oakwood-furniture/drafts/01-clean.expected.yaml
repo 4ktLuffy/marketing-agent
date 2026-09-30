@@ -1,0 +1,12 @@
+# WHY: negative control: oak six-seater price, the oak's own FSC 100% licence, lead time with 'from order confirmation', the guarantee with its registration condition in equivalent words ('register it within 30 days of delivery'); the pin has no heading.
+blocked: false
+findings: []
+must_not_flag:
+  - "Meet the Harlow: a six-seater dining table in solid oak, £1,450"
+  - "Our oak is FSC 100% certified (licence code FSC-C151207)"
+  - "made to order in 8 to 10 weeks from order confirmation, and comes with a free care kit"
+  - "Subject: The Harlow table, made for you"
+  - "Every Harlow carries a 10-year structural guarantee; just register it within 30 days of delivery"
+  - "We make each table to order, so allow 8 to 10 weeks from order confirmation"
+  - "Solid oak Harlow dining table, seats six, £1,450"
+  - "FSC 100% certified oak, made to order in 8 to 10 weeks from order confirmation"

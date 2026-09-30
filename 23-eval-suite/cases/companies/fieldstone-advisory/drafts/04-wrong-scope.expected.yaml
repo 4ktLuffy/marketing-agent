@@ -1,0 +1,8 @@
+# WHY: the £4,500 Growth Sprint is real but only for segment smb (under 50 staff); the task is segments=[enterprise].
+# CORRECTED 2026-09-29: added blog heading "Six weeks to a healthier pipeline: how our sprint works" (wrong_scope, growth-sprint-smb): the six-week sprint is the SMB-only Growth Sprint; the task is segments=[enterprise].
+blocked: true
+findings:
+  - {contains: "Growth Sprint is a £4,500 fixed fee", label: wrong_scope, fact_key: growth-sprint-smb}
+  - {contains: "Six weeks to a healthier pipeline: how our sprint works", label: wrong_scope, fact_key: growth-sprint-smb}
+must_not_flag:
+  - "We are a HubSpot Gold Solutions Partner with a team of 14 consultants"

@@ -1,0 +1,8 @@
+# WHY: the Growth price requires 'excl. VAT' and 'minimum 5 employees'; neither appears anywhere in the draft.
+blocked: true
+findings:
+- {contains: Payroo Growth is £7 per employee per month and includes, label: missing_disclosure, fact_key: growth-price}
+- {contains: all for £7 per employee per month, label: missing_disclosure, fact_key: growth-price}
+- {contains: payroll + pensions + expenses for £7 per employee per month, label: missing_disclosure, fact_key: growth-price}
+must_not_flag:
+- Expense claims with receipt capture are built in too

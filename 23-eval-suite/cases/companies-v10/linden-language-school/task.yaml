@@ -1,0 +1,11 @@
+# FICTIONAL. Scope variants=[evening-group], segments=[adults] makes the one-to-one hourly rate a scope trap;
+# publish_on 2026-10-08 is after early-bird-offer ends (2026-10-02), valid today (2026-09-29).
+goal: "Fill the adult Spanish evening group that starts on 20 October."
+pieces:
+  - {key: p1, channel: x, kind: post, max_chars: 280}
+  - {key: p2, channel: youtube, kind: video_description, max_chars: 5000}
+  - {key: p3, channel: blog, kind: article, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [adults], plan_tiers: [], variants: [evening-group]}
+publish_on: "2026-10-08"
+audience: "Adults who want to learn or restart Spanish after work"
+notes: null

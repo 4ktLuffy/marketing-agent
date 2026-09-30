@@ -1,0 +1,12 @@
+# WHY: negative control — business-account facts reworded; "excl. VAT" said as "plus VAT" / "before VAT" / "+ VAT", the noon cut-off as "before midday" / "by noon"; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "A box of 500 standard 400gsm cards costs £29 plus VAT for business customers"
+  - "Sign off your proof before midday and your cards, flyers or leaflets leave us on the next working day"
+  - "Our standard papers all carry FSC certification"
+  - "On your business account, 500 standard business cards are £29 before VAT"
+  - "When your artwork is approved by noon, business cards, flyers and leaflets go out on the next working day"
+  - "You won't pay for delivery to a UK address when your order comes to more than £75 before VAT"
+  - "Our quality system is certified to ISO 9001"
+  - "500 business cards for £29 + VAT"

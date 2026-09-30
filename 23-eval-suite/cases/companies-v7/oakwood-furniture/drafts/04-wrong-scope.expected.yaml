@@ -1,0 +1,10 @@
+# WHY: free delivery and assembly is only within 30 miles of the Ludlow showroom (task regions=[national]); £1,890 is the true walnut price (task variants=[oak]).
+blocked: true
+findings:
+  - {contains: "Free delivery and assembly on every Harlow order", label: wrong_scope, fact_key: free-delivery-local}
+  - {contains: "Free delivery and assembly, wherever you are", label: wrong_scope, fact_key: free-delivery-local}
+  - {contains: "The Harlow six-seater in walnut is £1,890", label: wrong_scope, fact_key: harlow-walnut-6}
+  - {contains: "£1,890 in walnut", label: wrong_scope, fact_key: harlow-walnut-6}
+must_not_flag:
+  - "Our oak is FSC 100% certified (licence code FSC-C151207)"
+  - "Every table is made to order in 8 to 10 weeks from order confirmation"

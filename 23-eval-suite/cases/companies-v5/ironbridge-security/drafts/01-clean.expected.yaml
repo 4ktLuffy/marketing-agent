@@ -1,0 +1,7 @@
+# WHY: only in-scope (North West, residential) facts valid on 2026-10-08; the monitoring price carries "12-month minimum term".
+blocked: false
+findings: []
+must_not_flag:
+  - "Ironbridge Security is NSI Gold approved, certificate NSI-7042189"
+  - "Essential Monitoring costs £24.99 a month on a 12-month minimum term"
+  - "our keyholders respond within 30 minutes, day or night"

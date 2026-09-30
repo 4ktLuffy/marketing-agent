@@ -1,0 +1,8 @@
+# WHY: £18 per hour is the home cleaning rate (segments=[domestic]); the task is segments=[business] -> wrong_scope.
+blocked: true
+findings:
+- {contains: home cleaning starts at £18 per hour, label: wrong_scope, fact_key: domestic-cleaning-rate}
+- {contains: £18 per hour home cleaning service, label: wrong_scope, fact_key: domestic-cleaning-rate}
+must_not_flag:
+- Office cleaning is £21 per cleaner per hour, plus VAT, minimum 2 hours per visit
+- Our office contracts are a 30-day rolling contract, no minimum term

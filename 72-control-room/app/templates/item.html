@@ -16,7 +16,9 @@
   <dt>Rejections so far</dt><dd>{% if attempts %}{{ attempts.rejections }}{% else %}<span class="muted">learning service did not answer</span>{% endif %}</dd>
   <dt>Updated</dt><dd>{{ (c.item.updated_at or '')|replace('T', ' ') }}</dd>
 </dl>
-<p><a class="btn" href="/items/{{ c.id }}/download">Download (HTML, to forward)</a></p>
+<p><a class="btn" href="/items/{{ c.id }}/download">Download (HTML, to forward)</a>
+  {% if c.item.status in ('draft', 'in_review', 'approved') %}<a class="btn" href="/client-links/new?items={{ c.id }}">Send to client for sign-off</a>{% endif %}</p>
+{% if c.client %}<p class="chips"><span class="chip {{ 'good' if c.client.approved and not c.client.earlier else 'bad' if not c.client.approved else '' }}">{% if c.client.approved %}client approved by {{ c.client.name }}{% else %}client asked for changes ({{ c.client.name }}){% endif %} (v{{ c.client.version }}){% if c.client.earlier %} · earlier version{% endif %}</span></p>{% endif %}
 {% if c.item.status == 'in_review' and not pending %}<p><a class="btn approve" href="/items/{{ c.id }}/edit">Edit &amp; approve</a> <a class="btn" href="/#card-{{ c.id }}">Decide in the queue</a></p>{% endif %}
 {% if c.flags %}<h2>Flags</h2><ul class="flags">{% for f in c.flags %}<li class="flag {{ f.level }}">{{ f.text }}</li>{% endfor %}</ul>{% endif %}
 <h2>Preview</h2>

@@ -1,0 +1,9 @@
+# WHY: the £60 intensive discount is valid today but ends 2026-10-05, before publish 2026-10-12; the free first lesson ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Get £60 off a 20-hour intensive course", label: conflict_or_expired, fact_key: intensive-autumn-offer}
+  - {contains: "£60 off our 20-hour intensive course this month", label: conflict_or_expired, fact_key: intensive-autumn-offer}
+  - {contains: "New learners get their first 1-hour lesson free", label: conflict_or_expired, fact_key: summer-free-first-lesson}
+must_not_flag:
+  - "Manual lessons are £38 per hour"
+  - "Our instructors are all DVSA-approved driving instructors (ADIs)"

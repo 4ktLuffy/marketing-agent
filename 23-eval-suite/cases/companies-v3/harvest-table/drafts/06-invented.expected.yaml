@@ -1,0 +1,12 @@
+# WHY: "Britain's best" and the 5-star rating have no source; no fact supports a registered nutritionist; AOC-4471 is not the licence (AOC-4417); "gluten-free" is forbidden (the granola contains oats with gluten).
+blocked: true
+findings:
+  - {contains: "Britain's best granola", label: no_source, fact_key: null}
+  - {contains: "Rated 5 stars by over 1,200 shoppers", label: no_source, fact_key: null}
+  - {contains: "Subject: Designed by our registered nutritionist", label: no_source, fact_key: null}
+  - {contains: "Every recipe is developed by our in-house registered nutritionist", label: no_source, fact_key: null}
+  - {contains: "licence AOC-4471", label: conflict_or_expired, fact_key: organic-cert}
+  - {contains: "Gluten-free and full of goodness", label: forbidden_phrase, fact_key: granola-allergens}
+must_not_flag:
+  - "Oat & Almond Granola is sweetened only with English honey"
+  - "Oat & Almond Granola, £4.75 per 500 g bag"

@@ -1,0 +1,291 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Bluewater Marine, type: boat dealer and servicing yard, today: '2026-09-29'}
+facts:
+- key: exdemo-sr65
+  subject: {kind: product, ref: Ex-demo Solent Rider 6.5 RIB (Poole)}
+  fact_type: price
+  attribute: sale_price
+  value: 44950
+  unit: null
+  currency: GBP
+  value_text: £44,950 including VAT
+  basis: flat
+  conditions: []
+  scope: {sites: [poole], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: '2026-11-30'
+  source: {kind: doc, ref: Poole stock list 2026-09-26}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our ex-demo 2025 Solent Rider 6.5 at the Poole yard, with 38 engine hours on its Tidewater 150 outboard, is £44,950
+    including VAT.
+- key: sr65-design-category
+  subject: {kind: product, ref: Solent Rider 6.5}
+  fact_type: spec
+  attribute: rcd_design_category
+  value: null
+  unit: null
+  currency: null
+  value_text: RCD Design Category C
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2024-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: 'Builder''s declaration of conformity, Solent Rider 6.5'}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: Solent Rider 6.5 DoC
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Solent Rider 6.5 is certified to RCD Design Category C (inshore waters, up to Beaufort force 6 and 2 m significant
+    wave height).
+- key: tidewater-warranty
+  subject: {kind: product, ref: Tidewater outboards (new)}
+  fact_type: policy
+  attribute: warranty
+  value: 5
+  unit: years
+  currency: null
+  value_text: 5-year Tidewater engine warranty
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Tidewater warranty terms 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [when serviced annually by an authorised dealer]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New Tidewater outboards come with a 5-year Tidewater engine warranty when serviced annually by an authorised dealer.
+- key: tidewater-dealer
+  subject: {kind: business, ref: Bluewater Marine}
+  fact_type: certification
+  attribute: dealer_status
+  value: null
+  unit: null
+  currency: null
+  value_text: authorised Tidewater dealer (dealer code TW-UK-0193)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: certificate, ref: Tidewater dealer agreement 2026}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: Tidewater dealer agreement 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Bluewater Marine is an authorised Tidewater dealer and service centre, dealer code TW-UK-0193.
+- key: autumn-finance
+  subject: {kind: offer, ref: Autumn finance on Solent Rider boats}
+  fact_type: price
+  attribute: apr
+  value: 4.9
+  unit: percent_apr
+  currency: null
+  value_text: 4.9% APR representative
+  basis: null
+  conditions:
+  - {key: deposit_percent, op: '>=', value: 20}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-10-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Finance partner offer sheet Q4 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [subject to status]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 4.9% APR representative on new and ex-demo Solent Rider boats with a minimum 20% deposit, 1 October to 31 December
+    2026. Finance subject to status.
+- key: summer-finance
+  subject: {kind: offer, ref: Summer 0% finance}
+  fact_type: price
+  attribute: apr
+  value: 0
+  unit: percent_apr
+  currency: null
+  value_text: 0% APR over 36 months
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-09-15'
+  review_by: null
+  source: {kind: doc, ref: Finance partner offer sheet summer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [subject to status]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: high
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 0% APR over 36 months on new Solent Rider boats, 1 June to 15 September 2026. Finance subject to status.
+- key: winter-storage-offer
+  subject: {kind: offer, ref: Winter storage with a Poole service}
+  fact_type: inclusion
+  attribute: free_storage
+  value: null
+  unit: null
+  currency: null
+  value_text: free winter storage ashore until 31 March
+  basis: null
+  conditions:
+  - {key: booked_by, op: <=, value: '2026-10-03'}
+  scope: {sites: [poole], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: doc, ref: Poole yard autumn flyer}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Book a winter service at the Poole yard by 3 October 2026 and get free winter storage ashore until 31 March 2027.
+- key: hamble-winter-service
+  subject: {kind: package, ref: Winter service package (Hamble)}
+  fact_type: price
+  attribute: package_price
+  value: 395
+  unit: null
+  currency: GBP
+  value_text: £395 including VAT
+  basis: flat
+  conditions:
+  - {key: engines, op: '=', value: 1}
+  scope: {sites: [hamble], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Hamble yard service tariff 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'The Hamble winter service package for a single outboard up to 150hp is £395 including VAT: lift-out, pressure wash,
+    engine service and antifouling.'
+- key: trade-in-margin
+  subject: {kind: policy, ref: Part-exchange valuations}
+  fact_type: price
+  attribute: part_exchange_floor
+  value: 12
+  unit: percent
+  currency: null
+  value_text: 12% under trade guide
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Sales meeting note 2026-08}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We never offer part-exchange at less than 12% under trade guide.
+- key: harbour-fleet-contract
+  subject: {kind: package, ref: Poole Bay Harbour Patrol fleet servicing}
+  fact_type: price
+  attribute: contract_price
+  value: 38400
+  unit: null
+  currency: GBP
+  value_text: £38,400 per year
+  basis: per_year
+  conditions:
+  - {key: customer, op: '=', value: Poole Bay Harbour Patrol}
+  scope: {sites: [poole], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Harbour Patrol service contract 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Poole Bay Harbour Patrol pays £38,400 per year for fleet servicing.

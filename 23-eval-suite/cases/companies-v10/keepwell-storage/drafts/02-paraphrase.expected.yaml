@@ -1,0 +1,11 @@
+# WHY: negative control — Millgate facts reworded; the minimum-stay disclosure is given in other words ("at least 12 weeks", "12 weeks or longer", "12 weeks or more"); no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our 50 sq ft units at Millgate cost £24 a week"
+  - "the first eight weeks are half price, as long as you stay with us for at least 12 weeks"
+  - "The site is open from 6 in the morning until 10 at night, every day of the week"
+  - "first-time customers pay half for the first eight weeks when they keep the unit for 12 weeks or longer"
+  - "our cover works out at £2.50 a week for every £1,000 of belongings"
+  - "Half price for your first 8 weeks when you stay 12 weeks or more"
+  - "Cameras recording round the clock, a gate that opens with your PIN, and an alarm on every unit"

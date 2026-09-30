@@ -1,0 +1,11 @@
+# WHY: negative control — same Growth facts reworded ('plus VAT', 'VAT on top', 'starts at five employees', 'recognised by HMRC'); no new numbers or claims.
+blocked: false
+findings: []
+must_not_flag:
+- auto-enrolment runs itself
+- submit an expense claim straight from their phone
+- It's £7 a month for each person on your payroll, plus VAT, and the plan starts at five employees
+- We're recognised by HMRC as payroll software
+- It pulls payroll, pension auto-enrolment and expense claims (with receipt photos) into one app
+- You pay £7 per employee each month, VAT on top, for teams of five or more
+- £7/employee/month + VAT (5 staff minimum)

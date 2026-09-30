@@ -1,0 +1,8 @@
+# WHY: the Team price requires "excl. VAT, billed annually"; neither VAT nor annual billing is mentioned anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Pivotdesk Team costs £29 per user per month", label: missing_disclosure, fact_key: team-price}
+  - {contains: "twenty-nine quid a seat each month", label: missing_disclosure, fact_key: team-price}
+must_not_flag:
+  - "Try it free for 14 days, no card needed"
+  - "Pivotdesk is ISO 27001 certified"

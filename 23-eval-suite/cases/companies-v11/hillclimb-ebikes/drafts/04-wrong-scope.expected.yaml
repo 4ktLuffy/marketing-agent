@@ -1,0 +1,8 @@
+# WHY: £1,499 is the City C2 price (variants=[city-c2]); the task is variants=[trail-e1] -> wrong_scope.
+blocked: true
+findings:
+- {contains: 'The City C2 is only £1,499', label: wrong_scope, fact_key: city-c2-price}
+- {contains: 'Our City C2 commuter costs £1,499', label: wrong_scope, fact_key: city-c2-price}
+must_not_flag:
+- The Hillclimb Trail E1 is our e-mountain bike, priced at £1,899
+- 'Trail E1: £1,899'

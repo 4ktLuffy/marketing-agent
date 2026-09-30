@@ -1,0 +1,12 @@
+# WHY: the Autumn Booking Bonus is valid today but ends 2026-10-10, before publish 2026-10-12; it is used by name (post, pin, subject) and loosely ("ceremony room is on us", "waive the ceremony room fee").
+blocked: true
+findings:
+  - {contains: "Book your winter wedding with our Autumn Booking Bonus", label: conflict_or_expired, fact_key: autumn-booking-bonus}
+  - {contains: "Book this month and your ceremony room is on us.", label: conflict_or_expired, fact_key: autumn-booking-bonus}
+  - {contains: "Autumn Booking Bonus at Cedar Hall: free ceremony room hire", label: conflict_or_expired, fact_key: autumn-booking-bonus}
+  - {contains: "Subject: Our Autumn Booking Bonus ends soon", label: conflict_or_expired, fact_key: autumn-booking-bonus}
+  - {contains: "Secure a December date this month and we'll waive the ceremony room fee.", label: conflict_or_expired, fact_key: autumn-booking-bonus}
+must_not_flag:
+  - "Our Winter Weekday package is £6,950, based on 60 day guests."
+  - "includes a mulled-wine drinks reception by the log fire and the bridal suite for the wedding night"
+  - "December dates still free: Thursdays 3, 10 and 17 December 2026."

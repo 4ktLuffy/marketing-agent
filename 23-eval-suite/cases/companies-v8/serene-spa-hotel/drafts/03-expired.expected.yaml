@@ -1,0 +1,11 @@
+# WHY: Friends Go Free is valid today but ends 2026-10-12, before publish 2026-10-16; the Summer Twilight Spa ended 2026-08-31. Lines naming or describing either are expired.
+blocked: true
+findings:
+  - {contains: "Friends Go Free is on: book 3 spa days and the 4th guest goes free", label: conflict_or_expired, fact_key: friends-go-free}
+  - {contains: "Twilight spa evenings are back", label: conflict_or_expired, fact_key: twilight-spa}
+  - {contains: "Unwind after work with our Summer Twilight Spa, £59 per person", label: conflict_or_expired, fact_key: twilight-spa}
+  - {contains: "Four friends, three bookings", label: conflict_or_expired, fact_key: friends-go-free}
+  - {contains: "Book for three and your fourth friend's spa day is on us this October", label: conflict_or_expired, fact_key: friends-go-free}
+must_not_flag:
+  - "The Weekday Spa Day is £95 per person, Monday to Thursday"
+  - "Every spa day includes a robe and slippers"

@@ -1,0 +1,9 @@
+# WHY: the 58% pass rate must name its period ("July 2025 to June 2026"); the £350 block must say "paid in advance". Neither appears anywhere.
+blocked: true
+findings:
+  - {contains: "58% of our learners pass first time", label: missing_disclosure, fact_key: first-time-pass-rate}
+  - {contains: "58% of Pellow learners passed their practical test first time", label: missing_disclosure, fact_key: first-time-pass-rate}
+  - {contains: "Save with a 10-hour manual lesson block for £350", label: missing_disclosure, fact_key: manual-block-10}
+must_not_flag:
+  - "Manual lessons are £38 per hour"
+  - "Our instructors are all DVSA-approved driving instructors (ADIs)"

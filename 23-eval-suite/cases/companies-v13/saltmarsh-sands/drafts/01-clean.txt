@@ -1,0 +1,12 @@
+TikTok —
+Pitch up by the sea 🌊 Touring pitches are {{touring-pitch-price}}, up to 4 people, electric hook-up included.
+Bring the dog! Up to 2 dogs per pitch, £3 per dog per night. 🐶
+
+SMS —
+Saltmarsh Sands: touring open 1 March to 3 January. Indoor pool open every day 9am to 7pm. Book at saltmarsh.example. STOP to opt out
+
+YouTube —
+Thinking bigger? Holiday lodges for sale with a 10% deposit and finance available. Finance subject to status. 18+. T&Cs apply.
+The indoor pool is {{indoor-pool-hours}}.
+
+Want me to add hashtags for TikTok?

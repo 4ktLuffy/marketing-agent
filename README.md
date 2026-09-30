@@ -21,6 +21,8 @@ configuration, how to test). They also work as separate repos.
 | `23` | Eval suite: writing quality, fact-checker accuracy, tool selection |
 | `24`–`43`, `47`–`53`, `56`, `57`, `59`, `60`, `64`–`66`, `68`, `69`, `74`–`77`, `81`, `83`, `85` | n8n workflows: chat agent, its tools, schedules, forms, content engine, newsletter, refresh, SEO, experiments, clips, competitors, monthly client report |
 | `54`, `55`, `58`, `61`–`63`, `67`, `70`, `71`, `73`, `78`–`80`, `82`, `84`, `86`, `87` | Postiz bridge, Umami sync, review hub, content engine, CMS bridge (WordPress/Ghost), Listmonk bridge, Search Console sync, customer-language engine, video assembly, clip finder, ad library + competitor registry, site assistant, lead hub, AI visibility (GEO) tracker, paid-ads reporting, lifecycle email flows with a holdout, product feed titles for Merchant Center (read-only or dry run; all bridges dry run by default) |
+| `88` | Task bridge: a task pack for any chatbot (free ChatGPT, Claude, Gemini…) with a preview of what leaves the business, paste-back, evidence per sentence against scoped facts, approval bound to the exact text, ready-to-post export. No model calls needed |
+| `89` | Claude connector (MCP, optional profile `claude`): Claude Desktop, Claude Code or one claude.ai custom connector can read public facts, make packs, submit answers and check text; it has no approve, confirm or publish tool and holds only the internal key |
 | `72` | Control room: mobile web app to review, schedule, watch performance, and see what the agent is doing (Activity: running calls, timeline, models, abilities) |
 | `tools/workflow-generator` | The Python that generates every n8n `workflow.json` (edit there, not in the JSON; CI checks they match) |
 
@@ -35,9 +37,9 @@ checklist. The short version:
 ./01-marketing-stack/scripts/install.sh --profile core       # secrets, build, start, n8n owner, workflows, final check
 ```
 
-Profiles: **core** (the agent, 26 containers), **growth** (+ content engine, publishing bridges,
-SEO/analytics sync, experiments, reviews, video, clips, paid-ads reporting, email flows; 38) and **full**
-(+ competitor ads, site assistant, lead hub, AI visibility; 43). Re-running the installer is safe
+Profiles: **core** (the agent, 27 containers), **growth** (+ content engine, publishing bridges,
+SEO/analytics sync, experiments, reviews, video, clips, paid-ads reporting, email flows; 39) and **full**
+(+ competitor ads, site assistant, lead hub, AI visibility, product feed; 45). Re-running the installer is safe
 and is also how you change profile or apply `.env` changes.
 
 Installed? Replace the example brand (*Northwind Roasters*, a fictional coffee subscription) in

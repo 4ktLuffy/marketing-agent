@@ -1,6 +1,6 @@
 # 56 · Analytics sync (Umami)
 
-Deploy **56 of 87** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **56 of 89** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every morning it pulls yesterday's visits and conversions per campaign and channel from Umami (through 55) into analytics (20), so campaign scorecards (52) and the weekly report (41) use real numbers without CSV uploads. It stays quiet on success and posts to your webhook if something failed.
 

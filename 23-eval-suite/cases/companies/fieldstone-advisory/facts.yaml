@@ -1,0 +1,291 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Fieldstone Advisory, type: consultancy, today: '2026-09-29'}
+facts:
+- key: ashgrove-case-study
+  subject: {kind: business, ref: Ashgrove Tools (client)}
+  fact_type: result
+  attribute: mql_growth
+  value: 212
+  unit: percent
+  currency: null
+  value_text: 212% more marketing-qualified leads in six months
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-12'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: 'Ashgrove Tools case study, HubSpot export Jan-Jun 2026'}
+  claim_class: result
+  requires_evidence: true
+  evidence_ref: HubSpot export Jan-Jun 2026
+  consent_ref: Client consent email 2026-05-12
+  required_disclosures:
+  - results from one client, not typical
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - typical results
+  - every client
+  owner: Managing director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Ashgrove Tools grew marketing-qualified leads by 212% in six months working with us. Results from one client, not typical.
+- key: google-partner
+  subject: {kind: business, ref: Fieldstone Advisory}
+  fact_type: certification
+  attribute: google_partner
+  value: null
+  unit: null
+  currency: null
+  value_text: Google Partner
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2023-07-01'
+  valid_to: '2026-06-30'
+  review_by: null
+  source: {kind: certificate, ref: Google Partners badge (lapsed)}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: Fieldstone was a Google Partner until 30 June 2026; the status lapsed and was not renewed.
+- key: hubspot-partner
+  subject: {kind: business, ref: Fieldstone Advisory}
+  fact_type: certification
+  attribute: hubspot_tier
+  value: null
+  unit: null
+  currency: null
+  value_text: HubSpot Gold Solutions Partner
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: '2027-01-15'
+  source: {kind: url, ref: HubSpot partner directory listing}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: HubSpot partner directory
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Fieldstone Advisory is a HubSpot Gold Solutions Partner.
+- key: growth-sprint-smb
+  subject: {kind: package, ref: Growth Sprint}
+  fact_type: price
+  attribute: fixed_fee
+  value: 4500
+  unit: null
+  currency: GBP
+  value_text: £4,500 fixed fee for six weeks
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [smb], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: SMB rate card 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - plus VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Growth Sprint for businesses under 50 staff is a £4,500 fixed fee for six weeks, plus VAT.
+- key: enterprise-programme
+  subject: {kind: package, ref: Enterprise Demand Programme}
+  fact_type: price
+  attribute: from_price
+  value: 18000
+  unit: null
+  currency: GBP
+  value_text: from £18,000 per quarter
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [enterprise], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Enterprise rate card 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - price depends on scope
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Enterprise Demand Programme starts from £18,000 per quarter; price depends on scope.
+- key: pipeline-audit-offer
+  subject: {kind: offer, ref: Pipeline audit}
+  fact_type: inclusion
+  attribute: free_session
+  value: null
+  unit: null
+  currency: null
+  value_text: a free 30-minute pipeline audit
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-02'
+  review_by: null
+  source: {kind: doc, ref: September campaign brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Book by 2 October 2026 for a free 30-minute pipeline audit.
+- key: team-size
+  subject: {kind: business, ref: Fieldstone Advisory}
+  fact_type: spec
+  attribute: consultants
+  value: 14
+  unit: null
+  currency: null
+  value_text: a team of 14 consultants
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: '2027-03-01'
+  source: {kind: owner_statement, ref: Team page Sept 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Fieldstone Advisory has a team of 14 consultants.
+- key: ai-assisted-audits
+  subject: {kind: service, ref: Content audits}
+  fact_type: claim
+  attribute: method
+  value: null
+  unit: null
+  currency: null
+  value_text: AI-assisted content audits, reviewed by a human strategist
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Service description v3}
+  claim_class: ai_capability
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - fully automated
+  - AI-powered results guaranteed
+  owner: Head of delivery
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our content audits are AI-assisted and every finding is reviewed by a human strategist.
+- key: day-rate-floor
+  subject: {kind: business, ref: Fieldstone Advisory}
+  fact_type: price
+  attribute: day_rate_floor
+  value: 950
+  unit: null
+  currency: GBP
+  value_text: £950 per day
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Partners' pricing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We never go below £950 per consultant day.
+- key: castellan-retainer
+  subject: {kind: package, ref: Retainer (Castellan Insurance)}
+  fact_type: price
+  attribute: contract_price
+  value: 12000
+  unit: null
+  currency: GBP
+  value_text: £12,000 per month
+  basis: per_month
+  conditions:
+  - {key: customer, op: '=', value: Castellan Insurance}
+  scope: {sites: [], regions: [], channels: [], segments: [enterprise], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Castellan Insurance SOW 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Castellan Insurance pays a £12,000 per month retainer.

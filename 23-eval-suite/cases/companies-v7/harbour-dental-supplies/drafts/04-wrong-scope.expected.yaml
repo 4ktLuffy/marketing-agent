@@ -1,0 +1,10 @@
+# WHY: £4.70 is the true gold-account price (task segment is standard-account, £5.40); the 1pm cut-off is the Scotland/Northern Ireland one (task region england-wales, 5pm).
+blocked: true
+findings:
+  - {contains: "gloves from £4.70 per box of 100", label: wrong_scope, fact_key: gloves-box-gold}
+  - {contains: "Gloves at £4.70 a box", label: wrong_scope, fact_key: gloves-box-gold}
+  - {contains: "gold-account price of £4.70 per box of 100", label: wrong_scope, fact_key: gloves-box-gold}
+  - {contains: "Order by 1pm for next-working-day delivery", label: wrong_scope, fact_key: cutoff-scotland-ni}
+must_not_flag:
+  - "UKCA and CE marked as a Class I medical device"
+  - "Your named account manager is one call away"

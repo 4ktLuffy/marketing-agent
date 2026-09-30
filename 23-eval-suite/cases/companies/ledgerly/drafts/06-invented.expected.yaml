@@ -1,0 +1,8 @@
+# WHY: "99.99% uptime" has no source fact (invented number); "SOC 2 Type II" is a forbidden phrasing — only Type I is done.
+blocked: true
+findings:
+  - {contains: "99.99% uptime", label: no_source, fact_key: null}
+  - {contains: "SOC 2 Type II certified", label: forbidden_phrase, fact_key: soc2-type1}
+must_not_flag:
+  - "Starter is £12 per user per month, excl. VAT"
+  - "Start your 14-day free trial today, no card needed"

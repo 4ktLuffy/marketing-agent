@@ -1,0 +1,22 @@
+Here's your Team plan campaign! 🚀
+
+=== 1 LINKEDIN ===
+Your sales team deserves better than a spreadsheet.
+Pivotdesk Team is {{team-price}}, excl. VAT, billed annually.
+It includes automated email sequences, so every follow-up goes out on time.
+
+=== 2 EMAIL ===
+Subject: Try Pivotdesk Team free for 14 days
+
+Hi there,
+
+Start your {{free-trial}} today.
+Pivotdesk is ISO 27001 certified, so your customer data is handled to a recognised standard.
+
+Best,
+The Pivotdesk team
+
+=== 3 X ===
+Automated email sequences and a 14-day free trial, no card needed. Pivotdesk Team 👉 pivotdesk.example
+
+Want a version with a stronger hook?

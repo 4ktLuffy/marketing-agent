@@ -1,6 +1,6 @@
 # 81 · Track a competitor
 
-Deploy **81 of 87** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **81 of 89** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Adds a competitor from its homepage. It reads the homepage with the page extractor (07, `list_links: true`), and the LLM (prompt `competitor_key_pages`) picks at most 5 key pages (pricing, product, features, about) **from that page's own links**. Checked in code: a URL is kept only if it is exactly one of the homepage's links on the same domain (login, cart, legal, careers, contact pages are never candidates) and 07 can read it. The competitor is saved in the registry (78 `POST /competitors?upsert=true`, status `active`); 78 turns the homepage and the key pages into 09 watches with default filters (dates, cookie lines, "Only 3 left" counters ignored). Running it again for the same site updates it. The answer lists what is watched and how ads are covered (Meta API for EU markets; Google, LinkedIn and TikTok as links to open by hand). With `AD_LIBRARY_URL` empty it adds nothing and says why.
 

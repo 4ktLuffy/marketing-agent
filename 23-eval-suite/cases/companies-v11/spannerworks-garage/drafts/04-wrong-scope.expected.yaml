@@ -1,0 +1,8 @@
+# WHY: £139 is the Ashby Road service price; the task is sites=[canal-street], where a full service is £149 -> wrong_scope.
+blocked: true
+findings:
+- {contains: A full service is just £139, label: wrong_scope, fact_key: service-ashby-road}
+- {contains: full service £139, label: wrong_scope, fact_key: service-ashby-road}
+must_not_flag:
+- Our MOT test is £45, with a free partial retest within 10 working days
+- Any repair we do comes with a 12-month parts and labour warranty

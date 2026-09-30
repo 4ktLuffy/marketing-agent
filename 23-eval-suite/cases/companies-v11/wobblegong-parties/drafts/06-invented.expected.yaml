@@ -1,0 +1,10 @@
+# WHY: 'Voted No.1' and '5 stars from 500 parents' have no source; '£180 per child' confuses the flat per-party basis; 'police approved' is forbidden (enhanced DBS check only).
+blocked: true
+findings:
+- {contains: Voted Ashcombe's No.1 children's entertainer, label: no_source, fact_key: null}
+- {contains: just £180 per child, label: conflict_or_expired, fact_key: magic-show-price}
+- {contains: Wobbly Wanda is police approved, label: forbidden_phrase, fact_key: dbs-check}
+- {contains: Rated 5 stars by over 500 happy parents, label: no_source, fact_key: null}
+must_not_flag:
+- Travel is free within 10 miles of Ashcombe
+- £180 per party · up to 30 children

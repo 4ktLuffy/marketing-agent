@@ -1,0 +1,7 @@
+# WHY: only online/adult facts valid on 2026-10-06; the pass rate carries "48 candidates, 2025-26"; accreditation number and grade match the certificate.
+blocked: false
+findings: []
+must_not_flag:
+  - "accredited by the Language Schools Quality Board (LSQB-2417)"
+  - "92% of our B2 First candidates passed (48 candidates, 2025-26)"
+  - "The autumn term runs from 12 October to 18 December 2026"

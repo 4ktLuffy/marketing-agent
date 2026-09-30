@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Facts{% endblock %}
+{% block main %}
+<h1>Facts</h1>
+<p class="small muted">What the agent may say about your business: prices, hours, rules, claims. Each fact says where it applies, how long it is true and who may see it. New and changed facts are drafts until you confirm them.</p>
+{% if not_installed %}<p class="muted">The brand service (05) isn't installed, so there are no facts to show.</p>{% else %}
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+{% if done %}{% set what, _, key = done.partition(':') %}
+<p class="alert ok" role="status">{% if what == 'saved' %}<b>Saved as a draft.</b> Confirm {{ key }} to start using it.{% elif what == 'confirmed' %}<b>Confirmed.</b> {{ key }} is in use now.{% elif what == 'retired' %}<b>Retired.</b> {{ key }} is no longer used.{% elif what == 'derived' %}That fact comes from your brand profile. Turn it into a scoped fact to change it.{% elif what == 'onboarded' %}{% set nf, _, nq = key.partition('-') %}<b>{{ nf }} draft{{ 's' if nf != '1' }} added from your website or documents{% if nq and nq != '0' %}, and {{ nq }} open question{{ 's' if nq != '1' }}{% endif %}.</b> They need your confirmation: check each one below and confirm it.{% elif what == 'answered' %}<b>Answered.</b> Thank you.{% elif what == 'dismissed' %}Question dismissed.{% else %}Done.{% endif %}</p>
+{% endif %}
+{% if not owner_ready %}<p class="alert warn small">Confirming is switched off: the control room has no owner key (FACT_OWNER_KEY). You can still add and edit drafts.</p>{% endif %}
+
+<p><a class="btn primary" href="/facts/new">Add a fact</a> <a class="btn" href="/facts/setup">Set up from your website or documents</a> <a class="btn" href="/facts/kits">Starter kits</a></p>
+
+<nav class="tabs" aria-label="Show">
+  <a href="/facts" {% if show == 'all' %}aria-current="page"{% endif %}>All ({{ total or 0 }})</a>
+  <a href="/facts?show=attention" {% if show == 'attention' %}aria-current="page"{% endif %}>Needs you ({{ counts.attention or 0 }})</a>
+  <a href="/facts?show=drafts" {% if show == 'drafts' %}aria-current="page"{% endif %}>To confirm ({{ counts.drafts or 0 }})</a>
+  <a href="/facts?show=expiring" {% if show == 'expiring' %}aria-current="page"{% endif %}>Expiring in 30 days ({{ counts.expiring or 0 }})</a>
+  <a href="/facts?show=expired" {% if show == 'expired' %}aria-current="page"{% endif %}>Expired ({{ counts.expired or 0 }})</a>
+  <a href="/facts?show=due" {% if show == 'due' %}aria-current="page"{% endif %}>Due for review ({{ counts.due or 0 }})</a>
+  <a href="/facts?show=questions" {% if show == 'questions' %}aria-current="page"{% endif %}>Open questions ({{ counts.questions or 0 }})</a>
+</nav>
+
+{% if questions and show in ('all', 'attention', 'questions') %}
+<section class="panel" id="questions" aria-labelledby="q-h">
+  <h2 id="q-h">Open questions <span class="chip">{{ questions|length }}</span></h2>
+  {% for q in questions %}
+  <div class="question">
+    <p>{{ q.text }}{% if q.fact_key %} <span class="chip">fact: {{ q.fact_key }}</span>{% endif %}{% if q.task_id %} <a class="chip" href="/tasks/{{ q.task_id }}">task {{ q.task_id }}</a>{% endif %}</p>
+    <form method="post" action="/facts/questions/{{ q.id }}/answer" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label for="answer-{{ q.id }}" class="sr-only">Your answer</label>
+      <textarea id="answer-{{ q.id }}" name="answer" rows="2" maxlength="2000" placeholder="Your answer"></textarea>
+      <div class="row-actions">
+        <button class="btn primary small" type="submit">Answer</button>
+        <button class="btn ghost small" type="submit" formaction="/facts/questions/{{ q.id }}/dismiss">Dismiss</button>
+      </div>
+    </form>
+  </div>
+  {% endfor %}
+  <p class="small muted">An answer is a note, not a fact. If it is a fact, add it with "Add a fact" too.</p>
+</section>
+{% elif show == 'questions' %}<p class="muted">No open questions.</p>
+{% endif %}
+
+{% for g in groups %}
+<section class="panel fact-group">
+  <h2>{{ g.ref or g.kind }} <span class="chip">{{ g.kind|replace('_', ' ') }}</span></h2>
+  <ul class="fact-list">
+  {% for v in g.facts %}{% set f = v.f %}
+    <li class="fact{% if v.attention %} needs{% endif %}">
+      <p class="fact-text">{{ f.text }}</p>
+      <div class="chips">
+        {% for label, level in v.chips %}<span class="chip st-{{ level }}">{{ label }}</span>{% endfor %}
+        <span class="chip sens-{{ v.sensitivity }}" title="who may see it">{{ sensitivity.get(v.sensitivity, v.sensitivity) }}</span>
+        {% if v.derived %}<span class="chip">from your brand profile (read-only)</span>{% endif %}
+      </div>
+      <dl class="facts small">
+        <dt>Where</dt><dd>{{ v.scope }}</dd>
+        {% if f.valid_from or f.valid_to %}<dt>Valid</dt><dd>{{ f.valid_from or 'any time' }} to {{ f.valid_to or 'no end' }}</dd>{% endif %}
+        {% if f.review_by %}<dt>Review by</dt><dd>{{ f.review_by }}</dd>{% endif %}
+        {% if v.source %}<dt>Source</dt><dd>{{ v.source }}</dd>{% endif %}
+        {% if f.owner %}<dt>Owner</dt><dd>{{ f.owner }}</dd>{% endif %}
+        <dt>Key</dt><dd><code>{{ f.key }}</code>{% if f.version %} · version {{ f.version }}{% if f.latest_version and f.latest_version > f.version %} (draft {{ f.latest_version }} waiting){% endif %}{% endif %}</dd>
+      </dl>
+      <div class="row-actions">
+        {% if v.derived %}
+          {% if v.status == 'active' %}
+          <form method="post" action="/facts/{{ f.key }}/convert"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small" type="submit">Turn into a scoped fact</button></form>
+          {% endif %}
+        {% else %}
+          <a class="btn small" href="/facts/{{ f.key }}/edit">Edit</a>
+          {% if v.can_confirm %}<form method="post" action="/facts/{{ f.key }}/confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn approve small" type="submit" {% if not owner_ready %}disabled{% endif %}>Confirm</button></form>{% endif %}
+          {% if v.can_retire %}<form method="post" action="/facts/{{ f.key }}/retire"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn reject ghost small" type="submit" {% if not owner_ready %}disabled{% endif %}>Retire</button></form>{% endif %}
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% else %}
+{% if show != 'questions' and not error %}<p class="muted">{% if show == 'all' %}No facts yet. Add one, or start from a starter kit.{% else %}Nothing here.{% endif %}</p>{% endif %}
+{% endfor %}
+{% endif %}
+{% endblock %}

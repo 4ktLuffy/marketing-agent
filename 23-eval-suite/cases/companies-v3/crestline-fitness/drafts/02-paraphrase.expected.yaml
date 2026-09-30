@@ -1,0 +1,9 @@
+# WHY: negative control, the same in-scope facts reworded with harmless "most of our members", "best way to" and "free to ask"; disclosures kept, no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Like most of our members, you'll probably start with a class or two"
+  - "Unlimited spin, HIIT and yoga classes come with Core at Northgate"
+  - "It's free to ask"
+  - "Our trainers all hold a Level 3 Personal Trainer qualification"
+  - "Off-Peak at Northgate is £24.99 per month, with access 10am to 4pm on weekdays"

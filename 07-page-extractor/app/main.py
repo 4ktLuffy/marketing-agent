@@ -1,4 +1,5 @@
-"""Page extractor: clean title, headings, main text, links and Open Graph from a URL or HTML."""
+"""Page extractor: clean title, headings, main text, links and Open Graph from a URL or HTML;
+the text of a PDF page by page (uploaded as base64, or a URL that serves application/pdf)."""
 import re
 from urllib.parse import urljoin, urlsplit
 
@@ -7,7 +8,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, model_validator
 
 from app import youtube
-from app.net import BlockedURL, FetchError, fetch
+from app.net import BlockedURL, FetchError, fetch, is_pdf
+from app.pdf import PDFError, decode_base64, extract_pdf
 
 app = FastAPI(title="page-extractor")
 
@@ -19,13 +21,16 @@ DROP_TAGS = ["script", "style", "nav", "footer", "header", "aside", "form", "nos
 class ExtractRequest(BaseModel):
     url: str | None = None
     html: str | None = None
+    # a PDF file as base64 (optionally a data: URL); `filename` is only echoed back
+    pdf_base64: str | None = None
+    filename: str | None = None
     # true: also return `link_list`, the internal links as [{"url", "text"}] (first 200, deduped)
     list_links: bool = False
 
     @model_validator(mode="after")
     def exactly_one(self):
-        if (self.url is None) == (self.html is None):
-            raise ValueError("give exactly one of 'url' or 'html'")
+        if sum(x is not None for x in (self.url, self.html, self.pdf_base64)) != 1:
+            raise ValueError("give exactly one of 'url', 'html' or 'pdf_base64'")
         return self
 
 
@@ -112,10 +117,29 @@ def health():
     return {"status": "ok"}
 
 
+def pdf_result(raw: bytes, url: str | None, filename: str | None) -> dict:
+    """A PDF in the page shape (so old callers still find title/text) plus `pages` with numbers.
+    `text` is capped like a page's; `pages` carries every page (each capped at 20,000 characters)."""
+    try:
+        doc = extract_pdf(raw, filename)
+    except PDFError as exc:
+        raise HTTPException(exc.status, str(exc))
+    return {"url": url, "title": doc["title"], "description": None, "lang": None, "headings": [],
+            "text": doc["text"][:MAX_TEXT], "word_count": doc["word_count"], "links": {"internal": 0, "external": 0},
+            "og": {}, "source": "pdf", "filename": doc["filename"], "page_count": doc["page_count"],
+            "pages": doc["pages"]}
+
+
 @app.post("/extract")
 def extract_endpoint(req: ExtractRequest):
     if req.html is not None:
         return extract(BeautifulSoup(req.html, "html.parser"), None)
+    if req.pdf_base64 is not None:
+        try:
+            raw = decode_base64(req.pdf_base64)
+        except PDFError as exc:
+            raise HTTPException(exc.status, str(exc))
+        return pdf_result(raw, None, req.filename)
     try:
         vid = youtube.video_id(req.url)
     except youtube.BadVideoURL as exc:
@@ -130,10 +154,13 @@ def extract_endpoint(req: ExtractRequest):
         except youtube.TranscriptFetchError as exc:
             raise HTTPException(502, str(exc))
     try:
-        page = fetch(req.url.strip())
+        page = fetch(req.url.strip(), allow_pdf=True)
     except BlockedURL as exc:
         raise HTTPException(422, str(exc))
     except FetchError as exc:
         raise HTTPException(502, f"could not fetch {req.url}: {exc}")
+    if is_pdf(page):
+        name = page.url.rstrip("/").rsplit("/", 1)[-1].split("?", 1)[0] or None
+        return pdf_result(page.content, page.url, req.filename or name)
     soup = BeautifulSoup(page.content, "html.parser", from_encoding=page.encoding)
     return extract(soup, page.url, req.list_links)

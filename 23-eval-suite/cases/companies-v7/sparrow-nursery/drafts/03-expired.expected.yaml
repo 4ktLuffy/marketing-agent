@@ -1,0 +1,10 @@
+# WHY: the Free Settling-In Week is valid today but closes 2026-10-03, before publish 2026-10-09: by name (twice), in the subject and loosely ('won't charge for the first five days').
+blocked: true
+findings:
+  - {contains: "your child's first week is free with our Free Settling-In Week", label: conflict_or_expired, fact_key: settling-offer}
+  - {contains: "Your first week on us", label: conflict_or_expired, fact_key: settling-offer}
+  - {contains: "we won't charge for the first five days", label: conflict_or_expired, fact_key: settling-offer}
+  - {contains: "Free Settling-In Week for October starters", label: conflict_or_expired, fact_key: settling-offer}
+must_not_flag:
+  - "Canal Street is rated Good by Ofsted (URN EY574418, inspected March 2025)"
+  - "A full day is £66 (8am to 6pm) before funded hours"

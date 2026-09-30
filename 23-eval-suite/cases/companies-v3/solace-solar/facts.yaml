@@ -1,0 +1,288 @@
+# FICTIONAL company. Held-out eval fixture v3 (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: "Solace Solar", type: energy_installer, today: '2026-09-29'}
+facts:
+- key: home-6-price
+  subject: {kind: package, ref: "Home 6"}
+  fact_type: price
+  attribute: price
+  value: 9450
+  unit: null
+  currency: "GBP"
+  value_text: "£9,450 fully installed"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Solace price list Autumn 2026 v2"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "subject to a home survey"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "The Home 6 package (6 kW of Aurelis panels and a 10 kWh battery) costs £9,450 fully installed, subject to a home survey."
+- key: home-6-inclusions
+  subject: {kind: package, ref: "Home 6"}
+  fact_type: inclusion
+  attribute: included_extras
+  value: null
+  unit: null
+  currency: null
+  value_text: "app monitoring and bird-proofing mesh"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Solace price list Autumn 2026 v2"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Every Home 6 installation includes app monitoring and bird-proofing mesh as standard."
+- key: mcs-certification
+  subject: {kind: business, ref: "Solace Solar"}
+  fact_type: certification
+  attribute: mcs_certificate
+  value: null
+  unit: null
+  currency: null
+  value_text: "MCS certified installer (certificate SOL-48213)"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2025-06-01"
+  valid_to: "2027-05-31"
+  review_by: null
+  source: {kind: certificate, ref: "MCS certificate SOL-48213 (valid to 2027-05-31)"}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: "MCS certificate SOL-48213"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - "government approved"
+  owner: "Operations director"
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Solace Solar is an MCS certified installer for solar PV and battery storage, certificate SOL-48213."
+- key: aurelis-warranty
+  subject: {kind: product, ref: "Aurelis AX-430 panel"}
+  fact_type: spec
+  attribute: product_warranty
+  value: 25
+  unit: "year"
+  currency: null
+  value_text: "25-year product warranty"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["aurelis"]}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Aurelis warranty terms 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Aurelis AX-430 panels carry a 25-year product warranty."
+- key: brightwell-warranty
+  subject: {kind: product, ref: "Brightwell BW-450 panel"}
+  fact_type: spec
+  attribute: product_warranty
+  value: 30
+  unit: "year"
+  currency: null
+  value_text: "30-year product warranty"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["brightwell"]}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Brightwell warranty terms 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Brightwell BW-450 panels (our premium option) carry a 30-year product warranty."
+- key: yorkshire-install-area
+  subject: {kind: business, ref: "Yorkshire install team"}
+  fact_type: availability
+  attribute: install_area
+  value: null
+  unit: null
+  currency: null
+  value_text: "Leeds, Bradford, Harrogate and York"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: ["yorkshire"], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: "Install areas map Sept 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "In Yorkshire we install across Leeds, Bradford, Harrogate and York."
+- key: warm-homes-grant
+  subject: {kind: offer, ref: "Yorkshire Warm Homes battery grant"}
+  fact_type: price
+  attribute: grant
+  value: 2500
+  unit: null
+  currency: "GBP"
+  value_text: "up to £2,500 off a home battery"
+  basis: "flat"
+  conditions:
+  - {key: epc_band, op: "in", value: ["D", "E", "F", "G"]}
+  scope: {sites: [], regions: ["yorkshire"], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: "2026-10-04"
+  review_by: null
+  source: {kind: doc, ref: "Warm Homes scheme letter WH-2026-118"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "eligibility criteria apply"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Yorkshire homes rated EPC band D or below can get up to £2,500 off a home battery through the Warm Homes grant; applications close 4 October 2026. Eligibility criteria apply."
+- key: summer-power-up
+  subject: {kind: offer, ref: "Summer Power-Up"}
+  fact_type: price
+  attribute: upgrade
+  value: null
+  unit: null
+  currency: null
+  value_text: "free upgrade to a 13.5 kWh battery"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {kind: doc, ref: "Summer Power-Up terms"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales manager"
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: "Summer Power-Up (June to August 2026): free upgrade from the 10 kWh to a 13.5 kWh battery with Home 6."
+- key: install-margin
+  subject: {kind: package, ref: "Home 6"}
+  fact_type: price
+  attribute: gross_margin
+  value: 32
+  unit: "percent"
+  currency: null
+  value_text: "32% gross margin"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Job costing sheet Q3 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Finance"
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: "Home 6 runs at a 32% gross margin."
+- key: leeds-homes-contract
+  subject: {kind: service, ref: "Social housing installs"}
+  fact_type: price
+  attribute: contract_price
+  value: 7100
+  unit: null
+  currency: "GBP"
+  value_text: "£7,100 per system"
+  basis: "per_unit"
+  conditions:
+  - {key: customer, op: "=", value: "Leeds Community Homes"}
+  scope: {sites: [], regions: ["yorkshire"], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: "2027-03-31"
+  review_by: null
+  source: {kind: doc, ref: "Leeds Community Homes framework agreement"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Managing director"
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: "Leeds Community Homes pays £7,100 per system under the 2026 framework."

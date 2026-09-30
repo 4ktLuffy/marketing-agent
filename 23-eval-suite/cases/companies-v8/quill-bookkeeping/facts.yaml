@@ -1,0 +1,401 @@
+# FICTIONAL bookkeeping SaaS and service. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company:
+  name: Quill Bookkeeping
+  type: bookkeeping_saas_and_service
+  today: '2026-09-29'
+facts:
+- key: sole-trader-price
+  subject:
+    kind: plan
+    ref: Sole Trader
+  fact_type: price
+  attribute: list_price
+  value: 18
+  unit: month
+  currency: GBP
+  value_text: £18 a month
+  basis: per_month
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers:
+    - sole-trader
+    variants: []
+  valid_from: '2026-04-06'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://quillbooks.example/pricing
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - plus VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Sole Trader plan costs £18 a month plus VAT, for businesses with one owner and no staff.
+- key: small-business-price
+  subject:
+    kind: plan
+    ref: Small Business
+  fact_type: price
+  attribute: list_price
+  value: 42
+  unit: month
+  currency: GBP
+  value_text: £42 a month
+  basis: per_month
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers:
+    - small-business
+    variants: []
+  valid_from: '2026-04-06'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://quillbooks.example/pricing
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - plus VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Small Business plan costs £42 a month plus VAT, for businesses with up to 10 staff, and includes payroll.
+- key: charity-price
+  subject:
+    kind: plan
+    ref: Small Business (registered charities)
+  fact_type: price
+  attribute: charity_price
+  value: 21
+  unit: month
+  currency: GBP
+  value_text: £21 a month
+  basis: per_month
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - charity
+    plan_tiers:
+    - small-business
+    variants: []
+  valid_from: '2026-04-06'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://quillbooks.example/charities
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - plus VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Registered charities pay £21 a month plus VAT for the Small Business plan.
+- key: mtd
+  subject:
+    kind: product
+    ref: Quill software
+  fact_type: spec
+  attribute: mtd_compatibility
+  value: null
+  unit: null
+  currency: null
+  value_text: compatible with Making Tax Digital for VAT and for Income Tax
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-06'
+  valid_to: null
+  review_by: '2027-03-01'
+  source:
+    kind: url
+    ref: https://quillbooks.example/mtd
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing:
+  - MTD-compatible
+  forbidden_phrasing:
+  - HMRC approved
+  - HMRC endorsed
+  owner: Product manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Quill is compatible with Making Tax Digital for VAT and for Income Tax Self Assessment. HMRC recognises compatible software; it does not approve or endorse it.
+- key: aat-licence
+  subject:
+    kind: business
+    ref: Quill Bookkeeping service team
+  fact_type: credential
+  attribute: aat_licence
+  value: null
+  unit: null
+  currency: null
+  value_text: AAT licensed practice, licence number 1049733, led by Priya Doshi MAAT
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: '2026-12-01'
+  source:
+    kind: certificate
+    ref: AAT practice licence 1049733 (2026)
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: AAT licence 1049733
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - chartered accountants
+  owner: Service lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Quill's service team is an AAT licensed practice (licence number 1049733), led by Priya Doshi MAAT, a full member of the AAT. We are not chartered accountants.
+- key: switch-save
+  subject:
+    kind: offer
+    ref: Switch & Save
+  fact_type: price
+  attribute: multibuy
+  value: null
+  unit: null
+  currency: null
+  value_text: pay for 2 months, get the 3rd free
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-10'
+  review_by: null
+  source:
+    kind: doc
+    ref: Switch & Save campaign brief
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Switch & Save: new customers who switch from another bookkeeping tool pay for 2 months and get the 3rd free, for sign-ups by 10 October 2026.'
+- key: onboarding
+  subject:
+    kind: service
+    ref: Onboarding
+  fact_type: inclusion
+  attribute: onboarding
+  value: null
+  unit: null
+  currency: null
+  value_text: a free onboarding call and import of your old records
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://quillbooks.example/onboarding
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every plan includes a free onboarding call, and we import your records from spreadsheets or your old software.
+- key: support-hours
+  subject:
+    kind: service
+    ref: Customer support
+  fact_type: hours
+  attribute: support_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: Monday to Friday, 8am to 6pm, by chat and phone
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://quillbooks.example/support
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: UK support is available Monday to Friday, 8am to 6pm, by chat and phone. There is no weekend or out-of-hours support.
+- key: churn
+  subject:
+    kind: business
+    ref: Quill
+  fact_type: result
+  attribute: monthly_churn
+  value: 3.1
+  unit: percent
+  currency: null
+  value_text: 3.1% monthly churn
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Board pack September 2026
+  claim_class: result
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: CEO
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Monthly churn is 3.1% (board pack, not public).
+- key: harlow-contract
+  subject:
+    kind: plan
+    ref: Small Business (Harlow Dental Group contract)
+  fact_type: price
+  attribute: contract_price
+  value: 14
+  unit: month
+  currency: GBP
+  value_text: £14 a month per practice
+  basis: per_month
+  conditions:
+  - key: customer
+    op: '='
+    value: Harlow Dental Group
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers:
+    - small-business
+    variants: []
+  valid_from: '2026-02-01'
+  valid_to: '2029-01-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Harlow Dental Group order form QB-2026-007
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of sales
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Harlow Dental Group pays £14 a month per practice under a 3-year agreement.

@@ -1,0 +1,11 @@
+# WHY: the £899 fitted price requires "standard installation"; no piece says it in any wording (no "standard", no cable-length or fuse-board condition), in the page title or the body.
+blocked: true
+findings:
+  - {contains: "The Volt Home 7 is just £899 fitted.", label: missing_disclosure, fact_key: volt-home-7-price}
+  - {contains: "Page title: Volt Home 7 home charger, £899 fitted", label: missing_disclosure, fact_key: volt-home-7-price}
+  - {contains: "Get the Volt Home 7 installed at home for £899.", label: missing_disclosure, fact_key: volt-home-7-price}
+  - {contains: "£899 FITTED", label: missing_disclosure, fact_key: volt-home-7-price}
+must_not_flag:
+  - "Every Volt install includes app set-up, a load-balancing check and an electrical installation certificate."
+  - "Your charger comes with a 3-year warranty when registered within 30 days."
+  - "Volt Home 7 home charger · Leeds, Bradford and Wakefield"

@@ -1,0 +1,13 @@
+# WHY: invented: a place superlative, a Google rating, look-alike licence G/77-92 (real G7729), a 'five-star' hygiene grade (real: 4, Good), a staff-experience claim, and the forbidden 'everything we sell is organic'.
+blocked: true
+findings:
+  - {contains: "the best butcher in Leicestershire", label: no_source, fact_key: null}
+  - {contains: "rated 4.9 stars on Google from over 600 reviews", label: no_source, fact_key: null}
+  - {contains: "licence G/77-92", label: conflict_or_expired, fact_key: organic-cert}
+  - {contains: "proud holders of a five-star food hygiene rating", label: conflict_or_expired, fact_key: hygiene-rating}
+  - {contains: "Our master butchers bring over 40 years of experience to every cut", label: no_source, fact_key: null}
+  - {contains: "Everything we sell is organic, from the sausages to the chicken", label: forbidden_phrase, fact_key: organic-cert}
+must_not_flag:
+  - "Dry-aged sirloin £34/kg"
+  - "Click-and-collect runs Thursday to Saturday, 10am to 4pm"
+  - "The people behind your Sunday roast"

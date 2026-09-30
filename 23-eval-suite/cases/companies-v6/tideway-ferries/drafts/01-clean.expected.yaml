@@ -1,0 +1,12 @@
+# WHY: negative control — winter Gull Island fares typed as "fourteen pounds" and "a tenner" (= £10, with proof of age), the valid winter timetable, the real Gold award with its booking note, the dog policy; "winter" words match the task season.
+blocked: false
+findings: []
+must_not_flag:
+  - "Fancy a winter day out on the water?"
+  - "An adult return to Gull Island is fourteen pounds this winter"
+  - "It's a tenner for a return, with proof of age"
+  - "dogs travel free on the open deck, on a lead"
+  - "MV Tern holds the Accessible Coast Gold award"
+  - "Gull Island, all winter long"
+  - "runs from 5 October 2026 to 28 March 2027"
+  - "the island is quieter in winter"

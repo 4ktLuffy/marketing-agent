@@ -1,6 +1,6 @@
 # brand-service
 
-Deploy **05 of 87** of the local-LLM marketing agent. It holds one brand profile (voice,
+Deploy **05 of 89** of the local-LLM marketing agent. It holds one brand profile (voice,
 products, key messages, banned phrases, disclaimers) and serves it two ways: as JSON, and
 as a compact plain-text summary the LLM gateway (03) embeds in every prompt. `POST /check`
 lints any draft against the brand rules before it goes near the calendar.
@@ -10,7 +10,7 @@ It uses no LLM.
 
 **Docker host** that runs `01-marketing-stack`, as a container on the `marketing`
 network. n8n and the gateway call it at `http://brand-service:8000` (env `BRAND_URL`).
-Its only state is the mounted brand file, the optional edits saved over it (`BRAND_OVERRIDES_FILE`) and the optional voice profile (`VOICE_FILE`), so it also runs on any container host.
+Its state is the mounted brand file, the fact store (`FACTS_DB`, SQLite), the optional edits saved over it (`BRAND_OVERRIDES_FILE`) and the optional voice profile (`VOICE_FILE`), so it also runs on any container host.
 
 ## Run
 
@@ -44,7 +44,7 @@ With `INTERNAL_API_KEY` set (the stack sets it), every endpoint but `/health` ne
 | GET | `/health` | — | `{"status":"ok"}` |
 | GET | `/profile` | — | the brand yaml as JSON |
 | GET | `/profile/summary` | — | `{"summary": str}` (plain text, at most 1600 chars) |
-| GET | `/facts` | — | `{"facts":[{"id","text"}]}`: the approved facts (explicit `facts:` list + products + key messages); the claim checker (44) only accepts claims these support |
+| GET | `/facts?max_sensitivity=` | — | `{"facts":[{"id","text"}]}`: the approved facts (explicit `facts:` list + products + key messages, then active v2 facts; see *Scoped facts (v2)*); the claim checker (44) only accepts claims these support |
 | GET | `/voice/questions` | — | `{"questions":[10 str]}`: the brand-voice interview |
 | GET | `/voice` | — | the stored voice profile, or 404 |
 | PUT | `/voice` | voice profile JSON (output of the 04 `voice_profile` prompt) | the stored profile; 422 on a bad body; needs `X-API-Key` |
@@ -130,6 +130,96 @@ and `null` are refused. A broken overrides file is logged and ignored (the base 
 `GET /brand/completeness` is a checklist: name and one-liner, website, audience, products with a
 one-line description, at least 5 facts, banned phrases, an emoji rule, and the voice interview.
 
+## Scoped facts (v2)
+
+The flat `facts:` list can't say *where* or *until when* a fact is true, and that is the most common
+way true facts end up in wrong copy: another branch's price, a plan-only feature, a certification
+that covers one variant, last season's offer. The fact store keeps each fact with a stable key and
+the context it holds in (contract: `_dev/phase1-contracts.md` §1-§2):
+
+- `key` (`[a-z0-9-]{2,60}`), `subject` `{kind, ref}` (kind: business, site, product, variant, plan,
+  service, package, menu_item, person, policy, offer), `fact_type` (price, spec, availability, hours,
+  inclusion, policy, certification, credential, claim, testimonial, result, event, contact),
+  `attribute`, `value`/`unit`/`currency`/`value_text`/`basis`, `conditions`.
+- `scope` `{sites, regions, channels, segments, plan_tiers, variants}`: an empty list means all.
+- `valid_from`/`valid_to`/`review_by` (`YYYY-MM-DD`, empty = open), `source`, `claim_class`,
+  `required_disclosures`, `allowed_phrasing`/`forbidden_phrasing`, `owner`, `risk`, `text`
+  (≤ 500 chars, the sentence copy may use).
+- `sensitivity`: `public` (may be sent to any model), `internal` (the default; tools may use it,
+  88 sends it to outside chatbots only as a slot), `restricted` (never leaves the store's API).
+- `status`: `draft` → `active` (confirmed by the owner) → `superseded`/`retired`; `expired` is
+  reported for an active fact past its `valid_to` (stored history is not changed; the first time
+  it is seen a `changes` row of kind `expired` is written). An import may also set `expired`
+  explicitly.
+
+**Versions are append-only.** Every write adds a row to `fact_versions`; SQLite triggers refuse
+UPDATE and DELETE on it (and on the `changes` log), including by hand. `PUT` adds a draft version
+while the confirmed one keeps being served; `confirm` switches to the latest version.
+
+**A human confirms.** `confirm`, `retire`, `import` and applying a starter kit need
+`X-Owner-Key: $FACT_OWNER_KEY` (compared in constant time) on top of `X-API-Key`. With
+`FACT_OWNER_KEY` unset they answer 503, so a stack without the key can draft facts but nothing (and
+no model output) becomes a fact on its own. Only 05 and the control room (72) hold the key.
+Optional `X-Actor` names who made a change in the version history.
+
+**Valid on day D**: status active and `valid_from ≤ D ≤ valid_to`. **Scope match** for a task:
+for each dimension where the fact lists values, the task must name at least one value and all of
+its values must be in the fact's list; naming another value is `out_of_scope`, leaving the
+dimension empty is `scope_unspecified` (case-insensitive).
+
+**Derived facts.** The brand profile's facts (brand.yaml + saved edits) appear in `/facts/v2` and
+`/facts/query` read-only with `derived: true`, scope all, sensitivity public, key
+`price-<product-slug>` for a product's price line and `legacy-<sha8(text)>` for the rest. To turn
+one into a scoped fact, `POST /facts/v2` a new key with `supersedes_key` set to the derived key and
+confirm it: from then on the derived line is left out of `/facts` and reported `superseded`.
+
+**fact_set_version** `fs-<seq>-<sha8>`: `seq` is the last `changes` sequence number; the hash covers
+the sorted active `key:version` pairs and the derived facts' texts, so it changes on every confirm,
+retire or brand edit. 88 stamps packs with it.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/facts/v2?status=&include_derived=` | — | `{"fact_set_version","facts":[Fact + version, latest_version, derived]}` |
+| GET | `/facts/v2/{key}` | — | Fact + `versions` `[{version, status, data, created_by, created_at, confirmed_by}]` |
+| POST | `/facts/v2` | Fact (status ignored) | new key → draft v1; a key still in draft → new draft version; an active key → 409 (use PUT) |
+| PUT | `/facts/v2/{key}` | Fact (key optional) | new draft version; the confirmed version stays served until confirm |
+| POST | `/facts/v2/{key}/confirm` · `/retire` | — | owner key; the latest version becomes active (superseding the previous one, and `supersedes_key`'s fact) / retired |
+| POST | `/facts/v2/import` | `{"facts":[Fact], "confirm": bool}` | owner key; all or nothing (≤ 500); `{"created","updated","unchanged","confirmed","keys"}`; re-importing the same data is a no-op |
+| GET | `/facts/query?site=&region=&channel=&segment=&plan_tier=&variant=&at=&max_sensitivity=` | — | `{"fact_set_version","at","facts":[...],"excluded":[{"key","reason"}]}`; scope params repeat; `at` defaults to today, `max_sensitivity` to internal; reasons: draft, superseded, retired, expired, not_yet_valid, restricted, internal, out_of_scope, scope_unspecified (checked in that order: status, sensitivity, dates, scope) |
+| GET | `/facts/changes?since=` | — | `{"seq","changes":[{"seq","key","version","kind","at"}]}` (kind: created, updated, confirmed, retired, expired, superseded; ≤ 1000 per call) |
+| GET/POST | `/questions` | `{"kind":"missing_fact\|confirm\|scope","fact_key"?,"task_id"?,"text"}` | `{"questions":[...]}` / the question `{"id","kind","fact_key","task_id","text","status","answer","created_at","closed_at"}` |
+| POST | `/questions/{id}/answer` · `/dismiss` | `{"answer"?}` | the closed question; 409 if already closed |
+| GET | `/starter-kits` | — | `[{"id","label","description","fact_types","claim_classes","forbidden_phrasing":[{"phrase","why","claim_class","needs"}],"required_disclosures":[{"when","text","claim_class"}]}]` |
+| POST | `/starter-kits/{id}/apply` | — | owner key; stores the kit's phrasings and disclosures as **draft rules** (idempotent): `{"kit","created","existing","rules","suggested_fact_types"}` |
+| GET | `/rules?status=&kit=` | — | `{"rules":[{"id","kit","kind":"forbidden_phrase\|required_disclosure","phrase","why","claim_class","needs","status"}]}` |
+| POST | `/rules/{id}/confirm` · `/dismiss` | — | owner key; rule status active / dismissed |
+
+### Legacy `/facts` compatibility guarantee
+
+`GET /facts` keeps its shape and its positional ids `f1..fN`, because 44 strips `[fN]` markers and
+03 renders them. The brand profile's facts come first, in exactly the order they always had; with an
+empty or absent store the response is byte-identical to the one before the store existed (a golden
+test pins it, and a read never creates the store file). Stored facts are appended after them only
+when **active, valid today and not restricted**, filtered by `?max_sensitivity=` (default
+`internal`; `public` is for a gateway that uses a hosted model). Each appended entry is
+`{"id","text","key","version","scope_note"}`; a scoped fact carries its scope in the text, e.g.
+`Parking is free (only: sites Quayside).`, so a writer never reads it as true everywhere. A derived
+line replaced by a confirmed fact (`supersedes_key`) is left out and the ids stay contiguous. If the
+store cannot be read, `/facts` logs it and serves the brand profile's facts alone.
+
+### Industry starter kits
+
+`config/starter-kits/{hospitality,manufacturing,saas,retail,clinic,restaurant,consultancy}.yaml` are
+data, not code: a label, suggested fact types with example attributes, the claim classes that
+matter, wording to avoid with a one-line reason and the fact that would make it acceptable (e.g.
+"UL Listed" needs a certification fact naming the variant; "SOC 2 Type II" needs that report;
+"gluten-free" needs a current allergen fact), and disclosure patterns. They are cautious
+marketing-hygiene prompts, **not legal or regulatory advice**. Applying a kit writes them to a
+separate `rules` table as drafts (rules are not facts, so they never appear in `/facts` or
+`/facts/query`); the owner confirms or dismisses each. 05 does not enforce rules yet; 88 and the
+control room read them. Kits are validated on load (a broken kit file is a 500, never a partial
+rule set); `STARTER_KITS_DIR` points elsewhere.
+
 ## Configuration
 
 | Env var | Default | Meaning |
@@ -137,6 +227,10 @@ one-line description, at least 5 facts, banned phrases, an emoji rule, and the v
 | `BRAND_FILE` | `/config/brand.yaml` | brand profile yaml; missing file gives 503 on every endpoint except `/health` |
 | `VOICE_FILE` | `/config/voice.json` | stored voice profile; its folder must be writable (mount `/config` read-write, or point this at a volume) |
 | `BRAND_OVERRIDES_FILE` | `/config/brand.overrides.json` | edits saved over `brand.yaml` (JSON, written atomically); its folder must be writable: in the stack point it at a volume, e.g. `/data/brand.overrides.json` |
+| `FACTS_DB` | `/data/facts.sqlite` | the scoped fact store (SQLite, WAL); created on the first write, never by a read; its folder must be writable |
+| `FACT_OWNER_KEY` | unset | a human's key for confirm / retire / import / applying a starter kit (`X-Owner-Key`); unset = those answer 503 |
+| `FACTS_TODAY` | unset | pins "today" (`YYYY-MM-DD`) for validity checks; for eval replays only |
+| `STARTER_KITS_DIR` | `config/starter-kits` next to `app/` | where the starter kit yaml files are read from |
 | `INTERNAL_API_KEY` | unset | when set, every endpoint except `/health` needs it in `X-API-Key`, reads included: with several clients on one machine each has its own key, so a URL pointing at the wrong client's brand fails instead of answering with that brand's facts |
 
 ## CI

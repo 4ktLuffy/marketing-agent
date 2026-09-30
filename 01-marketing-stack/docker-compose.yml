@@ -186,7 +186,8 @@ services:
       <<: *keyed
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       MODEL: ${WRITER_MODEL:-mkt-writer}
-      ALLOWED_MODELS: ${GATEWAY_ALLOWED_MODELS:-}
+      # The chat agent (24) calls /v1/chat/completions with AGENT_MODEL, so it is always allowed.
+      ALLOWED_MODELS: ${AGENT_MODEL:-mkt-agent},${GATEWAY_ALLOWED_MODELS:-}
       # Optional hosted model instead of Ollama for all writing/checking prompts.
       LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
@@ -209,6 +210,10 @@ services:
       # brand_data volume (/config is mounted read-only, so writing there fails).
       BRAND_OVERRIDES_FILE: /data/brand.overrides.json
       VOICE_FILE: /data/voice.json
+      # Scoped facts (v2). Confirming or retiring a fact needs FACT_OWNER_KEY (only 05 and the
+      # control room hold it), so no AI-driven caller can turn a draft into a fact.
+      FACTS_DB: /data/facts.sqlite
+      FACT_OWNER_KEY: ${FACT_OWNER_KEY:?set FACT_OWNER_KEY in .env}
     # A client of several (install.sh --client) gets its own copy in clients/<slug>/brand.
     volumes: ["${BRAND_CONFIG_DIR:-../05-brand-service/config}:/config:ro", "brand_data:/data"]
 
@@ -607,6 +612,9 @@ services:
       REPORT_URL: http://report-builder:8000
       # Product feed page (87, full profile): uploads, counts and the exports.
       FEED_URL: ${FEED_URL-http://feed-optimizer:8000}
+      # Facts and Tasks pages: scoped facts (05) and the task bridge (88) for any chatbot.
+      TASKS_URL: http://task-bridge:8000
+      FACT_OWNER_KEY: ${FACT_OWNER_KEY:?set FACT_OWNER_KEY in .env}
       # Activity page: more gateways to read (label=url; an empty url is skipped) and the profile.
       ACTIVITY_GATEWAYS: verifier=http://llm-gateway-verifier:8000,assistant=${ASSISTANT_GATEWAY_URL:-}
       INSTALL_PROFILE: ${COMPOSE_PROFILES-full}
@@ -833,6 +841,39 @@ services:
       FEED_MAX_ROWS: ${FEED_MAX_ROWS:-5000}
     volumes: [feed_data:/data]
 
+  # Task packs for any chatbot, paste-back, evidence, export (88). No model calls by default.
+  task-bridge:
+    <<: *service
+    image: marketing-agent-task-bridge
+    build: ../88-task-bridge
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}88:8000"]
+    environment:
+      <<: *keyed
+      BRAND_URL: http://brand-service:8000
+      CALENDAR_URL: http://content-calendar:8000
+      RULES_URL: http://platform-rules:8000
+      LEADS_URL: ${LEADS_URL-}
+      MODEL_CHECK: ${TASKS_MODEL_CHECK:-off}
+      CLAIMS_URL: ${TASKS_CLAIMS_URL:-}
+      PACK_MAX_CHARS: ${TASKS_PACK_MAX_CHARS:-8000}
+    volumes: [task_data:/data]
+
+  # Claude connector (89, MCP): read public facts, make packs, submit answers, check text. It holds
+  # only the internal key, so it can never approve, confirm a fact or publish. Profile "claude":
+  #   COMPOSE_PROFILES=core,claude  (or: docker compose --profile claude up -d mcp-connector)
+  mcp-connector:
+    <<: *service
+    profiles: [claude]
+    image: marketing-agent-mcp-connector
+    build: ../89-mcp-connector
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}89:8000"]
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY in .env}
+      BRAND_URL: http://brand-service:8000
+      TASK_BRIDGE_URL: http://task-bridge:8000
+      MCP_TOKEN: ${MCP_TOKEN:-}
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+
   # Optional self-hosted Listmonk (AGPL): docker compose --profile newsletter up -d
   # Admin UI http://localhost:9000. Based on github.com/knadh/listmonk docker-compose.yml.
   listmonk:
@@ -909,6 +950,7 @@ volumes:
   ads_sync_data:
   flow_data:
   feed_data:
+  task_data:
   site_data:
   lead_data:
   visibility_data:

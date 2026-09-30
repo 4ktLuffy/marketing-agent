@@ -1,0 +1,287 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Copperline Couriers, type: B2B bike courier, today: '2026-09-29'}
+facts:
+- key: zone-1-rate
+  subject: {kind: service, ref: Same-hour bike delivery}
+  fact_type: price
+  attribute: rate
+  value: 7.5
+  unit: null
+  currency: GBP
+  value_text: £7.50 per drop
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [zone-1], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Rate card 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excl. VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Zone 1 (city centre) deliveries cost £7.50 per drop, excl. VAT.
+- key: zone-2-rate
+  subject: {kind: service, ref: Same-hour bike delivery}
+  fact_type: price
+  attribute: rate
+  value: 11
+  unit: null
+  currency: GBP
+  value_text: £11 per drop
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [zone-2], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Rate card 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excl. VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Zone 2 (inner suburbs) deliveries cost £11 per drop, excl. VAT.
+- key: sixty-minute-delivery
+  subject: {kind: service, ref: Same-hour bike delivery}
+  fact_type: spec
+  attribute: delivery_time
+  value: 60
+  unit: minute
+  currency: null
+  value_text: delivered within 60 minutes of pickup
+  basis: null
+  conditions:
+  - {key: days, op: in, value: [Mon, Tue, Wed, Thu, Fri]}
+  - {key: pickup_time, op: '>=', value: '08:00'}
+  - {key: pickup_time, op: '<=', value: '18:00'}
+  scope: {sites: [], regions: [zone-1], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Service levels 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [weekdays 8am to 6pm]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Zone 1 deliveries arrive within 60 minutes of pickup, weekdays 8am to 6pm.
+- key: account-invoicing
+  subject: {kind: policy, ref: Business accounts}
+  fact_type: policy
+  attribute: invoicing
+  value: null
+  unit: null
+  currency: null
+  value_text: one monthly invoice with 30-day payment terms
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [account], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Account terms v3}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Business account customers get one monthly invoice with 30-day payment terms.
+- key: goods-in-transit
+  subject: {kind: policy, ref: Goods-in-transit cover}
+  fact_type: policy
+  attribute: cover_limit
+  value: 1000
+  unit: null
+  currency: GBP
+  value_text: goods-in-transit cover up to £1,000 per consignment
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: Insurance schedule GIT-2026}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Insurance schedule GIT-2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [fully insured, unlimited cover]
+  owner: Finance lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every consignment has goods-in-transit cover up to £1,000 per consignment.
+- key: first-month-offer
+  subject: {kind: offer, ref: New account offer}
+  fact_type: price
+  attribute: discount
+  value: 15
+  unit: percent
+  currency: null
+  value_text: 15% off your first month
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [account], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: doc, ref: Autumn sales push brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [new accounts only]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New business accounts get 15% off their first month of deliveries, 15 September to 3 October 2026.
+- key: free-week-pilot
+  subject: {kind: offer, ref: Pilot week}
+  fact_type: price
+  attribute: offer
+  value: 0
+  unit: null
+  currency: GBP
+  value_text: your first week of deliveries free
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [account], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2026-07-31'
+  review_by: null
+  source: {kind: doc, ref: Summer pilot brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales lead
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: New business accounts got their first week of deliveries free, 1 May to 31 July 2026.
+- key: cargo-capacity
+  subject: {kind: product, ref: E-cargo bike}
+  fact_type: spec
+  attribute: max_load
+  value: 100
+  unit: kg
+  currency: null
+  value_text: carry up to 100kg
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fleet spec sheet}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Fleet manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our e-cargo bikes carry up to 100kg per trip.
+- key: rider-pay-per-drop
+  subject: {kind: service, ref: Rider pay}
+  fact_type: price
+  attribute: pay_rate
+  value: 4.1
+  unit: null
+  currency: GBP
+  value_text: £4.10 per drop
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Rider agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Riders are paid £4.10 per drop.
+- key: bramwell-rate
+  subject: {kind: service, ref: Same-hour bike delivery}
+  fact_type: price
+  attribute: contract_price
+  value: 5.2
+  unit: null
+  currency: GBP
+  value_text: £5.20 per drop
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Bramwell & Co}
+  scope: {sites: [], regions: [zone-1], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Bramwell volume agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Bramwell & Co solicitors pay £5.20 per Zone 1 drop under a volume agreement.

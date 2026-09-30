@@ -1,0 +1,10 @@
+# WHY: 'highest-rated' and 'Award-winning' have no source; 'DVSA approved garage' is forbidden phrasing (DVSA-authorised test centre only); the warranty is 12 months, not lifetime.
+blocked: true
+findings:
+- {contains: Wrenford's highest-rated MOT centre, label: no_source, fact_key: null}
+- {contains: We're a DVSA approved garage, label: forbidden_phrase, fact_key: dvsa-test-centre}
+- {contains: lifetime warranty on all repairs, label: conflict_or_expired, fact_key: repair-warranty}
+- {contains: Award-winning mechanics, label: no_source, fact_key: null}
+must_not_flag:
+- Our MOT test is £45, with a free partial retest within 10 working days
+- Canal Street is open Saturdays 8am–1pm

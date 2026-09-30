@@ -1,0 +1,9 @@
+# WHY: the "No.1" vote and "12,000 moves since 1998" have no source; "fully insured for everything" and "government approved" are forbidden phrasings (cover is capped at £50,000; RTS is a trade scheme).
+blocked: true
+findings:
+  - {contains: "Voted Oakhampstead's No.1 removals firm", label: no_source, fact_key: null}
+  - {contains: "fully insured for everything", label: forbidden_phrase, fact_key: transit-cover}
+  - {contains: "Government approved removals", label: forbidden_phrase, fact_key: rts-member}
+  - {contains: "Over 12,000 happy moves since 1998", label: no_source, fact_key: null}
+must_not_flag:
+  - "A 2-bed local move is from £495, price confirmed after a free home survey."

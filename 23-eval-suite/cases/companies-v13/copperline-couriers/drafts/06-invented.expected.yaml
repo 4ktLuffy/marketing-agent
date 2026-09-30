@@ -1,0 +1,9 @@
+# WHY: "fastest courier in the city" has no source; "fully insured" is forbidden (cover is capped at £1,000); the 60-minute promise is weekdays 8am to 6pm only.
+blocked: true
+findings:
+  - {contains: "The fastest courier in the city", label: no_source, fact_key: null}
+  - {contains: "Every parcel is fully insured", label: forbidden_phrase, fact_key: goods-in-transit}
+  - {contains: "60-minute delivery any time, day or night", label: conflict_or_expired, fact_key: sixty-minute-delivery}
+must_not_flag:
+  - "Zone 1 drops are £7.50 excl. VAT"
+  - "one monthly invoice with 30-day payment terms"

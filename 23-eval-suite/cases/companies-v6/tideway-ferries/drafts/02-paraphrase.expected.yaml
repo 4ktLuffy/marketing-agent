@@ -1,0 +1,12 @@
+# WHY: negative control — same winter facts in other formats ("£14.00", "Fourteen quid", "05/10/2026 until 28/03/2027"); "summer" appears only as a season word, never with the summer fare or timetable.
+blocked: false
+findings: []
+must_not_flag:
+  - "Island trips don't stop when summer does"
+  - "cost £14.00 for adults and £10 for over-60s (proof of age needed)"
+  - "Dogs travel free on the open deck, as long as they're on a lead"
+  - "holder of the Accessible Coast Gold award"
+  - "Four sailings a day to Gull Island this winter"
+  - "From 05/10/2026 until 28/03/2027 we run four return sailings a day"
+  - "Fourteen quid gets an adult there and back"
+  - "Summer crowds gone"

@@ -1,0 +1,8 @@
+# WHY: Northgate prices with their disclosures, Northgate classes, the Level 3 trainer credential and the correct FitMark certificate.
+blocked: false
+findings: []
+must_not_flag:
+  - "Every personal trainer on our team holds a Level 3 Personal Trainer qualification"
+  - "Crestline is FitMark Safe Gym accredited (certificate FM-30922)"
+  - "Off-Peak membership at Northgate is £24.99 per month, with access 10am to 4pm on weekdays"
+  - "Core membership £34.99/month, 12-month minimum term"

@@ -1,0 +1,11 @@
+# WHY: only Trail E1 or all-bike public facts; the range carries 'in eco mode' and finance carries 'representative 0% APR' and 'subject to status'; IPX4 is stated without 'waterproof'.
+blocked: false
+findings: []
+must_not_flag:
+- This is the Hillclimb Trail E1
+- and it goes
+- representative 0% APR, subject to status
+- 'Price: £1,899'
+- 'Range: up to 70 miles per charge in eco mode'
+- have IPX4 water resistance
+- The Trail E1 is £1,899 with a free 6-week safety check

@@ -1,0 +1,28 @@
+Here are your three October messages for Fernhill Farm Shop 🍂
+
+*📱 WhatsApp broadcast*
+
+Autumn Meat Boxes are back! 🥩
+Each Autumn Meat Box is [[autumn-box]], feeds four for a week, and its contents vary with the season.
+Every box comes with [[box-extras]].
+Our beef and lamb are certified organic by the Soil Association, licence G7729.
+Book a slot: [[collect-and-delivery]].
+
+*💬 SMS (160 characters)*
+
+Fernhill: dry-aged sirloin is £34/kg. Autumn Meat Box £55, contents vary with the season. Order by 8pm the day before your slot. Reply STOP to opt out
+
+Subject: What's in this month's Autumn Meat Box?
+
+Hi neighbour,
+
+Our 28-day dry-aged sirloin is {{sirloin-price}} at the butchery counter.
+The shop holds a food hygiene rating of 4 (Good), FHRS ID 1184520.
+Organic certification covers our own beef and lamb, and our chickens are free-range.
+Pick up your box from our click-and-collect slots, Thursday to Saturday between 10am and 4pm.
+Questions? Call us on 0116 496 0321.
+
+See you at the counter,
+The Fernhill team
+
+Want me to shorten the email or add a recipe tip?

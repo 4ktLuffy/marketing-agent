@@ -1,0 +1,8 @@
+# WHY: negative control; same facts reworded. "No Greenleaf Card needed" is true for the 3-litre price (scope: everyone); "gold"/"golden" are look-alikes, not ratings.
+blocked: false
+findings: []
+must_not_flag:
+  - "No Greenleaf Card needed for that price"
+  - "Leaves turning gold"
+  - "Our compost is peat-free, every single bag"
+  - "rated Good (4) for food hygiene"

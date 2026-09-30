@@ -1,0 +1,289 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Brightfold Cleaning, type: commercial and domestic cleaning company (B2B focus), today: '2026-09-29'}
+facts:
+- key: office-cleaning-rate
+  subject: {kind: service, ref: Office cleaning}
+  fact_type: price
+  attribute: hourly_rate
+  value: 21
+  unit: hour
+  currency: GBP
+  value_text: £21 per cleaner per hour
+  basis: per_unit
+  conditions:
+  - {key: hours_per_visit, op: '>=', value: 2}
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Commercial rate card April 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT, minimum 2 hours per visit]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Office cleaning costs £21 per cleaner per hour plus VAT, with a minimum of 2 hours per visit.
+- key: domestic-cleaning-rate
+  subject: {kind: service, ref: Home cleaning}
+  fact_type: price
+  attribute: hourly_rate
+  value: 18
+  unit: hour
+  currency: GBP
+  value_text: £18 per hour
+  basis: per_unit
+  conditions:
+  - {key: hours_per_visit, op: '>=', value: 2}
+  scope: {sites: [], regions: [], channels: [], segments: [domestic], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://brightfold.example/home-cleaning'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [minimum 2 hours per visit]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Domestic team lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Home cleaning costs £18 per hour, VAT included, with a minimum of 2 hours per visit. Domestic customers
+    only.
+- key: eco-products
+  subject: {kind: policy, ref: Cleaning products}
+  fact_type: spec
+  attribute: products
+  value: null
+  unit: null
+  currency: null
+  value_text: EU Ecolabel cleaning products
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-09-01'
+  valid_to: null
+  review_by: '2027-01-31'
+  source: {kind: doc, ref: 'Product list with Ecolabel licence numbers, 2026'}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Supplier Ecolabel licences 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: [EU Ecolabel]
+  forbidden_phrasing: [chemical-free, non-toxic, 100% natural]
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our standard cleaning products carry the EU Ecolabel. They still contain cleaning chemicals, so we must
+    not call them chemical-free, non-toxic or 100% natural.
+- key: bs7858-screening
+  subject: {kind: policy, ref: Staff screening}
+  fact_type: certification
+  attribute: security_screening
+  value: null
+  unit: null
+  currency: null
+  value_text: security screened to BS 7858
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: '2027-01-01'
+  source: {kind: doc, ref: Screening register and BS 7858 procedure v3}
+  claim_class: security
+  requires_evidence: true
+  evidence_ref: Screening register 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every cleaner on commercial contracts is security screened to BS 7858 before starting.
+- key: free-deep-clean
+  subject: {kind: offer, ref: Free first deep clean}
+  fact_type: inclusion
+  attribute: free_deep_clean
+  value: null
+  unit: null
+  currency: null
+  value_text: free first deep clean when you sign by 2 October
+  basis: null
+  conditions:
+  - {key: contract_signed_by, op: <=, value: '2026-10-02'}
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-02'
+  review_by: null
+  source: {kind: doc, ref: September B2B campaign brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Businesses that sign an office cleaning contract by 2 October 2026 get their first deep clean free.
+- key: spring-domestic-offer
+  subject: {kind: offer, ref: Spring clean discount}
+  fact_type: price
+  attribute: discount
+  value: 10
+  unit: percent
+  currency: null
+  value_text: 10% off your first three cleans
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [domestic], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2026-05-31'
+  review_by: null
+  source: {kind: doc, ref: Spring campaign brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Domestic team lead
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 10% off the first three home cleans ran from March to 31 May 2026 and has ended.
+- key: rolling-contract
+  subject: {kind: policy, ref: Office contract terms}
+  fact_type: policy
+  attribute: contract_length
+  value: 30
+  unit: day
+  currency: null
+  value_text: 30-day rolling contract, no minimum term
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Commercial terms v5}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Office cleaning contracts run on a 30-day rolling basis with no minimum term.
+- key: cleaning-hours
+  subject: {kind: service, ref: Office cleaning}
+  fact_type: availability
+  attribute: service_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: between 6am and 9pm, seven days a week
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://brightfold.example/offices'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Office cleans can be booked any time between 6am and 9pm, seven days a week.
+- key: gross-margin-floor
+  subject: {kind: service, ref: Office cleaning}
+  fact_type: price
+  attribute: margin_floor
+  value: 28
+  unit: percent
+  currency: null
+  value_text: 28% gross margin floor
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Finance director pricing rule}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Commercial quotes must keep a gross margin of at least 28%. Internal pricing rule.
+- key: quarry-lane-contract
+  subject: {kind: service, ref: Office cleaning (Quarry Lane Offices)}
+  fact_type: price
+  attribute: contract_price
+  value: 1950
+  unit: month
+  currency: GBP
+  value_text: £1,950 per month
+  basis: per_month
+  conditions:
+  - {key: customer, op: '=', value: Quarry Lane Offices}
+  scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2027-04-30'
+  review_by: null
+  source: {kind: doc, ref: Quarry Lane service agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Quarry Lane Offices pays £1,950 per month for five evening cleans a week.

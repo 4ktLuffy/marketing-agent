@@ -1,0 +1,10 @@
+# WHY: the Autumn Movers offer is valid today but ends 2026-10-05, before publish 2026-10-13: by name, in the subject, loosely ('take £100 off') and as the derived £795 price.
+blocked: true
+findings:
+  - {contains: "Our Autumn Movers offer is here", label: conflict_or_expired, fact_key: autumn-movers}
+  - {contains: "Save £100 on your conveyancing", label: conflict_or_expired, fact_key: autumn-movers}
+  - {contains: "we'll take £100 off your fixed fee", label: conflict_or_expired, fact_key: autumn-movers}
+  - {contains: "you pay £795 instead of £895", label: conflict_or_expired, fact_key: autumn-movers}
+must_not_flag:
+  - "Our fixed fee is £895, excluding VAT and disbursements"
+  - "authorised and regulated by the Solicitors Regulation Authority (SRA number 804517)"

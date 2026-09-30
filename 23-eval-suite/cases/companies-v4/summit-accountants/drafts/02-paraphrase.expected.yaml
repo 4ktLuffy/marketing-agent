@@ -1,0 +1,8 @@
+# WHY: negative control — the same sole-trader facts reworded ("£45 a month plus VAT", "31 Jan 2027", "first chat's free"); "Chartered accountants" is true (ICAEW Chartered Accountants) and must not read as an invented credential.
+blocked: false
+findings: []
+must_not_flag:
+  - "For £45 a month plus VAT"
+  - "our ICAEW firm number is C008812746"
+  - "Chartered accountants, in plain English"
+  - "SA deadline is 31 Jan 2027"

@@ -1,0 +1,6 @@
+# WHY: multi-currency invoicing is a true feature but only on Pro/Business; the task is plan_tiers=[starter] -> wrong_scope.
+blocked: true
+findings:
+  - {contains: "invoice in 30+ currencies", label: wrong_scope, fact_key: multi-currency}
+must_not_flag:
+  - "Try it with a 14-day free trial, no card needed"

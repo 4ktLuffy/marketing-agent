@@ -1,0 +1,10 @@
+# WHY: 'Trusted by 10,000+' and 'UK's fastest' have no source; 'HMRC approved' is forbidden (HMRC-recognised only); '£7 a month for your whole team' confuses the per-employee basis.
+blocked: true
+findings:
+- {contains: 'Trusted by over 10,000 UK businesses', label: no_source, fact_key: null}
+- {contains: We're HMRC approved, label: forbidden_phrase, fact_key: hmrc-recognised}
+- {contains: £7 a month for your whole team, label: conflict_or_expired, fact_key: growth-price}
+- {contains: The UK's fastest payroll setup, label: no_source, fact_key: null}
+must_not_flag:
+- Payroo Growth includes automatic pension auto-enrolment
+- It includes expense claims with receipt capture

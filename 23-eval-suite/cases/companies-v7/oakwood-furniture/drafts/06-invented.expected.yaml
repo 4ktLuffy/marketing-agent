@@ -1,0 +1,12 @@
+# WHY: 'Shropshire's finest', the five-star rating and the single-master-craftsman claim have no source; C-152107 is a look-alike of FSC-C151207; 'FSC Recycled' contradicts FSC 100%; 'carbon neutral' is forbidden.
+blocked: true
+findings:
+  - {contains: "Shropshire's finest furniture maker", label: no_source, fact_key: null}
+  - {contains: "Our oak carries FSC® licence C-152107", label: conflict_or_expired, fact_key: fsc-oak}
+  - {contains: "Every table is FSC Recycled certified", label: conflict_or_expired, fact_key: fsc-oak}
+  - {contains: "Rated five stars by over 1,000 customers", label: no_source, fact_key: null}
+  - {contains: "built start to finish by a single master craftsman", label: no_source, fact_key: null}
+  - {contains: "Our workshop is carbon neutral", label: forbidden_phrase, fact_key: fsc-oak}
+must_not_flag:
+  - "The Harlow six-seater in solid oak is £1,450"
+  - "made to order in 8 to 10 weeks from order confirmation"

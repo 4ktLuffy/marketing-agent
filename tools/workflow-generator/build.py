@@ -124,15 +124,31 @@ def readme(num, wf: Workflow, meta: dict) -> str:
         lines += [f"| `{t}` | {n}-{SLUG[n]} | {d} |" for t, n, d in meta["tools"]]
         lines += ["",
                   "## Model settings", "",
-                  "- Model `mkt-agent:latest`, built by `02-ollama-models`. To use another model, change it in the *Local model* node.",
-                  "- `numCtx` 16384. n8n's default of 2048 silently cuts off the tool definitions.",
+                  "- The *Model (via LLM gateway)* node is n8n's OpenAI chat model node pointed at the gateway",
+                  "  (`03-llm-gateway`, `POST /v1/chat/completions`). Its credential *LLM gateway (chat)* is",
+                  "  created by `01-marketing-stack/scripts/import-n8n.sh`: base URL `http://llm-gateway:8000/v1`",
+                  "  (`CHAT_GATEWAY_URL` to change it), API key = `INTERNAL_API_KEY` (from `.env`, never written",
+                  "  to the repo) and a custom header `X-Caller: 24 Chat agent`. Every model call of the chat then",
+                  "  shows on the control room's **Activity** page as *Chat agent asked mkt-agent (local) for a chat step*.",
+                  "- The gateway forwards the request unchanged (messages, tools, tool calls, streaming) to its",
+                  "  provider: Ollama's OpenAI-compatible `/v1` by default, or the hosted API when the gateway runs",
+                  "  with `LLM_PROVIDER=openai`. It logs metadata only, never your messages or the answers.",
+                  "- Model `AGENT_MODEL` (default `mkt-agent`, built by `02-ollama-models`), read from n8n's env.",
+                  "  It must be on the gateway's allowlist; the stack's compose file adds `AGENT_MODEL` to it.",
+                  "- Context 16384 tokens, from the `mkt-agent` Modelfile (`num_ctx`): Ollama's `/v1` API takes no",
+                  "  context size, and 2048 would silently cut off the tool definitions. Another model needs",
+                  "  `num_ctx` in its own Modelfile too.",
                   "- Temperature 0.2: the agent chooses tools, it doesn't write copy.", "",
-                  "## Hosted model variant (optional)", "",
-                  "`variants/hosted.json` is the same agent on a hosted OpenAI-compatible model (Groq",
-                  "`openai/gpt-oss-120b` by default, `reasoning_effort` low). It has the same workflow id, so",
-                  "importing it replaces the local one. `01-marketing-stack/scripts/import-n8n.sh` does this when",
-                  "`CHAT_PROVIDER=hosted` and `CHAT_API_KEY` are set in `.env`. Your chat messages and tool",
-                  "results then go to that provider; the writing tools still use the gateway's model.", ""]
+                  "## Variants (optional)", "",
+                  "Both have the same workflow id, so importing one replaces `workflow.json`.", "",
+                  "- `variants/direct-ollama.json`: n8n talks to Ollama directly (*Local model (Ollama)* node,",
+                  "  `numCtx` 16384, credential *Ollama (local)*), as before the gateway route. The chat then does",
+                  "  not show on the Activity page. `import-n8n.sh` imports it when `CHAT_PROVIDER=direct`.",
+                  "- `variants/hosted.json`: a hosted OpenAI-compatible model directly (Groq",
+                  "  `openai/gpt-oss-120b` by default, `reasoning_effort` low), local Ollama as fallback.",
+                  "  `import-n8n.sh` imports it when `CHAT_PROVIDER=hosted` and `CHAT_API_KEY` are set in `.env`.",
+                  "  Your chat messages and tool results then go to that provider; the writing tools still use",
+                  "  the gateway's model. These calls bypass the gateway, so they don't show on the Activity page.", ""]
     if meta.get("env"):
         lines += ["## Configuration (env on the n8n container)", "", "| Env | Meaning |", "|---|---|"]
         lines += [f"| `{k}` | {v} |" for k, v in meta["env"].items()]
@@ -202,11 +218,12 @@ def main(argv=None):
         if harness_dir and "schedule" in meta:
             (harness_dir / f"sched-{wf.num}.json").write_text(json.dumps(webhook_copy(wf), indent=2))
         print(f"wrote {d.name}: {len(wf.nodes)} nodes")
-    # Chat agent on a hosted model: same id, so importing it replaces the local variant.
-    wf, _ = wf24("hosted")
+    # Chat agent variants: same id, so importing one replaces workflow.json (the gateway route).
     (folder(24) / "variants").mkdir(exist_ok=True)
-    (folder(24) / "variants" / "hosted.json").write_text(wf.to_json())
-    print("wrote 24 variants/hosted.json")
+    for provider, name in (("hosted", "hosted.json"), ("local", "direct-ollama.json")):
+        wf, _ = wf24(provider)
+        (folder(24) / "variants" / name).write_text(wf.to_json())
+        print(f"wrote 24 variants/{name}")
     # Workflows that ship inside a service's repo (e.g. 72-control-room/n8n/workflow.json):
     # only the JSON is written, never that repo's README or CI.
     for build, rel in EXTRA_P7 + EXTRA_ADS + EXTRA_FLOWS:

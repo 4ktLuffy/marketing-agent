@@ -1,0 +1,292 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Kinetic Events Centre, type: event and conference venue, today: '2026-09-29'}
+facts:
+- key: ddr-corporate
+  subject: {kind: package, ref: Corporate day delegate rate (autumn-winter 2026-27)}
+  fact_type: price
+  attribute: day_delegate_rate
+  value: 59
+  unit: delegate
+  currency: GBP
+  value_text: £59 per delegate
+  basis: per_person
+  conditions:
+  - {key: delegates, op: '>=', value: 20}
+  scope: {sites: [], regions: [], channels: [], segments: [corporate], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Rate card autumn-winter 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Corporate day delegate rate: £59 per delegate plus VAT, minimum 20 delegates, 1 September 2026 to 31 March 2027.'
+- key: ddr-charity
+  subject: {kind: package, ref: Charity day delegate rate (autumn-winter 2026-27)}
+  fact_type: price
+  attribute: day_delegate_rate
+  value: 45
+  unit: delegate
+  currency: GBP
+  value_text: £45 per delegate
+  basis: per_person
+  conditions:
+  - {key: delegates, op: '>=', value: 20}
+  scope: {sites: [], regions: [], channels: [], segments: [charity], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Rate card autumn-winter 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Registered charities pay a day delegate rate of £45 per delegate plus VAT, minimum 20 delegates, 1 September 2026
+    to 31 March 2027.
+- key: atrium-capacity
+  subject: {kind: site, ref: Atrium Hall}
+  fact_type: spec
+  attribute: capacity
+  value: 320
+  unit: guests
+  currency: null
+  value_text: 320 theatre-style or 180 cabaret
+  basis: null
+  conditions:
+  - key: layout
+    op: in
+    value: [theatre, cabaret]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Room capacity chart v5 (fire risk assessment 2026)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Atrium Hall seats 320 theatre-style or 180 cabaret.
+- key: accessibility
+  subject: {kind: business, ref: Kinetic Events Centre}
+  fact_type: spec
+  attribute: accessibility
+  value: null
+  unit: null
+  currency: null
+  value_text: step-free access to every meeting room, a hearing loop in the Atrium Hall and a Changing Places toilet
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Access statement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [fully accessible]
+  owner: Operations manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: We have step-free access to every meeting room, a hearing loop in the Atrium Hall and a Changing Places toilet. The
+    Mezzanine Bar is reached by stairs only.
+- key: catering-inclusions
+  subject: {kind: package, ref: Day delegate package}
+  fact_type: inclusion
+  attribute: catering
+  value: null
+  unit: null
+  currency: null
+  value_text: arrival tea and coffee, a two-course working lunch and afternoon refreshments
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Rate card autumn-winter 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Catering manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every day delegate package includes arrival tea and coffee, a two-course working lunch and afternoon refreshments.
+- key: venuemark
+  subject: {kind: business, ref: Kinetic Events Centre}
+  fact_type: certification
+  attribute: venue_accreditation
+  value: null
+  unit: null
+  currency: null
+  value_text: VenueMark Gold accreditation (certificate VM-G-20417)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-06-01'
+  valid_to: '2027-05-31'
+  review_by: null
+  source: {kind: certificate, ref: VenueMark certificate VM-G-20417}
+  claim_class: comparative
+  requires_evidence: true
+  evidence_ref: VenueMark certificate VM-G-20417
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: General manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Kinetic Events Centre holds VenueMark Gold accreditation, certificate VM-G-20417, valid to 31 May 2027.
+- key: early-booking-offer
+  subject: {kind: offer, ref: Early booking discount}
+  fact_type: price
+  attribute: discount
+  value: 10
+  unit: percent
+  currency: null
+  value_text: 10% off the day delegate rate
+  basis: null
+  conditions:
+  - {key: booked_by, op: <=, value: '2026-10-04'}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: September sales push brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Book by 4 October 2026 and get 10% off the day delegate rate for any event held before 31 March 2027.
+- key: summer-terrace-lunch
+  subject: {kind: offer, ref: Summer terrace lunch}
+  fact_type: inclusion
+  attribute: free_lunch_upgrade
+  value: null
+  unit: null
+  currency: null
+  value_text: a free terrace barbecue lunch
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer 2026 flyer}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Catering manager
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: Summer day delegate bookings came with a free terrace barbecue lunch, June to August 2026.
+- key: ddr-floor
+  subject: {kind: package, ref: Day delegate rate}
+  fact_type: price
+  attribute: rate_floor
+  value: 47
+  unit: delegate
+  currency: GBP
+  value_text: £47 per delegate
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Revenue meeting 2026-08-20}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: General manager
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Sales may discount the corporate day delegate rate to £47 per delegate and no lower.
+- key: vantrell-contract
+  subject: {kind: package, ref: Vantrell Pharma annual conference}
+  fact_type: price
+  attribute: contract_price
+  value: 86000
+  unit: null
+  currency: GBP
+  value_text: £86,000 per year
+  basis: per_year
+  conditions:
+  - {key: customer, op: '=', value: Vantrell Pharma}
+  scope: {sites: [], regions: [], channels: [], segments: [corporate], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2027-12-31'
+  review_by: null
+  source: {kind: doc, ref: Vantrell Pharma venue agreement 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: General manager
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Vantrell Pharma pays £86,000 per year for its annual conference package.

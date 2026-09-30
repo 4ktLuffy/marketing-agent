@@ -40,3 +40,5 @@ services:
   social-listening: {ports: !reset []}
   umami-sync: {ports: !reset []}
   utm-builder: {ports: !reset []}
+  task-bridge: {ports: !reset []}
+  mcp-connector: {ports: !reset []}

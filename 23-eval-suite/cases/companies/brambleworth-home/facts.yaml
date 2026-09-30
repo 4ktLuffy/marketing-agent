@@ -1,0 +1,289 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Brambleworth Home, type: retail, today: '2026-09-29'}
+facts:
+- key: autumn-sale
+  subject: {kind: offer, ref: Autumn sale}
+  fact_type: price
+  attribute: discount
+  value: 20
+  unit: percent
+  currency: null
+  value_text: 20% off throws and cushions
+  basis: null
+  conditions:
+  - {key: categories, op: in, value: [throws, cushions]}
+  scope: {sites: [], regions: [], channels: [own-site], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-22'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: doc, ref: Autumn promo plan v2}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - selected lines, while stocks last
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: E-commerce manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn sale: 20% off selected throws and cushions on our own website, 22 Sept to 5 Oct 2026, while stocks last.'
+- key: returns-own-site
+  subject: {kind: policy, ref: Returns (own site)}
+  fact_type: policy
+  attribute: returns_window
+  value: 60
+  unit: day
+  currency: null
+  value_text: free returns within 60 days
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [own-site], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://brambleworth.example/help'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Customer service lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Orders from brambleworth.example can be returned free within 60 days.
+- key: returns-amazon
+  subject: {kind: policy, ref: Returns (Amazon)}
+  fact_type: policy
+  attribute: returns_window
+  value: 30
+  unit: day
+  currency: null
+  value_text: 30-day returns through Amazon
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [amazon], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: Amazon seller central returns settings}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Customer service lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Orders bought on Amazon follow Amazon's 30-day returns process.
+- key: prime-next-day
+  subject: {kind: policy, ref: Prime delivery (Amazon)}
+  fact_type: policy
+  attribute: delivery_speed
+  value: null
+  unit: null
+  currency: null
+  value_text: free next-day delivery for Prime members
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [amazon], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: Amazon listing settings (FBA)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: E-commerce manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Prime members get free next-day delivery on our Amazon listings (fulfilled by Amazon). Our own site has no next-day option.
+- key: free-delivery-threshold
+  subject: {kind: policy, ref: Delivery (own site)}
+  fact_type: policy
+  attribute: free_delivery_threshold
+  value: 50
+  unit: null
+  currency: GBP
+  value_text: free UK delivery on orders over £50
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [uk], channels: [own-site], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://brambleworth.example/help'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - UK mainland only
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: E-commerce manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our own website offers free delivery on orders over £50, UK mainland only.
+- key: hebden-throw-price
+  subject: {kind: product, ref: Hebden linen throw}
+  fact_type: price
+  attribute: list_price
+  value: 45
+  unit: null
+  currency: GBP
+  value_text: £45
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [own-site], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-08-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://brambleworth.example/p/hebden-linen-throw'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Buyer
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Hebden linen throw is £45 on our own website (the Amazon price differs).
+- key: wool-origin
+  subject: {kind: product, ref: Pennine wool throws}
+  fact_type: claim
+  attribute: origin
+  value: null
+  unit: null
+  currency: null
+  value_text: woven in Lancashire from British wool
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Mill certificate of origin 2025}
+  claim_class: origin
+  requires_evidence: true
+  evidence_ref: Mill certificate of origin 2025
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - handmade
+  - hand-woven
+  owner: Buyer
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our Pennine wool throws are woven in Lancashire from British wool, on power looms (not handmade).
+- key: summer-sale
+  subject: {kind: offer, ref: Summer sale}
+  fact_type: price
+  attribute: discount
+  value: 30
+  unit: percent
+  currency: null
+  value_text: 30% off garden and outdoor
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [own-site], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer promo plan}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: E-commerce manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Summer sale: 30% off garden and outdoor, July to August 2026. Ended.'
+- key: black-friday-date
+  subject: {kind: offer, ref: Black Friday 2026}
+  fact_type: event
+  attribute: start_date
+  value: null
+  unit: null
+  currency: null
+  value_text: 20 November 2026
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Trading plan Q4 (not public)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Founder
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Black Friday sale starts 20 November 2026. Not announced yet.
+- key: hollis-grey-wholesale
+  subject: {kind: product, ref: Hebden linen throw}
+  fact_type: price
+  attribute: wholesale_price
+  value: 22
+  unit: null
+  currency: GBP
+  value_text: £22 per unit
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Hollis & Grey}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Hollis & Grey stockist agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Founder
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hollis & Grey buys the Hebden linen throw wholesale at £22 per unit.

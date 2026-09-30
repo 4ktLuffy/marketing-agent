@@ -1,0 +1,17 @@
+# WHY: negative control: the same Sole Trader facts reworded ('+ VAT', 'excluding VAT', 'VAT extra', price in words, 'licensing'/'licensed', an 'approved?' question that is answered correctly); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "Tax return on your mind already?"
+  - "For a sole trader, Quill costs £18 per month + VAT"
+  - "It works with MTD for both VAT and Income Tax"
+  - "a free call to set things up and bring across your old records"
+  - "we hold AAT licence 1049733"
+  - "eighteen pounds a month, excluding VAT"
+  - "answers chat and phone on weekdays from 8 to 6"
+  - "Is your bookkeeping MTD-ready?"
+  - "Is Quill approved for MTD?"
+  - "HMRC recognises compatible software rather than approving it"
+  - "Priya Doshi, a full member of the AAT (MAAT), leads our bookkeepers"
+  - "Our AAT licensing means your books are handled by a licensed practice"
+  - "£18/month (VAT extra)"

@@ -1,6 +1,6 @@
 # 83 · AI visibility
 
-Deploy **83 of 87** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **83 of 89** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Tuesday it measures whether AI assistants name and cite the brand when buyers ask about the category, through `82-ai-visibility` (official APIs only; nothing is scraped). It checks 82's `/health` (a provider key and an approved question set are needed; otherwise it says what is missing and stops), then starts a run and waits for it (`POST /runs?wait=true`: every approved question × every provider with a key × `VIS_SAMPLES` answers). It reads `GET /summary` (per provider: mention rate on unaided questions with a 95% interval, citation rate, average list position, share of voice, change vs the previous run on the same question set), `GET /claims/wrong` (sentences about the brand that the claim checker (44) could not support with the approved facts) and `GET /gaps` (questions where competitors are named or cited and the brand is not, with the pages the answers cite and a suggested answer-first FAQ).
 

@@ -1,0 +1,10 @@
+# WHY: the £90 autumn service (save £20) is valid today but ends 2026-10-04, before publish 2026-10-07 — as a price, as a subject, and in words only ("knock twenty quid off"); the 10% hybrid sale ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "a Full Service for just £90", label: conflict_or_expired, fact_key: autumn-service-offer}
+  - {contains: "knock twenty quid off the usual Full Service price", label: conflict_or_expired, fact_key: autumn-service-offer}
+  - {contains: "10% off all hybrid bikes", label: conflict_or_expired, fact_key: summer-hybrid-sale}
+  - {contains: "Save £20 on your autumn service", label: conflict_or_expired, fact_key: autumn-service-offer}
+must_not_flag:
+  - "The Forge Tempo 3 hybrid costs £1,200"
+  - "A Full Service costs £110, parts charged extra"

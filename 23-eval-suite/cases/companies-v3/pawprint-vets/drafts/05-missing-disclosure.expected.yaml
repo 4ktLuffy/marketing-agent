@@ -1,0 +1,9 @@
+# WHY: the consultation price needs "medicines and tests charged separately" and the out-of-hours partner needs "emergency fees apply"; both are absent from the whole draft.
+blocked: true
+findings:
+  - {contains: "A standard consultation at our Ashby branch costs £48", label: missing_disclosure, fact_key: consult-price-ashby}
+  - {contains: "Subject: See a vet at Ashby for £48", label: missing_disclosure, fact_key: consult-price-ashby}
+  - {contains: "Consultations at Ashby cost £48", label: missing_disclosure, fact_key: consult-price-ashby}
+  - {contains: "call NightPaws Emergency Vets in Coleford", label: missing_disclosure, fact_key: out-of-hours-partner}
+must_not_flag:
+  - "two vaccinations, a microchip and a nurse health check for £89"

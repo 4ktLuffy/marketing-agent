@@ -1,0 +1,8 @@
+# WHY: £49 is the true Millbrook price; the task is sites=[Quayside] (£55). The value exactly matches a real fact in another
+# site, so a careful checker says wrong_scope (not no_source); conflict with the Quayside fact is the secondary reading.
+blocked: true
+findings:
+  - {contains: "from just £49", label: wrong_scope, fact_key: physio-assessment-millbrook}
+  - {contains: "Physio from £49", label: wrong_scope, fact_key: physio-assessment-millbrook}
+must_not_flag:
+  - "All our physiotherapists are HCPC registered"

@@ -1,0 +1,12 @@
+# WHY: £895 is the real fee for the Leeds classroom only (variants [classroom]; task: online) and £545 is the real rate for charities and the public sector only (segments; task: private-sector); every line using either is wrong_scope, not no_source.
+blocked: true
+findings:
+  - {contains: "CloudCert Foundation in our Leeds classroom is £895 plus VAT per learner", label: wrong_scope, fact_key: foundation-classroom-fee}
+  - {contains: "Charities and public-sector teams can join CloudCert Foundation online for just £545 plus VAT.", label: wrong_scope, fact_key: charity-rate}
+  - {contains: "Subject: CloudCert Foundation from £545 plus VAT", label: wrong_scope, fact_key: charity-rate}
+  - {contains: "CloudCert Foundation online is £545 plus VAT per learner.", label: wrong_scope, fact_key: charity-rate}
+  - {contains: "Classroom or online, CloudCert Foundation starts at £545 plus VAT.", label: wrong_scope, fact_key: charity-rate}
+  - {contains: "Join us in Leeds for £895 plus VAT.", label: wrong_scope, fact_key: foundation-classroom-fee}
+must_not_flag:
+  - "Every CloudCert Foundation course includes the official exam voucher and one free resit."
+  - "We're a CloudCert Institute Gold Training Partner (partner ID CCI-TP-40218)."

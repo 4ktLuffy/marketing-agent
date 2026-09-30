@@ -1,0 +1,10 @@
+# WHY: the free trial lesson is valid today but ends 2026-10-05 (publish 2026-10-12) and is only described, never priced or dated; the £199 summer bootcamp ended 2026-08-28.
+blocked: true
+findings:
+  - {contains: "Try your first lesson on us, free", label: conflict_or_expired, fact_key: free-trial-lesson}
+  - {contains: "Your first lesson is on us", label: conflict_or_expired, fact_key: free-trial-lesson}
+  - {contains: "Your first online lesson is free when you sign up", label: conflict_or_expired, fact_key: free-trial-lesson}
+  - {contains: "GCSE summer bootcamp is still open at £199", label: conflict_or_expired, fact_key: summer-bootcamp}
+must_not_flag:
+  - "Online GCSE maths tutoring: £38 per hour, billed monthly in advance"
+  - "Every tutor has an enhanced DBS check and Level 2 Safeguarding Children certificate"

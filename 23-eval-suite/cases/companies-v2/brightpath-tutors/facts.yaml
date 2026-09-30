@@ -1,0 +1,292 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Task scope sites=[online], segments=[gcse]: alevel-rate (a-level) and centre-mock-exams (leeds-centre) are
+# scope traps; free-trial-lesson is valid today (2026-09-29) but ends 2026-10-05, before publish_on 2026-10-12.
+company: {name: BrightPath Tutors, type: education, today: '2026-09-29'}
+facts:
+- key: gcse-online-rate
+  subject: {kind: service, ref: GCSE online tutoring}
+  fact_type: price
+  attribute: hourly_rate
+  value: 38
+  unit: hour
+  currency: GBP
+  value_text: £38 per hour
+  basis: per_unit
+  conditions: []
+  scope: {sites: [online], regions: [], channels: [], segments: [gcse], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: doc, ref: BrightPath price list 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - billed monthly in advance
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Online GCSE tutoring costs £38 per hour, billed monthly in advance.
+- key: alevel-rate
+  subject: {kind: service, ref: A-level tutoring}
+  fact_type: price
+  attribute: hourly_rate
+  value: 46
+  unit: hour
+  currency: GBP
+  value_text: £46 per hour
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [a-level], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: doc, ref: BrightPath price list 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - billed monthly in advance
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A-level tutoring costs £46 per hour, billed monthly in advance.
+- key: centre-mock-exams
+  subject: {kind: service, ref: Leeds centre tutoring}
+  fact_type: inclusion
+  attribute: mock_exams
+  value: null
+  unit: null
+  currency: null
+  value_text: a free mock exam every term in exam conditions
+  basis: null
+  conditions: []
+  scope: {sites: [leeds-centre], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: BrightPath price list 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Leeds centre manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Students at the Leeds centre sit a free mock exam every term in exam conditions (in-person only; not offered online).
+- key: tutor-checks
+  subject: {kind: business, ref: BrightPath Tutors (all tutors)}
+  fact_type: credential
+  attribute: safeguarding
+  value: Level 2
+  unit: null
+  currency: null
+  value_text: enhanced DBS check and Level 2 Safeguarding Children certificate
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: Tutor compliance register 2026 (ref BPT-SG-2026)}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: BPT-SG-2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Safeguarding lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every BrightPath tutor has an enhanced DBS check and a Level 2 Safeguarding Children certificate.
+- key: gcse-pass-rate
+  subject: {kind: business, ref: BrightPath Tutors GCSE maths results}
+  fact_type: result
+  attribute: pass_rate
+  value: 87
+  unit: percent
+  currency: null
+  value_text: 87% achieved grade 4 or above in GCSE maths
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [gcse], plan_tiers: [], variants: []}
+  valid_from: '2026-08-20'
+  valid_to: '2027-08-19'
+  review_by: null
+  source: {kind: doc, ref: Results audit summer 2026}
+  claim_class: result
+  requires_evidence: true
+  evidence_ref: Results audit summer 2026
+  consent_ref: null
+  required_disclosures:
+  - 2026 cohort of 212 students
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - guarantee
+  - guaranteed
+  owner: Centre director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: In summer 2026, 87% of BrightPath GCSE maths students achieved grade 4 or above (2026 cohort of 212 students).
+- key: autumn-term
+  subject: {kind: business, ref: Autumn term 2026}
+  fact_type: event
+  attribute: term_dates
+  value: null
+  unit: null
+  currency: null
+  value_text: 7 September to 18 December 2026
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-12-18'
+  review_by: null
+  source: {kind: url, ref: 'https://brightpath.example/terms'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Autumn term runs from 7 September to 18 December 2026.
+- key: free-trial-lesson
+  subject: {kind: offer, ref: Free trial lesson}
+  fact_type: price
+  attribute: trial_lesson
+  value: 30
+  unit: minute
+  currency: null
+  value_text: a free 30-minute trial lesson
+  basis: flat
+  conditions:
+  - {key: booked_by, op: <=, value: '2026-10-05'}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: doc, ref: September enrolment promotion}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New students who book by 5 October 2026 get a free 30-minute trial lesson.
+- key: summer-bootcamp
+  subject: {kind: package, ref: GCSE summer bootcamp}
+  fact_type: price
+  attribute: package_price
+  value: 199
+  unit: null
+  currency: GBP
+  value_text: £199
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [gcse], plan_tiers: [], variants: []}
+  valid_from: '2026-07-20'
+  valid_to: '2026-08-28'
+  review_by: null
+  source: {kind: doc, ref: BrightPath price list 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'GCSE summer bootcamp: £199 for five mornings, 20 July to 28 August 2026. Ended.'
+- key: tutor-pay-rate
+  subject: {kind: business, ref: Tutor pay}
+  fact_type: price
+  attribute: pay_rate
+  value: 22
+  unit: hour
+  currency: GBP
+  value_text: £22 per hour
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Tutor pay policy 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Tutors are paid £22 per hour for GCSE sessions.
+- key: ashdown-contract
+  subject: {kind: service, ref: School contract (Ashdown Academy)}
+  fact_type: price
+  attribute: contract_price
+  value: 31
+  unit: hour
+  currency: GBP
+  value_text: £31 per hour
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Ashdown Academy}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: doc, ref: Ashdown Academy service agreement 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Centre director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Ashdown Academy pays £31 per hour for in-school GCSE intervention groups.

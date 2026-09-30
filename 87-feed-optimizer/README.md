@@ -1,6 +1,6 @@
 # feed-optimizer
 
-Deploy **87 of 87** of the local-LLM marketing agent. It writes **better product titles** (and,
+Deploy **87 of 89** of the local-LLM marketing agent. It writes **better product titles** (and,
 if you want, descriptions) for a small shop's **Google Merchant Center product feed**.
 
 - **Upload the feed you already have.** A CSV or TSV file with a header row, the format Merchant
@@ -134,7 +134,7 @@ The checks here (`app/checks.py`), for the model's title and description:
 
 | Reason | Rejected when |
 |---|---|
-| `number` | a number (or `two`, `pair`, `dozen`) is in none of the row's fields. Price, sale price, id, gtin and links do not count. |
+| `number` | a number (or `two`, `pair`, `dozen`) is in none of the row's fields, or a pack count ("3-Pack", "pack of 3") has no matching count in the row. Price, sale price, id, gtin and links do not count. |
 | `colour`, `material`, `size`, `gender`, `age` | a word from that list is not in the row. **When the row fills the field** (`color`, `material`, `size`, `gender`, `age_group`), only that field (and the product type) counts. |
 | `claim` | a feature or claim word (organic, vegan, recycled, waterproof, wireless, dishwasher, ...) is not in the row |
 | `brand_other` | another product's brand from the same upload, or a well-known brand (Apple, iPhone, Samsung, Nike, ...) the row does not name |
@@ -174,8 +174,9 @@ small shop will usually not have enough clicks to tell a real lift from noise; s
   before/after list before approving.
 - **Strict on purpose.** A word from the lists used in another sense is rejected ("small front
   pocket" is not size Small; a "brass buckle" when `material` is Leather). The product then gets
-  the rule-based title or keeps its description. Numbers are checked by value, not meaning: "3"
-  from "Set of 3" would allow "3-Pack".
+  the rule-based title or keeps its description. Numbers are checked by value, except pack counts:
+  "3-Pack", "pack of 3", "3 pcs", "6 pairs" need a count in the row ("set of 3", "6 pairs"), so a
+  "3 m" cable can't become a "3-Pack". Other numbers are still checked by value only.
 - **Descriptions** are off by default. The model tends to add "perfect for ..." phrases, which are
   not in the promo list.
 - **One product per model call.** About 3 to 5 seconds per product with the local writer model

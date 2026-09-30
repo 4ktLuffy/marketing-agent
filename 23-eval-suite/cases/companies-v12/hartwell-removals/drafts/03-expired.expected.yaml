@@ -1,0 +1,10 @@
+# WHY: the 25% midweek discount is valid today but ends 2026-10-07, before publish 2026-10-15 ("knock a quarter off" is the loose form); the £99 student offer ended 2026-09-20 ("under a hundred quid").
+blocked: true
+findings:
+  - {contains: "knock a quarter off any Tuesday, Wednesday or Thursday move", label: conflict_or_expired, fact_key: midweek-discount}
+  - {contains: "Midweek moves: 25% off Tue–Thu", label: conflict_or_expired, fact_key: midweek-discount}
+  - {contains: "MOVE FOR UNDER A HUNDRED QUID", label: conflict_or_expired, fact_key: student-van-offer}
+  - {contains: "student man-and-van is still just £99", label: conflict_or_expired, fact_key: student-van-offer}
+must_not_flag:
+  - "A 2-bed local move is from £495, price confirmed after a free home survey."
+  - "30 free boxes with a confirmed booking."

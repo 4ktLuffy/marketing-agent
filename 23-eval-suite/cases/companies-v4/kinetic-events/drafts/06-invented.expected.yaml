@@ -1,0 +1,12 @@
+# WHY: "leading" venue, the 9.8/10 rating and the CMP staff credential have no source; "Platinum" changes the Gold grade; VM-G-20471 is a look-alike of VM-G-20417; "fully accessible" is forbidden (the Mezzanine Bar is stairs only).
+blocked: true
+findings:
+  - {contains: "Kinetic Events Centre is Yorkshire's leading conference venue", label: no_source, fact_key: null}
+  - {contains: "Subject: Yorkshire's leading conference venue", label: no_source, fact_key: null}
+  - {contains: "Rated 9.8/10 by event planners on VenueScore", label: no_source, fact_key: null}
+  - {contains: "Our events team are all Certified Meeting Professionals (CMP)", label: no_source, fact_key: null}
+  - {contains: "VenueMark Platinum accreditation", label: conflict_or_expired, fact_key: venuemark}
+  - {contains: "certificate number is VM-G-20471", label: conflict_or_expired, fact_key: venuemark}
+  - {contains: "We're fully accessible, from the car park to the Mezzanine Bar", label: forbidden_phrase, fact_key: accessibility}
+must_not_flag:
+  - "Corporate day delegate rates are £59 per delegate plus VAT"

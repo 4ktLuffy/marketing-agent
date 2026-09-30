@@ -1,0 +1,283 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts section 1 Fact v2 shape.
+company: {"name": "Atlas Language School", "type": "education", "today": "2026-09-29"}
+facts:
+- key: "lsqb-accreditation"
+  subject: {"kind": "business", "ref": "Atlas Language School"}
+  fact_type: "certification"
+  attribute: "accreditation"
+  value: 2
+  unit: null
+  currency: null
+  value_text: "accredited by the Language Schools Quality Board (LSQB-2417), inspection grade 2 (Good)"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-03-20"
+  valid_to: "2030-03-19"
+  review_by: null
+  source: {"kind": "certificate", "ref": "LSQB accreditation certificate LSQB-2417 (inspected March 2026)"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "LSQB certificate LSQB-2417"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Atlas Language School is accredited by the Language Schools Quality Board, accreditation LSQB-2417. Its March 2026 inspection graded it 2 (Good) on a 4-point scale."
+- key: "online-b1-price"
+  subject: {"kind": "service", "ref": "B1 General English (online, adults)"}
+  fact_type: "price"
+  attribute: "term_fee"
+  value: 990
+  unit: "term"
+  currency: "GBP"
+  value_text: "£990 per 10-week term"
+  basis: "per_person"
+  conditions: [{"key": "level", "op": "=", "value": "B1"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["adults"], "plan_tiers": [], "variants": ["online"]}
+  valid_from: "2026-09-01"
+  valid_to: "2027-08-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Course fees 2026-27"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Registrar"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Online B1 General English for adults costs £990 per 10-week term (6 hours of live classes a week)."
+- key: "campus-b2-price"
+  subject: {"kind": "service", "ref": "B2 General English (Bristol campus, adults)"}
+  fact_type: "price"
+  attribute: "term_fee"
+  value: 1650
+  unit: "term"
+  currency: "GBP"
+  value_text: "£1,650 per 10-week term"
+  basis: "per_person"
+  conditions: [{"key": "level", "op": "=", "value": "B2"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["adults"], "plan_tiers": [], "variants": ["campus"]}
+  valid_from: "2026-09-01"
+  valid_to: "2027-08-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Course fees 2026-27"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Registrar"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "B2 General English on our Bristol campus costs £1,650 per 10-week term (15 hours a week)."
+- key: "b2-pass-rate"
+  subject: {"kind": "service", "ref": "Cambridge B2 First preparation"}
+  fact_type: "result"
+  attribute: "pass_rate"
+  value: 92
+  unit: "percent"
+  currency: null
+  value_text: "92% of our B2 First candidates passed"
+  basis: null
+  conditions: [{"key": "exam_year", "op": "=", "value": "2025-26"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-08-20"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "Cambridge results summary 2025-26"}
+  claim_class: "result"
+  requires_evidence: true
+  evidence_ref: "Cambridge results summary 2025-26"
+  consent_ref: null
+  required_disclosures: ["48 candidates, 2025-26"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "In 2025-26, 92% of our Cambridge B2 First candidates passed (44 of 48 candidates, campus and online combined)."
+- key: "autumn-term-dates"
+  subject: {"kind": "service", "ref": "Autumn term 2026"}
+  fact_type: "event"
+  attribute: "term_dates"
+  value: null
+  unit: null
+  currency: null
+  value_text: "12 October to 18 December 2026"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-12-18"
+  review_by: null
+  source: {"kind": "url", "ref": "https://atlaslanguage.example/dates"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Registrar"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "The autumn term runs from 12 October to 18 December 2026 (10 weeks), online and on campus."
+- key: "early-bird"
+  subject: {"kind": "offer", "ref": "Early-bird autumn discount"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 10
+  unit: "percent"
+  currency: null
+  value_text: "10% off autumn term fees when you book by 3 October"
+  basis: null
+  conditions: [{"key": "booked_by", "op": "<=", "value": "2026-10-03"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-08-01"
+  valid_to: "2026-10-03"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn marketing plan 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Registrar"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Early-bird: 10% off autumn term fees for bookings made by 3 October 2026."
+- key: "summer-a2-intensive"
+  subject: {"kind": "service", "ref": "A2 Summer Intensive"}
+  fact_type: "price"
+  attribute: "course_fee"
+  value: 450
+  unit: null
+  currency: "GBP"
+  value_text: "£450 for the 3-week A2 Summer Intensive"
+  basis: "per_person"
+  conditions: [{"key": "level", "op": "=", "value": "A2"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-05-01"
+  valid_to: "2026-08-28"
+  review_by: null
+  source: {"kind": "doc", "ref": "Summer courses 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Registrar"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "The 3-week A2 Summer Intensive cost £450, July to August 2026. Finished."
+- key: "recordings-inclusion"
+  subject: {"kind": "service", "ref": "Online courses"}
+  fact_type: "inclusion"
+  attribute: "includes"
+  value: null
+  unit: null
+  currency: null
+  value_text: "recordings of every live lesson"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": ["online"]}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://atlaslanguage.example/online"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Online courses include recordings of every live lesson, available until the end of term."
+- key: "spring-fee-rise"
+  subject: {"kind": "service", "ref": "B1 General English (online, adults)"}
+  fact_type: "event"
+  attribute: "fee_change"
+  value: 1040
+  unit: "term"
+  currency: "GBP"
+  value_text: "£1,040 per term from January 2027"
+  basis: "per_person"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": ["online"]}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "owner_statement", "ref": "Fees review September 2026 (not public)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Principal"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Online B1 rises to £1,040 per term from January 2027. Not announced yet."
+- key: "hartwell-corporate-rate"
+  subject: {"kind": "service", "ref": "Corporate English (Hartwell Logistics)"}
+  fact_type: "price"
+  attribute: "contract_rate"
+  value: 700
+  unit: "term"
+  currency: "GBP"
+  value_text: "£700 per learner per term"
+  basis: "per_person"
+  conditions: [{"key": "customer", "op": "=", "value": "Hartwell Logistics"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["corporate"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: "2027-07-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Hartwell Logistics training contract"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Principal"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Hartwell Logistics pays £700 per learner per term for in-house English classes."

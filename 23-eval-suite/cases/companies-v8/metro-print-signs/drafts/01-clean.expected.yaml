@@ -1,0 +1,16 @@
+# WHY: negative control: aluminium composite, retail facts only; 'ex VAT' on the price; the fire class and report number are exact and 'fire-rated'/'classification' are the allowed wording.
+blocked: false
+findings: []
+must_not_flag:
+  - "Your shop sign is the first thing customers see"
+  - "Our A1 aluminium composite signs are"
+  - "The FR-core panels are classified Euroclass B-s1,d0 to EN 13501-1"
+  - "Need a new shop sign in a hurry?"
+  - "come with test report MPS-FR-2291"
+  - "We install across Croydon, Sutton, Bromley and Merton"
+  - "Fire-rated shop signs, ready in 3 working days"
+  - "Is your landlord asking for fire-rated signage?"
+  - "carry a fire classification of Euroclass B-s1,d0 (EN 13501-1)"
+  - "is £64 ex VAT, ready in 3 working days from artwork approval"
+  - "Call us on 020 7946 0381"
+  - "[On screen: metroprintsigns.example]"

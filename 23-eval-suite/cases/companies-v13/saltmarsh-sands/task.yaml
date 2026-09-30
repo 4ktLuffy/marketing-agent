@@ -1,0 +1,11 @@
+# FICTIONAL. Regulated finance claim (lodge finance, 18+). Scope variants=[touring] makes the static caravan
+# break a scope trap; publish_on 2026-10-16 is after half-term-offer ends (2026-10-09), valid today (2026-09-29).
+goal: Fill touring pitches for the rest of October.
+pieces:
+- {key: p1, channel: tiktok, kind: video_caption, max_chars: 2200}
+- {key: p2, channel: sms, kind: sms, max_chars: 160}
+- {key: p3, channel: youtube, kind: video_description, max_chars: 5000}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [touring]}
+publish_on: '2026-10-16'
+audience: Caravanners and campervan owners within 2 hours' drive
+notes: The YouTube video also mentions lodges for sale.

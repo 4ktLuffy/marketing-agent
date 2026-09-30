@@ -1,0 +1,9 @@
+# WHY: the UL listing is a real fact but only for variant electric-actuator; the task is variants=[manual]. A careful
+# checker labels it wrong_scope (fact exists, scope does not match) rather than no_source; the sentence does not use any
+# listed forbidden phrase verbatim, so forbidden_phrase is not required.
+blocked: true
+findings:
+  - {contains: "whole KV-50 range is UL Listed", label: wrong_scope, fact_key: ul-listed-electric}
+must_not_flag:
+  - "Rated PN40 (40 bar), sizes DN15 to DN100"
+  - "Standard lead time is 15 working days"

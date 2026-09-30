@@ -1,0 +1,8 @@
+# WHY: £299,995 is the Aspen price on variants=[phase-1] (there is no Aspen on Phase 2); the task is variants=[phase-2]. Used in the body and as a "from" price in the subject.
+blocked: true
+findings:
+  - {contains: "The Aspen is £299,995", label: wrong_scope, fact_key: aspen-phase1-price}
+  - {contains: "Phase 2 homes from £299,995", label: wrong_scope, fact_key: aspen-phase1-price}
+must_not_flag:
+  - "The Rowan is £389,995 (selected plots, subject to contract)"
+  - "Phase 2 homes include flooring throughout and turfed rear gardens"

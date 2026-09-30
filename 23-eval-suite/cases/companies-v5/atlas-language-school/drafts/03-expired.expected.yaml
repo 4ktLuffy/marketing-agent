@@ -1,0 +1,9 @@
+# WHY: the early-bird discount is valid today but ends 2026-10-03, before publish 2026-10-06 (once only described, "a tenth off"); the A2 Summer Intensive ended 2026-08-28.
+blocked: true
+findings:
+  - {contains: "10% off autumn term fees when you book by 3 October", label: conflict_or_expired, fact_key: early-bird}
+  - {contains: "Early bookers still get a tenth off their fees", label: conflict_or_expired, fact_key: early-bird}
+  - {contains: "Join our A2 Summer Intensive, just £450 for three weeks", label: conflict_or_expired, fact_key: summer-a2-intensive}
+must_not_flag:
+  - "Online B1 General English costs £990 per 10-week term"
+  - "The autumn term runs from 12 October to 18 December 2026"

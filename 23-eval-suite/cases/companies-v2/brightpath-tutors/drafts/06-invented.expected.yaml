@@ -1,0 +1,11 @@
+# WHY: "top-rated" and "qualified teacher" have no source; tutors hold Level 2 safeguarding, not Level 3; a grade "guarantee" is a forbidden phrasing of the result fact (subject and body).
+blocked: true
+findings:
+  - {contains: "The top-rated GCSE tutors in Yorkshire", label: no_source, fact_key: null}
+  - {contains: "All tutors hold Level 3 Safeguarding certificates", label: conflict_or_expired, fact_key: tutor-checks}
+  - {contains: "Guaranteed grade 4 in GCSE maths", label: forbidden_phrase, fact_key: gcse-pass-rate}
+  - {contains: "Every BrightPath tutor is a qualified teacher", label: no_source, fact_key: null}
+  - {contains: "We guarantee your child will reach grade 4 or above", label: forbidden_phrase, fact_key: gcse-pass-rate}
+must_not_flag:
+  - "Online GCSE maths tutoring, £38 per hour, billed monthly in advance"
+  - "Autumn term runs 7 September to 18 December 2026"

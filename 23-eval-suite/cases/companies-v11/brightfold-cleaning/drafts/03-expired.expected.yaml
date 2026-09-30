@@ -1,0 +1,10 @@
+# WHY: the free first deep clean is valid today but ends 2026-10-02, before publish 2026-10-07; the 10% spring offer ended 2026-05-31 (and was domestic only).
+blocked: true
+findings:
+- {contains: get a free first deep clean when you sign by 2 October, label: conflict_or_expired, fact_key: free-deep-clean}
+- {contains: New office clients get a free first deep clean, label: conflict_or_expired, fact_key: free-deep-clean}
+- {contains: Your first deep clean is on us, label: conflict_or_expired, fact_key: free-deep-clean}
+- {contains: 10% off your first three cleans, label: conflict_or_expired, fact_key: spring-domestic-offer}
+must_not_flag:
+- Office cleaning is £21 per cleaner per hour, plus VAT, minimum 2 hours per visit
+- We clean between 6am and 9pm, seven days a week

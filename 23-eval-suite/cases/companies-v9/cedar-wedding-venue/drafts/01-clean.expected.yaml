@@ -1,0 +1,17 @@
+# WHY: negative control. Every claim is a winter-weekday (or unscoped) public fact valid on 2026-10-12, slotted or typed exactly; "based on 60 day guests" and "per person" are present; "best-kept secret", "Top tip" and the inspiration label are not claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "Dreaming of a cosy winter wedding?"
+  - "Our Winter Weekday package is"
+  - "includes a mulled-wine drinks reception by the log fire and the bridal suite for the wedding night"
+  - "Extra day guests are £62 per person."
+  - "Say \"I do\" in the Orangery, licensed for civil ceremonies for up to 120 guests."
+  - "December dates still free: Thursdays 3, 10 and 17 December 2026."
+  - "Winter Weekday weddings at Cedar Hall: £6,950 based on 60 day guests"
+  - "Winter wedding inspiration: candlelight, velvet and a roaring fire."
+  - "Winter is Cedar Hall's best-kept secret."
+  - "Our Winter Weekday package costs £6,950, based on 60 day guests"
+  - "Our kitchen holds a food hygiene rating of 5 (Very Good), FHRS reference 118842."
+  - "Top tip: bring your guest list to your viewing"
+  - "Your ceremony can take place in the Orangery, which is licensed for civil ceremonies for up to 120 guests."

@@ -1,0 +1,10 @@
+# WHY: the UKCA and CE marks belong to ProLink implant abutments only (variants=[implant-components]); the task is variants=[crowns-bridges], and custom-made crowns carry no such mark.
+blocked: true
+findings:
+  - {contains: "Our ProLink titanium abutments carry the UKCA and CE marks", label: wrong_scope, fact_key: ukca-abutments}
+  - {contains: "Subject: UKCA-marked restorations from Meridian", label: wrong_scope, fact_key: ukca-abutments}
+  - {contains: "Every crown and bridge we make is UKCA and CE marked", label: wrong_scope, fact_key: ukca-abutments}
+  - {contains: "Ask about our UKCA-marked ProLink abutments", label: wrong_scope, fact_key: ukca-abutments}
+must_not_flag:
+  - "Zirconia crowns are £68 per unit"
+  - "Cases come back in 5 working days from receipt of the scan or impression"

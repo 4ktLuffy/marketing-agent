@@ -1,0 +1,11 @@
+# WHY: the £95 price requires 'per person'; no line says per person, each, pp, per guest or per head (subject and body).
+blocked: true
+findings:
+  - {contains: "A Weekday Spa Day at Serene is £95, Monday to Thursday", label: missing_disclosure, fact_key: weekday-spa-day}
+  - {contains: "Weekday Spa Day, £95", label: missing_disclosure, fact_key: weekday-spa-day}
+  - {contains: "all for £95", label: missing_disclosure, fact_key: weekday-spa-day}
+  - {contains: "A whole spa day for £95", label: missing_disclosure, fact_key: weekday-spa-day}
+  - {contains: "For £95 you get a full Weekday Spa Day", label: missing_disclosure, fact_key: weekday-spa-day}
+must_not_flag:
+  - "It includes a 25-minute Express Facial or back massage"
+  - "Spa days are over-18s only"

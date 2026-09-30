@@ -1,0 +1,8 @@
+# WHY: the "best holiday park" award has no source; touring pitches are £32 a night, not twenty pounds; "guaranteed finance" and "no credit checks" are forbidden on the lodge-finance fact.
+blocked: true
+findings:
+  - {contains: "Voted the UK's best holiday park three years running", label: no_source, fact_key: null}
+  - {contains: "Touring pitches from just twenty quid a night", label: conflict_or_expired, fact_key: touring-pitch-price}
+  - {contains: "with guaranteed finance and no credit checks", label: forbidden_phrase, fact_key: lodge-finance}
+must_not_flag:
+  - "indoor pool open every day 9am to 7pm"

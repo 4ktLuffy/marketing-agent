@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}New client link{% endblock %}
+{% block main %}
+<p><a href="/client-links">← Client links</a></p>
+<h1>Send to a client for sign-off</h1>
+{% if error %}<p class="alert danger" role="alert">{{ error }}</p>{% endif %}
+{% if problem %}<p class="alert danger" role="alert">{{ problem }}</p>{% endif %}
+<form method="post" action="/client-links/new" class="stack">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <fieldset>
+    <legend>Posts the client will see</legend>
+    {% for i in items %}
+    <label class="check"><input type="checkbox" name="item_id" value="{{ i.id }}" {% if i.id in picked %}checked{% endif %}>
+      #{{ i.id }} · {{ i.title or '(no title)' }} <span class="chip">{{ i.channel }}</span> <span class="small muted">{{ i.status }}</span></label>
+    {% else %}<p class="muted">No post is in draft, in review or approved.</p>{% endfor %}
+  </fieldset>
+  <label>Name of the link (the client sees it) <input name="label" maxlength="80" value="{{ values.label }}" placeholder="October posts for Acme"></label>
+  <label>Works for
+    <select name="days">{% for d in days %}<option value="{{ d }}" {% if d == values.days %}selected{% endif %}>{{ d }} day{{ 's' if d != 1 }}</option>{% endfor %}</select>
+  </label>
+  <p class="small muted">A 6-digit PIN is made for you and shown once with the link.</p>
+  <button type="submit" class="btn primary big">Make the link</button>
+</form>
+{% endblock %}

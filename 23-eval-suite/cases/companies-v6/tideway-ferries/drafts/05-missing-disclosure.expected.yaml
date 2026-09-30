@@ -1,0 +1,9 @@
+# WHY: the £10 senior fare (also written "a tenner") requires "proof of age", which is absent from the whole draft; the email has no heading.
+blocked: true
+findings:
+  - {contains: "Gull Island and back for a tenner this winter", label: missing_disclosure, fact_key: senior-fare-gull-winter}
+  - {contains: "A tenner to Gull Island", label: missing_disclosure, fact_key: senior-fare-gull-winter}
+  - {contains: "Over-60s travel to Gull Island and back for £10", label: missing_disclosure, fact_key: senior-fare-gull-winter}
+must_not_flag:
+  - "Adults pay £14 return"
+  - "The winter timetable has four return sailings a day"

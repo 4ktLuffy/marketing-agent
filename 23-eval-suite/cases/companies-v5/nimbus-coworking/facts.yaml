@@ -1,0 +1,283 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts section 1 Fact v2 shape.
+company: {"name": "Nimbus Coworking", "type": "coworking", "today": "2026-09-29"}
+facts:
+- key: "flex-wharf-price"
+  subject: {"kind": "plan", "ref": "Flex (Nimbus Wharf)"}
+  fact_type: "price"
+  attribute: "monthly_price"
+  value: 199
+  unit: "month"
+  currency: "GBP"
+  value_text: "£199 a month"
+  basis: "per_month"
+  conditions: []
+  scope: {"sites": ["wharf"], "regions": [], "channels": [], "segments": [], "plan_tiers": ["flex"], "variants": []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://nimbuscowork.example/wharf"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["plus VAT"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Flex hot-desking at Nimbus Wharf costs £199 a month plus VAT."
+- key: "flex-headrow-price"
+  subject: {"kind": "plan", "ref": "Flex (Nimbus Headrow)"}
+  fact_type: "price"
+  attribute: "monthly_price"
+  value: 249
+  unit: "month"
+  currency: "GBP"
+  value_text: "£249 a month"
+  basis: "per_month"
+  conditions: []
+  scope: {"sites": ["headrow"], "regions": [], "channels": [], "segments": [], "plan_tiers": ["flex"], "variants": []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://nimbuscowork.example/headrow"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["plus VAT"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Flex hot-desking at Nimbus Headrow costs £249 a month plus VAT."
+- key: "flex-credits"
+  subject: {"kind": "plan", "ref": "Flex"}
+  fact_type: "inclusion"
+  attribute: "meeting_room_credits"
+  value: 2
+  unit: "hour"
+  currency: null
+  value_text: "2 hours of meeting-room credits a month"
+  basis: "per_month"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": ["flex"], "variants": []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://nimbuscowork.example/plans"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Flex includes 2 hours of meeting-room credits a month, usable at either site."
+- key: "resident-access"
+  subject: {"kind": "plan", "ref": "Resident"}
+  fact_type: "inclusion"
+  attribute: "access_hours"
+  value: null
+  unit: null
+  currency: null
+  value_text: "round-the-clock keycard access"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": ["resident"], "variants": []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://nimbuscowork.example/plans"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Round-the-clock (24/7) keycard access is included with the Resident plan only."
+- key: "wiredscore-wharf"
+  subject: {"kind": "site", "ref": "Nimbus Wharf"}
+  fact_type: "certification"
+  attribute: "connectivity_rating"
+  value: null
+  unit: null
+  currency: null
+  value_text: "WiredScore Gold (certificate WS-UK-40912)"
+  basis: null
+  conditions: []
+  scope: {"sites": ["wharf"], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2025-06-01"
+  valid_to: "2027-05-31"
+  review_by: null
+  source: {"kind": "certificate", "ref": "WiredScore certificate WS-UK-40912"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "WiredScore certificate WS-UK-40912"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Nimbus Wharf is WiredScore Gold certified, certificate WS-UK-40912, valid to 31 May 2027. Nimbus Headrow is not certified."
+- key: "half-price-offer"
+  subject: {"kind": "offer", "ref": "Half-price first month (Flex)"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 50
+  unit: "percent"
+  currency: null
+  value_text: "half price on your first month of Flex"
+  basis: null
+  conditions: [{"key": "joined_by", "op": "<=", "value": "2026-10-09"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": ["flex"], "variants": []}
+  valid_from: "2026-09-21"
+  valid_to: "2026-10-09"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn membership drive 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "New Flex members who join by 9 October 2026 pay half price for their first month."
+- key: "summer-day-pass"
+  subject: {"kind": "offer", "ref": "Summer day pass"}
+  fact_type: "price"
+  attribute: "day_price"
+  value: 10
+  unit: "day"
+  currency: "GBP"
+  value_text: "£10 day pass"
+  basis: "flat"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-07-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Summer promotions 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "Summer day pass: £10 a day at either site, July and August 2026. Ended."
+- key: "charity-flex-price"
+  subject: {"kind": "plan", "ref": "Flex (registered charities)"}
+  fact_type: "price"
+  attribute: "monthly_price"
+  value: 149
+  unit: "month"
+  currency: "GBP"
+  value_text: "£149 a month"
+  basis: "per_month"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["charities"], "plan_tiers": ["flex"], "variants": []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://nimbuscowork.example/charities"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["plus VAT"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Community director"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Registered charities pay £149 a month plus VAT for Flex at either site."
+- key: "headrow-refurb"
+  subject: {"kind": "site", "ref": "Nimbus Headrow"}
+  fact_type: "event"
+  attribute: "closure"
+  value: null
+  unit: null
+  currency: null
+  value_text: "third floor closed from January 2027"
+  basis: null
+  conditions: []
+  scope: {"sites": ["headrow"], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "owner_statement", "ref": "Landlord works schedule (not public)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations manager"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "The Headrow third floor closes for refurbishment from January 2027. Members not told yet."
+- key: "crestline-office-price"
+  subject: {"kind": "service", "ref": "Private office (Crestline Digital)"}
+  fact_type: "price"
+  attribute: "contract_price"
+  value: 4200
+  unit: "month"
+  currency: "GBP"
+  value_text: "£4,200 a month"
+  basis: "per_month"
+  conditions: [{"key": "customer", "op": "=", "value": "Crestline Digital"}]
+  scope: {"sites": ["wharf"], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-02-01"
+  valid_to: "2027-01-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Crestline Digital licence agreement"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Founder"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Crestline Digital pays £4,200 a month for a 12-desk private office at Nimbus Wharf."

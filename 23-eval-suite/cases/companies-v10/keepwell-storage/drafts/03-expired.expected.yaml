@@ -1,0 +1,9 @@
+# WHY: free van hire is valid today but ends 2026-10-10, before publish 2026-10-14; the £15 student rate ended 2026-09-15.
+blocked: true
+findings:
+  - {contains: "Get free van hire on move-in day", label: conflict_or_expired, fact_key: free-van-move-in}
+  - {contains: "Free van hire on move-in day (units of 75 sq ft or more)", label: conflict_or_expired, fact_key: free-van-move-in}
+  - {contains: "Students: store your stuff at Keepwell for just £15 per week", label: conflict_or_expired, fact_key: student-summer-rate}
+must_not_flag:
+  - "A 50 sq ft unit at Millgate is £24 per week"
+  - "Millgate is open 6am to 10pm, 7 days a week"

@@ -1,6 +1,6 @@
 """Definitions of the 20 n8n workflows (deploys 24-43). Run build.py to write them."""
-from n8nlib import (FORMS_CRED, HOSTED_CRED, OLLAMA_CRED, WF_IDS, Workflow, call_workflow, code, gateway, http,
-                    if_true, mapper, merge_append, notify, schedule, sub_trigger, GATE_NOTIFY)
+from n8nlib import (FORMS_CRED, GATEWAY_CHAT_CRED, HOSTED_CRED, OLLAMA_CRED, WF_IDS, Workflow, call_workflow, code, gateway, http,
+                    if_true, mapper, merge_append, notify, schedule, sub_trigger, GATE_NOTIFY, LLM_TIMEOUT)
 
 # --------------------------------------------------------------------------- shared JS
 
@@ -961,14 +961,21 @@ def wf37():
 # What a decision does (approve, edit & approve, reject - rewrite, reject - drop, back to draft,
 # skip) is shared by the approval form (38) and the control room's webhook (72-control-room/n8n),
 # so both behave exactly alike. DECISIONS_CORE expects, defined before it: `a` (answers keyed
-# like the form's fields: `Decision #<id>`, `Text #<id>`, `Reason #<id>`, `Publish at #<id>`;
-# decisions are the form's option labels), `reviewer`, and `items` ({id: calendar item}) and
-# VIDEO_SCRIPT_PARSE. It returns {ops, events, revisions, summary, videos} for decision_tail().
+# like the form's fields: `Decision #<id>`, `Text #<id>`, `Reason #<id>`, `Publish at #<id>`,
+# optional `Seen #<id>`; decisions are the form's option labels), `reviewer`, and `items`
+# ({id: calendar item}) and VIDEO_SCRIPT_PARSE. It returns {ops, events, revisions, summary,
+# videos} for decision_tail().
+# Version-bound approval: `Seen #<id>` is the body_sha256 the reviewer saw (72 sends it from the
+# card). Without it (the form 38, older control rooms) the item's body_sha256 from the fetch is
+# used: for 38 that is the text the page was rendered with. Approve sends it to 19 as
+# expected_sha256; edit & approve PATCHes with if_match_sha256 and approves with expected_body
+# (the edited text). 19 answers 409 "changed since you looked" if the text changed meanwhile.
 DECISIONS_CORE = r"""const cal = $env.CALENDAR_URL;
 const nextHour = () => { const d = new Date(); d.setUTCMinutes(0, 0, 0); d.setUTCHours(d.getUTCHours() + 1); return d.toISOString(); };
 const toIso = s => { s = String(s || '').trim(); if (!s) return null;
   const d = new Date(s.replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? '' : 'Z')); return isNaN(d) ? null : d.toISOString(); };
 const norm = s => String(s || '').replace(/\r\n/g, '\n').trim();
+const hex64 = s => /^[0-9a-f]{64}$/.test(String(s || '')) ? String(s) : null;
 const ops = [], events = [], revisions = [], summary = [], videos = [];
 for (const [id, it] of Object.entries(items)) {
   const choice = a[`Decision #${id}`];
@@ -976,14 +983,18 @@ for (const [id, it] of Object.entries(items)) {
   const edited = norm(a[`Text #${id}`]);
   const reason = norm(a[`Reason #${id}`]);
   const when = toIso(a[`Publish at #${id}`]) || it.scheduled_at || nextHour();
+  const seen = hex64(a[`Seen #${id}`]) || hex64(it.body_sha256);
+  const ifMatch = seen ? { if_match_sha256: seen } : {};
   const note = s => `${s} by ${reviewer}${reason ? ': ' + reason : ''}`;
   const event = (decision, final) => ({ item_id: Number(id), channel: it.channel, campaign_id: it.campaign_id ?? null,
     decision, draft: it.body, final: final ?? null, reason: reason || null, reviewer });
   const ev = (decision, final) => events.push(event(decision, final));
   if (choice === 'Approve' || choice === 'Edit & approve') {
     const changed = choice === 'Edit & approve' && edited && edited !== norm(it.body);
-    const patch = { scheduled_at: when };
+    const patch = { scheduled_at: when, ...ifMatch };
     if (changed) patch.body = edited;
+    // What the reviewer approved: the text they saw, or the text they wrote.
+    const bound = changed ? { expected_body: edited } : seen ? { expected_sha256: seen } : {};
     // An edited video script: its video (71, rendered from the old script) no longer matches.
     // It is rendered again from the edited text before approving ('Final decisions').
     const hasVideo = /^https?:\/\//.test(it.video_url || '');
@@ -991,12 +1002,12 @@ for (const [id, it] of Object.entries(items)) {
     // video does not depend on it, so it is approved as it is.
     const isClip = /\/clips\/[0-9a-f]{32}\.mp4$/.test(it.video_url || '');
     if (changed && !isClip && (hasVideo || (String(it.channel || '').toLowerCase() === 'video' && $env.VIDEO_URL))) {
-      videos.push({ id, ...parseVideoScript(edited, it.body), patch, when, note: note('edited and approved'),
+      videos.push({ id, ...parseVideoScript(edited, it.body), patch, bound, when, note: note('edited and approved'),
         event: event('edited', edited), old_video: it.video_url || null, old_image: it.image_url || null });
       continue;
     }
     ops.push({ stage: 1, method: 'PATCH', url: `${cal}/items/${id}`, body: patch });
-    ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'approved', note: note(changed ? 'edited and approved' : 'approved') } });
+    ops.push({ stage: 2, method: 'POST', url: `${cal}/items/${id}/status`, body: { status: 'approved', note: note(changed ? 'edited and approved' : 'approved'), ...bound } });
     ev(changed ? 'edited' : 'approved', changed ? edited : it.body);
     summary.push(`#${id}: ${changed ? 'edited and approved' : 'approved'} for ${when.slice(0, 16).replace('T', ' ')} UTC`);
   } else if (choice.startsWith('Reject')) {
@@ -1016,6 +1027,30 @@ for (const [id, it] of Object.entries(items)) {
   }
 }
 return [{ json: { ops, events, revisions, summary, videos } }];
+"""
+
+
+# 19 refuses to approve (or edit) an item whose text changed after the reviewer looked: 409
+# {"message": "changed since you looked"}, or 428 for a bound item sent without a hash. Those
+# items come back as one clear line each instead of raw JSON, and are left out of the learning
+# and engine events (nothing was approved). `stages` is [[Stage k items, Run stage k items], ...]:
+# run node k's results pair index-by-index with the ops Code node k sent.
+STALE_JS = r"""
+const STALE_LINE = id => `#${id}: NOT approved: changed since you looked — reopen the card`;
+function stageResults(stages) {
+  const out = [];
+  for (const [sent, res] of stages) res.forEach((r, i) => {
+    const j = (r || {}).json || {}, op = ((sent[i] || {}).json) || {};
+    if (j.noop || op.noop || !(j.statusCode >= 300)) return;
+    const det = (j.body || {}).detail ?? j.body ?? null;
+    const m = String(op.url || '').match(/\/items\/(\d+)/);
+    const stale = j.statusCode === 428 || (j.statusCode === 409 && det && typeof det === 'object' && det.message === 'changed since you looked');
+    out.push({ item_id: m ? Number(m[1]) : null, status: j.statusCode, detail: det, stale });
+  });
+  return out;
+}
+function staleIds(failures) { return [...new Set(failures.filter(f => f.stale && f.item_id).map(f => f.item_id))]; }
+const stageFailures = () => stageResults([1, 2].map(k => [$(`Stage ${k}`).all(), $(`Run stage ${k}`).all()]));
 """
 
 
@@ -1056,14 +1091,15 @@ for (const v of d.videos) {
     const patch = { ...v.patch, video_url: r.video_url, ...(posterIsImage && r.poster_url ? { image_url: r.poster_url } : {}) };
     ops.push({ stage: 1, method: 'PATCH', url, body: patch });
     ops.push({ stage: 2, method: 'POST', url: `${url}/status`, body: { status: 'approved',
-      note: `${v.note} | video re-rendered after edit, ${r.video_note}`.slice(0, 1500) } });
+      note: `${v.note} | video re-rendered after edit, ${r.video_note}`.slice(0, 1500), ...(v.bound || {}) } });
     events.push(v.event);
     summary.push(`#${v.id}: edited and approved for ${v.when.slice(0, 16).replace('T', ' ')} UTC; video re-rendered after edit (${r.video_note.replace(/^.*\(/, '').replace(/\)$/, '')})`);
   } else {
     const why = v.error ? `the script could not be read: ${v.error}`
       : r && r.video_note ? r.video_note.replace(/^video not rendered: /, '')
       : 'VIDEO_URL is not set';
-    const patch = { body: v.patch.body, video_url: null, ...(v.old_image && v.old_image === oldPoster ? { image_url: null } : {}) };
+    const patch = { body: v.patch.body, video_url: null, ...(v.old_image && v.old_image === oldPoster ? { image_url: null } : {}),
+      ...(v.patch.if_match_sha256 ? { if_match_sha256: v.patch.if_match_sha256 } : {}) };
     ops.push({ stage: 1, method: 'PATCH', url, body: patch });
     ops.push({ stage: 2, method: 'POST', url: `${url}/status`, body: { status: 'draft',
       note: `script edited: video could not be re-rendered (${why}), render it again before approving`.slice(0, 1500) } });
@@ -1078,17 +1114,20 @@ const ops = $('Final decisions').first().json.ops;
 return ops.length ? ops.map(o => ({ json: o })) : [{ json: { stage: 0 } }];
 """, pos=[wf._x + 480, 200])
     st = staged_ops(wf, "Calendar ops", 2, "$env.CALENDAR_URL", approver=True)  # the person approves here
-    el = code(wf, "Learning events", OPS_TO_ITEMS + r"""
-const events = $('Final decisions').first().json.events.map(e => ({ method: 'POST', url: `${$env.LEARNING_URL}/events`, body: e }));
+    el = code(wf, "Learning events", OPS_TO_ITEMS + STALE_JS + r"""
+const stale = staleIds(stageFailures());
+const events = $('Final decisions').first().json.events.filter(e => !stale.includes(e.item_id))
+  .map(e => ({ method: 'POST', url: `${$env.LEARNING_URL}/events`, body: e }));
 return opsToItems(events, $env.LEARNING_URL);
 """, pos=[wf._x + 960, 200])
     re_ = dynamic_http(wf, "Log decisions", pos=[wf._x + 1200, 200])
     # Content-engine items (notes "engine pillar #P", from 64) report each decision to 61's
     # stop rule. Fail-soft: without ENGINE_URL, or if 61 is down, the form still finishes.
-    eo = code(wf, "Engine outcomes", OPS_TO_ITEMS + r"""
+    eo = code(wf, "Engine outcomes", OPS_TO_ITEMS + STALE_JS + r"""
 const items = $('Build review page').first().json.items;
+const stale = staleIds(stageFailures());
 const ops = [];
-for (const e of $('Final decisions').first().json.events) {
+for (const e of $('Final decisions').first().json.events.filter(x => !stale.includes(x.item_id))) {
   const it = items.find(i => Number(i.id) === e.item_id) || {};
   const m = String(it.notes || '').match(/engine pillar #(\d+)/);
   if (m) ops.push({ method: 'POST', url: `${$env.ENGINE_URL}/pillars/${m[1]}/outcomes`, body: { item_id: e.item_id, decision: e.decision } });
@@ -1106,13 +1145,16 @@ return r.length ? r.map(x => ({ json: x })) : [{ json: { item_id: '', reason: ''
 """, pos=[wf._x + 1440, 200])
     rv = call_workflow(wf, "Start rewrites", 49, {"item_id": "={{ $json.item_id }}", "reason": "={{ $json.reason }}"},
                        wait=False, pos=[wf._x + 1680, 200])
-    sm = code(wf, "Summary", r"""
+    sm = code(wf, "Summary", STALE_JS + r"""
+// {message} for the form; {summary, stale, failed} per item for the control room (72).
 const d = $('Final decisions').first().json;
-const failed = ['Run stage 1', 'Run stage 2'].flatMap(n => $(n).all())
-  .filter(r => !r.json.noop && r.json.statusCode >= 300).map(r => JSON.stringify((r.json.body || {}).detail || r.json.body));
-const lines = d.summary.length ? d.summary : ['No decisions made.'];
-if (failed.length) lines.push('', 'Some updates failed:', ...failed);
-return [{ json: { message: lines.join('\n') } }];
+const failures = stageFailures();
+const stale = staleIds(failures);
+const summary = d.summary.filter(l => !stale.some(id => l.startsWith(`#${id}:`))).concat(stale.map(STALE_LINE));
+const failed = failures.filter(f => !f.stale).map(({ item_id, status, detail }) => ({ item_id, status, detail }));
+const lines = summary.length ? [...summary] : ['No decisions made.'];
+if (failed.length) lines.push('', 'Some updates failed:', ...failed.map(f => JSON.stringify(f.detail)));
+return [{ json: { message: lines.join('\n'), summary, stale, failed } }];
 """, pos=[wf._x + 1920, 200])
     return [bp, vq, vr, fd, ol, *st, el, re_, eo, eh, rl, rv, sm]
 
@@ -1186,7 +1228,7 @@ const items = Object.fromEntries($('Build review page').first().json.items.map(i
     wf.link(i, empty, src_index=1)
     wf.chain(pg, d, *tail, done)
     return wf, {
-        "summary": "A web form where a person reviews drafts that are `in_review`. For each one: approve, edit the text and approve, reject with a reason (it is rewritten automatically by 49, up to 3 times), reject and drop, or send it back to draft, plus when it should publish. Every decision and edit is logged in the learning service (46), which is how the agent learns your preferences. It's the only way content reaches `approved`, and the publisher (39) only publishes approved items. A draft with an `image_url` (a card from 17) shows the image; it loads from `CARDS_PUBLIC_URL` (default `http://localhost:8117`), so that address must be reachable from the reviewer's browser. A draft with a `video_url` (a preview from 71, for video scripts) shows a link to watch it and its poster; they load from 71's `PUBLIC_BASE_URL`. When a video script is edited and approved, the video no longer matches the text, so the form reads the edited script back into the `video_script` JSON (hook, beats, close, caption, hashtags; each beat keeps its shot from the old shot list; the `Estimated length` and `Shot list` lines are ignored) and 71 renders it again (`VIDEO_URL`, voice `VIDEO_VOICE`, brand from 05). The new `video_url` (and poster, if the poster was the image) is saved while the item is still `in_review`, then it is approved with the note `video re-rendered after edit`. If the edited script can't be read (no hook, no beats, more than 8 beats, no close, …) or 71 can't render it, the item is **not** approved: the edit is saved, the old video is removed, the item goes back to `draft` with the note `script edited: video could not be re-rendered (<reason>), render it again before approving`, and the form's summary says so.",
+        "summary": "A web form where a person reviews drafts that are `in_review`. For each one: approve, edit the text and approve, reject with a reason (it is rewritten automatically by 49, up to 3 times), reject and drop, or send it back to draft, plus when it should publish. Every decision and edit is logged in the learning service (46), which is how the agent learns your preferences. It's the only way content reaches `approved`, and the publisher (39) only publishes approved items. A draft with an `image_url` (a card from 17) shows the image; it loads from `CARDS_PUBLIC_URL` (default `http://localhost:8117`), so that address must be reachable from the reviewer's browser. A draft with a `video_url` (a preview from 71, for video scripts) shows a link to watch it and its poster; they load from 71's `PUBLIC_BASE_URL`. When a video script is edited and approved, the video no longer matches the text, so the form reads the edited script back into the `video_script` JSON (hook, beats, close, caption, hashtags; each beat keeps its shot from the old shot list; the `Estimated length` and `Shot list` lines are ignored) and 71 renders it again (`VIDEO_URL`, voice `VIDEO_VOICE`, brand from 05). The new `video_url` (and poster, if the poster was the image) is saved while the item is still `in_review`, then it is approved with the note `video re-rendered after edit`. If the edited script can't be read (no hook, no beats, more than 8 beats, no close, …) or 71 can't render it, the item is **not** approved: the edit is saved, the old video is removed, the item goes back to `draft` with the note `script edited: video could not be re-rendered (<reason>), render it again before approving`, and the form's summary says so. Each approval is bound to the text on the page: the form sends 19 the `body_sha256` of each draft as it was when the page was rendered (`expected_sha256` for approve; `if_match_sha256` on the edit and `expected_body` = your text for edit & approve). If the draft changed after the page was opened (a rewrite, an edit in the control room), 19 changes nothing and the summary says `#N: NOT approved: changed since you looked — reopen the card`; the other decisions go through.",
         "trigger": "n8n form at `<N8N_PUBLIC_URL>/form/mkt-content-approval`",
         "depends": ["19-content-calendar", "46-learning-service", "49-wf-revise-draft"],
     }
@@ -1659,14 +1701,20 @@ TOOLS = [
 ]
 
 
-def wf24(provider: str = "local"):
+def wf24(provider: str = "gateway"):
+    """provider: "gateway" (workflow.json: the model through the LLM gateway, so every call shows
+    on the Activity page), "local" (variants/direct-ollama.json: n8n talks to Ollama directly,
+    the old setup) or "hosted" (variants/hosted.json: a hosted API directly, local fallback)."""
+    assert provider in ("gateway", "local", "hosted")
     wf = Workflow(24, "Marketing chat agent")
+    subtitle = {"hosted": "Hosted model, local fallback", "local": "Local LLM", "gateway": "Via the LLM gateway"}[provider]
+    hello = "running through your LLM gateway" if provider == "gateway" else "running on your local model"
     ch = wf.add("Chat", "@n8n/n8n-nodes-langchain.chatTrigger", 1.4, {
         "public": True,
         "mode": "hostedChat",
         "authentication": "n8nUserAuth",
-        "initialMessages": "Hi! I'm your marketing agent, running on your local model.\nTry: \"Write an X and LinkedIn post about our new decaf, link https://example.com/decaf\" or \"What's in the content calendar?\"",
-        "options": {"title": "Marketing agent", "subtitle": ("Hosted model, local fallback" if provider == "hosted" else "Local LLM") + " · drafts only, you approve", "inputPlaceholder": "Ask for a post, a brief, research…"},
+        "initialMessages": f"Hi! I'm your marketing agent, {hello}.\nTry: \"Write an X and LinkedIn post about our new decaf, link https://example.com/decaf\" or \"What's in the content calendar?\"",
+        "options": {"title": "Marketing agent", "subtitle": subtitle + " · drafts only, you approve", "inputPlaceholder": "Ask for a post, a brief, research…"},
     }, pos=[0, 300], webhookId="mkt-marketing-chat")
     ag = wf.add("Marketing agent", "@n8n/n8n-nodes-langchain.agent", 3.1, {
         "promptType": "auto",
@@ -1684,15 +1732,26 @@ def wf24(provider: str = "local"):
             "options": {"temperature": 0.2, "timeout": 60000, "maxRetries": 2,
                         "extraBody": '{"reasoning_effort": "low"}'},
         }, pos=[0, 560], credentials=HOSTED_CRED)
-    local = wf.add("Local model (Ollama)", "@n8n/n8n-nodes-langchain.lmChatOllama", 1, {
-        "model": "mkt-agent:latest",
-        # n8n's default context is 2048 tokens: too small for 11 tool schemas + history.
-        "options": {"temperature": 0.2, "numCtx": 16384, "keepAlive": "30m"},
-    }, pos=[0, 760] if provider == "hosted" else [0, 560], credentials=OLLAMA_CRED)
-    if provider == "hosted":
-        wf.link(local, ag, kind="ai_languageModel", dst_index=1)  # fallback input
+    if provider == "gateway":
+        # OpenAI-compatible Chat Completions on the gateway (03 /v1/chat/completions), which
+        # forwards to its provider (Ollama's /v1 by default) and logs the call's metadata. The
+        # credential sends INTERNAL_API_KEY as the bearer token and X-Caller: 24 Chat agent.
+        # The model must be on the gateway's allowlist (compose adds AGENT_MODEL). Its context
+        # (num_ctx 16384) comes from the mkt-agent Modelfile: the /v1 API takes no num_ctx.
+        lm = wf.add("Model (via LLM gateway)", "@n8n/n8n-nodes-langchain.lmChatOpenAi", 1.2, {
+            "model": {"__rl": True, "mode": "id", "value": "={{ $env.AGENT_MODEL || 'mkt-agent' }}"},
+            "options": {"temperature": 0.2, "timeout": LLM_TIMEOUT, "maxRetries": 1},
+        }, pos=[0, 560], credentials=GATEWAY_CHAT_CRED)
     else:
-        lm = local
+        local = wf.add("Local model (Ollama)", "@n8n/n8n-nodes-langchain.lmChatOllama", 1, {
+            "model": "mkt-agent:latest",
+            # n8n's default context is 2048 tokens: too small for 11 tool schemas + history.
+            "options": {"temperature": 0.2, "numCtx": 16384, "keepAlive": "30m"},
+        }, pos=[0, 760] if provider == "hosted" else [0, 560], credentials=OLLAMA_CRED)
+        if provider == "hosted":
+            wf.link(local, ag, kind="ai_languageModel", dst_index=1)  # fallback input
+        else:
+            lm = local
     me = wf.add("Chat memory", "@n8n/n8n-nodes-langchain.memoryBufferWindow", 1.3, {
         "contextWindowLength": 8,
     }, pos=[200, 560])
@@ -1712,9 +1771,10 @@ def wf24(provider: str = "local"):
         }, pos=[420 + 180 * (n % 6), 560 + 200 * (n // 6)])
         wf.link(tool, ag, kind="ai_tool")
     return wf, {
-        "summary": f"The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) with 8 turns of memory and {len(TOOLS)} tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.",
+        "summary": f"The agent you talk to. The chat runs on `mkt-agent` (your local Ollama model) through the LLM gateway (03), so every model call shows on the control room's Activity page, with 8 turns of memory and {len(TOOLS)} tools. Each tool is a sub-workflow (see the table), so the model only decides *what* to do and the tools do the work.",
         "trigger": "n8n hosted chat at `<N8N_PUBLIC_URL>/webhook/mkt-marketing-chat/chat` (n8n login required), or **Open chat** in the editor",
-        "depends": ["02-ollama-models (mkt-agent)", "25–35 sub-workflows", "Ollama credential (imported by 01)"],
+        "depends": ["03-llm-gateway (`/v1/chat/completions`)", "02-ollama-models (mkt-agent)", "25–35 sub-workflows",
+                    "LLM gateway (chat) credential (imported by 01)"],
         "tools": [(t, num, d) for t, num, d, _ in TOOLS],
     }
 

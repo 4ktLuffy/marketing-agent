@@ -1,0 +1,10 @@
+# WHY: the free nurse dental check is valid today but ends 2026-10-09, before publish 2026-10-15; the £10 microchip offer ended 2026-05-31.
+blocked: true
+findings:
+  - {contains: "Free dental checks this month", label: conflict_or_expired, fact_key: free-dental-check}
+  - {contains: "Book a free dental check with a vet nurse for your dog this October", label: conflict_or_expired, fact_key: free-dental-check}
+  - {contains: "Free dental check with a vet nurse, just ask at reception", label: conflict_or_expired, fact_key: free-dental-check}
+  - {contains: "get your dog microchipped for just £10", label: conflict_or_expired, fact_key: spring-microchip-offer}
+must_not_flag:
+  - "Our Essential plan for dogs is £16.50 a month on a 12-month minimum term"
+  - "Essential plan: £16.50 a month on a 12-month minimum term"

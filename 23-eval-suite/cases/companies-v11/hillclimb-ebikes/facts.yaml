@@ -1,0 +1,288 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Hillclimb Cycles, type: e-bike shop (sales and workshop), today: '2026-09-29'}
+facts:
+- key: trail-e1-price
+  subject: {kind: product, ref: Hillclimb Trail E1}
+  fact_type: price
+  attribute: list_price
+  value: 1899
+  unit: bike
+  currency: GBP
+  value_text: £1,899
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [trail-e1]}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://hillclimb.example/trail-e1'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Hillclimb Trail E1 e-mountain bike costs £1,899.
+- key: city-c2-price
+  subject: {kind: product, ref: Hillclimb City C2}
+  fact_type: price
+  attribute: list_price
+  value: 1499
+  unit: bike
+  currency: GBP
+  value_text: £1,499
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [city-c2]}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://hillclimb.example/city-c2'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Hillclimb City C2 commuter e-bike costs £1,499.
+- key: trail-e1-range
+  subject: {kind: product, ref: Hillclimb Trail E1}
+  fact_type: spec
+  attribute: range
+  value: 70
+  unit: mile
+  currency: null
+  value_text: up to 70 miles per charge
+  basis: null
+  conditions:
+  - {key: assist_mode, op: '=', value: eco}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [trail-e1]}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Trail E1 spec sheet v2}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [in eco mode]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Workshop lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Trail E1 battery gives up to 70 miles per charge in eco mode; real range is lower in higher assist modes.
+- key: finance-zero-apr
+  subject: {kind: offer, ref: 0% finance}
+  fact_type: price
+  attribute: finance_terms
+  value: 0
+  unit: percent
+  currency: null
+  value_text: 0% APR finance over 12 months
+  basis: null
+  conditions:
+  - {key: basket_total_gbp, op: '>=', value: 1000}
+  - {key: term_months, op: '=', value: 12}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Finance partner agreement 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [representative 0% APR, subject to status]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Bikes over £1,000 can be paid over 12 months at representative 0% APR, subject to status.
+- key: ipx4-rating
+  subject: {kind: product, ref: Hillclimb e-bikes}
+  fact_type: spec
+  attribute: water_resistance
+  value: null
+  unit: null
+  currency: null
+  value_text: IPX4 water resistance
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Drive unit datasheet}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: [IPX4, splash resistant, rain-ready]
+  forbidden_phrasing: [waterproof, fully waterproof]
+  owner: Workshop lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Hillclimb motors and batteries are rated IPX4 (splash resistant). They are not waterproof and must not be
+    described as waterproof.
+- key: free-safety-check
+  subject: {kind: service, ref: Six-week safety check}
+  fact_type: inclusion
+  attribute: free_service
+  value: null
+  unit: null
+  currency: null
+  value_text: free 6-week safety check with every new bike
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://hillclimb.example/aftercare'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Workshop lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every new bike comes with a free safety check after six weeks.
+- key: demo-day
+  subject: {kind: offer, ref: Autumn demo day}
+  fact_type: event
+  attribute: demo_day
+  value: null
+  unit: null
+  currency: null
+  value_text: free test-ride demo day on Saturday 3 October
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-20'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: owner_statement, ref: Events calendar 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Free test rides on all e-bikes at the autumn demo day, Saturday 3 October 2026.
+- key: summer-sale
+  subject: {kind: offer, ref: Summer sale}
+  fact_type: price
+  attribute: discount
+  value: 200
+  unit: bike
+  currency: GBP
+  value_text: £200 off the Trail E1
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [trail-e1]}
+  valid_from: '2026-07-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer sale plan 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: £200 off the Trail E1 ran in the summer sale (1 July to 31 August 2026) and has ended.
+- key: trail-e1-floor
+  subject: {kind: product, ref: Hillclimb Trail E1}
+  fact_type: price
+  attribute: floor_price
+  value: 1749
+  unit: bike
+  currency: GBP
+  value_text: £1,749
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [trail-e1]}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Owner pricing note}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Staff may sell the Trail E1 for as little as £1,749 with manager approval. Not public.
+- key: council-scheme-price
+  subject: {kind: product, ref: Hillclimb Trail E1 (Wrenford Council scheme)}
+  fact_type: price
+  attribute: contract_price
+  value: 1610
+  unit: bike
+  currency: GBP
+  value_text: £1,610 per bike
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Wrenford Council}
+  scope: {sites: [], regions: [], channels: [], segments: [employers], plan_tiers: [], variants: [trail-e1]}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Council supply agreement 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Wrenford Council's staff cycle scheme buys the Trail E1 at £1,610 per bike.

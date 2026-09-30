@@ -26,6 +26,8 @@
     <a href="/campaigns">Campaigns</a>
     <a href="/chat">Chat</a>
     <a href="/status">Health</a>
+    <a href="/tasks" {% if request.url.path.startswith('/tasks') %}aria-current="page"{% endif %}>Tasks</a>
+    <a href="/facts" {% if request.url.path.startswith('/facts') %}aria-current="page"{% endif %}>Facts</a>
     <a href="/brand" {% if request.url.path.startswith('/brand') %}aria-current="page"{% endif %}>Brand</a>
   </nav>
   <form method="post" action="/logout" class="logout">

@@ -1,0 +1,12 @@
+# WHY: the Home Chargepoint Grant is valid today but closes 2026-10-05, before publish 2026-10-09; it is used by name (message, page heading, body) and loosely ("government help", "grant money").
+blocked: true
+findings:
+  - {contains: "The Home Chargepoint Grant takes £350 off your install", label: conflict_or_expired, fact_key: chargepoint-grant}
+  - {contains: "Get up to £350 of government help towards your home charger this month.", label: conflict_or_expired, fact_key: chargepoint-grant}
+  - {contains: "Home Chargepoint Grant: save £350 on your charger", label: conflict_or_expired, fact_key: chargepoint-grant}
+  - {contains: "Flat owners and renters can claim £350 off with the Home Chargepoint Grant.", label: conflict_or_expired, fact_key: chargepoint-grant}
+  - {contains: "£350 OFF WITH THE GRANT", label: conflict_or_expired, fact_key: chargepoint-grant}
+  - {contains: "with £350 grant money off for flat owners and renters only", label: conflict_or_expired, fact_key: chargepoint-grant}
+must_not_flag:
+  - "Every Volt install includes app set-up, a load-balancing check and an electrical installation certificate."
+  - "Volt Home 7: £899 fitted for a standard installation."

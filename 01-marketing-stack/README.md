@@ -1,8 +1,8 @@
 # marketing-stack
 
-Deploy **1 of 87** of the local-LLM marketing agent. This repo holds the one
-`docker compose` file that runs n8n, Postgres and the services on one private network (26
-containers on the core profile, 38 on growth, 43 on full), plus the installer and the scripts that
+Deploy **1 of 89** of the local-LLM marketing agent. This repo holds the one
+`docker compose` file that runs n8n, Postgres and the services on one private network (27
+containers on the core profile, 39 on growth, 45 on full), plus the installer and the scripts that
 load the n8n workflows. Ollama runs next to it on the host.
 
 ```
@@ -122,6 +122,7 @@ two ports only. The website chat (79, port 8179) is public by design: publish on
 | `CARDS_PUBLIC_URL` | `http://localhost:8117` | public base of the image cards (17). Post images link here and the approval form (38) shows them, so the reviewer's browser must reach it |
 | `OLLAMA_URL` | | default `http://host.docker.internal:11434`. Works unchanged on Docker Desktop, OrbStack and colima (checked on colima 0.10.3 with vmType vz: the name resolves to the host at 192.168.5.2, and Ollama on the Mac's 127.0.0.1 answers; `host.lima.internal` is the same address). Linux: see below |
 | `AGENT_MODEL` / `WRITER_MODEL` / `EMBED_MODEL` | | from 02 |
+| `CHAT_PROVIDER` | | chat agent (24): `local` (default) = `AGENT_MODEL` through the gateway (shown on the Activity page; the gateway's allowlist always includes `AGENT_MODEL`), `direct` = n8n to Ollama as before, `hosted` = `CHAT_API_KEY` provider directly. Re-run `import-n8n.sh` after changing |
 | `SHORT_LINK_BASE_URL` | | public base of 16, e.g. `https://go.yourbrand.com` |
 | `LISTENING_QUERY` | | what 36 searches for on Hacker News/Reddit |
 | `PUBLISH_WEBHOOK_URL` | | where 39 sends approved, due posts (Zapier/Make/Buffer hook or your own). Empty = nothing is published or marked published |

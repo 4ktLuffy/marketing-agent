@@ -37,6 +37,20 @@ echo "==> Ollama credential -> $OLLAMA_URL"
 sed "s|http://host.docker.internal:11434|$OLLAMA_URL|" n8n/credentials/ollama.json \
   | dc sh -c 'cat > /tmp/ollama-cred.json && n8n import:credentials --input=/tmp/ollama-cred.json && rm /tmp/ollama-cred.json'
 
+# The chat agent (24) calls its model through the gateway's OpenAI-compatible endpoint, so its
+# calls show on the control room's Activity page. The key is INTERNAL_API_KEY from .env: it goes
+# through stdin, never argv, and never into a file in the repo.
+chat_provider="${CHAT_PROVIDER:-local}"
+case "$chat_provider" in
+  local|hosted|direct) ;;
+  *) echo "CHAT_PROVIDER must be local (via the gateway), direct (n8n -> Ollama) or hosted (got '$chat_provider')"; exit 1 ;;
+esac
+[ -n "${INTERNAL_API_KEY:-}" ] || { echo "set INTERNAL_API_KEY in $(env_file) first"; exit 1; }
+export CHAT_GATEWAY_URL="${CHAT_GATEWAY_URL:-http://llm-gateway:8000/v1}"
+echo "==> chat model credential -> $CHAT_GATEWAY_URL (key not shown)"
+python3 -c 'import json,os; print(json.dumps([{"id":"mktGatewayChat01","name":"LLM gateway (chat)","type":"openAiApi","data":{"apiKey":os.environ["INTERNAL_API_KEY"],"url":os.environ["CHAT_GATEWAY_URL"],"header":True,"headerName":"X-Caller","headerValue":"24 Chat agent"}}]))' \
+  | dc sh -c 'cat > /tmp/gw-chat-cred.json && n8n import:credentials --input=/tmp/gw-chat-cred.json && rm /tmp/gw-chat-cred.json'
+
 profile="$(current_profile)"
 # NN-wf-* deploys, then workflows that ship inside a service repo (72-control-room/n8n).
 workflows=()
@@ -51,8 +65,16 @@ for f in "${workflows[@]}"; do
   workflow_json "$f" | dc sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json >/dev/null && rm /tmp/wf.json'
 done
 
+# Fallback: the chat agent talking to Ollama directly, as before the gateway route (not shown on
+# the Activity page). Same workflow id, so it replaces the one imported above.
+if [ "$chat_provider" = direct ]; then
+  echo "==> chat agent: direct to Ollama (variants/direct-ollama.json)"
+  dc sh -c 'cat > /tmp/wf.json && n8n import:workflow --input=/tmp/wf.json >/dev/null && rm /tmp/wf.json' \
+    < ../24-wf-chat-agent/variants/direct-ollama.json
+fi
+
 # Optional: chat agent on a hosted OpenAI-compatible model (Groq by default).
-if [ "${CHAT_PROVIDER:-local}" = "hosted" ]; then
+if [ "$chat_provider" = "hosted" ]; then
   [ -n "${CHAT_API_KEY:-}" ] || { echo "CHAT_PROVIDER=hosted needs CHAT_API_KEY in $(env_file)"; exit 1; }
   export CHAT_BASE_URL="${CHAT_BASE_URL:-https://api.groq.com/openai/v1}" CHAT_MODEL="${CHAT_MODEL:-openai/gpt-oss-120b}"
   echo "==> hosted chat model: $CHAT_MODEL at $CHAT_BASE_URL (key not shown)"

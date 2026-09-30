@@ -1,0 +1,13 @@
+# WHY: "01/34871" is a look-alike of GOC 01-34817 and "Higher Certificate" is a different grade from the Professional Certificate (both conflict with goc-registration); "best in Harrogate", the 4.9-star rating, home visits and walk-in/same-day/in-house lab have no source fact.
+blocked: true
+findings:
+  - {contains: "The best opticians in Harrogate", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9 stars from over 800 Google reviews.", label: no_source, fact_key: null}
+  - {contains: "GOC registered under number 01/34871", label: conflict_or_expired, fact_key: goc-registration}
+  - {contains: "She holds the Higher Certificate in Glaucoma", label: conflict_or_expired, fact_key: goc-registration}
+  - {contains: "Every appointment includes a free home visit", label: no_source, fact_key: null}
+  - {contains: "same-day glasses from our in-house lab", label: no_source, fact_key: null}
+must_not_flag:
+  - "A standard private eye test is £25."
+  - "Every pair of glasses includes free adjustments, free nose-pad and screw replacements, and a hard case."
+  - "Subject: Meet the optometrist behind your eye test"

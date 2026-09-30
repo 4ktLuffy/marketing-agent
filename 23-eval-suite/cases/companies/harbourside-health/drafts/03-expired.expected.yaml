@@ -1,0 +1,7 @@
+# WHY: the free posture screen is valid today but ends 2026-09-30, before publish 2026-10-06; the whitening offer ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "free posture screen", label: conflict_or_expired, fact_key: posture-screen-offer}
+  - {contains: "£100 off teeth whitening", label: conflict_or_expired, fact_key: whitening-offer}
+must_not_flag:
+  - "An initial physio assessment at Quayside costs £55"

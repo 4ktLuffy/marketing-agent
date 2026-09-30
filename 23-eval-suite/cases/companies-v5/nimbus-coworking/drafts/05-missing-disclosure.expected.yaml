@@ -1,0 +1,9 @@
+# WHY: the Flex price requires "plus VAT", which appears nowhere in the draft (the audience is freelancers, many not VAT-registered).
+blocked: true
+findings:
+  - {contains: "a Flex desk at Nimbus Wharf is just £199 a month", label: missing_disclosure, fact_key: flex-wharf-price}
+  - {contains: "Subject: Flex desks from £199 a month", label: missing_disclosure, fact_key: flex-wharf-price}
+  - {contains: "For £199 a month you get a Flex desk at Nimbus Wharf", label: missing_disclosure, fact_key: flex-wharf-price}
+must_not_flag:
+  - "That includes 2 hours of meeting-room credits every month"
+  - "WiredScore Gold certified (WS-UK-40912)"

@@ -1,0 +1,14 @@
+Sure — here's a reworded version, figures unchanged:
+
+1. LinkedIn
+Building to a tight fire spec? FireCore slab carries a Euroclass A2-s1,d0 classification.
+It is UKCA and CE marked to EN 13162.
+Trade buyers pay £18.40 per slab (excl. VAT).
+
+2. Email
+Subject line: Trade pricing on FireCore
+Hello,
+Order over £500 and delivery is free within 50 miles of our Stoke depot.
+FireCore trade price: {{firecore-trade-price}}, excl. VAT.
+All the best,
+Granite & Co.

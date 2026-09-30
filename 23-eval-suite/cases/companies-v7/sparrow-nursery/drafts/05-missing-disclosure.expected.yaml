@@ -1,0 +1,10 @@
+# WHY: the 2-year-old fee requires 'before funded hours'; funding is not mentioned anywhere. The clean draft carried it (once as 'before any funded hours are taken off').
+blocked: true
+findings:
+  - {contains: "2-year-old places at Canal Street: £66 per full day", label: missing_disclosure, fact_key: fee-2yo-full-day}
+  - {contains: "Full days at Canal Street, £66", label: missing_disclosure, fact_key: fee-2yo-full-day}
+  - {contains: "A full day at Canal Street costs £66", label: missing_disclosure, fact_key: fee-2yo-full-day}
+  - {contains: "Full days for 2-year-olds, £66", label: missing_disclosure, fact_key: fee-2yo-full-day}
+must_not_flag:
+  - "Rated Good by Ofsted (URN EY574418, inspected March 2025)"
+  - "Fees include freshly cooked meals, nappies and wipes"

@@ -1,0 +1,11 @@
+# FICTIONAL. Scope segments=[everyone]: the £49.99 10-litre acer price is for Greenleaf Card holders only (scope trap).
+# publish_on 2026-10-15 is after the bulb offer ends (2026-10-11), which is valid today (2026-09-29). The furniture sale ended 2026-08-31.
+goal: "Bring local families in for autumn planting and the café in mid-October."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+  - {key: p3, channel: sms, kind: text, max_chars: 160}
+scope: {sites: [], regions: [], channels: [], segments: [everyone], plan_tiers: [], variants: []}
+publish_on: "2026-10-15"
+audience: "Our whole mailing list and followers in Cheshire, not only Greenleaf Card holders"
+notes: "No card-only prices: this goes to everyone."

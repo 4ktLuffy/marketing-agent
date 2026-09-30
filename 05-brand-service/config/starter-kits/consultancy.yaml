@@ -1,0 +1,47 @@
+# Starter kit: consultancy or agency. Data, not code; applying creates DRAFT rules only.
+# Marketing-hygiene prompts, not legal advice.
+label: Consultancy / agency
+description: Services and packages, client results that need context, partner badges and credentials that lapse.
+fact_types:
+  - fact_type: spec
+    subject_kind: service
+    attributes: [scope, duration, deliverables]
+    example: "A 2-week SEO audit with a written report and one workshop."
+  - fact_type: result
+    subject_kind: business
+    attributes: [client, metric, period, consent_ref, typical]
+    example: "One retail client grew organic sessions 40% in 6 months (case study, consent on file)."
+  - fact_type: credential
+    subject_kind: business
+    attributes: [programme, status, valid_to]
+    example: "Google Partner status valid to 2026-06-30."
+  - fact_type: price
+    subject_kind: package
+    attributes: [fee, basis, currency]
+    example: "Audit package from GBP 2,400 flat."
+  - fact_type: testimonial
+    subject_kind: service
+    attributes: [quote, person, consent_ref]
+    example: "Client quote with written consent on file."
+claim_classes: [result, comparative, ai_capability]
+forbidden_phrasing:
+  - phrase: typical results
+    why: One client's result is not typical; say it is one example unless you have data across clients.
+    claim_class: result
+    needs: a result fact marked typical, with the data behind it
+  - phrase: Google Partner
+    why: Partner status lapses; only mention it while a credential fact says it is valid.
+    needs: a current credential fact
+  - phrase: guaranteed ranking
+    why: No one controls search rankings; guarantees are misleading.
+    claim_class: result
+  - phrase: award-winning
+    why: Needs a named award you can show.
+    needs: a credential fact naming the award
+  - phrase: trusted by
+    why: Naming clients needs their permission.
+    needs: a testimonial or result fact with consent
+required_disclosures:
+  - when: a client result or case study is mentioned
+    text: Results from one client; not typical of all engagements.
+    claim_class: result

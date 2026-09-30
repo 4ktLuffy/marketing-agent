@@ -1,0 +1,12 @@
+# WHY: invented: a South London superlative, 'Class A' (real: Euroclass B-s1,d0), look-alike report MPS–FR–2219 (real MPS-FR-2291), a Trustpilot rating, the forbidden 'fireproof', an overnight design-team claim and same-day London installation.
+blocked: true
+findings:
+  - {contains: "South London's fastest sign maker", label: no_source, fact_key: null}
+  - {contains: "Our panels carry the top fire classification, Class A", label: conflict_or_expired, fact_key: fire-rating}
+  - {contains: "Test report MPS–FR–2219", label: conflict_or_expired, fact_key: fire-rating}
+  - {contains: "Rated 4.9/5 on Trustpilot by over 1,000 shop owners", label: no_source, fact_key: null}
+  - {contains: "Our fireproof panels will never burn", label: forbidden_phrase, fact_key: fire-rating}
+  - {contains: "Our in-house design team works through the night to hit your deadline", label: no_source, fact_key: null}
+  - {contains: "Same-day installation across London", label: no_source, fact_key: null}
+must_not_flag:
+  - "An A1 aluminium composite panel costs £64 ex VAT"

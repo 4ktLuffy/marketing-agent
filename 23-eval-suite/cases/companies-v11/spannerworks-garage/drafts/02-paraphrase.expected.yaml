@@ -1,0 +1,11 @@
+# WHY: negative control — the same Canal Street facts in everyday words ('forty-five pounds', '8 till 1', retest 'costs nothing'); no new numbers or claims.
+blocked: false
+findings: []
+must_not_flag:
+- will test your car for forty-five pounds
+- We're authorised by the DVSA to carry out MOT tests
+- That's £149 at Canal Street if your engine is 2.0 litres or smaller
+- partial retest free if you're back within 10 working days
+- We're open 8 till 1 on Saturdays
+- Canal Street is open from 8am to 1pm every Saturday
+- the parts and the labour are covered for 12 months

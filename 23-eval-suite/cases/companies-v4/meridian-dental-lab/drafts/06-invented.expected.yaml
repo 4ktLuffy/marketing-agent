@@ -1,0 +1,12 @@
+# WHY: "fastest", the 4.9/5 rating, the top-rated subject and the master-ceramist credential have no source; "Class 6" changes the Class 5 material grade; QMS-44871 is a look-alike of certificate QMS-44817.
+blocked: true
+findings:
+  - {contains: "Meridian is the fastest dental lab in the North West", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9/5 by more than 300 dentists", label: no_source, fact_key: null}
+  - {contains: "Every crown is finished by our GDC-registered master ceramist", label: no_source, fact_key: null}
+  - {contains: "Subject: The North West's top-rated crown lab", label: no_source, fact_key: null}
+  - {contains: "ISO 6872 Class 6 zirconia", label: conflict_or_expired, fact_key: zirconia-material}
+  - {contains: "certificate QMS-44871", label: conflict_or_expired, fact_key: iso-13485}
+must_not_flag:
+  - "Zirconia crowns are £68 per unit"
+  - "Crowns and bridges come back in 5 working days from receipt of the scan or impression"

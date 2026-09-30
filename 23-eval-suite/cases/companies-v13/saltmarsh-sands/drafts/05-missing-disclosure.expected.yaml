@@ -1,0 +1,8 @@
+# WHY: the dog allowance requires "£3 per dog per night" and lodge finance requires "Finance subject to status. 18+. T&Cs apply"; both are absent from the draft.
+blocked: true
+findings:
+  - {contains: "Bring up to 2 dogs per pitch", label: missing_disclosure, fact_key: dogs-on-touring}
+  - {contains: "Own your own lodge for a 10% deposit", label: missing_disclosure, fact_key: lodge-finance}
+must_not_flag:
+  - "Touring pitches are £32 per pitch per night, up to 4 people, electric hook-up included"
+  - "touring open 1 March to 3 January"

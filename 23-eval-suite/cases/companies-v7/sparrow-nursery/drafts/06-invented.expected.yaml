@@ -1,0 +1,12 @@
+# WHY: 'best nursery in Hartfield', the 9.8 parent rating and 'every practitioner is a qualified teacher' have no source; EY-574481 is a look-alike of URN EY574418; 'Excellent' is not Canal Street's rating (Good); 'free childcare' is forbidden.
+blocked: true
+findings:
+  - {contains: "The best nursery in Hartfield", label: no_source, fact_key: null}
+  - {contains: "Our Ofsted ref: EY-574481", label: conflict_or_expired, fact_key: ofsted-canal}
+  - {contains: "Claim 30 hours of free childcare with us", label: forbidden_phrase, fact_key: funded-hours}
+  - {contains: "An Excellent Ofsted rating", label: conflict_or_expired, fact_key: ofsted-canal}
+  - {contains: "Canal Street is rated Excellent by Ofsted", label: conflict_or_expired, fact_key: ofsted-canal}
+  - {contains: "Parents rate us 9.8 out of 10", label: no_source, fact_key: null}
+  - {contains: "Every practitioner is a qualified teacher", label: no_source, fact_key: null}
+must_not_flag:
+  - "Fees include freshly cooked meals, nappies and wipes"

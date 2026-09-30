@@ -1,0 +1,7 @@
+# WHY: the Deliveroo promo is valid today but ends 2026-10-05, before publish 2026-10-10; the "milk and mustard" allergen list is the superseded matrix v3.
+blocked: true
+findings:
+  - {contains: "20% off orders over £20 on Deliveroo", label: conflict_or_expired, fact_key: deliveroo-promo}
+  - {contains: "risotto contains milk and mustard", label: conflict_or_expired, fact_key: risotto-allergens-v3}
+must_not_flag:
+  - "Riverside delivers from 8am to 3pm every day"

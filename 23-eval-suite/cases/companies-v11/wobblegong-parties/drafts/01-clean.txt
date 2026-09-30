@@ -1,0 +1,21 @@
+Here's your content pack for the Magic Show Party 🎩✨
+
+**Instagram caption**
+Abracadabra! 🐇 Wobblegong's Magic Show Party is a full hour of tricks and giggles.
+It's {{magic-show-price}} for up to 30 children.
+Wobbly Wanda has an enhanced DBS check, and we carry £5 million public liability insurance.
+DM us to check your date! #kidsparty #magicshow
+
+**WhatsApp message**
+Hi! Thanks for asking about a Magic Show Party 😊 It's £180 per party for up to 30 children, and travel is free within 10 miles of Ashcombe.
+We take a {{booking-deposit}} (the deposit is non-refundable).
+
+**Flyer**
+WOBBLEGONG PARTIES
+The Magic Show Party
+One hour of magic for up to 30 children: £180 per party
+Free travel within 10 miles of Ashcombe
+Enhanced DBS checked · £5 million public liability insurance
+Book at wobblegong.example
+
+Want me to make the flyer text shorter so it fits an A6 card?

@@ -1,0 +1,287 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Tideway Ferries, type: ferry_and_day_trips, today: '2026-09-29'}
+facts:
+- key: fare-gull-winter
+  subject: {kind: service, ref: 'Gull Island ferry, adult return'}
+  fact_type: price
+  attribute: fare
+  value: 14
+  unit: null
+  currency: GBP
+  value_text: £14
+  basis: per_person
+  conditions: []
+  scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: [winter]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fare table 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: An adult return to Gull Island costs £14 in the winter season.
+- key: fare-gull-summer
+  subject: {kind: service, ref: 'Gull Island ferry, adult return'}
+  fact_type: price
+  attribute: fare
+  value: 18
+  unit: null
+  currency: GBP
+  value_text: £18
+  basis: per_person
+  conditions: []
+  scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: [summer]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fare table 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: An adult return to Gull Island costs £18 in the summer season.
+- key: senior-fare-gull-winter
+  subject: {kind: service, ref: 'Gull Island ferry, senior return'}
+  fact_type: price
+  attribute: fare
+  value: 10
+  unit: null
+  currency: GBP
+  value_text: £10
+  basis: per_person
+  conditions:
+  - {key: age, op: '>=', value: 60}
+  scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: [winter]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fare table 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [proof of age]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Passengers aged 60 and over pay £10 for a winter return to Gull Island, with proof of age.
+- key: timetable-winter
+  subject: {kind: service, ref: Gull Island winter timetable}
+  fact_type: hours
+  attribute: sailings_per_day
+  value: 4
+  unit: null
+  currency: null
+  value_text: four return sailings a day
+  basis: null
+  conditions: []
+  scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: [winter]}
+  valid_from: '2026-10-05'
+  valid_to: '2027-03-28'
+  review_by: null
+  source: {kind: doc, ref: Winter timetable 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'The Gull Island winter timetable runs 5 October 2026 to 28 March 2027: four return sailings a day, first departure
+    09:30.'
+- key: timetable-summer
+  subject: {kind: service, ref: Gull Island summer timetable}
+  fact_type: hours
+  attribute: sailings_per_day
+  value: 8
+  unit: null
+  currency: null
+  value_text: eight return sailings a day
+  basis: null
+  conditions: []
+  scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Summer timetable 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'The Gull Island summer timetable runs 1 April to 4 October 2026: eight return sailings a day.'
+- key: bring-a-friend-offer
+  subject: {kind: offer, ref: Bring a friend}
+  fact_type: price
+  attribute: offer
+  value: null
+  unit: null
+  currency: null
+  value_text: a second adult travels free
+  basis: null
+  conditions: []
+  scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: September offers poster}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Marketing lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Bring a friend: buy one adult return to Gull Island and a second adult travels free, 1 September to 4 October 2026.'
+- key: accessible-coast-gold
+  subject: {kind: business, ref: MV Tern}
+  fact_type: certification
+  attribute: accessibility_award
+  value: AC-0847
+  unit: null
+  currency: null
+  value_text: Accessible Coast Gold award
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-05-01'
+  valid_to: null
+  review_by: '2027-05-01'
+  source: {kind: certificate, ref: Accessible Coast certificate AC-0847}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Certificate AC-0847
+  consent_ref: null
+  required_disclosures: [book wheelchair spaces 24 hours ahead]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'MV Tern holds the Accessible Coast Gold award (certificate AC-0847): step-free boarding and two wheelchair spaces.
+    Passengers should book wheelchair spaces 24 hours ahead.'
+- key: dogs-on-board
+  subject: {kind: policy, ref: Pet policy}
+  fact_type: policy
+  attribute: dogs
+  value: 0
+  unit: null
+  currency: null
+  value_text: dogs travel free on the open deck
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Conditions of carriage v5}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Operations manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Dogs travel free on the open deck, on a lead; they are not allowed in the saloon.
+- key: fuel-surcharge-trigger
+  subject: {kind: policy, ref: Fuel surcharge}
+  fact_type: policy
+  attribute: trigger_price
+  value: 1.4
+  unit: null
+  currency: GBP
+  value_text: £1.40 per litre
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Finance note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We add a fuel surcharge if marine diesel goes above £1.40 per litre.
+- key: school-group-contract
+  subject: {kind: service, ref: School group trips}
+  fact_type: price
+  attribute: contract_price
+  value: 6
+  unit: null
+  currency: GBP
+  value_text: £6 per pupil
+  basis: per_person
+  conditions:
+  - {key: customer, op: '=', value: Ashcombe Academy Trust}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: doc, ref: Academy Trust agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Ashcombe Academy Trust pays £6 per pupil for school trips.

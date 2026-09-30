@@ -1,0 +1,49 @@
+# Starter kit: hotel, lodge, B&B or venue. Data, not code; applying creates DRAFT rules only.
+# Marketing-hygiene prompts, not legal advice.
+label: Hospitality / accommodation
+description: Rooms and packages with rates that depend on days, occupancy and season; inclusions; per-person vs per-room pricing.
+fact_types:
+  - fact_type: price
+    subject_kind: package
+    attributes: [rate, basis, occupancy, days, season]
+    example: "Midweek Escape is GBP 180 per room per night, 2 sharing, Sun-Thu."
+  - fact_type: inclusion
+    subject_kind: package
+    attributes: [breakfast, parking, transfers, late_checkout]
+    example: "Weekend rate is room only; breakfast is GBP 15 per person."
+  - fact_type: availability
+    subject_kind: site
+    attributes: [season, rooms, minimum_stay]
+    example: "Two-night minimum stay on Saturdays in summer."
+  - fact_type: price
+    subject_kind: service
+    attributes: [transfer_price, basis]
+    example: "Airport transfer GBP 25 per person each way."
+  - fact_type: event
+    subject_kind: offer
+    attributes: [start_date, end_date, booking_window]
+    example: "Summer package valid for stays to 2026-08-31."
+claim_classes: [price_reference, comparative]
+forbidden_phrasing:
+  - phrase: from £
+    why: A "from" price must be genuinely bookable on the dates promoted.
+    claim_class: price_reference
+    needs: a price fact with availability for the promoted dates
+  - phrase: breakfast included
+    why: Inclusions usually differ by rate or package.
+    needs: an inclusion fact scoped to the rate
+  - phrase: per person
+    why: Per-person and per-room prices are easy to swap; the basis must match the fact.
+    needs: a price fact with basis per_person
+  - phrase: free cancellation
+    why: Cancellation terms depend on the rate booked.
+    needs: a policy fact for the rate
+  - phrase: best rate guaranteed
+    why: A price guarantee is a promise with conditions; needs a written policy.
+    claim_class: comparative
+    needs: a policy fact with the guarantee terms
+required_disclosures:
+  - when: a rate is mentioned
+    text: Per room per night, subject to availability.
+  - when: a package or offer is mentioned
+    text: Terms and dates apply.

@@ -1,0 +1,27 @@
+Here's a draft for each channel (the X post is under 280 characters).
+
+**X post:**
+
+¡Hola! 🇪🇸 Our 10-week Spanish evening group starts 20 Oct, {{evening-class-times}}. {{spanish-evening-course}}, coursebook not included. Not sure of your level? Take our {{free-placement-test}}.
+
+**YouTube description:**
+
+What does a Linden evening Spanish class actually look like? This short video shows you.
+The 10-week evening group course costs [[spanish-evening-course]] (coursebook not included).
+Classes run [[evening-class-times]] at our Mill Street centre, starting 20 October.
+Every Linden teacher holds [[teacher-qualifications]].
+Take the [[free-placement-test]] before you book.
+
+**Blog post:**
+
+# Why an evening group is an easy way back into Spanish
+
+Life is busy, and a fixed weekly class helps you keep going.
+Our 10-week Spanish evening group course costs £240 per person, coursebook not included.
+The group meets on Tuesdays, 6:30pm to 8:30pm, at the Mill Street centre, starting 20 October.
+A group runs once at least 5 learners have signed up.
+Every teacher at Linden holds a recognised language-teaching qualification.
+[[level-progress-result]] of our 2025-26 adult evening learners moved up at least one level, based on 2025-26 end-of-course tests.
+Not sure where to start? Take the free online level test first.
+
+Want me to suggest a thumbnail title for the video?

@@ -1,0 +1,11 @@
+# WHY: superlatives and the 5-star rating have no source; Ashby is accredited at General Practice level, not Veterinary Hospital; no fact supports specialist status for the vets.
+blocked: true
+findings:
+  - {contains: "The friendliest vets in Ashby", label: no_source, fact_key: null}
+  - {contains: "Rated 5 stars on Google by hundreds of pet owners", label: no_source, fact_key: null}
+  - {contains: "Subject: Care from RCVS Recognised Specialists", label: no_source, fact_key: null}
+  - {contains: "an RCVS-accredited Veterinary Hospital", label: conflict_or_expired, fact_key: rcvs-accreditation}
+  - {contains: "Every vet on our team is an RCVS Recognised Specialist", label: no_source, fact_key: null}
+  - {contains: "The most trusted vets in town", label: no_source, fact_key: null}
+must_not_flag:
+  - "Our Puppy & Kitten Starter costs £89"

@@ -1,0 +1,11 @@
+# WHY: £28.80 per case, the 10-case minimum and Tier 2 pricing are the trade price list (channels=[trade]); the task is channels=[retail].
+blocked: true
+findings:
+  - {contains: "Get a case of 12 bags for just £28.80", label: wrong_scope, fact_key: granola-trade-price}
+  - {contains: "Subject: Granola by the case: £28.80 for 12", label: wrong_scope, fact_key: granola-trade-price}
+  - {contains: "Order a case of 12 for £28.80 (minimum order 10 cases)", label: wrong_scope, fact_key: granola-trade-price}
+  - {contains: "Price: £28.80 per case of 12", label: wrong_scope, fact_key: granola-trade-price}
+  - {contains: "Tier 2 pricing applies", label: wrong_scope, fact_key: granola-trade-price}
+must_not_flag:
+  - "Oat & Almond Granola is certified organic by Albion Organic Certification (licence AOC-4417)"
+  - "It contains oats (gluten) and almonds"

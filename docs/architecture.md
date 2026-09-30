@@ -242,7 +242,7 @@ at most 50 `extra_facts`), because every sentence costs model calls. Measured ac
 | Writing gateway (`llm-gateway`) | Ollama `mkt-writer` | `LLM_PROVIDER=openai`, `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `WRITER_MODEL` |
 | Fact checker's gateway (`llm-gateway-verifier`) | Ollama `mkt-writer` | `VERIFIER_PROVIDER=openai`, `VERIFIER_MODEL` (shares the `OPENAI_*` settings) |
 | Website assistant's answers (79 → `llm-gateway-assistant`) | the writing gateway | `ASSISTANT_OPENAI_API_KEY` and `ASSISTANT_GATEWAY_URL=http://llm-gateway-assistant:8000` (Groq `gpt-oss-120b`); its claim checks use the fact checker's gateway |
-| Chat agent (24) | Ollama `mkt-agent` | `CHAT_PROVIDER=hosted` and `CHAT_API_KEY`, then re-run `import-n8n.sh` (imports `variants/hosted.json`) |
+| Chat agent (24) | Ollama `mkt-agent` through the writing gateway (`/v1/chat/completions`, shown on the Activity page); `CHAT_PROVIDER=direct` = n8n to Ollama | `CHAT_PROVIDER=hosted` and `CHAT_API_KEY`, then re-run `import-n8n.sh` (imports `variants/hosted.json`); or keep `local` and run the gateway itself with `LLM_PROVIDER=openai` and `AGENT_MODEL` set to that provider's model |
 | JSON output | schema passed to Ollama as `format` | `json_schema`, falling back to JSON mode |
 | Reasoning models | n/a | `REASONING_EFFORT=low` for `gpt-oss` on Groq |
 

@@ -1,0 +1,25 @@
+Here are the three pieces for Apex Roofing. I've kept the survey wording next to every price, as requested.
+
+### Google Business Profile – Update
+
+Is your roof ready for winter? 🏠
+Pitched re-roofs for 3-bed semis start [[reroof-price]], and the final price is confirmed after a free survey.
+Every pitched re-roof comes with a [[pitched-guarantee]].
+Book your free survey today.
+
+### Flyer (A5, front and back)
+
+NEW ROOF BEFORE WINTER?
+Full pitched re-roofs from £6,800 inc VAT for a typical 3-bed semi. Final price confirmed after a free survey.
+Scaffolding, skip hire and a full clear-up are all included.
+TrustMark registered · licence number 2047815
+NFRC Full Contractor Member · membership number 31972
+Call 0117 496 0784
+
+Page title: Pitched roof replacement in Bristol | Apex Roofing
+
+Replacing a pitched roof is a big decision, so we keep it simple.
+Our price for a typical 3-bed semi starts {{reroof-price}}, and the final price is confirmed after a free survey.
+Your new roof is covered by a {{pitched-guarantee}}, so you're protected even if we cease trading.
+Every price includes {{reroof-inclusions}}.
+We're a member of the NFRC and registered with TrustMark.

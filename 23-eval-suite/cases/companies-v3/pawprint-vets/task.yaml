@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[Ashby] makes the Millford £42 consultation price a scope trap;
+# publish_on 2026-10-07 is after senior-check-offer ends (2026-10-03), which is valid today (2026-09-29).
+goal: "Bring new puppy and kitten owners to the Ashby branch in October."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+  - {key: p3, channel: google-business, kind: post, max_chars: 1500}
+scope: {sites: [Ashby], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-07"
+audience: "New pet owners living near Ashby"
+notes: "Lead with the Puppy & Kitten Starter."

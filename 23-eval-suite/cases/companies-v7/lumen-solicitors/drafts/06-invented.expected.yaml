@@ -1,0 +1,12 @@
+# WHY: 'number one in Bristol', the 4.9 rating and 'every file handled by a partner' have no source; 'Lexcel Gold' contradicts Lexcel v6.1 (no tiers); 8045/71 is a look-alike of SRA 804517; 'no hidden costs' is forbidden.
+blocked: true
+findings:
+  - {contains: "Bristol's number one conveyancing firm", label: no_source, fact_key: null}
+  - {contains: "We're Lexcel Gold accredited", label: conflict_or_expired, fact_key: lexcel}
+  - {contains: "Regulated by the SRA, ID 8045/71", label: conflict_or_expired, fact_key: sra-number}
+  - {contains: "Lexcel Gold standard conveyancing", label: conflict_or_expired, fact_key: lexcel}
+  - {contains: "Rated 4.9 out of 5 by our clients", label: no_source, fact_key: null}
+  - {contains: "Every file is handled personally by a partner", label: no_source, fact_key: null}
+  - {contains: "means no hidden costs", label: forbidden_phrase, fact_key: conv-band-1}
+must_not_flag:
+  - "Your first consultation is free, 30 minutes by phone or video, for new clients only"

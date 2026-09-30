@@ -1,0 +1,9 @@
+# WHY: "Outstanding" is Willow House's true CQC rating (sites=[willow-house]); the task is sites=[alder-court], rated Good. The value exactly matches a real fact for the other home, so wrong_scope.
+blocked: true
+findings:
+  - {contains: "Alder Court is rated Outstanding by the CQC", label: wrong_scope, fact_key: cqc-willow-house}
+  - {contains: "Outstanding care at Alder Court", label: wrong_scope, fact_key: cqc-willow-house}
+  - {contains: "rated Outstanding by the Care Quality Commission", label: wrong_scope, fact_key: cqc-willow-house}
+must_not_flag:
+  - "Visitors are welcome from 9am to 8pm every day"
+  - "Residential care is £1,250 per week, subject to a care needs assessment"

@@ -1,0 +1,10 @@
+# WHY: the 20-minute keyholder response is true only in Yorkshire (regions=[yorkshire]); the task is regions=[north-west], where it is 30 minutes.
+blocked: true
+findings:
+  - {contains: "Keyholder in 20 Minutes", label: wrong_scope, fact_key: response-yorkshire}
+  - {contains: "a keyholder at your door within 20 minutes", label: wrong_scope, fact_key: response-yorkshire}
+  - {contains: "Subject: Help in 20 minutes, day or night", label: wrong_scope, fact_key: response-yorkshire}
+  - {contains: "a keyholder reaches your home within 20 minutes", label: wrong_scope, fact_key: response-yorkshire}
+must_not_flag:
+  - "We're NSI Gold approved (certificate NSI-7042189)"
+  - "Essential Monitoring costs £24.99 a month on a 12-month minimum term"

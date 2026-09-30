@@ -1,0 +1,290 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Ledgerly, type: saas, today: '2026-09-29'}
+facts:
+- key: starter-price
+  subject: {kind: plan, ref: Starter}
+  fact_type: price
+  attribute: list_price
+  value: 12
+  unit: month
+  currency: GBP
+  value_text: £12 per user per month
+  basis: per_month
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [starter], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://ledgerly.example/pricing'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - excl. VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Starter plan costs £12 per user per month, excl. VAT, billed monthly.
+- key: pro-price
+  subject: {kind: plan, ref: Pro}
+  fact_type: price
+  attribute: list_price
+  value: 29
+  unit: month
+  currency: GBP
+  value_text: £29 per user per month
+  basis: per_month
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [pro], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://ledgerly.example/pricing'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - excl. VAT
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Pro plan costs £29 per user per month, excl. VAT.
+- key: multi-currency
+  subject: {kind: service, ref: Multi-currency invoicing}
+  fact_type: inclusion
+  attribute: feature
+  value: null
+  unit: null
+  currency: null
+  value_text: invoice in 30+ currencies
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [pro, business], variants: []}
+  valid_from: '2025-11-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Plan comparison sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Multi-currency invoicing (30+ currencies) is included on the Pro and Business plans only, not Starter.
+- key: payment-reminders
+  subject: {kind: service, ref: Automatic payment reminders}
+  fact_type: inclusion
+  attribute: feature
+  value: null
+  unit: null
+  currency: null
+  value_text: automatic payment reminders
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Plan comparison sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Automatic payment reminders are included on every plan, including Starter.
+- key: free-trial
+  subject: {kind: offer, ref: Free trial}
+  fact_type: policy
+  attribute: trial_length
+  value: 14
+  unit: day
+  currency: null
+  value_text: 14-day free trial, no card needed
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://ledgerly.example/signup'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every plan starts with a 14-day free trial and no card is needed to sign up.
+- key: soc2-type1
+  subject: {kind: business, ref: Ledgerly}
+  fact_type: certification
+  attribute: soc2
+  value: null
+  unit: null
+  currency: null
+  value_text: SOC 2 Type I report
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-15'
+  valid_to: '2027-06-14'
+  review_by: '2027-03-01'
+  source: {kind: certificate, ref: 'SOC 2 Type I report, auditor letter 2026-06-15'}
+  claim_class: security
+  requires_evidence: true
+  evidence_ref: SOC 2 Type I report 2026-06-15
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing:
+  - SOC 2 Type I
+  forbidden_phrasing:
+  - SOC 2 Type II
+  - SOC 2 certified
+  - fully SOC 2 compliant
+  owner: CTO
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Ledgerly completed a SOC 2 Type I audit in June 2026. The Type II audit is in progress, so we must not claim SOC 2 Type II.
+- key: xero-sync-beta
+  subject: {kind: offer, ref: Xero sync beta}
+  fact_type: availability
+  attribute: beta_access
+  value: null
+  unit: null
+  currency: null
+  value_text: free access to the Xero sync beta
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-01'
+  valid_to: '2026-10-01'
+  review_by: null
+  source: {kind: owner_statement, ref: Product update 2026-07-01}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Until 1 October 2026 every plan can join the Xero sync beta for free; after that it becomes a paid add-on.
+- key: launch-discount
+  subject: {kind: offer, ref: Launch discount}
+  fact_type: price
+  attribute: discount
+  value: 50
+  unit: percent
+  currency: null
+  value_text: 50% off your first 3 months
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Launch campaign brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The launch offer of 50% off the first 3 months ran from May to 31 August 2026 and has ended.
+- key: soc2-type2-date
+  subject: {kind: business, ref: Ledgerly}
+  fact_type: event
+  attribute: audit_report_date
+  value: null
+  unit: null
+  currency: null
+  value_text: February 2027
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: CTO note (not for release)}
+  claim_class: security
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: CTO
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The SOC 2 Type II report is expected in February 2027; the date is not public.
+- key: acme-freight-contract
+  subject: {kind: plan, ref: Business (Acme Freight contract)}
+  fact_type: price
+  attribute: contract_price
+  value: 9
+  unit: month
+  currency: GBP
+  value_text: £9 per user per month
+  basis: per_month
+  conditions:
+  - {key: customer, op: '=', value: Acme Freight}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [business], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Acme Freight order form OF-2026-014}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of sales
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Acme Freight pays £9 per user per month on the Business plan under its 2026 contract.

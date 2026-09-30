@@ -1,0 +1,16 @@
+# WHY: negative control: the same pitched-roof facts reworded (£6.8k, 'Fifteen years', the survey disclosure in other words, membership wording inflected); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "is your roof up to it?"
+  - "costs from £6.8k, with the exact figure fixed once we've surveyed the roof for free"
+  - "Fifteen years of insurance-backed cover comes with every pitched re-roof we fit"
+  - "Your roof, replaced before the frost"
+  - "we confirm the final price after a free survey"
+  - "The price covers the scaffold, the skip and tidying up afterwards"
+  - "TrustMark licence: 2047815"
+  - "NFRC membership: 31972 (Full Contractor Member)"
+  - "New pitched roofs across Bristol, Bath and South Gloucestershire"
+  - "Should you repair or replace your roof?"
+  - "your pitched roof is guaranteed for 15 years, and the guarantee is insurance-backed"
+  - "TrustMark-registered and holds full contractor membership of the NFRC"

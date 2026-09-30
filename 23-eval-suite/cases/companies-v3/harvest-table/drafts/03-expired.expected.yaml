@@ -1,0 +1,11 @@
+# WHY: the Harvest Bundle is valid today but ends 2026-10-06, before publish 2026-10-12 (line 4 describes it without its name); free delivery over £25 ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "3 bags for £12, while stocks last", label: conflict_or_expired, fact_key: harvest-bundle}
+  - {contains: "Subject: The Harvest Bundle is back", label: conflict_or_expired, fact_key: harvest-bundle}
+  - {contains: "Our Harvest Bundle gets you three bags of granola for £12", label: conflict_or_expired, fact_key: harvest-bundle}
+  - {contains: "delivery is free on web orders over £25", label: conflict_or_expired, fact_key: summer-free-delivery}
+  - {contains: "Free UK delivery on orders over £25", label: conflict_or_expired, fact_key: summer-free-delivery}
+must_not_flag:
+  - "Oat & Almond Granola is sweetened only with English honey"
+  - "Oat & Almond Granola, £4.75 per 500 g bag"

@@ -15,10 +15,10 @@
         "public": true,
         "mode": "hostedChat",
         "authentication": "n8nUserAuth",
-        "initialMessages": "Hi! I'm your marketing agent, running on your local model.\nTry: \"Write an X and LinkedIn post about our new decaf, link https://example.com/decaf\" or \"What's in the content calendar?\"",
+        "initialMessages": "Hi! I'm your marketing agent, running through your LLM gateway.\nTry: \"Write an X and LinkedIn post about our new decaf, link https://example.com/decaf\" or \"What's in the content calendar?\"",
         "options": {
           "title": "Marketing agent",
-          "subtitle": "Local LLM · drafts only, you approve",
+          "subtitle": "Via the LLM gateway · drafts only, you approve",
           "inputPlaceholder": "Ask for a post, a brief, research…"
         }
       },
@@ -42,26 +42,30 @@
       }
     },
     {
-      "id": "7ca6e9f7-e2fb-5c39-b8e3-1368b9226401",
-      "name": "Local model (Ollama)",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
-      "typeVersion": 1,
+      "id": "62562c69-e610-5acc-9c81-8e9a1023c02b",
+      "name": "Model (via LLM gateway)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
       "position": [
         0,
         560
       ],
       "parameters": {
-        "model": "mkt-agent:latest",
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.AGENT_MODEL || 'mkt-agent' }}"
+        },
         "options": {
           "temperature": 0.2,
-          "numCtx": 16384,
-          "keepAlive": "30m"
+          "timeout": 300000,
+          "maxRetries": 1
         }
       },
       "credentials": {
-        "ollamaApi": {
-          "id": "mktOllamaCred001",
-          "name": "Ollama (local)"
+        "openAiApi": {
+          "id": "mktGatewayChat01",
+          "name": "LLM gateway (chat)"
         }
       }
     },
@@ -1315,7 +1319,7 @@
         ]
       ]
     },
-    "Local model (Ollama)": {
+    "Model (via LLM gateway)": {
       "ai_languageModel": [
         [
           {

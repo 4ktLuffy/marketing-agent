@@ -1,0 +1,7 @@
+# WHY: the delivery price fact requires "Deliveroo prices are higher than in the café"; it is missing from both pieces.
+blocked: true
+findings:
+  - {contains: "Just £14.90 on Deliveroo", label: missing_disclosure, fact_key: brunch-box-delivery}
+  - {contains: "brunch box for £14.90 on Deliveroo", label: missing_disclosure, fact_key: brunch-box-delivery}
+must_not_flag:
+  - "Order any day from 8am to 3pm"

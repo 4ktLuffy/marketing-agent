@@ -1,0 +1,8 @@
+# WHY: negative control; same online facts reworded, disclosure kept. "No grades" and "B1 or B2" are look-alikes of the inspection grade and level prices, not claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "No grades, no pressure in class"
+  - "Not sure if you're B1 or B2 yet"
+  - "holds LSQB accreditation (number LSQB-2417)"
+  - "A 10-week term of online B1 General English is £990"

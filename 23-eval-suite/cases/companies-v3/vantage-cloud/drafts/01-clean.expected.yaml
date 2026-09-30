@@ -1,0 +1,8 @@
+# WHY: Essentials price with its VAT/minimum disclosure, Essentials SLA, UK desk hours, the ISO certificate with its scope, and the exact Microsoft designation.
+blocked: false
+findings: []
+must_not_flag:
+  - "Vantage Cloud is ISO 27001:2022 certified (certificate IS 781204), which covers our service desk and hosting operations"
+  - "Essentials costs £29 per user per month, excluding VAT, minimum 10 users"
+  - "We're a Microsoft Solutions Partner for Modern Work"
+  - "Priority 1 incidents get a 4-hour response"

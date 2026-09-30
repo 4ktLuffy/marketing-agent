@@ -1,0 +1,8 @@
+# WHY: the £99 spring early-enrolment price is valid today but ends 2026-10-10, before publish 2026-10-19 ("under a hundred quid", "save £21" are loose forms); the rock camp ended 2026-08-28 and no half-term camp exists.
+blocked: true
+findings:
+  - {contains: "next term costs under a hundred quid", label: conflict_or_expired, fact_key: spring-early-enrol}
+  - {contains: "save £21 on the spring group term", label: conflict_or_expired, fact_key: spring-early-enrol}
+  - {contains: "five-day rock camp is back for half term", label: conflict_or_expired, fact_key: summer-rock-camp}
+must_not_flag:
+  - "Group lessons for ages 7 to 12 are £120 per term, 10 weekly lessons."

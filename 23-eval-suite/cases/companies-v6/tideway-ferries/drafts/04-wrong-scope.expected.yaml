@@ -1,0 +1,9 @@
+# WHY: £18 is the true SUMMER adult return (variants=[summer]); the task is variants=[winter], where it is £14.
+blocked: true
+findings:
+  - {contains: "Gull Island day trips from £18 return", label: wrong_scope, fact_key: fare-gull-summer}
+  - {contains: "Gull Island for £18", label: wrong_scope, fact_key: fare-gull-summer}
+  - {contains: "An adult return to Gull Island costs £18", label: wrong_scope, fact_key: fare-gull-summer}
+must_not_flag:
+  - "Dogs travel free on the open deck, on a lead"
+  - "Over-60s pay £10 return, with proof of age"

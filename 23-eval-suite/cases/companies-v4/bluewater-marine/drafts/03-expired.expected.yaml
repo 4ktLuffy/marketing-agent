@@ -1,0 +1,10 @@
+# WHY: free winter storage is valid today but needs a booking by 2026-10-03, before publish 2026-10-09; the 0% APR summer finance (mentioned in passing) ended 2026-09-15.
+blocked: true
+findings:
+  - {contains: "we'll keep your boat ashore for free until 31 March", label: conflict_or_expired, fact_key: winter-storage-offer}
+  - {contains: "Free winter storage when you book your service", label: conflict_or_expired, fact_key: winter-storage-offer}
+  - {contains: "Book a winter service at our Poole yard and get free winter storage ashore until 31 March", label: conflict_or_expired, fact_key: winter-storage-offer}
+  - {contains: "book a winter service by Friday for free winter storage ashore", label: conflict_or_expired, fact_key: winter-storage-offer}
+  - {contains: "Our 0% APR over 36 months on new Solent Rider boats makes it easy", label: conflict_or_expired, fact_key: summer-finance}
+must_not_flag:
+  - "Ex-demo Solent Rider 6.5, 38 engine hours, £44,950 including VAT"

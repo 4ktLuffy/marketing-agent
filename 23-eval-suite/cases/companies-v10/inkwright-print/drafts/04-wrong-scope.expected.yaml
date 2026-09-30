@@ -1,0 +1,9 @@
+# WHY: £19 is the true trade (reseller) price for 500 cards; the task is segments=[business], where 500 cards cost £29 excl. VAT.
+blocked: true
+findings:
+  - {contains: "500 business cards for just £19 excl. VAT", label: wrong_scope, fact_key: business-cards-500-trade}
+  - {contains: "500 standard 400gsm business cards are £19 excl. VAT", label: wrong_scope, fact_key: business-cards-500-trade}
+must_not_flag:
+  - "Every job on our standard stocks is printed on FSC-certified paper"
+  - "Orders with artwork approved by 12 noon are dispatched the next working day"
+  - "Free UK delivery on orders over £75 excl. VAT"

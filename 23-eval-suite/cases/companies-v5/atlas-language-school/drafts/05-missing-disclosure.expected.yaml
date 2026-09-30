@@ -1,0 +1,8 @@
+# WHY: the 92% pass-rate result requires "48 candidates, 2025-26", which appears nowhere in the draft.
+blocked: true
+findings:
+  - {contains: "92% of our B2 First candidates passed their exam", label: missing_disclosure, fact_key: b2-pass-rate}
+  - {contains: "With a 92% pass rate at B2 First", label: missing_disclosure, fact_key: b2-pass-rate}
+must_not_flag:
+  - "Online B1 General English costs £990 per 10-week term"
+  - "Classes start on 12 October"

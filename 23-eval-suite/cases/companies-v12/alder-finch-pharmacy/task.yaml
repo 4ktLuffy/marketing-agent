@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[Castle Green] makes the Market Street late opening and the Market Street
+# prescriber scope traps; publish_on 2026-10-12 is after early-bird-flu ends (2026-10-04), valid today (2026-09-29).
+goal: "Get more adults booked in for flu jabs at the Castle Green branch in October."
+pieces:
+  - {key: p1, channel: facebook, kind: post, max_chars: 2000}
+  - {key: p2, channel: sms, kind: message, max_chars: 160}
+  - {key: p3, channel: google_business, kind: post, max_chars: 1500}
+scope: {sites: [Castle Green], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-12"
+audience: "Adults who live or work near Castle Green, Wrenfield"
+notes: "Mention the Saturday walk-in sessions."

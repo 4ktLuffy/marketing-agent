@@ -1,0 +1,11 @@
+# WHY: £49.99 for a 10-litre acer is the Greenleaf Card price (segments=[card-holders]); the task goes to everyone (segments=[everyone]).
+blocked: true
+findings:
+  - {contains: "Our 10-litre Japanese maples are just £49.99", label: wrong_scope, fact_key: acer-10l-card-price}
+  - {contains: "Subject: Statement acers for £49.99", label: wrong_scope, fact_key: acer-10l-card-price}
+  - {contains: "A Japanese maple in a 10-litre pot is £49.99", label: wrong_scope, fact_key: acer-10l-card-price}
+  - {contains: "big 10-litre Japanese maples now £49.99", label: wrong_scope, fact_key: acer-10l-card-price}
+must_not_flag:
+  - "The 3-litre size is £24.99"
+  - "Every bag of compost we sell is peat-free"
+  - "free on orders over £40 within 10 miles of the centre"

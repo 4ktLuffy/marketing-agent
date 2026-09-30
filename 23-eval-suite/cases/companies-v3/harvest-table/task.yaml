@@ -1,0 +1,11 @@
+# FICTIONAL. Scope channels=[retail] makes the Tier 2 trade price and MOQ a scope trap;
+# publish_on 2026-10-12 is after harvest-bundle ends (2026-10-06), which is valid today (2026-09-29).
+goal: "Sell more Oat & Almond Granola to shoppers through the website and the farm shop in October."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+  - {key: p3, channel: website, kind: product_page, max_chars: 1200}
+scope: {sites: [], regions: [], channels: [retail], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-12"
+audience: "Home shoppers who care about organic food"
+notes: "The product page must carry the allergen and shelf-life lines."

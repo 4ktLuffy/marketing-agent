@@ -20,7 +20,7 @@ DEFAULT_SERVICES = [
     "campaign-service", "learning-service", "llm-gateway-verifier", "review-hub",
     "cms-bridge", "content-engine", "gsc-sync", "customer-language", "video-assembly", "control-room",
     "clip-finder", "ad-library-sync", "site-assistant", "lead-hub", "ai-visibility", "ads-sync", "flow-runner",
-    "feed-optimizer", "postiz-bridge", "umami-sync", "listmonk-bridge",
+    "feed-optimizer", "task-bridge", "postiz-bridge", "umami-sync", "listmonk-bridge",
 ]
 
 

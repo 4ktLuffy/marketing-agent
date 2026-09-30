@@ -1,0 +1,12 @@
+# WHY: negative control — domestic prices valid at publish, typed as "65 pounds" or slotted; "up to 3 visits" kept; true BPCA number and RSPH level; seasonal words ("autumn") and "level" appear but name no expired offer or other grade.
+blocked: false
+findings: []
+must_not_flag:
+  - "Hearing scratching in the loft at night?"
+  - "Autumn is when rats and mice start looking for a warm place indoors"
+  - "treat a wasps' nest for 65 pounds per nest"
+  - "If rats or mice come back within 90 days of a treatment"
+  - "We're BPCA members (membership number 10472)"
+  - "Unwelcome guests this autumn?"
+  - "hold the RSPH Level 2 Award in Pest Management"
+  - "Small gaps at ground level are the usual way in"

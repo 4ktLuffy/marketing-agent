@@ -1,0 +1,9 @@
+# WHY: online booking integration is true for the Growth package only (plan_tiers=[growth]); the task is plan_tiers=[starter].
+blocked: true
+findings:
+  - {contains: "Our Starter website includes online booking integration", label: wrong_scope, fact_key: growth-booking}
+  - {contains: "Online booking, built into your Starter site", label: wrong_scope, fact_key: growth-booking}
+  - {contains: "Every Starter site comes with online booking integration", label: wrong_scope, fact_key: growth-booking}
+must_not_flag:
+  - "Our Starter website is £1,800 excl. VAT"
+  - "Hosting comes with a 99.9% monthly uptime SLA"

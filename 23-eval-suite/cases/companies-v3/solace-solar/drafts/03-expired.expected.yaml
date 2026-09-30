@@ -1,0 +1,10 @@
+# WHY: the Warm Homes grant is valid today but closes 2026-10-04, before publish 2026-10-08 (line 4 describes it without its name); the Summer Power-Up ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "get up to £2,500 off a home battery this autumn", label: conflict_or_expired, fact_key: warm-homes-grant}
+  - {contains: "Subject: Our Summer Power-Up is back", label: conflict_or_expired, fact_key: summer-power-up}
+  - {contains: "the Summer Power-Up offer gives you a free upgrade to a 13.5 kWh battery", label: conflict_or_expired, fact_key: summer-power-up}
+  - {contains: "you may qualify for the Warm Homes grant too", label: conflict_or_expired, fact_key: warm-homes-grant}
+must_not_flag:
+  - "The Home 6 package is £9,450 fully installed, subject to a home survey"
+  - "We install across Leeds, Bradford, Harrogate and York"

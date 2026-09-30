@@ -1,0 +1,11 @@
+# WHY: the half-price first month is valid today but ends 2026-10-09, before publish 2026-10-12 (once only described, "knock half off"); the £10 summer day pass ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Half-price first month on Flex at Nimbus Wharf", label: conflict_or_expired, fact_key: half-price-offer}
+  - {contains: "your first month of Flex costs half the usual £199", label: conflict_or_expired, fact_key: half-price-offer}
+  - {contains: "we'll knock half off your first month", label: conflict_or_expired, fact_key: half-price-offer}
+  - {contains: "Grab a £10 day pass", label: conflict_or_expired, fact_key: summer-day-pass}
+  - {contains: "Subject: Try Nimbus for £10 a day", label: conflict_or_expired, fact_key: summer-day-pass}
+  - {contains: "Our summer day pass is still going", label: conflict_or_expired, fact_key: summer-day-pass}
+must_not_flag:
+  - "Flex at Nimbus Wharf is £199 a month plus VAT"

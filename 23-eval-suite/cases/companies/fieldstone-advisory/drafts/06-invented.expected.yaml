@@ -1,0 +1,10 @@
+# WHY: "award-winning" and "3x ROI within 90 days" have no source (invented claim/result); "fully automated" is forbidden on the AI-audit fact.
+# CORRECTED 2026-09-29: added subject line "Guaranteed pipeline growth" (no_source): a guaranteed-result claim that no fact supports (the AI-audit fact even forbids guaranteed results).
+blocked: true
+findings:
+  - {contains: "award-winning B2B agency", label: no_source, fact_key: null}
+  - {contains: "guarantee a 3x ROI within 90 days", label: no_source, fact_key: null}
+  - {contains: "fully automated", label: forbidden_phrase, fact_key: ai-assisted-audits}
+  - {contains: "Subject: Guaranteed pipeline growth", label: no_source, fact_key: null}
+must_not_flag:
+  - "HubSpot Gold Solutions Partner with a team of 14 consultants"

@@ -1,0 +1,11 @@
+# WHY: the autumn mouse offer is valid today but ends 2026-10-05, before publish 2026-10-08 (named as "15% off", as "our autumn mouse deal", and in words only as "take a slice off the usual price"); the £50 summer wasp price ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "knock 15% off any mouse treatment", label: conflict_or_expired, fact_key: autumn-mouse-offer}
+  - {contains: "Our autumn mouse deal means you pay less", label: conflict_or_expired, fact_key: autumn-mouse-offer}
+  - {contains: "Wasp nests treated for just £50 per nest", label: conflict_or_expired, fact_key: summer-wasp-offer}
+  - {contains: "Our autumn mouse deal is here", label: conflict_or_expired, fact_key: autumn-mouse-offer}
+  - {contains: "we'll take a slice off the usual price", label: conflict_or_expired, fact_key: autumn-mouse-offer}
+must_not_flag:
+  - "A domestic rat treatment costs £145, including up to 3 visits"
+  - "Every Cobalt technician holds the RSPH Level 2 Award in Pest Management"

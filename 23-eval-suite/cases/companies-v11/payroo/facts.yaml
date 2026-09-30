@@ -1,0 +1,288 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Payroo, type: HR and payroll SaaS (Essentials / Growth / Scale), today: '2026-09-29'}
+facts:
+- key: essentials-price
+  subject: {kind: plan, ref: Essentials}
+  fact_type: price
+  attribute: list_price
+  value: 4
+  unit: month
+  currency: GBP
+  value_text: £4 per employee per month
+  basis: per_seat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [essentials], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://payroo.example/pricing'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excl. VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Essentials plan costs £4 per employee per month, excl. VAT.
+- key: growth-price
+  subject: {kind: plan, ref: Growth}
+  fact_type: price
+  attribute: list_price
+  value: 7
+  unit: month
+  currency: GBP
+  value_text: £7 per employee per month
+  basis: per_seat
+  conditions:
+  - {key: employees, op: '>=', value: 5}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [growth], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://payroo.example/pricing'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excl. VAT, minimum 5 employees]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Growth plan costs £7 per employee per month, excl. VAT, with a minimum of 5 employees.
+- key: open-api
+  subject: {kind: service, ref: Open API and custom integrations}
+  fact_type: inclusion
+  attribute: feature
+  value: null
+  unit: null
+  currency: null
+  value_text: open API and custom integrations
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [scale], variants: []}
+  valid_from: '2025-10-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Plan comparison 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The open API and custom integrations are included on the Scale plan only.
+- key: expense-claims
+  subject: {kind: service, ref: Expense claims}
+  fact_type: inclusion
+  attribute: feature
+  value: null
+  unit: null
+  currency: null
+  value_text: expense claims with receipt capture
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [growth, scale], variants: []}
+  valid_from: '2025-10-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Plan comparison 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Expense claims with receipt capture in the mobile app are included on Growth and Scale.
+- key: auto-enrolment
+  subject: {kind: service, ref: Pension auto-enrolment}
+  fact_type: inclusion
+  attribute: feature
+  value: null
+  unit: null
+  currency: null
+  value_text: automatic pension auto-enrolment
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Plan comparison 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Product lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every plan handles workplace pension auto-enrolment automatically, including assessments and letters.
+- key: hmrc-recognised
+  subject: {kind: business, ref: Payroo}
+  fact_type: certification
+  attribute: hmrc_recognition
+  value: null
+  unit: null
+  currency: null
+  value_text: HMRC-recognised payroll software
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-04-06'
+  valid_to: null
+  review_by: '2027-04-06'
+  source: {kind: url, ref: 'https://payroo.example/compliance'}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: HMRC RTI recognition confirmation 2025-26
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: [HMRC-recognised]
+  forbidden_phrasing: [HMRC approved, HMRC endorsed, HMRC accredited]
+  owner: Compliance lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Payroo is HMRC-recognised payroll software (it passed HMRC's RTI testing). HMRC does not approve or endorse
+    software, so 'HMRC approved' and 'HMRC endorsed' must not be used.
+- key: free-migration
+  subject: {kind: offer, ref: Free payroll migration}
+  fact_type: inclusion
+  attribute: free_migration
+  value: null
+  unit: null
+  currency: null
+  value_text: free payroll migration when you switch by 9 October
+  basis: null
+  conditions:
+  - {key: switched_by, op: <=, value: '2026-10-09'}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-09'
+  review_by: null
+  source: {kind: doc, ref: Q3 switching campaign brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Companies that switch to Payroo by 9 October 2026 get their payroll history migrated free.
+- key: summer-three-months-free
+  subject: {kind: offer, ref: Summer switch offer}
+  fact_type: price
+  attribute: discount
+  value: 3
+  unit: month
+  currency: null
+  value_text: your first 3 months free
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer campaign brief 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of growth
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The summer offer of 3 months free for new customers ran June to 31 August 2026 and has ended.
+- key: growth-price-floor
+  subject: {kind: plan, ref: Growth}
+  fact_type: price
+  attribute: floor_price
+  value: 5.5
+  unit: month
+  currency: GBP
+  value_text: £5.50 per employee per month
+  basis: per_seat
+  conditions:
+  - {key: employees, op: '>=', value: 100}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [growth], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Sales pricing guardrails 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of sales
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Sales may discount Growth to £5.50 per employee per month for 100+ employees. Not public.
+- key: brackenridge-contract
+  subject: {kind: plan, ref: Scale (Brackenridge Care Homes contract)}
+  fact_type: price
+  attribute: contract_price
+  value: 4.2
+  unit: month
+  currency: GBP
+  value_text: £4.20 per employee per month
+  basis: per_seat
+  conditions:
+  - {key: customer, op: '=', value: Brackenridge Care Homes}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [scale], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2028-02-29'
+  review_by: null
+  source: {kind: doc, ref: Brackenridge order form OF-26-031}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head of sales
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Brackenridge Care Homes pays £4.20 per employee per month on Scale under a 2-year contract.

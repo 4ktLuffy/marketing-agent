@@ -1,0 +1,10 @@
+# WHY: £39.99 is the true Core price at Canal Wharf (sites=[Canal Wharf]); the task is sites=[Northgate], where Core is £34.99.
+blocked: true
+findings:
+  - {contains: "Core membership from £39.99 per month", label: wrong_scope, fact_key: core-price-canal-wharf}
+  - {contains: "Subject: Core membership for £39.99 a month", label: wrong_scope, fact_key: core-price-canal-wharf}
+  - {contains: "Join Crestline Northgate on Core for £39.99 per month", label: wrong_scope, fact_key: core-price-canal-wharf}
+  - {contains: "Core £39.99/month", label: wrong_scope, fact_key: core-price-canal-wharf}
+must_not_flag:
+  - "Every personal trainer on our team holds a Level 3 Personal Trainer qualification"
+  - "Unlimited spin, HIIT and yoga classes are included at Northgate"

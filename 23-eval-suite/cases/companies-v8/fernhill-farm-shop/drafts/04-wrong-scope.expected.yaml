@@ -1,0 +1,10 @@
+# WHY: £9.20 per kg is the true trade-account price (segments=[trade]); the task is segments=[retail], so offering it or 'trade prices' to households is wrong_scope.
+blocked: true
+findings:
+  - {contains: "Beef mince is just £9.20 per kg at Fernhill this October", label: wrong_scope, fact_key: trade-mince}
+  - {contains: "beef mince at £9.20/kg, no trade account needed", label: wrong_scope, fact_key: trade-mince}
+  - {contains: "Trade-price mince for every household", label: wrong_scope, fact_key: trade-mince}
+  - {contains: "We're opening our trade price list to every shopper this October", label: wrong_scope, fact_key: trade-mince}
+must_not_flag:
+  - "Our beef and lamb are certified organic by the Soil Association, licence G7729"
+  - "The Autumn Meat Box is £55, feeds four for a week, and its contents vary with the season"

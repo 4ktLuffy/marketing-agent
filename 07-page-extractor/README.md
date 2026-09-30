@@ -1,8 +1,9 @@
 # page-extractor
 
-Deploy **07 of 87** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
+Deploy **07 of 89** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
 into clean fields the LLM can work with: title, meta description, headings, main text, link
-counts and Open Graph tags. Navigation, headers, footers, sidebars, forms and scripts are
+counts and Open Graph tags. It also reads the text of a PDF (brochure, price list, menu) page by
+page, uploaded or by URL. Navigation, headers, footers, sidebars, forms and scripts are
 dropped, so a 7B model reads the content and not the chrome. It uses no LLM.
 
 ## Where to deploy
@@ -34,6 +35,7 @@ uvicorn app.main:app --port 8107
 |---|---|---|---|
 | GET | `/health` | — | `{"status":"ok"}` |
 | POST | `/extract` | `{"url"}` or `{"html"}` (exactly one) | `{"url","title","description","lang","headings":[{"level","text"}],"text","word_count","links":{"internal","external"},"og":{}}` |
+| | | or `{"pdf_base64", "filename"?}`: a PDF (see below) | |
 | | | optional `"list_links": true` (with `url`) | also `"link_list":[{"url","text"}]`: the page's internal links (same host, `www.` ignored), absolute, without `#fragment`, deduped, first 200. Used by 81 (track competitor) to pick key pages |
 
 ```bash
@@ -52,12 +54,37 @@ curl -s localhost:8107/extract -H 'content-type: application/json' \
 - Fetching: 15 s timeout, up to 5 redirects, 5 MB max, User-Agent
   `marketing-agent/1.0 (+page-extractor)`.
 
-Errors (pages): `422` if both or neither of `url`/`html` are given, or the URL is blocked (see below).
-`502` if the page cannot be fetched (timeout, HTTP 4xx/5xx, not HTML, over 5 MB); `detail`
+Errors (pages): `422` unless exactly one of `url`/`html`/`pdf_base64` is given, or the URL is blocked (see below).
+`502` if the page cannot be fetched (timeout, HTTP 4xx/5xx, not HTML or PDF, over 5 MB); `detail`
 says why.
 
 **SSRF guard.** Only `http`/`https`. The host is resolved and refused if any address is
 loopback, private, link-local, reserved or multicast. Every redirect hop is checked again.
+
+## PDFs
+
+`{"pdf_base64": "<base64 or a data: URL>", "filename": "rates.pdf"}`, or a `url` whose answer is
+`Content-Type: application/pdf` (fetched through the same SSRF guard, up to 10 MB instead of 5 MB),
+returns the page shape plus the pages:
+
+```json
+{"url": null, "title": "<PDF title or null>", "description": null, "lang": null, "headings": [],
+ "text": "<all pages, capped at 20,000 characters>", "word_count": 412,
+ "links": {"internal": 0, "external": 0}, "og": {},
+ "source": "pdf", "filename": "rates.pdf", "page_count": 2,
+ "pages": [{"page": 1, "text": "Lake Ember Lodge - Rates 2026-27\nMidweek Escape: ..."}, {"page": 2, "text": "..."}]}
+```
+
+- Only the PDF's own text layer is read ([pypdf](https://pypi.org/project/pypdf/), pure Python);
+  there is no OCR. Lines are kept (a price list is lines), spaces inside a line are collapsed.
+- `pages` has every page, each capped at 20,000 characters; `text` is capped like a web page's,
+  so older callers see the same size. The control room's onboarding (72) reads `pages`.
+- Limits: 10 MB, 50 pages. A PDF "encrypted" with an empty password (only to stop printing) is read.
+
+Errors: `413` over 10 MB or over 50 pages; `422` with a `detail` to show the person:
+`no text layer (a scanned or image-only PDF): paste the text instead` (no page has at least 20
+letters or digits), `the PDF needs a password: paste the text instead, ...`, `not a PDF file`,
+`not a readable PDF (...)`, `pdf_base64 is not valid base64`.
 
 ## YouTube videos
 

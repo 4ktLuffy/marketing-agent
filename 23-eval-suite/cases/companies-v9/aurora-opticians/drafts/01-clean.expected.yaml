@@ -1,0 +1,16 @@
+# WHY: negative control. Every claim is an in-scope public fact valid on 2026-10-08 (private segment, Harrogate site), slotted or typed exactly; the varifocal disclosure "frames not included" is present; questions, "Top tip" and "best-kept secret" are not claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "Time for a fresh look?"
+  - "A standard private eye test at Aurora Harrogate costs"
+  - "Our eye test with an OCT 3D scan is"
+  - "Clearview varifocals are £149 per pair, frames not included."
+  - "Every pair of glasses includes free adjustments, free nose-pad and screw replacements, and a hard case."
+  - "Top tip: bring your current glasses along to your appointment."
+  - "our GOC-registered optometrist (registration 01-34817), holds the Professional Certificate in Glaucoma"
+  - "A standard private eye test is £25, or £45 with an OCT 3D scan."
+  - "Harrogate's best-kept secret?"
+  - "Private eye tests in Harrogate: £25 standard, £45 with an OCT 3D scan."
+  - "Our Harrogate optometrist Priya Nandakumar is GOC registered (01-34817)."
+  - "Thinking about varifocals?"

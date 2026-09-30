@@ -1,0 +1,9 @@
+# WHY: the 8-working-day turnaround requires "after artwork approval"; the draft states it three times (incl. the subject) and never gives the condition.
+blocked: true
+findings:
+  - {contains: "Packaging in 8 working days", label: missing_disclosure, fact_key: carton-turnaround}
+  - {contains: "Subject: Your cartons, dispatched in 8 working days", label: missing_disclosure, fact_key: carton-turnaround}
+  - {contains: "We dispatch printed cartons in 8 working days", label: missing_disclosure, fact_key: carton-turnaround}
+must_not_flag:
+  - "1,000 printed cartons cost £640 plus VAT"
+  - "Printed on 350gsm GC1 folding boxboard"

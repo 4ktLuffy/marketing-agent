@@ -1,0 +1,9 @@
+# WHY: 'most trusted' and 'ISO 9001 certified' have no source; 'chemical-free' is forbidden phrasing for the EU Ecolabel products fact.
+blocked: true
+findings:
+- {contains: London's most trusted office cleaning company, label: no_source, fact_key: null}
+- {contains: We're ISO 9001 certified, label: no_source, fact_key: null}
+- {contains: All our products are chemical-free, label: forbidden_phrase, fact_key: eco-products}
+must_not_flag:
+- Office cleaning is £21 per cleaner per hour, plus VAT, minimum 2 hours per visit
+- We clean between 6am and 9pm, seven days a week

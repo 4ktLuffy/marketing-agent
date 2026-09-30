@@ -1,0 +1,17 @@
+# FICTIONAL. Scope variants=[automatic], segments=[learners], regions=[norwich] makes the manual price and
+# the refresher price scope traps; publish 2026-10-12 is after the Autumn Block Deal ends (2026-10-04).
+goal: Fill automatic lesson slots in Norwich with new learner drivers in October.
+pieces:
+- {key: p1, channel: facebook, kind: post, max_chars: null}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+- {key: p3, channel: whatsapp, kind: broadcast, max_chars: 500}
+scope:
+  sites: []
+  regions: [norwich]
+  channels: []
+  segments: [learners]
+  plan_tiers: []
+  variants: [automatic]
+publish_on: '2026-10-12'
+audience: Learner drivers aged 17 to 25 and their parents in Norwich
+notes: Automatic lessons only this month.

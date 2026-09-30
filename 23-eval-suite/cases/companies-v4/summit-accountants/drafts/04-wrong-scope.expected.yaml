@@ -1,0 +1,10 @@
+# WHY: £1,150 per year is the limited-company year-end package (segments=[limited-company], incl. a corporation tax return); the task is segments=[sole-trader], whose fee is £45 per month.
+blocked: true
+findings:
+  - {contains: "Year-end accounts and your corporation tax return for £1,150 per year plus VAT", label: wrong_scope, fact_key: ltd-accounts-fee}
+  - {contains: "accounts + corporation tax return, fixed £1,150 + VAT", label: wrong_scope, fact_key: ltd-accounts-fee}
+  - {contains: "Why a fixed fee of £1,150 a year beats hourly billing", label: wrong_scope, fact_key: ltd-accounts-fee}
+  - {contains: "your year-end accounts cost £1,150 per year plus VAT", label: wrong_scope, fact_key: ltd-accounts-fee}
+must_not_flag:
+  - "We're ICAEW Chartered Accountants (firm number C008812746)"
+  - "Reply YES for a free first consultation"

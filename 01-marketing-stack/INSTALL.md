@@ -14,9 +14,9 @@ the bridge shows what it *would* send (`would_send`) and sends nothing.
 
 | Profile | What you get | Containers | RAM (idle, measured) | Images on disk |
 |---|---|---|---|---|
-| **core** | The agent: chat (24) with its writing tools, knowledge base, research, calendar, fact checker (44), quality gate, approval form (38), publisher to one webhook (39), campaigns (45), learning from your edits (46), weekly plan and report, monthly client report for approval (85), status page, control room (72) | 26 | 1.35 GB | ≈ 2.7 GB |
-| **growth** | core + content engine (61, a month from one pillar), Postiz / WordPress-Ghost / Listmonk bridges (54, 62, 63), Umami and Search Console sync (55, 67), experiments (74–76), reviews (58, 60), customer language (70), video (71), clips (73), paid-ads reporting (84, read-only) and lifecycle email flows with a holdout (86, dry run only) | 38 | 1.69 GB (before 84, 86) | ≈ 6.3 GB |
-| **full** | growth + competitor ads (78), website assistant (79) with its optional hosted gateway, lead hub (80), AI visibility (82, 83), product feed titles for Merchant Center (87) | 44 | 1.95 GB (40 measured) | ≈ 6.4 GB |
+| **core** | The agent: chat (24) with its writing tools, knowledge base, research, calendar, fact checker (44), quality gate, approval form (38), publisher to one webhook (39), campaigns (45), learning from your edits (46), weekly plan and report, monthly client report for approval (85), scoped facts and task packs for any chatbot with paste-back and evidence (05, 88), status page, control room (72) | 27 | 1.35 GB | ≈ 2.7 GB |
+| **growth** | core + content engine (61, a month from one pillar), Postiz / WordPress-Ghost / Listmonk bridges (54, 62, 63), Umami and Search Console sync (55, 67), experiments (74–76), reviews (58, 60), customer language (70), video (71), clips (73), paid-ads reporting (84, read-only) and lifecycle email flows with a holdout (86, dry run only) | 39 | 1.69 GB (before 84, 86) | ≈ 6.3 GB |
+| **full** | growth + competitor ads (78), website assistant (79) with its optional hosted gateway, lead hub (80), AI visibility (82, 83), product feed titles for Merchant Center (87) | 45 | 1.95 GB (40 measured) | ≈ 6.4 GB |
 
 Start with **core**. Moving up or down later is one command (section 9). Numbers are from
 `DOCKER-RUN.md` (colima on an M-series Mac). Ollama runs next to the stack and needs its own
@@ -139,7 +139,11 @@ key) makes some steps faster or stricter; the text of those calls then goes to t
       `OPENAI_BASE_URL`, `OPENAI_API_KEY` (uncomment them in `.env`; measured on 113 labelled
       claims: 54/55 invented claims caught and 2/58 true ones flagged, vs 53/55 and 7/58 on the
       local model).
-- [ ] Faster chat: `CHAT_PROVIDER=hosted`, `CHAT_API_KEY` (local model stays as fallback).
+- [ ] Faster chat: `CHAT_PROVIDER=hosted`, `CHAT_API_KEY` (local model stays as fallback). The chat
+      then goes to the provider directly and no longer shows on the control room's Activity page.
+      By default (`CHAT_PROVIDER=local`) the chat calls `AGENT_MODEL` through the gateway, so every
+      model step shows there; `CHAT_PROVIDER=direct` is the old n8n-to-Ollama route. Re-run
+      `import-n8n.sh` after changing it.
 - [ ] **Fast site assistant (full profile).** On a laptop model a sourced website answer takes
       45–75 s; visitors leave. Set `ASSISTANT_OPENAI_API_KEY` and
       `ASSISTANT_GATEWAY_URL=http://llm-gateway-assistant:8000` (answers on Groq

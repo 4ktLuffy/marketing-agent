@@ -1,0 +1,7 @@
+# WHY: FireCore's own fire classification and UKCA/CE marking, the trade price with "excl. VAT", free delivery with its radius; no BBA claim, no retail price, no expired discount or grade.
+blocked: false
+findings: []
+must_not_flag:
+  - "FireCore mineral wool slab is classified Euroclass A2-s1,d0 and is UKCA and CE marked to EN 13162"
+  - "Trade account holders pay £18.40 per slab, excl. VAT"
+  - "We deliver free on orders over £500 within 50 miles of our Stoke depot"

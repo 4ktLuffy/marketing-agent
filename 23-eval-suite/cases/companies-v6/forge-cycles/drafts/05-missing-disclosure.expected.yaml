@@ -1,0 +1,9 @@
+# WHY: the £110 Full Service requires "parts charged extra", which is absent from the whole draft (subject line and both bodies).
+blocked: true
+findings:
+  - {contains: "A Full Service at Forge is £110", label: missing_disclosure, fact_key: full-service}
+  - {contains: "A Full Service for £110", label: missing_disclosure, fact_key: full-service}
+  - {contains: "Our £110 Full Service includes gear and brake adjustment", label: missing_disclosure, fact_key: full-service}
+must_not_flag:
+  - "Every mechanic holds Cytech Technical Two"
+  - "The Tempo 3 hybrid is £1,200 and in stock at Canal Street in sizes M and L"

@@ -1,0 +1,10 @@
+# WHY: the Autumn Block Deal is valid today but ends 2026-10-04, before publish 2026-10-12 (named and described loosely); the 5-day Summer Intensive ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Our Autumn Block Deal is back", label: conflict_or_expired, fact_key: block-offer}
+  - {contains: "Buy ten, drive eleven", label: conflict_or_expired, fact_key: block-offer}
+  - {contains: "One free hour when you block-book ten", label: conflict_or_expired, fact_key: block-offer}
+  - {contains: "Our 5-day Summer Intensive still has spaces", label: conflict_or_expired, fact_key: summer-intensive}
+  - {contains: "your 11th hour is on us", label: conflict_or_expired, fact_key: block-offer}
+must_not_flag:
+  - "Automatic lessons are £44 per hour (minimum 2-hour booking)"

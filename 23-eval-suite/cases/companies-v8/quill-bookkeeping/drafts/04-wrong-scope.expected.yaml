@@ -1,0 +1,11 @@
+# WHY: £42 and payroll belong to the Small Business plan, £21 to registered charities on that plan; the task is plan_tiers=[sole-trader], segments=[self-employed].
+blocked: true
+findings:
+  - {contains: "The Small Business plan is £42 a month plus VAT and includes payroll", label: wrong_scope, fact_key: small-business-price}
+  - {contains: "Registered charities pay just £21 a month plus VAT", label: wrong_scope, fact_key: charity-price}
+  - {contains: "Payroll is now included for sole traders", label: wrong_scope, fact_key: small-business-price}
+  - {contains: "Run payroll straight from Quill, even on the Sole Trader plan", label: wrong_scope, fact_key: small-business-price}
+must_not_flag:
+  - "Quill is compatible with Making Tax Digital for VAT and for Income Tax"
+  - "Support is available Monday to Friday, 8am to 6pm, by chat and phone"
+  - "Our AAT licensed practice (licence number 1049733) is here to help"

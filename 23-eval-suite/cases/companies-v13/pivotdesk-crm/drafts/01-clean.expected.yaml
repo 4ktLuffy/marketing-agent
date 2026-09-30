@@ -1,0 +1,10 @@
+# WHY: Team price as a slot with its VAT/billing disclosure, Team-plan feature, trial as a slot, ISO 27001 as certified.
+blocked: false
+findings: []
+must_not_flag:
+  - "Your sales team deserves better than a spreadsheet"
+  - "Pivotdesk Team is"
+  - "It includes automated email sequences"
+  - "Start your"
+  - "Pivotdesk is ISO 27001 certified"
+  - "Automated email sequences and a 14-day free trial, no card needed"

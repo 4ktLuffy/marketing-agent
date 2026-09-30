@@ -1,0 +1,12 @@
+# WHY: negative control. Same taproom facts reworded: hours in words, "nine pounds", ABV as "half a percent ABV (0.5%)", the barley disclosure moved to the front of the sentence; no new numbers and no forbidden phrasing.
+blocked: false
+findings: []
+must_not_flag:
+  - "Doors open at four, Thursday through Saturday, and we pour until eleven"
+  - "A pint of Millrace Pale will set you back £4.80"
+  - "Four third-pint tasters come as a flight for nine pounds"
+  - "Tailrace IPA is low alcohol with all the hops, at half a percent ABV (0.5%)"
+  - "Tested below 20ppm and brewed with barley, Low Weir is our gluten-reduced lager"
+  - "Weekends at the taproom start on Thursday at 4pm"
+  - "Pints of Millrace Pale are £4.80 at the bar"
+  - "which is why we call it gluten-reduced"

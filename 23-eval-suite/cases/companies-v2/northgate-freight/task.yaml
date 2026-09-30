@@ -1,0 +1,10 @@
+# FICTIONAL. Scope regions=[uk-mainland] makes "Saturday delivery at no extra charge" (london-m25 only) a scope trap;
+# publish_on 2026-10-08 is after the 11.5% fuel surcharge period ends (2026-10-04), valid today (2026-09-29).
+goal: "Win new e-commerce shippers for next-day pallet delivery on UK mainland."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 3000}
+  - {key: p2, channel: email, kind: outreach, max_chars: null}
+scope: {sites: [], regions: [uk-mainland], channels: [], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-08"
+audience: "Operations managers at online retailers shipping full pallets from UK warehouses"
+notes: null

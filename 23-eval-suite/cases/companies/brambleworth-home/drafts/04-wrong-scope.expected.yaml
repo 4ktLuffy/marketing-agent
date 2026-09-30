@@ -1,0 +1,7 @@
+# WHY: Prime next-day delivery and Amazon returns are true but only for channel amazon; the task is channels=[own-site].
+blocked: true
+findings:
+  - {contains: "Prime members get free next-day delivery", label: wrong_scope, fact_key: prime-next-day}
+  - {contains: "30-day returns through Amazon", label: wrong_scope, fact_key: returns-amazon}
+must_not_flag:
+  - "The Hebden linen throw is £45 on our website"

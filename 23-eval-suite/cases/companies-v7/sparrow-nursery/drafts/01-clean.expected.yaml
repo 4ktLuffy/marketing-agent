@@ -1,0 +1,13 @@
+# WHY: negative control: Canal Street's own Ofsted Good rating, the 2-year-old fee with its funding disclosure (the Facebook line says 'before any funded hours are taken off', an equivalent of 'before funded hours'), funded hours with eligibility, ratio, inclusion; the Google piece has no heading.
+blocked: false
+findings: []
+must_not_flag:
+  - "Looking for a nursery place for your 2-year-old near Canal Street?"
+  - "Canal Street is rated Good by Ofsted (URN EY574418, inspected March 2025)"
+  - "A full day, 8am to 6pm, costs £66, before any funded hours are taken off"
+  - "In our 2-year-old room there is 1 adult for every 4 two-year-olds"
+  - "Fees include freshly cooked meals, nappies and wipes"
+  - "Subject: A place for your 2-year-old at Canal Street"
+  - "Our 2-year-old places can take"
+  - "Our Canal Street team keeps 1 adult for every 4 two-year-olds"
+  - "Canal Street nursery: full days 8am to 6pm, rated Good by Ofsted"

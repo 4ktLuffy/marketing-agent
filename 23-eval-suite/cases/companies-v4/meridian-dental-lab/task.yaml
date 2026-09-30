@@ -1,0 +1,12 @@
+# FICTIONAL. Scope variants=[crowns-bridges], regions=[north-west]: the UKCA/CE marks belong to ProLink implant
+# abutments only (variants=[implant-components]), so a crown post that claims them is a scope trap.
+# publish_on 2026-10-08 is after intro-offer ends (2026-10-04), valid today (2026-09-29).
+goal: "Win new crown and bridge accounts from dental practices in the North West."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+  - {key: p2, channel: email, kind: outreach, max_chars: null}
+  - {key: p3, channel: google, kind: business_profile_post, max_chars: 1500}
+scope: {sites: [], regions: [north-west], channels: [], segments: [], plan_tiers: [], variants: [crowns-bridges]}
+publish_on: "2026-10-08"
+audience: "Principal dentists and practice managers in Greater Manchester, Cheshire and Lancashire"
+notes: "Crowns and bridges only; do not promote implant components."

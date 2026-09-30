@@ -1,0 +1,11 @@
+# WHY: Switch & Save (pay for 2 months, 3rd free) is valid today but ends 2026-10-10, before publish 2026-10-14; lines naming or describing it are expired.
+blocked: true
+findings:
+  - {contains: "With Switch & Save, you pay for 2 months and get the 3rd free", label: conflict_or_expired, fact_key: switch-save}
+  - {contains: "Your third month is on us when you switch this autumn", label: conflict_or_expired, fact_key: switch-save}
+  - {contains: "Switch & Save ends soon", label: conflict_or_expired, fact_key: switch-save}
+  - {contains: "your first three months cost the price of two", label: conflict_or_expired, fact_key: switch-save}
+must_not_flag:
+  - "Quill's Sole Trader plan is £18 a month plus VAT"
+  - "Support is available Monday to Friday, 8am to 6pm, by chat and phone"
+  - "Every plan includes a free onboarding call"

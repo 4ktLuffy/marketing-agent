@@ -1,0 +1,15 @@
+# WHY: negative control. Every claim is an Otley (or unscoped) public fact valid on 2026-10-10, slotted or typed exactly; "matted coats cost extra" and "for puppies under 6 months" are present; the TikTok piece has no heading; questions, "Top tip" and "best-kept secret" are not claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "Bath, blow-dry, nail clip & ear clean included."
+  - "Who's a good boy?"
+  - "A full groom for a small dog at our Otley salon is £38."
+  - "Every full groom includes a bath, blow-dry, nail clip and ear clean."
+  - "and matted coats cost extra"
+  - "New pup in the family?"
+  - "The Puppy Pamper is three short intro sessions for £45, for puppies under 6 months."
+  - "holds the CGQB Level 3 Diploma in Dog Grooming (certificate CGQB-3-55120)"
+  - "Top tip: brush your dog between grooms to keep knots away."
+  - "Otley's best-kept secret for fluffy dogs?"
+  - "Small-dog full grooms £38, Puppy Pamper £45 for puppies under 6 months."

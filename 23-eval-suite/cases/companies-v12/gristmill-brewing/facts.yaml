@@ -1,0 +1,297 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Gristmill Brewing Co., type: craft brewery with taproom and webshop, today: '2026-09-29'}
+facts:
+- key: taproom-hours
+  subject: {kind: site, ref: Taproom}
+  fact_type: hours
+  attribute: opening_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: Thursday to Saturday 4pm–11pm, Sunday 12–6pm
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [taproom], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://gristmill.example/visit'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Taproom manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The taproom is open Thursday to Saturday 4pm–11pm and Sunday 12–6pm; closed Monday to Wednesday.
+- key: millrace-pint
+  subject: {kind: menu_item, ref: Millrace Pale (4.2% ABV)}
+  fact_type: price
+  attribute: price
+  value: 4.8
+  unit: pint
+  currency: GBP
+  value_text: £4.80 a pint
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [taproom], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Taproom price board 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Taproom manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A pint of Millrace Pale costs £4.80 in the taproom.
+- key: tasting-flight
+  subject: {kind: menu_item, ref: Tasting flight}
+  fact_type: price
+  attribute: price
+  value: 9
+  unit: null
+  currency: GBP
+  value_text: £9 for four thirds
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [taproom], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Taproom price board 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Taproom manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A tasting flight of four third-pints costs £9 in the taproom.
+- key: webshop-mixed-case
+  subject: {kind: product, ref: 12-can mixed case}
+  fact_type: price
+  attribute: price
+  value: 36
+  unit: null
+  currency: GBP
+  value_text: £36 for a 12-can mixed case with free delivery
+  basis: per_unit
+  conditions:
+  - {key: delivery_area, op: '=', value: UK mainland}
+  scope: {sites: [], regions: [], channels: [webshop], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://gristmill.example/shop/mixed-case'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - UK mainland only
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Webshop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: On the webshop a 12-can mixed case costs £36 with free delivery to the UK mainland. Not sold in the taproom.
+- key: oktoberfest-steins
+  subject: {kind: offer, ref: Oktoberfest weekend}
+  fact_type: price
+  attribute: offer
+  value: null
+  unit: null
+  currency: null
+  value_text: 2-for-1 steins of Märzen
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [taproom], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-24'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Oktoberfest event plan 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Taproom manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: From 24 September to 4 October 2026 the taproom sells steins of Märzen 2-for-1.
+- key: summer-live-music
+  subject: {kind: offer, ref: Summer Fridays}
+  fact_type: event
+  attribute: live_music
+  value: null
+  unit: null
+  currency: null
+  value_text: live music every Friday in the beer garden
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [taproom], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-05'
+  valid_to: '2026-08-28'
+  review_by: null
+  source: {kind: doc, ref: Summer events calendar 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Taproom manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: Live music ran every Friday in the beer garden from June to 28 August 2026. The series has ended.
+- key: low-weir-lager
+  subject: {kind: menu_item, ref: Low Weir Lager}
+  fact_type: claim
+  attribute: gluten
+  value: 20
+  unit: ppm
+  currency: null
+  value_text: gluten-reduced, tested below 20ppm
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: 'Batch gluten test reports, Hallam Food Lab (fictional)'}
+  claim_class: regulated_food
+  requires_evidence: true
+  evidence_ref: Batch test LW-2026-series
+  consent_ref: null
+  required_disclosures:
+  - brewed with barley
+  allowed_phrasing:
+  - gluten-reduced
+  - tested below 20ppm
+  forbidden_phrasing:
+  - gluten-free
+  - safe for coeliacs
+  - suitable for coeliacs
+  owner: Head brewer
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every batch of Low Weir Lager is lab-tested below 20ppm gluten, but it is brewed with barley and the brewery is not certified. Say 'gluten-reduced' and 'brewed with barley'; never 'gluten-free' or 'safe for coeliacs'.
+- key: tailrace-ipa
+  subject: {kind: menu_item, ref: Tailrace IPA}
+  fact_type: spec
+  attribute: abv
+  value: 0.5
+  unit: percent
+  currency: null
+  value_text: low-alcohol IPA
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Tailrace label approval 2026}
+  claim_class: regulated_food
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - 0.5% ABV
+  allowed_phrasing:
+  - low alcohol
+  - low-alcohol
+  forbidden_phrasing:
+  - alcohol-free
+  - non-alcoholic
+  owner: Head brewer
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Tailrace IPA is 0.5% ABV. In the UK it must be called low alcohol, not alcohol-free, and the ABV must be stated.
+- key: hop-contract-cost
+  subject: {kind: product, ref: Hop contract 2026}
+  fact_type: price
+  attribute: cost_price
+  value: 14.2
+  unit: kg
+  currency: GBP
+  value_text: £14.20 per kg
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Hop supply contract HC-2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head brewer
+  risk: medium
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The 2026 hop contract costs £14.20 per kg. Not for publication.
+- key: harlow-inns-wholesale
+  subject: {kind: product, ref: Millrace Pale keg (Harlow Inns)}
+  fact_type: price
+  attribute: contract_price
+  value: 88
+  unit: keg
+  currency: GBP
+  value_text: £88 per keg
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Harlow Inns}
+  scope: {sites: [], regions: [], channels: [wholesale], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2027-02-28'
+  review_by: null
+  source: {kind: doc, ref: Harlow Inns supply agreement SA-14}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Harlow Inns pays £88 per 30-litre keg of Millrace Pale under its 2026 supply agreement.

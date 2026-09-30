@@ -1,0 +1,8 @@
+# WHY: "Saturday delivery at no extra charge" is a real inclusion but only for regions=[london-m25]; the task is regions=[uk-mainland]. Non-numeric, so only scope catches it (body and subject).
+blocked: true
+findings:
+  - {contains: "Saturday delivery comes at no extra charge", label: wrong_scope, fact_key: saturday-delivery}
+  - {contains: "Next-day and Saturday delivery, no extra charge", label: wrong_scope, fact_key: saturday-delivery}
+must_not_flag:
+  - "Next-day pallet delivery on UK mainland: £68 per pallet, excl. VAT and fuel surcharge"
+  - "Goods-in-transit cover up to £25,000 per consignment on every load"

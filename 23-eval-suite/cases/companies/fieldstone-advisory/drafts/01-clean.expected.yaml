@@ -1,0 +1,7 @@
+# WHY: enterprise-scoped price with "price depends on scope", allowed AI wording, case study with its one-client disclosure.
+blocked: false
+findings: []
+must_not_flag:
+  - "grew marketing-qualified leads by 212% in six months"
+  - "starts from £18,000 per quarter; price depends on scope"
+  - "Pipeline targets for 2027 are being set right now"

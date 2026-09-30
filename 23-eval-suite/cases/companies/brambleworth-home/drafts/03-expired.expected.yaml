@@ -1,0 +1,11 @@
+# WHY: the autumn sale is valid today but ends 2026-10-05, before publish 2026-10-09; the summer sale ended 2026-08-31.
+# CORRECTED 2026-09-29: added heading "AUTUMN SALE" (conflict_or_expired, autumn-sale): it advertises the autumn sale, which ends 2026-10-05, before publish 2026-10-09.
+# CORRECTED 2026-09-29: added subject line "Last chance: 30% off garden and outdoor" (conflict_or_expired, summer-sale): it names the summer sale, which ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Get 20% off throws and cushions", label: conflict_or_expired, fact_key: autumn-sale}
+  - {contains: "grab 30% off garden and outdoor", label: conflict_or_expired, fact_key: summer-sale}
+  - {contains: "AUTUMN SALE", label: conflict_or_expired, fact_key: autumn-sale}
+  - {contains: "Subject: Last chance: 30% off garden and outdoor", label: conflict_or_expired, fact_key: summer-sale}
+must_not_flag:
+  - "woven in Lancashire from British wool"

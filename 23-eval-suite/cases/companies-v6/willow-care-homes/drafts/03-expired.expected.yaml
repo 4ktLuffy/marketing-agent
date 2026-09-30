@@ -1,0 +1,9 @@
+# WHY: the half-price first week of respite is valid today but ends 2026-10-05, before publish 2026-10-12 — stated plainly, in the subject, and in words only ("half the usual fee for the first seven days").
+blocked: true
+findings:
+  - {contains: "your first week is half price", label: conflict_or_expired, fact_key: respite-offer}
+  - {contains: "Half-price respite this autumn", label: conflict_or_expired, fact_key: respite-offer}
+  - {contains: "only charge half the usual fee for the first seven days", label: conflict_or_expired, fact_key: respite-offer}
+must_not_flag:
+  - "Alder Court is rated Good by the CQC"
+  - "Respite stays run from one to six weeks"

@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 87** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 89** of the local-LLM marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.
@@ -52,6 +52,7 @@ change is reviewed and versioned.
 | `lead_enrich` | JSON `{industry, sells, facts ≤ 6: {text, quote, source_url}, size_hints ≤ 3: {statement, quote, source_url}}` from an inbound lead's own homepage/about page only; nothing inferred. 80 drops every fact or size hint whose quote is not on the page, then every statement the claim checker (44, page text as context) does not support | 80 lead hub (enrichment) |
 | `lead_first_reply` | JSON `{needs_human, reason, subject ≤ 70, reply ≤ 1000}`: a first reply to an inbound lead's own message from approved facts, with one next step (the booking link); inbound and consented only. 80 removes sentences 44 flags; a person approves and sends it | 80 lead hub (reply draft, channel `lead_reply`) |
 | `visibility_questions` | JSON `{questions: [{text, kind: category\|comparison\|problem\|branded}]}`: 15–30 questions buyers type into AI assistants, from the brand's products and audience; only `branded_count` of them name the brand (unaided visibility vs accuracy). 82 re-labels a question naming the brand as branded, drops one naming a competitor and duplicates; a person edits and approves the set | 82 ai-visibility (`POST /questions/generate`) |
+| `propose_facts` | JSON `{facts ≤ 40: {text, subject: {kind, ref}, fact_type, attribute, value_text, value?, unit?, currency?, basis?, scope_hints: {sites, regions, channels, segments, plan_tiers, variants}, valid_from?, valid_to?, conditions_text?, required_disclosure_hint?, source_quote}, questions ≤ 15: {text, source_quote}}` from one chunk (~6,000 characters) of the business's own website, brochure or price list; `known_facts` (public ones only) are skipped. Only stated facts, never an inferred price or date, scope words kept ("per person", "weekdays only", "at our Leeds branch"). 72 drops every fact whose quote is not in the source, whose value has a number the quote does not, and every date the quote does not state; the rest become drafts only when the owner ticks them, and each is confirmed on the Facts page | 72 control room, "Set up from your website or documents" |
 
 ## Where to deploy
 

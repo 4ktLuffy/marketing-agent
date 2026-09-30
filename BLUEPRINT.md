@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 87 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility, 84 paid ads, 85 client report, 86 email flows, 87 product feed).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 89 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility, 84 paid ads, 85 client report, 86 email flows, 87 product feed, 88 task bridge, 89 Claude connector).
 
 ## What the agent does
 
@@ -583,3 +583,23 @@ Fixed two-arm tests of ONE variable, decided in code; the LLM only proposes. Des
   Nothing goes to Merchant Center.
 - Control room (72) page **Product feed** (`FEED_URL`; empty = "not installed"): uploads with counts and the
   downloads, proxied with the service key. Approval stays with the approver key (72 holds none).
+
+## Task bridge and scoped facts (88, 05)
+- **Why**: most people use free chatbots, which can't connect to our server and must not be scripted.
+  The most common marketing error in every industry is a correct fact used in the wrong scope or
+  after it expired (another branch's price, a plan-only feature, a certificate for one variant).
+- **05 scoped facts (v2)**: each fact has a stable key, subject, type, value as written, basis,
+  conditions, scope (sites, regions, channels, segments, plan tiers, variants), validity dates,
+  source, claim class, required disclosures, allowed/forbidden phrasing, owner, sensitivity
+  (public/internal/restricted), append-only versions. Confirming needs `FACT_OWNER_KEY` (05 and the
+  control room only). Industry starter kits suggest fact types and risky phrasings. Legacy `/facts`
+  keeps its ids and shape.
+- **88 task bridge**: pack (≤ 8,000 characters, share preview, internal values only as `[[slots]]`,
+  restricted never) → paste-back (tolerant piece splitting) → slot filling and deterministic
+  evidence per sentence (match, needs judgement, conflicting/expired at the publish date, wrong
+  scope, no source, missing disclosure, forbidden phrase) → 19 items bound to their text hash →
+  export only when approved, unchanged and still valid; fact changes send items back to draft.
+- **19**: item versions, append-only audit, approval with the hash the reviewer saw (409 if changed).
+- **Measured**: three sets of fictional companies (lodge, manufacturer, SaaS, shop, clinic, café,
+  consultancy; freight, tutoring, homes, building supplies, salon; plus a third held-out set).
+

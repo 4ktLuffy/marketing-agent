@@ -1,0 +1,7 @@
+# WHY: negative control; same classification, marking, trade price and delivery terms reworded, disclosures kept, no new claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "FireCore slab carries a Euroclass A2-s1,d0 classification"
+  - "Trade buyers pay £18.40 per slab (excl. VAT)"
+  - "Order over £500 and delivery is free within 50 miles of our Stoke depot"

@@ -1,0 +1,290 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Task scope variants=[phase-2]: aspen-phase1-price (phase-1) is the scope trap; stamp-duty-offer is valid today
+# (2026-09-29) but ends 2026-10-12, before publish_on 2026-10-15; homestart-scheme closed 2026-03-31.
+company: {name: Oakline Homes, type: real_estate, today: '2026-09-29'}
+facts:
+- key: rowan-phase2-price
+  subject: {kind: product, ref: 'The Rowan (4-bed detached), Willowmere Park Phase 2'}
+  fact_type: price
+  attribute: price
+  value: 389995
+  unit: null
+  currency: GBP
+  value_text: £389,995
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-2]}
+  valid_from: '2026-09-15'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Willowmere Park price list Phase 2 v1}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - selected plots, subject to contract
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Rowan, a 4-bed detached home on Willowmere Park Phase 2, is £389,995 on selected plots, subject to contract.
+- key: aspen-phase1-price
+  subject: {kind: product, ref: 'The Aspen (3-bed semi-detached), Willowmere Park Phase 1'}
+  fact_type: price
+  attribute: price
+  value: 299995
+  unit: null
+  currency: GBP
+  value_text: £299,995
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-1]}
+  valid_from: '2026-03-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source: {kind: doc, ref: Willowmere Park price list Phase 1 v4}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - selected plots, subject to contract
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Aspen, a 3-bed semi-detached home, is £299,995 on Phase 1 only (selected plots, subject to contract). There is no Aspen on Phase 2.
+- key: phase2-completion
+  subject: {kind: site, ref: Willowmere Park Phase 2}
+  fact_type: event
+  attribute: expected_completion
+  value: null
+  unit: null
+  currency: null
+  value_text: spring 2027
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-2]}
+  valid_from: '2026-09-15'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Build programme Phase 2 rev C}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Site manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Phase 2 homes are expected to be ready to move into from spring 2027.
+- key: rowan-epc
+  subject: {kind: product, ref: The Rowan (4-bed detached)}
+  fact_type: certification
+  attribute: epc_rating
+  value: B
+  unit: null
+  currency: null
+  value_text: EPC B (predicted)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: 'Predicted EPC, SAP assessment WM-R-2026'}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: WM-R-2026
+  consent_ref: null
+  required_disclosures:
+  - predicted
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Technical manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Rowan has a predicted EPC rating of B (SAP assessment WM-R-2026). No house type is rated EPC A.
+- key: stamp-duty-offer
+  subject: {kind: offer, ref: Phase 2 stamp duty contribution}
+  fact_type: price
+  attribute: incentive
+  value: 10000
+  unit: null
+  currency: GBP
+  value_text: up to £10,000 towards stamp duty
+  basis: flat
+  conditions:
+  - {key: reserved_by, op: <=, value: '2026-10-12'}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-2]}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-12'
+  review_by: null
+  source: {kind: doc, ref: Phase 2 launch incentive brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Oakline pays up to £10,000 towards stamp duty on Phase 2 reservations made by 12 October 2026.
+- key: homestart-scheme
+  subject: {kind: policy, ref: HomeStart equity loan}
+  fact_type: availability
+  attribute: scheme_status
+  value: null
+  unit: null
+  currency: null
+  value_text: available with the HomeStart equity loan
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2024-04-01'
+  valid_to: '2026-03-31'
+  review_by: null
+  source: {kind: url, ref: 'https://homestart-scheme.example/closure'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: high
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: Homes were available with the HomeStart equity loan until the scheme closed to new reservations on 31 March 2026.
+- key: structural-warranty
+  subject: {kind: business, ref: Oakline Homes (all plots)}
+  fact_type: credential
+  attribute: structural_warranty
+  value: 10
+  unit: year
+  currency: null
+  value_text: 10-year structural warranty (Keystone Build policy KBW-WM-2291)
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: Keystone Build policy KBW-WM-2291}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: KBW-WM-2291
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Technical manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every Willowmere Park home has a 10-year structural warranty under Keystone Build policy KBW-WM-2291.
+- key: phase2-spec
+  subject: {kind: site, ref: Willowmere Park Phase 2}
+  fact_type: inclusion
+  attribute: standard_spec
+  value: null
+  unit: null
+  currency: null
+  value_text: flooring throughout and turfed rear gardens
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-2]}
+  valid_from: '2026-09-15'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Willowmere Park price list Phase 2 v1}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Phase 2 homes come with flooring throughout and turfed rear gardens as standard.
+- key: rowan-min-price
+  subject: {kind: product, ref: The Rowan (4-bed detached)}
+  fact_type: price
+  attribute: floor_price
+  value: 374000
+  unit: null
+  currency: GBP
+  value_text: £374,000
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [phase-2]}
+  valid_from: '2026-09-15'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Sales director negotiation note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The lowest price negotiators may accept on a Phase 2 Rowan is £374,000.
+- key: brookvale-bulk
+  subject: {kind: product, ref: Bulk sale (Brookvale Housing Association)}
+  fact_type: price
+  attribute: contract_price
+  value: 268000
+  unit: null
+  currency: GBP
+  value_text: £268,000 per home
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Brookvale Housing Association}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Brookvale heads of terms}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Brookvale Housing Association is buying 12 Phase 1 homes at £268,000 per home.

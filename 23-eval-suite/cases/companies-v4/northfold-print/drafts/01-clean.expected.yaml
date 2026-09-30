@@ -1,0 +1,7 @@
+# WHY: negative control — direct price with "plus VAT" and the 1,000 minimum run, GC1 board, colour matching, turnaround "after artwork approval" and the FSC certificate, all valid and in scope (segments=[direct]) at 2026-10-14.
+blocked: false
+findings: []
+must_not_flag:
+  - "1,000 printed cartons cost £640 plus VAT"
+  - "Printed cartons ship 8 working days after artwork approval"
+  - "so FSC-certified board is available on request"

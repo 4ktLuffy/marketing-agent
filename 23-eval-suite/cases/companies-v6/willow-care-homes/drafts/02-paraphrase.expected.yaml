@@ -1,0 +1,12 @@
+# WHY: negative control — the same Alder Court facts reworded ("rates Alder Court as Good", "£1250" = £1,250 with the disclosure, "1 to 6 weeks"); the email has no heading; "Good food and good company" is everyday wording, not a CQC grade.
+blocked: false
+findings: []
+must_not_flag:
+  - "Choosing a care home is a big decision"
+  - "The Care Quality Commission rates Alder Court as Good"
+  - "Pop in whenever suits you between 9am and 8pm"
+  - "come as standard, at no extra cost"
+  - "Caring for someone at home is hard work"
+  - "a respite stay lasting anywhere from 1 to 6 weeks"
+  - "residential care costs £1250 per week, subject to a care needs assessment"
+  - "Good food and good company, every day"

@@ -1,0 +1,11 @@
+# WHY: group-scoped and all-variant facts only; "10 weekly lessons", "for new students" and "based on 142 exams taken in 2025" appear with the price, taster and result.
+blocked: false
+findings: []
+must_not_flag:
+  - "Group lessons for ages 7 to 12 are"
+  - "for new students."
+  - "Our studios at Weaver's Yard are open weekdays 4pm–8pm and Saturdays 9am–4pm."
+  - "96% pass rate at graded exams, based on 142 exams taken in 2025."
+  - "Proud of every one of our students."
+  - "At Linnet, group lessons are £120 per term, 10 weekly lessons."
+  - "We offer a free taster lesson for new students."

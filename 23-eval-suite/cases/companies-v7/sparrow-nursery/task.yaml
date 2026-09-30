@@ -1,0 +1,17 @@
+# FICTIONAL. Scope sites=[canal-street], segments=[2-year-olds] makes Elm Road's Outstanding rating and its
+# 7:30am-6:30pm hours scope traps; publish 2026-10-09 is after the Free Settling-In Week closes (2026-10-03).
+goal: Fill 2-year-old places at the Canal Street nursery for November starts.
+pieces:
+- {key: p1, channel: facebook, kind: post, max_chars: null}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+- {key: p3, channel: google-business, kind: update, max_chars: 750}
+scope:
+  sites: [canal-street]
+  regions: []
+  channels: []
+  segments: [2-year-olds]
+  plan_tiers: []
+  variants: []
+publish_on: '2026-10-09'
+audience: Parents on the Canal Street waiting list and local families
+notes: Canal Street only; do not mention Elm Road.

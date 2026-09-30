@@ -1,0 +1,8 @@
+# WHY: same-day delivery requires "£6.50 delivery fee within 5 miles"; no delivery fee is mentioned anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Same-day delivery when you order by 1pm", label: missing_disclosure, fact_key: same-day-delivery}
+  - {contains: "we'll have your flowers at their door today", label: missing_disclosure, fact_key: same-day-delivery}
+must_not_flag:
+  - "Our seasonal hand-tied bouquet is £35"
+  - "Market Square is open Sundays 10am to 2pm"

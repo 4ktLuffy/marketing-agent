@@ -1,0 +1,11 @@
+**1. LinkedIn**
+Run a salon or a clinic? 💇 Our Starter website includes online booking integration, so clients can book 24/7.
+Our Starter website is £1,800 excl. VAT.
+
+**2. Email**
+Subject: Online booking, built into your Starter site
+Hi,
+Every Starter site comes with online booking integration as standard.
+Hosting comes with a 99.9% monthly uptime SLA.
+Thanks,
+Prism

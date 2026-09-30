@@ -1,0 +1,9 @@
+# WHY: the warranty fact requires "when installed by a qualified engineer"; neither piece carries it.
+# CORRECTED 2026-09-29: added subject line "A manual valve with a 3-year warranty" (missing_disclosure, warranty): the email piece states the warranty and "when installed by a qualified engineer" appears nowhere in the draft.
+# CORRECTED 2026-09-29: narrowed the LinkedIn contains from "...warranty. No small print" to "Every KV-50 comes with a 3-year warranty.": the old substring spanned two sentences, so it could never be inside one reported sentence.
+blocked: true
+findings:
+  - {contains: "Every KV-50 comes with a 3-year warranty.", label: missing_disclosure, fact_key: warranty}
+  - {contains: "Subject: A manual valve with a 3-year warranty", label: missing_disclosure, fact_key: warranty}
+must_not_flag:
+  - "Built for the plant room, the manual KV-50 ball valve is rated"

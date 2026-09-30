@@ -1,0 +1,11 @@
+# WHY: the £64 A1 price requires 'ex VAT'; VAT is not mentioned anywhere in the draft (subject and body).
+blocked: true
+findings:
+  - {contains: "Fire-rated shop signs, just £64", label: missing_disclosure, fact_key: acm-a1-price}
+  - {contains: "A1 aluminium composite signs for £64", label: missing_disclosure, fact_key: acm-a1-price}
+  - {contains: "Your new shop sign for £64", label: missing_disclosure, fact_key: acm-a1-price}
+  - {contains: "An A1 (594 × 841 mm) aluminium composite panel costs £64", label: missing_disclosure, fact_key: acm-a1-price}
+must_not_flag:
+  - "That's an A1 aluminium composite panel, classified Euroclass B-s1,d0 to EN 13501-1"
+  - "Every sign includes a free digital proof and a fixing kit"
+  - "We install across Croydon, Sutton, Bromley and Merton"

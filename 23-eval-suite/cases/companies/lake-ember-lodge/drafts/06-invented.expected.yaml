@@ -1,0 +1,10 @@
+# WHY: "Voted the best lodge" and "5-star rated" are award/rating claims with no source fact.
+# CORRECTED 2026-09-29: added subject line "The Lake District's favourite lodge" (no_source): a popularity/comparative claim with no source fact, same kind as "Voted the best lodge".
+blocked: true
+findings:
+  - {contains: "Voted the best lodge in the Lake District", label: no_source, fact_key: null}
+  - {contains: "5-star rated lodges", label: no_source, fact_key: null}
+  - {contains: "Subject: The Lake District's favourite lodge", label: no_source, fact_key: null}
+must_not_flag:
+  - "A Weekend Break is £210 per room per night, room only"
+  - "Every lodge has a private wood-fired hot tub"

@@ -58,6 +58,8 @@ jobs:
           - 84-ads-sync
           - 86-flow-runner
           - 87-feed-optimizer
+          - 88-task-bridge
+          - 89-mcp-connector
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

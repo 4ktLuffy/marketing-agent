@@ -1,0 +1,8 @@
+# WHY: retail price (task channel), the correct organic licence, allergens and shelf life each with their disclosure, honey claim from the spec sheet.
+blocked: false
+findings: []
+must_not_flag:
+  - "Allergens: contains oats (gluten) and almonds"
+  - "Certified organic by Albion Organic Certification (licence AOC-4417)"
+  - "Our Oat & Almond Granola is sweetened only with English honey"
+  - "Best before: 9 months unopened; eat within 4 weeks of opening"

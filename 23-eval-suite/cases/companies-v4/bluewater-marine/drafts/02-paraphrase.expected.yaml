@@ -1,0 +1,8 @@
+# WHY: negative control — the same Poole facts reworded ("38 hours on her engine", "VAT included", "rated for Design Category C" is a harmless look-alike of a rating); both disclosures kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "has only 38 hours on her engine and is priced at £44,950, VAT included"
+  - "She's rated for Design Category C, so inshore waters are her home turf"
+  - "Spread the cost at 4.9% APR representative (minimum 20% deposit, subject to status)"
+  - "dealer code TW-UK-0193"

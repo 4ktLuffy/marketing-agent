@@ -1,0 +1,11 @@
+# FICTIONAL. B2B bike courier. Scope regions=[zone-1], segments=[account] makes the Zone 2 rate a scope trap;
+# publish_on 2026-10-07 is after first-month-offer ends (2026-10-03), valid today (2026-09-29).
+goal: Sign up city-centre offices and shops for a Copperline business account.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+- {key: p2, channel: newsletter, kind: newsletter, max_chars: null}
+- {key: p3, channel: threads, kind: post, max_chars: 500}
+scope: {sites: [], regions: [zone-1], channels: [], segments: [account], plan_tiers: [], variants: []}
+publish_on: '2026-10-07'
+audience: Office managers, law firms and independent shops in the city centre
+notes: null

@@ -1,0 +1,9 @@
+# WHY: "most reliable" superlative and "ISO 14001" have no source (only ISO 9001:2015 is held); the authorisation is AEO-C, not AEO-S (different code, body and subject).
+blocked: true
+findings:
+  - {contains: "The UK's most reliable pallet network", label: no_source, fact_key: null}
+  - {contains: "ISO 14001 certified", label: no_source, fact_key: null}
+  - {contains: "AEO-S certified next-day pallets", label: conflict_or_expired, fact_key: aeo-c}
+  - {contains: "As an AEO-S authorised operator", label: conflict_or_expired, fact_key: aeo-c}
+must_not_flag:
+  - "Book by 16:00 for next working-day delivery on UK mainland"

@@ -1,0 +1,12 @@
+# FICTIONAL. Scope variants=[online], segments=[private-sector] makes the Leeds classroom fee and the
+# charity/public-sector rate scope traps; publish_on 2026-10-14 is after the October Early Bird ends
+# (2026-10-04), valid today (2026-09-29).
+goal: "Fill November live online CloudCert courses with learners from private-sector companies."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+  - {key: p3, channel: facebook, kind: post, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [private-sector], plan_tiers: [], variants: [online]}
+publish_on: "2026-10-14"
+audience: "IT managers at private-sector companies in the North of England"
+notes: null

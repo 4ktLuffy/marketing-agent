@@ -1,0 +1,9 @@
+# WHY: the flu jab price requires "adults 18 and over" and free delivery requires "within 3 miles of the branch"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Sixteen pounds gets you a private flu vaccination", label: missing_disclosure, fact_key: flu-jab-price}
+  - {contains: "Castle Green flu jabs now just £16", label: missing_disclosure, fact_key: flu-jab-price}
+  - {contains: "We deliver prescriptions for free", label: missing_disclosure, fact_key: prescription-delivery}
+must_not_flag:
+  - "Walk in on Saturdays between 9am and 1pm, no appointment needed"
+  - "Free NHS flu jab if you're eligible."

@@ -1,0 +1,10 @@
+# WHY: £1,195 is the true fee for homes £250,001 to £500,000 (task variants=[up-to-250k], £895); Saturday opening is the Bath office only (task sites=[bristol]).
+blocked: true
+findings:
+  - {contains: "Our conveyancing fee is £1,195", label: wrong_scope, fact_key: conv-band-2}
+  - {contains: "See us on a Saturday", label: wrong_scope, fact_key: bath-saturday}
+  - {contains: "Our office is open Saturdays 9am to 12pm", label: wrong_scope, fact_key: bath-saturday}
+  - {contains: "Pop into our Bristol office on a Saturday morning", label: wrong_scope, fact_key: bath-saturday}
+must_not_flag:
+  - "Every fee includes a named solicitor and online case tracking"
+  - "authorised and regulated by the Solicitors Regulation Authority (SRA number 804517)"

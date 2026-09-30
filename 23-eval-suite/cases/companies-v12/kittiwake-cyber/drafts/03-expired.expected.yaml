@@ -1,0 +1,10 @@
+# WHY: the free phishing simulation is valid today but ends 2026-10-09, before publish 2026-10-14 ("for nothing" is the loose form); the 50% onboarding offer ended 2026-08-31 ("half the usual price").
+blocked: true
+findings:
+  - {contains: "fake phishing attack on your team for nothing", label: conflict_or_expired, fact_key: free-phishing-test}
+  - {contains: "Free phishing test for every new Essentials customer", label: conflict_or_expired, fact_key: free-phishing-test}
+  - {contains: "Get set up for half the usual price", label: conflict_or_expired, fact_key: onboarding-half-price}
+  - {contains: "onboarding comes in at half the usual price", label: conflict_or_expired, fact_key: onboarding-half-price}
+must_not_flag:
+  - "Essentials is £35 per user per month, excl. VAT."
+  - "Every plan includes Microsoft 365 backup with 1-year retention."

@@ -1,0 +1,9 @@
+# WHY: negative control, the same in-scope facts reworded with harmless "qualified leads", "best way to" and "free to ask"; disclosures kept, no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Your sales team should be chasing qualified leads, not fixing laptops"
+  - "The best way to get there"
+  - "Vantage Essentials: £29 per user per month (excluding VAT, minimum 10 users)"
+  - "Essentials customers get a 4-hour response to priority 1 incidents"
+  - "It's free to ask"

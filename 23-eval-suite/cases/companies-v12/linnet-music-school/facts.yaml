@@ -1,0 +1,293 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Linnet Music School, type: 'music school (group, one-to-one and parent & child lessons)', today: '2026-09-29'}
+facts:
+- key: group-term-price
+  subject: {kind: package, ref: Group lessons (ages 7–12)}
+  fact_type: price
+  attribute: term_price
+  value: 120
+  unit: term
+  currency: GBP
+  value_text: £120 per term
+  basis: per_person
+  conditions:
+  - {key: age, op: '>=', value: 7}
+  - {key: age, op: <=, value: 12}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: url, ref: 'https://linnetmusic.example/fees'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - 10 weekly lessons
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Group lessons for children aged 7 to 12 cost £120 per term, which is 10 weekly lessons.
+- key: one-to-one-price
+  subject: {kind: package, ref: One-to-one lessons}
+  fact_type: price
+  attribute: lesson_price
+  value: 32
+  unit: lesson
+  currency: GBP
+  value_text: £32 per 30-minute lesson
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [one-to-one]}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://linnetmusic.example/fees'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: One-to-one lessons cost £32 per 30-minute lesson.
+- key: parent-child-class
+  subject: {kind: package, ref: Parent & child ukulele}
+  fact_type: price
+  attribute: term_price
+  value: 150
+  unit: term
+  currency: GBP
+  value_text: £150 per pair per term
+  basis: flat
+  conditions:
+  - {key: attendees, op: '=', value: 2}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [parent-child]}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://linnetmusic.example/fees'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The parent & child ukulele class costs £150 per term for one adult and one child together.
+- key: free-taster
+  subject: {kind: offer, ref: Free taster lesson}
+  fact_type: availability
+  attribute: taster
+  value: null
+  unit: null
+  currency: null
+  value_text: free taster lesson
+  basis: null
+  conditions:
+  - {key: student, op: '=', value: new}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://linnetmusic.example/taster'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - for new students
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New students can book one free taster group lesson before enrolling.
+- key: exam-pass-rate
+  subject: {kind: business, ref: Linnet Music School}
+  fact_type: result
+  attribute: exam_pass_rate
+  value: 96
+  unit: percent
+  currency: null
+  value_text: 96% pass rate at graded exams
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-15'
+  valid_to: null
+  review_by: '2027-01-15'
+  source: {kind: doc, ref: 2025 exam results summary}
+  claim_class: result
+  requires_evidence: true
+  evidence_ref: Exam results spreadsheet 2025
+  consent_ref: null
+  required_disclosures:
+  - based on 142 exams taken in 2025
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - guaranteed pass
+  - every student passes
+  owner: School director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: In 2025, 96% of the 142 graded music exams taken by Linnet students were passes. Never promise a guaranteed pass.
+- key: spring-early-enrol
+  subject: {kind: offer, ref: Spring term early enrolment}
+  fact_type: price
+  attribute: offer_price
+  value: 99
+  unit: null
+  currency: GBP
+  value_text: spring group term for £99 if you enrol by 10 October
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-10'
+  review_by: null
+  source: {kind: doc, ref: Autumn enrolment plan 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Families who enrol for the spring group term by 10 October 2026 pay £99 instead of £120.
+- key: summer-rock-camp
+  subject: {kind: offer, ref: Summer Rock Camp}
+  fact_type: event
+  attribute: camp
+  value: 175
+  unit: null
+  currency: GBP
+  value_text: five-day Summer Rock Camp for £175
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-27'
+  valid_to: '2026-08-28'
+  review_by: null
+  source: {kind: doc, ref: Summer programme 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The five-day Summer Rock Camp ran 27 July to 28 August 2026 at £175 and has finished. No half-term camp is planned.
+- key: studio-hours
+  subject: {kind: site, ref: Weaver's Yard studios}
+  fact_type: hours
+  attribute: opening_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: weekdays 4pm–8pm and Saturdays 9am–4pm
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://linnetmusic.example/contact'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Weaver's Yard studios are open for lessons weekdays 4pm–8pm and Saturdays 9am–4pm.
+- key: tutor-pay-rate
+  subject: {kind: service, ref: Tutor pay}
+  fact_type: price
+  attribute: cost_rate
+  value: 24
+  unit: hour
+  currency: GBP
+  value_text: £24 per hour
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Tutor contracts 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: medium
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Group tutors are paid £24 per hour. Not for publication.
+- key: st-aldrics-partnership
+  subject: {kind: service, ref: Schools programme (St Aldric's Primary)}
+  fact_type: price
+  attribute: contract_price
+  value: 3400
+  unit: year
+  currency: GBP
+  value_text: £3,400 per year
+  basis: per_year
+  conditions:
+  - {key: customer, op: '=', value: St Aldric's Primary}
+  scope: {sites: [], regions: [], channels: [], segments: [schools], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-31'
+  review_by: null
+  source: {kind: doc, ref: St Aldric's service agreement 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: School director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: St Aldric's Primary pays £3,400 per year for weekly in-school group lessons.

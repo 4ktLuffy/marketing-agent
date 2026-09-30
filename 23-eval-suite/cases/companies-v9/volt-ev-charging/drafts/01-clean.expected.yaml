@@ -1,0 +1,18 @@
+# WHY: negative control. Every claim is a single-phase / West Yorkshire / unscoped public fact valid on 2026-10-09, slotted or typed exactly; "standard installation" and "when registered within 30 days" are present; the idiom and "Top tip" are not claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "Thinking about charging at home?"
+  - "The Volt Home 7 (7kW) is"
+  - "Every Volt install includes app set-up, a load-balancing check and an electrical installation certificate."
+  - "We're NESR registered as an Approved Contractor (NESR-207731)."
+  - "Off-peak home charging: the best-kept secret of happy EV drivers."
+  - "Volt Home 7: £899 fitted for a standard installation."
+  - "Your charger comes with a 3-year warranty when registered within 30 days."
+  - "registered with the NESR as an Approved Contractor, registration NESR-207731"
+  - "Top tip: check where your fuse board is before you book"
+  - "Volt Home 7 — £899 fitted (standard installation)."
+  - "Installing across Leeds, Bradford and Wakefield."
+  - "NESR Approved Contractor · NESR-207731"
+  - "Charge at home with Volt."
+  - "3-year warranty when registered within 30 days."

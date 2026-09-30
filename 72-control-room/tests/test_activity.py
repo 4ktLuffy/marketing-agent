@@ -262,3 +262,13 @@ def test_status_without_a_note_still_shows():
                  notes=f"[{at}] in_review -> approved")
     once = [e for e in act.content_events([noted], now - timedelta(days=1)) if "approved" in e["text"]]
     assert len(once) == 1   # the note already says it: not twice
+
+
+def test_chat_agent_call_through_the_gateway_reads_as_a_chat_step():
+    e = act.ai_event(row(12, "24 Chat agent", 1, model="mkt-agent", prompt="chat"), "main")
+    assert e["ability"] == 24
+    assert e["text"] == "Chat agent asked mkt-agent (local) for a chat step — 14.2 s, OK"
+    (card,) = act.now_cards([("main", {"running": [{"id": 13, "caller": "24 Chat agent", "prompt": "chat",
+                                                       "model": "mkt-agent", "provider": "ollama", "elapsed_ms": 900}]})])
+    assert card["ability"] == 24 and card["prompt"] == "a chat step"
+    assert act.prompt_words("social_posts") == "social posts"

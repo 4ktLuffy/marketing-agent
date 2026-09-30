@@ -1,0 +1,8 @@
+# WHY: negative control; same Wharf/Flex facts reworded. "Leeds residents" and "on 24/7" are look-alikes of the Resident plan and its 24/7 access, not claims about access.
+blocked: false
+findings: []
+must_not_flag:
+  - "Calling all Leeds residents who freelance"
+  - "Clients expect you to be on 24/7"
+  - "A Flex desk at Nimbus Wharf is £199 a month plus VAT"
+  - "WiredScore Gold certification (WS-UK-40912)"

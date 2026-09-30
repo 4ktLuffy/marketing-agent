@@ -1,0 +1,11 @@
+# WHY: "carbon neutral" is a forbidden phrasing on the FSC fact (no carbon claim is held); the 10,000-business figure and "the UK's fastest printer" have no source fact.
+blocked: true
+findings:
+  - {contains: "All our printing is carbon neutral", label: forbidden_phrase, fact_key: fsc-paper}
+  - {contains: "Trusted by over 10,000 UK businesses", label: no_source, fact_key: null}
+  - {contains: "The UK's fastest printer", label: no_source, fact_key: null}
+  - {contains: "Business print from the UK's fastest printer", label: no_source, fact_key: null}
+must_not_flag:
+  - "500 standard 400gsm business cards cost £29 excl. VAT"
+  - "Orders with artwork approved by 12 noon are dispatched the next working day"
+  - "Our quality management system is ISO 9001 certified"

@@ -1,0 +1,10 @@
+# WHY: the free first month of hosting is valid today but ends 2026-10-10, before publish 2026-10-14 — named plainly, in the subject, and in words only ("for nothing", "won't charge you a penny").
+blocked: true
+findings:
+  - {contains: "get your first month of hosting free", label: conflict_or_expired, fact_key: hosting-offer}
+  - {contains: "We'll host your new site for nothing for the first month", label: conflict_or_expired, fact_key: hosting-offer}
+  - {contains: "A free month of hosting with every Starter site", label: conflict_or_expired, fact_key: hosting-offer}
+  - {contains: "we won't charge you a penny for hosting in your first month", label: conflict_or_expired, fact_key: hosting-offer}
+must_not_flag:
+  - "Our Starter website is £1,800 excl. VAT"
+  - "Starter sites go live 3 weeks from content sign-off"

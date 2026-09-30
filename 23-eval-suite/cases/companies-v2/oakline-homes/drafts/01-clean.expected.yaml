@@ -1,0 +1,7 @@
+# WHY: Phase 2 Rowan price with "selected plots, subject to contract", predicted EPC B, the warranty as held, Phase 2 spec and completion; no Aspen, no expired incentive or scheme.
+blocked: false
+findings: []
+must_not_flag:
+  - "The Rowan, our 4-bed detached home, is £389,995 (selected plots, subject to contract)"
+  - "The Rowan has a predicted EPC B rating"
+  - "Each home is covered by a 10-year structural warranty (Keystone Build policy KBW-WM-2291)"

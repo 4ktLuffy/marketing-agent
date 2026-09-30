@@ -1,0 +1,7 @@
+# WHY: the transfer price requires "per person, each way"; the draft gives £25 with no basis, which reads as a flat fare.
+blocked: true
+findings:
+  - {contains: "from the station to your lodge for just £25", label: missing_disclosure, fact_key: lake-transfer}
+  - {contains: "Station transfers are £25", label: missing_disclosure, fact_key: lake-transfer}
+must_not_flag:
+  - "Weekend Breaks are £210 per room per night, room only"

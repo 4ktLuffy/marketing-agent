@@ -1,0 +1,290 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Task scope sites=[richmond]: glow-facial-chelsea (chelsea) is the scope trap; autumn-facial-offer is valid today
+# (2026-09-29) but ends 2026-10-04, before publish_on 2026-10-10; summer-brow-offer ended 2026-08-31.
+company: {name: Luma Beauty, type: beauty_clinic, today: '2026-09-29'}
+facts:
+- key: glow-facial-richmond
+  subject: {kind: service, ref: Glow Facial (Richmond)}
+  fact_type: price
+  attribute: price
+  value: 85
+  unit: treatment
+  currency: GBP
+  value_text: £85 for 60 minutes
+  basis: per_unit
+  conditions: []
+  scope: {sites: [richmond], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-08-31'
+  review_by: null
+  source: {kind: doc, ref: Luma treatment menu autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Salon manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Glow Facial costs £85 for 60 minutes at the Richmond salon.
+- key: glow-facial-chelsea
+  subject: {kind: service, ref: Glow Facial (Chelsea)}
+  fact_type: price
+  attribute: price
+  value: 110
+  unit: treatment
+  currency: GBP
+  value_text: £110 for 60 minutes
+  basis: per_unit
+  conditions: []
+  scope: {sites: [chelsea], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-08-31'
+  review_by: null
+  source: {kind: doc, ref: Luma treatment menu autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Salon manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Glow Facial costs £110 for 60 minutes at the Chelsea salon.
+- key: lash-lift
+  subject: {kind: service, ref: Lash lift and tint}
+  fact_type: price
+  attribute: price
+  value: 55
+  unit: null
+  currency: GBP
+  value_text: £55
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Luma treatment menu autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - patch test required at least 48 hours before
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Salon manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Lash lift and tint costs £55 at both salons; a patch test is required at least 48 hours before.
+- key: maya-qualification
+  subject: {kind: person, ref: 'Maya Okafor, senior skin therapist (Richmond)'}
+  fact_type: credential
+  attribute: qualification
+  value: Level 4
+  unit: null
+  currency: null
+  value_text: Level 4 Diploma in Advanced Skin Treatments
+  basis: null
+  conditions: []
+  scope: {sites: [richmond], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-05-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: Certificate LB-SK-0412}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: LB-SK-0412
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Clinic director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Maya Okafor, senior skin therapist at Richmond, holds a Level 4 Diploma in Advanced Skin Treatments (certificate LB-SK-0412).
+- key: glow-results
+  subject: {kind: service, ref: Glow Facial client survey}
+  fact_type: result
+  attribute: survey_result
+  value: 90
+  unit: percent
+  currency: null
+  value_text: 9 in 10 clients said their skin felt more hydrated after one Glow Facial
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-01'
+  valid_to: '2027-06-30'
+  review_by: null
+  source: {kind: doc, ref: Client survey July 2026}
+  claim_class: result
+  requires_evidence: true
+  evidence_ref: Client survey July 2026
+  consent_ref: null
+  required_disclosures:
+  - survey of 120 clients, results vary
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - clinically proven
+  - permanent results
+  owner: Clinic director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: In a July 2026 survey of 120 clients, 9 in 10 said their skin felt more hydrated after one Glow Facial. Results vary.
+- key: consultation-included
+  subject: {kind: service, ref: Facials (both salons)}
+  fact_type: inclusion
+  attribute: consultation
+  value: null
+  unit: null
+  currency: null
+  value_text: a free skin consultation with every facial
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Luma treatment menu autumn 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Salon manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every facial includes a free skin consultation before the treatment.
+- key: autumn-facial-offer
+  subject: {kind: offer, ref: Autumn Glow Facial offer}
+  fact_type: price
+  attribute: discount
+  value: 20
+  unit: percent
+  currency: null
+  value_text: 20% off the Glow Facial
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-20'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Autumn promotion brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Salon manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 20% off the Glow Facial for bookings made by 4 October 2026.
+- key: summer-brow-offer
+  subject: {kind: offer, ref: Summer lash offer}
+  fact_type: price
+  attribute: free_extra
+  value: null
+  unit: null
+  currency: null
+  value_text: a free brow tint with every lash lift
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer promotion brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Salon manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: A free brow tint with every lash lift, June to August 2026. Ended.
+- key: therapist-commission
+  subject: {kind: business, ref: Therapist pay}
+  fact_type: policy
+  attribute: commission
+  value: 30
+  unit: percent
+  currency: null
+  value_text: 30% commission
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Staff handbook 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Clinic director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Therapists earn 30% commission on retail products they sell.
+- key: kewbridge-spa-rate
+  subject: {kind: service, ref: Spa partnership (Kewbridge Hotel)}
+  fact_type: price
+  attribute: contract_price
+  value: 62
+  unit: null
+  currency: GBP
+  value_text: £62 per treatment
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Kewbridge Hotel}
+  scope: {sites: [richmond], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2027-04-30'
+  review_by: null
+  source: {kind: doc, ref: Kewbridge spa partnership agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Clinic director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Kewbridge Hotel pays £62 per Glow Facial for hotel guests under the spa partnership.

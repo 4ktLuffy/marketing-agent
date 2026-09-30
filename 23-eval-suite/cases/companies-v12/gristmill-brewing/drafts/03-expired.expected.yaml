@@ -1,0 +1,10 @@
+# WHY: the 2-for-1 steins are valid today but end 2026-10-04, before publish 2026-10-16 ("the second stein's on us" is the loose form); the Friday live music ended 2026-08-28 ("all year round").
+blocked: true
+findings:
+  - {contains: "the second stein's on us", label: conflict_or_expired, fact_key: oktoberfest-steins}
+  - {contains: "Oktoberfest steins, two for one", label: conflict_or_expired, fact_key: oktoberfest-steins}
+  - {contains: "Oktoberfest 2-for-1 on steins", label: conflict_or_expired, fact_key: oktoberfest-steins}
+  - {contains: "Live bands every Friday night in the beer garden", label: conflict_or_expired, fact_key: summer-live-music}
+must_not_flag:
+  - "We're open Thursday to Saturday 4pm–11pm, Sunday 12–6pm."
+  - "Millrace Pale is £4.80 a pint."

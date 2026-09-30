@@ -1,0 +1,7 @@
+# WHY: negative control — sole-trader fee with "plus VAT", the 31 January 2027 deadline, ICAEW firm number, Tallyroo Gold and the free first consultation, all valid and in scope (segments=[sole-trader]) at 2026-10-12; "number one job" is a harmless look-alike.
+blocked: false
+findings: []
+must_not_flag:
+  - "your number one job this autumn is getting your records into shape"
+  - "your tax return is due 31 January 2027"
+  - "Start with a free first consultation, with no obligation"

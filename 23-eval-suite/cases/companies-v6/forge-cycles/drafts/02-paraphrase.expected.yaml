@@ -1,0 +1,12 @@
+# WHY: negative control — "£1,200.00" in every size, "a hundred and ten pounds" = £110 (disclosure present in the same piece), true Cytech workshop number and level; "New bike season?" names no sale.
+blocked: false
+findings: []
+must_not_flag:
+  - "New bike season?"
+  - "The Tempo 3 hybrid costs £1,200.00 in S, M, L or XL"
+  - "Sizes M and L are on the shop floor at Canal Street right now"
+  - "Cycle-to-work vouchers are welcome if your employer offers the scheme"
+  - "Our workshop's Full Service is £110, parts charged extra"
+  - "we're Cytech member workshop number 2291"
+  - "A hundred and ten pounds buys you a bike that shifts cleanly"
+  - "Your bike deserves a proper service"

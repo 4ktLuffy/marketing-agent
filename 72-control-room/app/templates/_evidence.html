@@ -1,0 +1,34 @@
+{# Evidence for one piece: r = tasks.piece_result(...) #}
+{% if r.groups %}
+<ul class="ev-list" aria-label="evidence for piece {{ r.key }}">
+  {% for g in r.groups %}
+  <li class="ev-sentence">
+    <p class="ev-text">{% if g.sentence %}“{{ g.sentence }}”{% else %}<i>The whole piece</i>{% endif %}</p>
+    <ul class="ev-chips">
+      {% for ch in g.chips %}
+      <li><span class="ev ev-{{ ch.level }}" data-label="{{ ch.label }}">{{ ch.words }}</span>
+        {% if ch.fact_key %}<code class="small">{{ ch.fact_key }}</code>{% endif %}
+        {% if ch.quote %}<q class="small">{{ ch.quote }}</q>{% endif %}
+        {% if ch.detail %}<span class="small muted">{{ ch.detail }}</span>{% endif %}
+        {% if ch.accepted %}<p class="small ev-accepted"><span class="ev ev-warn">accepted</span> by {{ ch.accepted.by }}: “{{ ch.accepted.note }}”</p>{% endif %}
+        {% if ch.acceptable and r.sha and task %}
+        <details class="ev-accept"><summary class="small">It’s there, in other words</summary>
+          <form method="post" action="/tasks/{{ task.id }}/accept" class="stack small">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <input type="hidden" name="piece_key" value="{{ r.key }}">
+            <input type="hidden" name="finding" value="{{ ch.index }}">
+            <input type="hidden" name="sha" value="{{ r.sha }}">
+            <label>Where does the text say it? <input name="note" required minlength="3" maxlength="300"
+              placeholder="e.g. said as ‘frames extra’"></label>
+            <p class="small muted">Only for a disclosure written in other words. Your name and this note are kept with the approval record; approval still happens in the queue.</p>
+            <button class="btn small">Accept this finding</button>
+          </form>
+        </details>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<p class="small muted">No sentence needed checking.</p>{% endif %}

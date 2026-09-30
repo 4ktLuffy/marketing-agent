@@ -1,0 +1,11 @@
+# WHY: £125 and the 55-minute treatment belong to the Weekend Spa Day (variants=[weekend-spa-day]); £79 is the Serene Club member price (segments=[member]); the task is weekday day-guests.
+blocked: true
+findings:
+  - {contains: "The Weekend Spa Day is £125 per person", label: wrong_scope, fact_key: weekend-spa-day}
+  - {contains: "Weekday Spa Day from £79 per person", label: wrong_scope, fact_key: member-price}
+  - {contains: "Book a Weekday Spa Day for just £79 per person", label: wrong_scope, fact_key: member-price}
+  - {contains: "A 55-minute treatment, midweek", label: wrong_scope, fact_key: weekend-spa-day}
+  - {contains: "Every Weekday Spa Day now includes a 55-minute treatment of your choice", label: wrong_scope, fact_key: weekend-spa-day}
+must_not_flag:
+  - "Every spa day includes a robe and slippers, lunch in the Garden Room and use of the thermal suite and pool"
+  - "Spa days are for guests aged 18 and over"

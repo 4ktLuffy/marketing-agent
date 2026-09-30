@@ -1,0 +1,7 @@
+# WHY: negative control — same Quayside facts reworded; prices typed out match the Quayside facts; disclosure kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "every one of them is HCPC registered"
+  - "Your first assessment with us is £55"
+  - "A first physio assessment at our Quayside clinic is £55"

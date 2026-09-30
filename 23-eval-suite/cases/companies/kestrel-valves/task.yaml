@@ -1,0 +1,10 @@
+# FICTIONAL. Scope variants=[manual] makes the UL listing (electric actuator only) a scope trap;
+# publish_on 2026-10-06 is after lead-time-stock expires (2026-10-02), valid today (2026-09-29).
+goal: "Promote the manual KV-50 ball valve to UK maintenance engineers and distributors for October."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope: {sites: [], regions: [uk], channels: [], segments: [], plan_tiers: [], variants: [manual]}
+publish_on: "2026-10-06"
+audience: "Maintenance engineers and valve distributors in the UK"
+notes: null

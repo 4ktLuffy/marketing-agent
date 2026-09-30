@@ -1,0 +1,9 @@
+# WHY: FireCore is Euroclass A2-s1,d0, not A1 (different code); "LPCB approved", "best-value" and the 4.9/5 rating have no source.
+blocked: true
+findings:
+  - {contains: "FireCore slab is Euroclass A1 non-combustible", label: conflict_or_expired, fact_key: firecore-fire-rating}
+  - {contains: "It's LPCB approved", label: no_source, fact_key: null}
+  - {contains: "The UK's best-value fire-rated insulation", label: no_source, fact_key: null}
+  - {contains: "Contractors rate FireCore 4.9 out of 5", label: no_source, fact_key: null}
+must_not_flag:
+  - "Free delivery on orders over £500 within 50 miles of our Stoke depot"

@@ -1,0 +1,12 @@
+# WHY: "NESR:207.713" is a look-alike of NESR-207731 and "Master Contractors" is a grade NESR does not give Volt (it is an Approved Contractor): both conflict with nesr-registration; "number one in West Yorkshire", the 4.9/5 rating, directly employed engineers/same-day fitting and the 24-hour survey have no source fact.
+blocked: true
+findings:
+  - {contains: "West Yorkshire's number one EV charger installer", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9/5 by 1,200 local drivers.", label: no_source, fact_key: null}
+  - {contains: "We're NESR Master Contractors, the highest grade there is.", label: conflict_or_expired, fact_key: nesr-registration}
+  - {contains: "Registration number: NESR:207.713", label: conflict_or_expired, fact_key: nesr-registration}
+  - {contains: "our own directly employed engineers, with same-day fitting available", label: no_source, fact_key: null}
+  - {contains: "Free installation survey within 24 hours, guaranteed.", label: no_source, fact_key: null}
+must_not_flag:
+  - "Volt Home 7: £899 fitted for a standard installation."
+  - "Every Volt install includes app set-up, a load-balancing check and an electrical installation certificate."

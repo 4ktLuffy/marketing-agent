@@ -1,0 +1,286 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Forge Cycles, type: bike_shop, today: '2026-09-29'}
+facts:
+- key: tempo3-price
+  subject: {kind: product, ref: Forge Tempo 3 hybrid}
+  fact_type: price
+  attribute: price
+  value: 1200
+  unit: null
+  currency: GBP
+  value_text: £1,200
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Bike price list 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Store manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Forge Tempo 3 hybrid costs £1,200 in every size (S, M, L, XL).
+- key: tempo3-stock-canal
+  subject: {kind: product, ref: Forge Tempo 3 hybrid}
+  fact_type: availability
+  attribute: stock
+  value: null
+  unit: null
+  currency: null
+  value_text: in stock in sizes M and L
+  basis: null
+  conditions: []
+  scope: {sites: [canal-street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-20'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Stock report Canal Street}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Canal Street manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Canal Street has the Tempo 3 in stock in sizes M and L.
+- key: tempo3-stock-quay
+  subject: {kind: product, ref: Forge Tempo 3 hybrid}
+  fact_type: availability
+  attribute: stock
+  value: null
+  unit: null
+  currency: null
+  value_text: in stock in size S
+  basis: null
+  conditions: []
+  scope: {sites: [quay-street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-20'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Stock report Quay Street}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Quay Street manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Quay Street has the Tempo 3 in stock in size S, ready to ride away.
+- key: cycle-to-work
+  subject: {kind: policy, ref: Cycle-to-work scheme}
+  fact_type: policy
+  attribute: accepted
+  value: null
+  unit: null
+  currency: null
+  value_text: cycle-to-work scheme
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2024-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Owner}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [if your employer offers the scheme]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Both stores accept cycle-to-work vouchers on any bike, if your employer offers the scheme.
+- key: full-service
+  subject: {kind: service, ref: Full Service}
+  fact_type: price
+  attribute: price
+  value: 110
+  unit: null
+  currency: GBP
+  value_text: £110
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Workshop price list 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [parts charged extra]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head mechanic
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A Full Service costs £110 at both stores, parts charged extra. It includes gear and brake adjustment, wheel truing
+    and a drivetrain degrease.
+- key: cytech-mechanics
+  subject: {kind: business, ref: Forge Cycles workshop}
+  fact_type: credential
+  attribute: cytech_level
+  value: null
+  unit: null
+  currency: null
+  value_text: Cytech Technical Two
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2023-05-01'
+  valid_to: null
+  review_by: '2027-05-01'
+  source: {kind: certificate, ref: Cytech certificates and workshop membership 2291}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Cytech workshop membership 2291
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head mechanic
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Forge Cycles is Cytech member workshop no. 2291, and every mechanic holds Cytech Technical Two (no one holds Technical
+    Three).
+- key: autumn-service-offer
+  subject: {kind: offer, ref: Autumn service offer}
+  fact_type: price
+  attribute: offer_price
+  value: 90
+  unit: null
+  currency: GBP
+  value_text: £90
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Autumn workshop flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head mechanic
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn offer: a Full Service for £90 instead of £110 (save £20), 15 September to 4 October 2026.'
+- key: summer-hybrid-sale
+  subject: {kind: offer, ref: Summer hybrid sale}
+  fact_type: price
+  attribute: discount
+  value: 10
+  unit: percent
+  currency: null
+  value_text: 10% off all hybrid bikes
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer sale flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Store manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Summer sale: 10% off all hybrid bikes, 1 July to 31 August 2026. Ended.'
+- key: workshop-labour-cost
+  subject: {kind: service, ref: Workshop labour}
+  fact_type: price
+  attribute: internal_cost
+  value: 19
+  unit: null
+  currency: GBP
+  value_text: £19 per hour
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Owner costing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our workshop labour costs us £19 per hour.
+- key: council-fleet-contract
+  subject: {kind: service, ref: Fleet servicing}
+  fact_type: price
+  attribute: contract_price
+  value: 74
+  unit: null
+  currency: GBP
+  value_text: £74 per bike per year
+  basis: per_year
+  conditions:
+  - {key: customer, op: '=', value: Ashcombe Council}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Council fleet contract}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Ashcombe Council pays £74 per bike per year for fleet servicing.

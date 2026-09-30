@@ -1,0 +1,11 @@
+# FICTIONAL. Scope plan_tiers=[essential], segments=[dogs] makes the Complete-only 10% treatment discount a scope trap;
+# publish_on 2026-10-15 is after free-dental-check ends (2026-10-09), valid today (2026-09-29).
+goal: "Sign up dog owners to the Essential Pet Health Plan in October."
+pieces:
+  - {key: p1, channel: newsletter, kind: email, max_chars: null}
+  - {key: p2, channel: sms, kind: message, max_chars: 320}
+  - {key: p3, channel: instagram, kind: post, max_chars: 2200}
+scope: {sites: [], regions: [], channels: [], segments: [dogs], plan_tiers: [essential], variants: []}
+publish_on: "2026-10-15"
+audience: "Registered dog owners who are not yet on a plan"
+notes: null

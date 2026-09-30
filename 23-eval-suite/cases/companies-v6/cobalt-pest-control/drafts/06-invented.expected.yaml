@@ -1,0 +1,10 @@
+# WHY: "number one", a 4.9 Trustpilot rating and an in-house entomologist have no source; BPCA no. 10427 is a transposed look-alike of 10472; the technicians hold RSPH Level 2, not Level 3.
+blocked: true
+findings:
+  - {contains: "Ashcombe's number one pest controller", label: no_source, fact_key: null}
+  - {contains: "rated 4.9 out of 5 on Trustpilot", label: no_source, fact_key: null}
+  - {contains: "membership number 10427", label: conflict_or_expired, fact_key: bpca-membership}
+  - {contains: "our in-house entomologist", label: no_source, fact_key: null}
+  - {contains: "RSPH Level 3 Award in Pest Management", label: conflict_or_expired, fact_key: rsph-technicians}
+must_not_flag:
+  - "A domestic rat treatment costs £145, including up to 3 visits"

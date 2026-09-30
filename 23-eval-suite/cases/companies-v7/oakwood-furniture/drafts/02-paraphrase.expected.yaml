@@ -1,0 +1,14 @@
+# WHY: negative control: same facts in other formats (price in words, 8–10 weeks, licence without 'code'); 'Walnut or oak?' names no walnut price; 'free care kit' is the true inclusion, not the local free delivery.
+blocked: false
+findings: []
+must_not_flag:
+  - "Solid oak, six seats, one thousand four hundred and fifty pounds"
+  - "How long does a made-to-order table take?"
+  - "About 8–10 weeks from order confirmation"
+  - "Every oak board in it is FSC 100% certified, licence FSC-C151207"
+  - "Subject: A free care kit with every Harlow"
+  - "Walnut or oak?"
+  - "we recommend our solid oak: £1,450 for the six-seater"
+  - "the 10-year structural guarantee applies when registered within 30 days of delivery"
+  - "Each one leaves the workshop with a free care kit (hardwax oil and cloths)"
+  - "Harlow solid oak dining table · seats six · FSC 100% certified oak"

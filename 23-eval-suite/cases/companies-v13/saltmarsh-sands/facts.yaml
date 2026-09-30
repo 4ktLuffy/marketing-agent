@@ -1,0 +1,286 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Saltmarsh Sands Holiday Park, type: caravan and holiday park, today: '2026-09-29'}
+facts:
+- key: touring-pitch-price
+  subject: {kind: variant, ref: Touring pitch}
+  fact_type: price
+  attribute: rate
+  value: 32
+  unit: night
+  currency: GBP
+  value_text: £32 per pitch per night
+  basis: per_night
+  conditions:
+  - {key: guests, op: <=, value: 4}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [touring]}
+  valid_from: '2026-03-01'
+  valid_to: '2027-01-03'
+  review_by: null
+  source: {kind: url, ref: 'https://saltmarshsands.example/touring'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ['up to 4 people, electric hook-up included']
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Park manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Touring pitches cost £32 per pitch per night for up to 4 people, electric hook-up included.
+- key: static-short-break
+  subject: {kind: variant, ref: Static caravan}
+  fact_type: price
+  attribute: rate
+  value: 249
+  unit: null
+  currency: GBP
+  value_text: £249 for a 3-night break
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [static-caravan]}
+  valid_from: '2026-10-01'
+  valid_to: '2026-10-31'
+  review_by: null
+  source: {kind: doc, ref: Static hire tariff autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Park manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A 3-night short break in a static caravan costs £249 in October 2026.
+- key: dogs-on-touring
+  subject: {kind: policy, ref: Dogs}
+  fact_type: policy
+  attribute: dogs_allowed
+  value: 2
+  unit: dog
+  currency: null
+  value_text: up to 2 dogs per pitch
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [touring]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Park rules 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [£3 per dog per night]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Park manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Dogs are welcome on touring pitches, up to 2 dogs per pitch, £3 per dog per night.
+- key: indoor-pool-hours
+  subject: {kind: site, ref: Indoor pool}
+  fact_type: hours
+  attribute: opening_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: open every day 9am to 7pm
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Leisure timetable 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Leisure lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The indoor pool is open every day from 9am to 7pm.
+- key: half-term-offer
+  subject: {kind: offer, ref: Half-term touring offer}
+  fact_type: price
+  attribute: discount
+  value: 20
+  unit: percent
+  currency: null
+  value_text: 20% off touring pitches
+  basis: null
+  conditions:
+  - {key: nights, op: '>=', value: 3}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [touring]}
+  valid_from: '2026-09-20'
+  valid_to: '2026-10-09'
+  review_by: null
+  source: {kind: doc, ref: Autumn offers brief}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [stays of 3 nights or more]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Marketing lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 20% off touring pitches for stays of 3 nights or more, booked between 20 September and 9 October 2026.
+- key: early-bird-2026
+  subject: {kind: offer, ref: Early bird}
+  fact_type: price
+  attribute: discount
+  value: 10
+  unit: percent
+  currency: null
+  value_text: 10% off 2026 stays
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-11-01'
+  valid_to: '2026-01-31'
+  review_by: null
+  source: {kind: doc, ref: Early bird brief 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 10% off 2026 stays booked by 31 January 2026.
+- key: lodge-finance
+  subject: {kind: offer, ref: Holiday lodge sales}
+  fact_type: price
+  attribute: deposit
+  value: 10
+  unit: percent
+  currency: null
+  value_text: holiday lodges for sale with a 10% deposit and finance available
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Lender agreement LA-2026}
+  claim_class: price_reference
+  requires_evidence: true
+  evidence_ref: Lender agreement LA-2026
+  consent_ref: null
+  required_disclosures: [Finance subject to status. 18+. T&Cs apply]
+  allowed_phrasing: []
+  forbidden_phrasing: [guaranteed finance, no credit checks, 0% APR]
+  owner: Sales manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Holiday lodges are for sale with a 10% deposit and finance available through a fictional lender. Finance subject to status. 18+. T&Cs apply.
+- key: touring-season
+  subject: {kind: variant, ref: Touring pitch}
+  fact_type: availability
+  attribute: season
+  value: null
+  unit: null
+  currency: null
+  value_text: open for touring from 1 March to 3 January
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [touring]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://saltmarshsands.example/touring'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Park manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The touring field is open from 1 March to 3 January.
+- key: occupancy-target
+  subject: {kind: business, ref: Saltmarsh Sands}
+  fact_type: result
+  attribute: occupancy_target
+  value: 78
+  unit: percent
+  currency: null
+  value_text: 78% occupancy
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Budget 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The October touring occupancy target is 78%.
+- key: ridgeway-rally-rate
+  subject: {kind: variant, ref: Touring pitch}
+  fact_type: price
+  attribute: contract_price
+  value: 19
+  unit: night
+  currency: GBP
+  value_text: £19 per pitch per night
+  basis: per_night
+  conditions:
+  - {key: customer, op: '=', value: Ridgeway Caravan Rally}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [touring]}
+  valid_from: '2026-11-06'
+  valid_to: '2026-11-09'
+  review_by: null
+  source: {kind: doc, ref: Ridgeway rally booking form}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Park manager
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: The Ridgeway Caravan Rally pays £19 per pitch per night for its November rally.

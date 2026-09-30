@@ -1,0 +1,9 @@
+# WHY: the 10% trade discount is valid today but ends 2026-10-03 (publish 2026-10-06); the G40 grade was discontinued on 2026-06-30.
+blocked: true
+findings:
+  - {contains: "Trade accounts get 10% off FireCore this month", label: conflict_or_expired, fact_key: trade-discount}
+  - {contains: "10% off FireCore for trade accounts", label: conflict_or_expired, fact_key: trade-discount}
+  - {contains: "Still using our FireCore G40 grade", label: conflict_or_expired, fact_key: firecore-g40}
+must_not_flag:
+  - "FireCore slab: Euroclass A2-s1,d0, UKCA and CE marked to EN 13162"
+  - "Trade account holders pay £18.40 per slab, excl. VAT"

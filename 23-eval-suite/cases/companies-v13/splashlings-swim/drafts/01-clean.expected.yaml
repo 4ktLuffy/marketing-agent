@@ -1,0 +1,10 @@
+# WHY: group price with "billed per term", ages, ratio, teacher certificate and lifeguard as stated in the facts; slots escaped the way some chat UIs copy them.
+blocked: false
+findings: []
+must_not_flag:
+  - "Group lessons are"
+  - "Our group classes are for children"
+  - "no more than 6 children per teacher in every group lesson"
+  - "Every teacher holds the AquaTeach Level 2 swimming teacher certificate"
+  - "qualified lifeguard on poolside at every lesson"
+  - "£9.50 per 30-minute lesson, billed per term"

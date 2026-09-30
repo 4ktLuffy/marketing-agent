@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Cobalt Pest Control, type: pest_control, today: '2026-09-29'}
+facts:
+- key: wasp-nest-domestic
+  subject: {kind: service, ref: Wasp nest treatment (domestic)}
+  fact_type: price
+  attribute: price
+  value: 65
+  unit: nest
+  currency: GBP
+  value_text: £65 per nest
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [domestic], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Domestic price list 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A domestic wasp nest treatment costs £65 per nest.
+- key: rat-treatment-domestic
+  subject: {kind: service, ref: Rat treatment (domestic)}
+  fact_type: price
+  attribute: price
+  value: 145
+  unit: null
+  currency: GBP
+  value_text: £145
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [domestic], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Domestic price list 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [up to 3 visits]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A domestic rat treatment costs £145 and includes up to 3 visits.
+- key: commercial-plan
+  subject: {kind: plan, ref: Commercial protection plan}
+  fact_type: price
+  attribute: monthly_price
+  value: 45
+  unit: month
+  currency: GBP
+  value_text: £45 per month
+  basis: per_month
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [commercial], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Commercial price list 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Commercial manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Commercial pest protection plans cost £45 per month (business premises only, not homes).
+- key: bpca-membership
+  subject: {kind: business, ref: Cobalt Pest Control}
+  fact_type: certification
+  attribute: membership_number
+  value: 10472
+  unit: null
+  currency: null
+  value_text: BPCA member no. 10472
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2019-02-01'
+  valid_to: null
+  review_by: '2027-01-31'
+  source: {kind: certificate, ref: BPCA membership certificate 2026}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: BPCA membership certificate 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Cobalt Pest Control is a member of the British Pest Control Association (BPCA), membership no. 10472.
+- key: rsph-technicians
+  subject: {kind: business, ref: Cobalt technicians}
+  fact_type: credential
+  attribute: qualification
+  value: null
+  unit: null
+  currency: null
+  value_text: RSPH Level 2 Award in Pest Management
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2024-01-01'
+  valid_to: null
+  review_by: '2027-01-31'
+  source: {kind: certificate, ref: RSPH certificates on file}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: RSPH certificates on file
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every Cobalt technician holds the RSPH Level 2 Award in Pest Management (not Level 3).
+- key: rodent-guarantee
+  subject: {kind: policy, ref: Rodent treatment guarantee}
+  fact_type: policy
+  attribute: guarantee_days
+  value: 90
+  unit: day
+  currency: null
+  value_text: 90-day guarantee
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Terms of service v4}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [lifetime guarantee, guaranteed pest-free forever]
+  owner: Director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Rat and mouse treatments come with a 90-day guarantee: if they come back within 90 days, we return free of charge.'
+- key: autumn-mouse-offer
+  subject: {kind: offer, ref: Autumn mouse-proofing offer}
+  fact_type: price
+  attribute: discount
+  value: 15
+  unit: percent
+  currency: null
+  value_text: 15% off mouse treatments
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [domestic], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: doc, ref: Autumn offers flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn offer: 15% off domestic mouse treatments, 1 September to 5 October 2026.'
+- key: summer-wasp-offer
+  subject: {kind: offer, ref: Summer wasp offer}
+  fact_type: price
+  attribute: offer_price
+  value: 50
+  unit: nest
+  currency: GBP
+  value_text: £50 per nest
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [domestic], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer offers flyer 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: low
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Summer 2026 offer: wasp nest treatment £50 per nest. Ended 31 August 2026.'
+- key: technician-visit-cost
+  subject: {kind: service, ref: Technician visit}
+  fact_type: price
+  attribute: internal_cost
+  value: 28
+  unit: null
+  currency: GBP
+  value_text: £28 per visit
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Director's costing note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our internal cost of one technician visit is £28 per visit.
+- key: hollowbrook-contract
+  subject: {kind: plan, ref: Commercial protection plan}
+  fact_type: price
+  attribute: contract_price
+  value: 31
+  unit: null
+  currency: GBP
+  value_text: £31 per site per month
+  basis: per_month
+  conditions:
+  - {key: customer, op: '=', value: Hollowbrook Estates}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Hollowbrook framework contract}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hollowbrook Estates pays £31 per site per month under our framework contract.

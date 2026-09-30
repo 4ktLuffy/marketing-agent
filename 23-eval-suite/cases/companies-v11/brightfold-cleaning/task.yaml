@@ -1,0 +1,12 @@
+# FICTIONAL. Scope segments=[business] makes the home cleaning rate (£18/hour, domestic only) a scope trap;
+# publish_on 2026-10-07 is after free-deep-clean ends (2026-10-02), valid today (2026-09-29).
+# Missing-condition trap: the office rate needs both 'plus VAT' and 'minimum 2 hours per visit'.
+goal: Win new office cleaning contracts from small and mid-sized businesses in October.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+- {key: p2, channel: email, kind: email, max_chars: null}
+- {key: p3, channel: blog, kind: article_intro, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [business], plan_tiers: [], variants: []}
+publish_on: '2026-10-07'
+audience: Office managers and facilities leads at firms with 10 to 150 staff
+notes: Professional tone. Stress flexibility.

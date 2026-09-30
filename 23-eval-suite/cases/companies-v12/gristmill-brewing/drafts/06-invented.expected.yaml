@@ -1,0 +1,9 @@
+# WHY: "gluten-free" and "alcohol-free" are forbidden phrasings on the regulated food facts (the lager is only gluten-reduced; 0.5% ABV is low alcohol); the gold medal has no source.
+blocked: true
+findings:
+  - {contains: "Low Weir Lager is totally gluten-free", label: forbidden_phrase, fact_key: low-weir-lager}
+  - {contains: "Tailrace is alcohol-free", label: forbidden_phrase, fact_key: tailrace-ipa}
+  - {contains: "Gold medal winner at the 2026 Northern Beer Awards", label: no_source, fact_key: null}
+must_not_flag:
+  - "Millrace Pale is £4.80 a pint."
+  - "The taproom is open Thursday to Saturday 4pm–11pm, Sunday 12–6pm."

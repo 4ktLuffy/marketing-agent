@@ -1,0 +1,8 @@
+# WHY: the MOT price requires 'free partial retest within 10 working days', which appears nowhere in the draft (the third piece also has no heading).
+blocked: true
+findings:
+- {contains: An MOT costs just £45 at Canal Street, label: missing_disclosure, fact_key: mot-price}
+- {contains: £45 at Canal St., label: missing_disclosure, fact_key: mot-price}
+must_not_flag:
+- We're a DVSA-authorised MOT test centre
+- 'Full service: £149 for cars up to 2.0 litres'

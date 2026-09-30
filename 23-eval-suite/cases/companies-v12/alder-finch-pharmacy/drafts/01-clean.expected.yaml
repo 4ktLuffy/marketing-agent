@@ -1,0 +1,12 @@
+# WHY: Castle Green-scoped and all-branch facts only; both disclosures ("adults 18 and over", "within 3 miles of the branch") and the NHS eligibility wording are present.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our private flu vaccination is"
+  - "at the Castle Green branch"
+  - "free NHS flu jab if you're eligible, so just ask at the counter"
+  - "free prescription delivery within 3 miles of the branch"
+  - "Walk in on Saturdays, 9am to 1pm"
+  - "A private flu vaccination costs £16 for adults 18 and over"
+  - "Free NHS flu jab if you're eligible."
+  - "Walk-in flu jabs at Castle Green on Saturdays, 9am to 1pm"

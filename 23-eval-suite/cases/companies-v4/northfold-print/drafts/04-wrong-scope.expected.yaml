@@ -1,0 +1,9 @@
+# WHY: £520 per 1,000 cartons is the trade (reseller) price (segments=[trade]); the task is segments=[direct], whose price is £640; "trade pricing open to everyone" extends it outside its segment.
+blocked: true
+findings:
+  - {contains: "Our carton price: £520 plus VAT for 1,000", label: wrong_scope, fact_key: carton-trade-price}
+  - {contains: "Subject: 1,000 printed cartons for £520", label: wrong_scope, fact_key: carton-trade-price}
+  - {contains: "Order 1,000 printed cartons for £520 plus VAT", label: wrong_scope, fact_key: carton-trade-price}
+  - {contains: "Trade pricing is open to everyone this autumn", label: wrong_scope, fact_key: carton-trade-price}
+must_not_flag:
+  - "Colour matched to your brand references and signed off on press"

@@ -1,0 +1,28 @@
+# FICTIONAL. variants=[weekday-spa-day], segments=[day-guest]: the weekend price/treatment and the member
+# price are out of scope; publish 2026-10-16 is after friends-go-free ends (2026-10-12); twilight-spa ended 08-31.
+goal: Fill Weekday Spa Days in October with local adults.
+pieces:
+- key: p1
+  channel: instagram
+  kind: caption
+  max_chars: 2200
+- key: p2
+  channel: pinterest
+  kind: pin
+  max_chars: 500
+- key: p3
+  channel: newsletter
+  kind: email
+  max_chars: null
+scope:
+  sites: []
+  regions: []
+  channels: []
+  segments:
+  - day-guest
+  plan_tiers: []
+  variants:
+  - weekday-spa-day
+publish_on: '2026-10-16'
+audience: Local adults looking for a midweek treat
+notes: Remind people spa days are for over-18s.

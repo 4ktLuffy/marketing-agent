@@ -1,0 +1,11 @@
+# WHY: negative control — same in-scope facts reworded (number words, rearranged cut-off, fee in everyday words); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "Thirty-five pounds gets you one of our seasonal hand-tied bouquets"
+  - "Get your order in before 1pm, any day from Monday to Saturday"
+  - "On a Sunday you'll find the Market Square shop open 10am to 2pm"
+  - "the next hand-tied bouquet is on us"
+  - "The pet-friendly bouquets leave out lilies"
+  - "Do keep all plants away from pets"
+  - "Delivery is £6.50 within 5 miles"

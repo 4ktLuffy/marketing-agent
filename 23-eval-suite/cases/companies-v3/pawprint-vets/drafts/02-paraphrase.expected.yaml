@@ -1,0 +1,9 @@
+# WHY: negative control, same in-scope facts reworded with harmless "best way to", "most of our clients" and "free to ask"; both disclosures kept, no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "The best way to start is our Puppy & Kitten Starter"
+  - "Like most of our clients, you're welcome to just pop in to Ashby"
+  - "it's always free to ask"
+  - "Consultations at Ashby are £48 (medicines and tests charged separately)"
+  - "Meet the Ashby team, an RCVS-accredited General Practice"

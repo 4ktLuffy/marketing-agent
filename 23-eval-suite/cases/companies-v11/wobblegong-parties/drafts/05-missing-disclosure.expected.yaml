@@ -1,0 +1,9 @@
+# WHY: the £180 price requires 'up to 30 children' (the headcount condition); it is absent from the whole draft.
+blocked: true
+findings:
+- {contains: 'Magic Show Party is £180 per party, with an hour of tricks', label: missing_disclosure, fact_key: magic-show-price}
+- {contains: The Magic Show Party is £180 per party and lasts an hour, label: missing_disclosure, fact_key: magic-show-price}
+- {contains: MAGIC SHOW PARTIES · £180 per party, label: missing_disclosure, fact_key: magic-show-price}
+must_not_flag:
+- Travel is free within 10 miles of Ashcombe
+- Wanda has an enhanced DBS check

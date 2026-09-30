@@ -1,0 +1,12 @@
+# FICTIONAL. Scope variants=[magic-show] makes the Disco Party price (£260) a scope trap;
+# publish_on 2026-10-09 is after halloween-balloons ends (2026-10-05), valid today (2026-09-29).
+# Basis trap: the magic show is £180 per party, never per child.
+goal: Book more Magic Show Parties for October and November weekends.
+pieces:
+- {key: p1, channel: instagram, kind: post, max_chars: 2200}
+- {key: p2, channel: whatsapp, kind: message, max_chars: 700}
+- {key: p3, channel: flyer, kind: flyer, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [magic-show]}
+publish_on: '2026-10-09'
+audience: Parents of 4 to 9 year olds around Ashcombe
+notes: Friendly and fun. The flyer goes in school book bags.

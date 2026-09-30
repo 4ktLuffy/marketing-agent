@@ -1,0 +1,286 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Splashlings Swim School, type: children's swim school, today: '2026-09-29'}
+facts:
+- key: group-lesson-price
+  subject: {kind: variant, ref: Group lesson}
+  fact_type: price
+  attribute: price
+  value: 9.5
+  unit: lesson
+  currency: GBP
+  value_text: £9.50 per 30-minute lesson
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Autumn term fees 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [billed per term]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Group lessons cost £9.50 per child per 30-minute lesson, billed per term.
+- key: private-lesson-price
+  subject: {kind: variant, ref: Private lesson}
+  fact_type: price
+  attribute: price
+  value: 28
+  unit: lesson
+  currency: GBP
+  value_text: £28 per 30-minute lesson
+  basis: per_person
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [private]}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Autumn term fees 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Private one-to-one lessons cost £28 per 30-minute lesson.
+- key: teacher-qualification
+  subject: {kind: business, ref: Splashlings teaching team}
+  fact_type: credential
+  attribute: teacher_certificate
+  value: null
+  unit: null
+  currency: null
+  value_text: every teacher holds the AquaTeach Level 2 swimming teacher certificate
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: certificate, ref: AquaTeach register extract 2026-08}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: AquaTeach register extract 2026-08
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [drown-proof, guaranteed to swim, water-safe in one term]
+  owner: Head teacher
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every Splashlings teacher holds the AquaTeach Level 2 swimming teacher certificate (register checked August 2026).
+- key: lifeguard-poolside
+  subject: {kind: policy, ref: Poolside safety}
+  fact_type: policy
+  attribute: lifeguard
+  value: null
+  unit: null
+  currency: null
+  value_text: a qualified lifeguard on poolside at every lesson
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Pool safety operating procedure v5}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: Pool safety operating procedure v5
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head teacher
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A qualified lifeguard is on poolside at every Splashlings lesson, separate from the teacher.
+- key: group-ratio
+  subject: {kind: variant, ref: Group lesson}
+  fact_type: spec
+  attribute: max_ratio
+  value: 6
+  unit: children
+  currency: null
+  value_text: no more than 6 children per teacher
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Pool safety operating procedure v5}
+  claim_class: safety_cert
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head teacher
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Group lessons have no more than 6 children per teacher.
+- key: free-taster
+  subject: {kind: offer, ref: Taster lesson}
+  fact_type: price
+  attribute: offer
+  value: 0
+  unit: null
+  currency: GBP
+  value_text: a free taster lesson
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-11'
+  review_by: null
+  source: {kind: doc, ref: Autumn term flyer brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ['new swimmers only, one per child']
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: New swimmers can book a free taster group lesson, one per child, 1 September to 11 October 2026.
+- key: summer-intensive
+  subject: {kind: service, ref: Summer intensive week}
+  fact_type: price
+  attribute: price
+  value: 60
+  unit: null
+  currency: GBP
+  value_text: £60 for 5 days
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-07-20'
+  valid_to: '2026-08-28'
+  review_by: null
+  source: {kind: doc, ref: Summer programme 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'The summer intensive: five 30-minute lessons in one week for £60, 20 July to 28 August 2026.'
+- key: group-ages
+  subject: {kind: variant, ref: Group lesson}
+  fact_type: spec
+  attribute: age_range
+  value: null
+  unit: null
+  currency: null
+  value_text: ages 4 to 11
+  basis: null
+  conditions:
+  - {key: age, op: '>=', value: 4}
+  - {key: age, op: <=, value: 11}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [group]}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Lesson structure 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head teacher
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Group lessons are for children aged 4 to 11.
+- key: teacher-hourly-pay
+  subject: {kind: business, ref: Splashlings teaching team}
+  fact_type: price
+  attribute: pay_rate
+  value: 16.5
+  unit: hour
+  currency: GBP
+  value_text: £16.50 per hour
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Payroll 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Swimming teachers are paid £16.50 per hour.
+- key: st-aldric-contract
+  subject: {kind: service, ref: School swimming}
+  fact_type: price
+  attribute: contract_price
+  value: 6.2
+  unit: lesson
+  currency: GBP
+  value_text: £6.20 per pupil per lesson
+  basis: per_person
+  conditions:
+  - {key: customer, op: '=', value: St Aldric's Primary}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2027-07-20'
+  review_by: null
+  source: {kind: doc, ref: St Aldric's service agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: St Aldric's Primary pays £6.20 per pupil per lesson for Year 4 school swimming.

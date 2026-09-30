@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Written from the contracts only; no checker code was read.
+company: {name: "Volt Home Charging Ltd", type: "EV charger installer", today: "2026-09-29"}
+facts:
+  - key: "volt-home-7-price"
+    subject: {kind: "product", ref: "Volt Home 7 (7kW)"}
+    fact_type: "price"
+    attribute: "installed_price"
+    value: 899
+    unit: "charger"
+    currency: "GBP"
+    value_text: "£899 fitted"
+    basis: "per_unit"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["single-phase"]}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Volt price list July 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["standard installation"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Sales manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "The Volt Home 7 (7kW, single-phase) costs £899 fitted for a standard installation (charger within 10 metres of the fuse board)."
+  - key: "volt-pro-22-price"
+    subject: {kind: "product", ref: "Volt Pro 22 (22kW)"}
+    fact_type: "price"
+    attribute: "installed_price"
+    value: 1449
+    unit: "charger"
+    currency: "GBP"
+    value_text: "£1,449 fitted"
+    basis: "per_unit"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["three-phase"]}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Volt price list July 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Sales manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "The Volt Pro 22 (22kW) costs £1,449 fitted and needs a three-phase supply."
+  - key: "chargepoint-grant"
+    subject: {kind: "offer", ref: "Home Chargepoint Grant"}
+    fact_type: "price"
+    attribute: "grant"
+    value: 350
+    unit: null
+    currency: "GBP"
+    value_text: "£350 off"
+    basis: "flat"
+    conditions: [{key: "eligibility", op: "in", value: ["flat-owner", "renter"]}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: "2026-10-05"
+    review_by: null
+    source: {kind: "url", ref: "gov-grants.example/home-chargepoint (scheme closes 5 October 2026)"}
+    claim_class: "price_reference"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["flat owners and renters only"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Sales manager"
+    risk: "high"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Until 5 October 2026, the Home Chargepoint Grant takes £350 off an install, for flat owners and renters only."
+  - key: "nesr-registration"
+    subject: {kind: "business", ref: "Volt Home Charging Ltd"}
+    fact_type: "credential"
+    attribute: "electrical_registration"
+    value: null
+    unit: null
+    currency: null
+    value_text: "NESR Approved Contractor, registration NESR-207731"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-02-01"
+    valid_to: "2027-01-31"
+    review_by: "2026-12-31"
+    source: {kind: "certificate", ref: "NESR certificate 207731 (2026 assessment)"}
+    claim_class: "safety_cert"
+    requires_evidence: true
+    evidence_ref: "NESR-207731"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Volt Home Charging is registered with the NESR as an Approved Contractor (registration NESR-207731); NESR grades are Domestic Installer and Approved Contractor."
+  - key: "install-areas"
+    subject: {kind: "business", ref: "Volt Home Charging Ltd"}
+    fact_type: "availability"
+    attribute: "service_area"
+    value: null
+    unit: null
+    currency: null
+    value_text: "Leeds, Bradford and Wakefield (LS, BD and WF postcodes)"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: ["west-yorkshire"], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "owner_statement", ref: "Director: service area 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Volt installs chargers across Leeds, Bradford and Wakefield (LS, BD and WF postcodes)."
+  - key: "install-inclusions"
+    subject: {kind: "service", ref: "Volt home installation"}
+    fact_type: "inclusion"
+    attribute: "inclusions"
+    value: null
+    unit: null
+    currency: null
+    value_text: "app set-up, a load-balancing check and an electrical installation certificate"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Installation checklist v5"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Operations manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Every Volt install includes app set-up, a load-balancing check and an electrical installation certificate."
+  - key: "workplace-twin-price"
+    subject: {kind: "product", ref: "Volt Work Twin"}
+    fact_type: "price"
+    attribute: "installed_price"
+    value: 2150
+    unit: "charger"
+    currency: "GBP"
+    value_text: "£2,150 plus VAT fitted"
+    basis: "per_unit"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: ["business"], plan_tiers: [], variants: []}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Volt business price list July 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["plus VAT"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Sales manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Businesses pay £2,150 plus VAT for a fitted Volt Work Twin (two-socket) charger."
+  - key: "charger-warranty"
+    subject: {kind: "policy", ref: "Volt charger warranty"}
+    fact_type: "policy"
+    attribute: "warranty_term"
+    value: 3
+    unit: "year"
+    currency: null
+    value_text: "3-year warranty"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Terms of installation v3 clause 9"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["when registered within 30 days"]
+    allowed_phrasing: []
+    forbidden_phrasing: ["lifetime warranty"]
+    owner: "Director"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Volt chargers carry a 3-year warranty when registered within 30 days of installation."
+  - key: "installer-day-cost"
+    subject: {kind: "business", ref: "Volt Home Charging Ltd"}
+    fact_type: "price"
+    attribute: "installer_day_cost"
+    value: 310
+    unit: "day"
+    currency: "GBP"
+    value_text: "£310 per installer day"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2026-12-31"
+    review_by: null
+    source: {kind: "doc", ref: "Cost model 2026 (internal)"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "internal"
+    status: "active"
+    supersedes_key: null
+    text: "One installer day costs Volt £310 including van and insurance."
+  - key: "hollins-housing-contract"
+    subject: {kind: "product", ref: "Volt Home 7 (7kW)"}
+    fact_type: "price"
+    attribute: "contract_price"
+    value: 640
+    unit: "charger"
+    currency: "GBP"
+    value_text: "£640 per charger for Hollins Housing"
+    basis: "per_unit"
+    conditions: [{key: "customer", op: "=", value: "Hollins Housing Association"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-05-01"
+    valid_to: "2028-04-30"
+    review_by: null
+    source: {kind: "doc", ref: "Hollins Housing framework HH-EV-2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "restricted"
+    status: "active"
+    supersedes_key: null
+    text: "Hollins Housing Association pays £640 per fitted Volt Home 7 under its framework contract."

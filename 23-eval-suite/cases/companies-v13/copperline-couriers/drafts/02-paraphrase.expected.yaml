@@ -1,0 +1,10 @@
+# WHY: negative control — same Zone 1 account facts in everyday words ("+VAT", "an hour or less", "a single invoice each month"); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "Seven pounds fifty a drop anywhere in Zone 1 (+VAT)"
+  - "From pickup to doorstep in an hour or less, weekdays 8am to 6pm"
+  - "Up to 100kg fits on one of our e-cargo bikes"
+  - "a single invoice each month, and 30 days to pay it"
+  - "We cover goods in transit up to £1,000 per consignment"
+  - "£7.50/drop excl. VAT"

@@ -1,0 +1,8 @@
+# WHY: "Voted the best café" is a comparative/award claim with no source; "Free delivery on every order" has no delivery-fee fact behind it.
+blocked: true
+findings:
+  - {contains: "Voted the best café in town", label: no_source, fact_key: null}
+  - {contains: "Free delivery on every order", label: no_source, fact_key: null}
+must_not_flag:
+  - "Riverside delivers from 8am to 3pm every day"
+  - "risotto contains milk, celery and sulphites"

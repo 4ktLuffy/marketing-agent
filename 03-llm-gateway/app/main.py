@@ -12,7 +12,8 @@ import time
 
 import httpx
 import jinja2
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, Field
 
@@ -39,6 +40,9 @@ REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "240"))
 BRAND_TTL = 60.0
 # In-memory activity log (GET /v1/activity): the last ACTIVITY_SIZE calls, metadata only.
 ACTIVITY_SIZE = int(os.getenv("ACTIVITY_SIZE", "500"))
+# POST /v1/chat/completions (OpenAI-compatible passthrough, used by the n8n chat agent): the
+# largest request body accepted. Tool schemas plus 8 turns of history with tool results fit well.
+MAX_CHAT_BYTES = int(os.getenv("MAX_CHAT_BYTES", "1000000"))
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("llm-gateway")
@@ -63,6 +67,11 @@ MAX_VARS_CHARS = int(os.getenv("MAX_VARS_CHARS", "60000"))
 # A caller may pick a model only from this list (plus MODEL and models named in prompt files):
 # otherwise anything on the network could run arbitrary (paid) models through the gateway.
 ALLOWED_MODELS = {m.strip() for m in os.getenv("ALLOWED_MODELS", "").split(",") if m.strip()}
+
+
+def allowed_models() -> set[str]:
+    """Models a caller may name: ALLOWED_MODELS, MODEL and models named in prompt files."""
+    return ALLOWED_MODELS | {MODEL} | {p.model for p in store.all().values() if p.model}
 
 
 class RunRequest(BaseModel):
@@ -131,6 +140,15 @@ def learning_summary() -> str:
     return _learning_cache["summary"]
 
 
+def facts_max_sensitivity() -> str:
+    """Which facts may go into a prompt. With a hosted model the prompt leaves the machine, so
+    only public facts unless FACTS_MAX_SENSITIVITY says otherwise; locally internal ones too."""
+    v = os.getenv("FACTS_MAX_SENSITIVITY", "").strip().lower()
+    if v in ("public", "internal"):
+        return v
+    return "internal" if os.getenv("LLM_PROVIDER", "ollama").strip().lower() == "ollama" else "public"
+
+
 def facts_text() -> str:
     """Approved facts from 05 `/facts` as numbered lines ("[f1] ..."), for prompts that
     declare a `facts` var. Writing prompts that only saw the brand summary invented tasting
@@ -141,7 +159,8 @@ def facts_text() -> str:
     if _facts_cache["at"] is not None and now - _facts_cache["at"] < BRAND_TTL:
         return _facts_cache["text"]
     try:
-        r = httpx.get(f"{BRAND_URL}/facts", headers=key_headers(), timeout=5)
+        r = httpx.get(f"{BRAND_URL}/facts", params={"max_sensitivity": facts_max_sensitivity()},
+                      headers=key_headers(), timeout=5)
         r.raise_for_status()
         rows = r.json().get("facts") or []
         text = "\n".join(f"[{f['id']}] {str(f['text']).strip()}" for f in rows if f.get("text"))
@@ -371,7 +390,7 @@ def run(req: RunRequest, x_caller: str | None = Header(default=None)):
         raise HTTPException(404, f"unknown prompt '{req.prompt}'")
     if len(json.dumps(req.vars, ensure_ascii=False)) > MAX_VARS_CHARS:
         raise HTTPException(413, f"vars are larger than {MAX_VARS_CHARS} characters")
-    if req.model and req.model not in ALLOWED_MODELS | {MODEL} | {p.model for p in store.all().values() if p.model}:
+    if req.model and req.model not in allowed_models():
         raise HTTPException(403, f"model '{req.model}' is not allowed here; set ALLOWED_MODELS on the gateway")
     missing = prompt.missing(req.vars)
     if missing:
@@ -454,3 +473,153 @@ def _run(prompt, model, temperature, validator, messages, usage, outcome):
         ]
     outcome["error"] = _problem_kind(problem)
     raise HTTPException(502, f"no valid output after {MAX_ATTEMPTS} attempts; last problem: {problem}")
+
+
+# ---------- OpenAI-compatible chat passthrough (the n8n chat agent, deploy 24)
+# The body goes to the provider's own OpenAI-compatible endpoint unchanged (messages, tools,
+# tool_calls, stream), except that the model must be on the allowlist. No prompt, brand or
+# retries are added: the caller (n8n's agent) owns the conversation. The activity log gets the
+# same metadata as /v1/run (prompt name "chat"), never messages or output.
+
+def require_chat_key(x_api_key: str | None = Header(default=None),
+                     authorization: str | None = Header(default=None)):
+    """X-API-Key like /v1/run, or `Authorization: Bearer <INTERNAL_API_KEY>` (what n8n's
+    OpenAI credential and any OpenAI client send). Constant-time compare for both."""
+    expected = os.environ.get("INTERNAL_API_KEY")
+    if not expected:
+        return
+    bearer = authorization[7:].strip() if authorization and authorization[:7].lower() == "bearer " else None
+    for given in (x_api_key, bearer):
+        if given and hmac.compare_digest(given.encode(), expected.encode()):
+            return
+    raise HTTPException(401, "missing or wrong API key (X-API-Key or Authorization: Bearer)")
+
+
+def _oai_error(status: int, message: str, kind: str, headers: dict | None = None) -> JSONResponse:
+    return JSONResponse({"error": {"message": message, "type": kind, "code": kind}}, status_code=status,
+                        headers=headers)
+
+
+def _chat_upstream() -> tuple[str, dict] | None:
+    """(URL, headers) of the provider's chat endpoint, or None when the hosted one is not set up."""
+    if LLM_PROVIDER == "openai":
+        if not OPENAI_BASE_URL or not OPENAI_API_KEY:
+            return None
+        return f"{OPENAI_BASE_URL}/chat/completions", {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+    return f"{OLLAMA_URL}/v1/chat/completions", {}
+
+
+def _usage(obj) -> tuple[int, int]:
+    u = obj.get("usage") if isinstance(obj, dict) else None
+    if not isinstance(u, dict):
+        return 0, 0
+    return int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
+
+
+def _upstream_error(r: httpx.Response, body: bytes) -> tuple[JSONResponse | Response, str]:
+    """An upstream refusal as (response to the caller, activity error kind). 4xx and 429 keep
+    their status (so the caller's client can retry a 429); 5xx become 502. The upstream body
+    goes back to the caller only, never into the log."""
+    text = body[:2000].decode("utf-8", "replace")
+    kind = _status_kind(r.status_code)
+    if r.status_code == 429 and any(k in text.lower() for k in ("per day", "(tpd)", "(rpd)")):
+        kind = "daily_limit"
+    if r.status_code >= 500:
+        return _oai_error(502, f"upstream model error {r.status_code}: {text[:300]}", kind), kind
+    headers = {h: r.headers[h] for h in ("retry-after",) if h in r.headers}
+    return Response(body, status_code=r.status_code, headers=headers,
+                    media_type=r.headers.get("content-type", "application/json")), kind
+
+
+@app.get("/v1/models", dependencies=[Depends(require_chat_key)])
+def list_models():
+    """OpenAI-style model list: the models a caller may use here. n8n's OpenAI credential test
+    and its model picker call this."""
+    return {"object": "list", "data": [{"id": m, "object": "model", "created": 0, "owned_by": "llm-gateway"}
+                                       for m in sorted(allowed_models())]}
+
+
+@app.post("/v1/chat/completions", dependencies=[Depends(require_chat_key)])
+async def chat_completions(request: Request, x_caller: str | None = Header(default=None)):
+    raw = await request.body()
+    if len(raw) > MAX_CHAT_BYTES:
+        return _oai_error(413, f"request body is larger than {MAX_CHAT_BYTES} bytes", "too_large")
+    try:
+        body = json.loads(raw)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return _oai_error(400, "body is not valid JSON", "invalid_request")
+    if not isinstance(body, dict) or not isinstance(body.get("messages"), list) or not body["messages"]:
+        return _oai_error(400, "body must be a JSON object with a non-empty `messages` list", "invalid_request")
+    model = body.get("model") or MODEL
+    if not isinstance(model, str) or len(model) > 200:
+        return _oai_error(400, "`model` must be a string", "invalid_request")
+    if model not in allowed_models():
+        return _oai_error(403, f"model '{model}' is not allowed here; set ALLOWED_MODELS on the gateway",
+                          "model_not_allowed")
+    body["model"] = model
+    stream = body.get("stream") is True
+    upstream = _chat_upstream()
+    call_id = activity.start("chat", x_caller, model, provider_label(LLM_PROVIDER, OPENAI_BASE_URL))
+    if upstream is None:
+        activity.finish(call_id, ok=False, error="not_configured")
+        return _oai_error(502, "LLM_PROVIDER=openai needs OPENAI_BASE_URL and OPENAI_API_KEY", "not_configured")
+    url, headers = upstream
+    client = httpx.AsyncClient(timeout=httpx.Timeout(REQUEST_TIMEOUT, connect=10.0))
+    try:
+        r = await client.send(client.build_request("POST", url, json=body, headers=headers), stream=True)
+    except httpx.HTTPError as exc:
+        await client.aclose()
+        kind = "timeout" if isinstance(exc, httpx.TimeoutException) else "unreachable"
+        activity.finish(call_id, ok=False, error=kind)
+        return _oai_error(504 if kind == "timeout" else 502, f"model backend {kind}", kind)
+
+    if r.status_code != 200 or not stream:
+        try:
+            content = await r.aread()
+        except httpx.HTTPError as exc:
+            kind = "timeout" if isinstance(exc, httpx.TimeoutException) else "unreachable"
+            activity.finish(call_id, ok=False, error=kind)
+            return _oai_error(504 if kind == "timeout" else 502, f"model backend {kind}", kind)
+        finally:
+            await r.aclose()
+            await client.aclose()
+        if r.status_code != 200:
+            resp, kind = _upstream_error(r, content)
+            activity.finish(call_id, ok=False, error=kind)
+            return resp
+        try:
+            tin, tout = _usage(json.loads(content))
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+            tin = tout = 0
+        activity.finish(call_id, ok=True, tokens_in=tin, tokens_out=tout)
+        return Response(content, status_code=200, media_type=r.headers.get("content-type", "application/json"))
+
+    async def relay():
+        """Upstream SSE bytes out unchanged; usage read from the chunks on the way (the final
+        chunk carries it when the caller asked for stream_options.include_usage)."""
+        ok, kind, tokens, buf = False, "client_closed", [0, 0], b""
+        try:
+            async for chunk in r.aiter_raw():
+                yield chunk
+                buf += chunk
+                *lines, buf = buf.split(b"\n")
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith(b"data:") and b'"usage"' in line:
+                        try:
+                            tin, tout = _usage(json.loads(line[5:]))
+                        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+                            continue
+                        if tin or tout:
+                            tokens[:] = [tin, tout]
+            ok, kind = True, None
+        except httpx.HTTPError as exc:
+            kind = "timeout" if isinstance(exc, httpx.TimeoutException) else "unreachable"
+        finally:
+            await r.aclose()
+            await client.aclose()
+            activity.finish(call_id, ok=ok, error=kind, tokens_in=tokens[0], tokens_out=tokens[1])
+
+    return StreamingResponse(relay(), status_code=200,
+                             media_type=r.headers.get("content-type", "text/event-stream"),
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

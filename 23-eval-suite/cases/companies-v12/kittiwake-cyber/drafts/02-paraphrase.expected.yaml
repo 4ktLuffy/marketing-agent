@@ -1,0 +1,12 @@
+# WHY: negative control. Same Essentials facts reworded: "plus VAT"/"VAT on top"/"+VAT" for "excl. VAT", "on a weekday between 8am and 6pm"/"weekdays 8–6" for "Mon–Fri, 8am–6pm", number words; no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "For thirty-five pounds a head each month (plus VAT)"
+  - "Raise an issue on a weekday between 8am and 6pm and we'll respond within four hours"
+  - "Your Microsoft 365 data is backed up and kept for a full year"
+  - "We hold Cyber Essentials Plus certification ourselves"
+  - "Essentials is priced per user: £35 a month each, with VAT on top"
+  - "There's a one-off £450 set-up charge (+VAT)"
+  - "Every plan backs up Microsoft 365 with one-year retention"
+  - "£35/user/month + VAT"

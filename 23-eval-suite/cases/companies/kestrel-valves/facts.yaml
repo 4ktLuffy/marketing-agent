@@ -1,0 +1,283 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: "Kestrel Valves Ltd", type: "manufacturing", today: "2026-09-29"}
+facts:
+  - key: kv50-pressure-rating
+    subject: {kind: product, ref: "KV-50 ball valve"}
+    fact_type: spec
+    attribute: pressure_rating
+    value: 40
+    unit: bar
+    currency: null
+    value_text: "PN40 (40 bar)"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2025-01-01"
+    valid_to: null
+    review_by: "2027-01-01"
+    source: {kind: doc, ref: "KV-50 datasheet rev F"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Technical manager"
+    risk: medium
+    sensitivity: public
+    status: active
+    supersedes_key: null
+    text: "The KV-50 ball valve is pressure rated PN40 (40 bar) in every size and variant."
+  - key: kv50-size-range
+    subject: {kind: product, ref: "KV-50 ball valve"}
+    fact_type: spec
+    attribute: sizes
+    value: null
+    unit: null
+    currency: null
+    value_text: "DN15 to DN100"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2025-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: doc, ref: "KV-50 datasheet rev F"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Technical manager"
+    risk: low
+    sensitivity: public
+    status: active
+    supersedes_key: null
+    text: "The KV-50 is made in sizes DN15 to DN100."
+  - key: ul-listed-electric
+    subject: {kind: variant, ref: "KV-50E electric actuator"}
+    fact_type: certification
+    attribute: ul_listing
+    value: null
+    unit: null
+    currency: null
+    value_text: "UL Listed (electric actuator models only)"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [electric-actuator]}
+    valid_from: "2025-06-01"
+    valid_to: "2027-05-31"
+    review_by: "2027-04-30"
+    source: {kind: certificate, ref: "UL file E512345 (actuator assembly)"}
+    claim_class: safety_cert
+    requires_evidence: true
+    evidence_ref: "UL file E512345"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: ["UL Listed electric actuator", "KV-50E electric actuator models are UL Listed"]
+    forbidden_phrasing: ["UL Listed range", "fully UL Listed", "all KV-50 valves are UL Listed"]
+    owner: "Quality manager"
+    risk: high
+    sensitivity: public
+    status: active
+    supersedes_key: null
+    text: "Only the KV-50E electric actuator models are UL Listed; manual lever and gear models are not."
+  - key: iso-9001
+    subject: {kind: business, ref: "Kestrel Valves Ltd"}
+    fact_type: certification
+    attribute: quality_management
+    value: null
+    unit: null
+    currency: null
+    value_text: "ISO 9001:2015 certified"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2024-06-01"
+    valid_to: "2027-05-31"
+    review_by: "2027-04-30"
+    source: {kind: certificate, ref: "Certificate QMS-88213"}
+    claim_class: safety_cert
+    requires_evidence: true
+    evidence_ref: "Certificate QMS-88213"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: ["ISO 9001:2015 certified"]
+    forbidden_phrasing: []
+    owner: "Quality manager"
+    risk: medium
+    sensitivity: public
+    status: active
+    supersedes_key: null
+    text: "Kestrel Valves is ISO 9001:2015 certified for the design and manufacture of ball valves."
+  - key: lead-time-stock
+    subject: {kind: variant, ref: "KV-50 manual DN15-DN50"}
+    fact_type: availability
+    attribute: lead_time
+    value: 5
+    unit: working_days
+    currency: null
+    value_text: "5 working days from UK stock"
+    basis: null
+    conditions: [{key: sizes, op: in, value: [DN15, DN20, DN25, DN32, DN40, DN50]}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [manual]}
+    valid_from: "2026-07-01"
+    valid_to: "2026-10-02"
+    review_by: null
+    source: {kind: owner_statement, ref: "Ops email: stock clearance ends 2 Oct"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Operations manager"
+    risk: medium
+    sensitivity: public
+    status: active
+    supersedes_key: null
+    text: "Until 2 October 2026, manual KV-50 valves DN15-DN50 ship in 5 working days from UK stock."
+  - key: lead-time-standard
+    subject: {kind: variant, ref: "KV-50 manual"}
+    fact_type: availability
+    attribute: lead_time
+    value: 15
+    unit: working_days
+    currency: null
+    value_text: "15 working days"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [manual]}
+    valid_from: "2026-10-03"
+    valid_to: null
+    review_by: "2027-01-31"
+    source: {kind: owner_statement, ref: "Ops email: lead times from 3 Oct"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Operations manager"
+    risk: medium
+    sensitivity: public
+    status: active
+    supersedes_key: lead-time-stock
+    text: "From 3 October 2026 the standard lead time for manual KV-50 valves is 15 working days."
+  - key: warranty
+    subject: {kind: policy, ref: "KV-50 warranty"}
+    fact_type: policy
+    attribute: warranty_term
+    value: 3
+    unit: year
+    currency: null
+    value_text: "3-year warranty"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2025-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: doc, ref: "Terms of sale v7 clause 11"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["when installed by a qualified engineer"]
+    allowed_phrasing: []
+    forbidden_phrasing: ["lifetime warranty"]
+    owner: "Commercial director"
+    risk: medium
+    sensitivity: public
+    status: active
+    supersedes_key: null
+    text: "Every KV-50 carries a 3-year warranty when installed by a qualified engineer."
+  - key: wras-approval-brass
+    subject: {kind: variant, ref: "KV-50B brass"}
+    fact_type: certification
+    attribute: wras
+    value: null
+    unit: null
+    currency: null
+    value_text: "WRAS approved"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [uk], channels: [], segments: [], plan_tiers: [], variants: [brass]}
+    valid_from: "2021-04-01"
+    valid_to: "2026-03-31"
+    review_by: null
+    source: {kind: certificate, ref: "WRAS approval 2104512 (lapsed, not renewed)"}
+    claim_class: safety_cert
+    requires_evidence: true
+    evidence_ref: "WRAS 2104512"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Quality manager"
+    risk: high
+    sensitivity: public
+    status: expired
+    supersedes_key: null
+    text: "The brass KV-50B was WRAS approved until 31 March 2026; the approval was not renewed."
+  - key: distributor-margin
+    subject: {kind: business, ref: "Kestrel Valves Ltd"}
+    fact_type: price
+    attribute: distributor_margin
+    value: 32
+    unit: percent
+    currency: null
+    value_text: "32% distributor margin"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [distributor], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2026-12-31"
+    review_by: null
+    source: {kind: doc, ref: "Distributor price list 2026 (internal)"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial director"
+    risk: high
+    sensitivity: internal
+    status: active
+    supersedes_key: null
+    text: "Approved distributors get a 32% margin off list price on the KV-50 range."
+  - key: severn-framework-price
+    subject: {kind: product, ref: "KV-50 DN25 manual"}
+    fact_type: price
+    attribute: contract_price
+    value: 41.20
+    unit: unit
+    currency: GBP
+    value_text: "£41.20 per valve"
+    basis: per_unit
+    conditions: [{key: customer, op: "=", value: "Severn Water"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [manual]}
+    valid_from: "2026-04-01"
+    valid_to: "2028-03-31"
+    review_by: null
+    source: {kind: doc, ref: "Severn Water framework agreement SW-FA-2026-07"}
+    claim_class: none
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial director"
+    risk: high
+    sensitivity: restricted
+    status: active
+    supersedes_key: null
+    text: "Severn Water pays £41.20 per KV-50 DN25 manual valve under its framework agreement."

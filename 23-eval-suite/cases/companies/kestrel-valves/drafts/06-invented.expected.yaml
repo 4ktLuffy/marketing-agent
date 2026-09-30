@@ -1,0 +1,8 @@
+# WHY: "PN63" contradicts the PN40 rating (wrong number); ISO 14001 is a certification keyword with no source fact.
+blocked: true
+findings:
+  - {contains: "tested to PN63", label: conflict_or_expired, fact_key: kv50-pressure-rating}
+  - {contains: "ISO 14001 certified", label: no_source, fact_key: null}
+must_not_flag:
+  - "3-year warranty when installed by a qualified engineer"
+  - "comes in sizes DN15 to DN100"

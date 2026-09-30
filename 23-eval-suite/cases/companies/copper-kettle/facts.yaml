@@ -1,0 +1,289 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: The Copper Kettle, type: restaurant, today: '2026-09-29'}
+facts:
+- key: brunch-box-dine-in
+  subject: {kind: menu_item, ref: Brunch box}
+  fact_type: price
+  attribute: price
+  value: 12.95
+  unit: null
+  currency: GBP
+  value_text: £12.95
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [dine-in], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Autumn menu 2026 v2}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The brunch box costs £12.95 to eat in at both cafés.
+- key: brunch-box-delivery
+  subject: {kind: menu_item, ref: Brunch box}
+  fact_type: price
+  attribute: price
+  value: 14.9
+  unit: null
+  currency: GBP
+  value_text: £14.90
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [delivery], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: Deliveroo menu (Riverside)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - Deliveroo prices are higher than in the café
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: On Deliveroo the brunch box costs £14.90 (delivery prices are 15% above in-café prices).
+- key: delivery-price-uplift
+  subject: {kind: policy, ref: Delivery pricing}
+  fact_type: policy
+  attribute: uplift
+  value: 15
+  unit: percent
+  currency: null
+  value_text: 15% higher than in the café
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [delivery], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Owner pricing note Jan 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: All Deliveroo menu prices are 15% higher than our in-café prices.
+- key: risotto-allergens-v4
+  subject: {kind: menu_item, ref: Pumpkin & sage risotto}
+  fact_type: spec
+  attribute: allergens
+  value: null
+  unit: null
+  currency: null
+  value_text: contains milk, celery and sulphites
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-15'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Allergen matrix v4 (2026-09-15)}
+  claim_class: regulated_food
+  requires_evidence: true
+  evidence_ref: Allergen matrix v4
+  consent_ref: null
+  required_disclosures:
+  - Made in a kitchen that handles all 14 major allergens
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - allergen-free
+  - nut-free
+  owner: Head chef
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: risotto-allergens-v3
+  text: The pumpkin & sage risotto contains milk, celery and sulphites. Made in a kitchen that handles all 14 major allergens.
+- key: risotto-allergens-v3
+  subject: {kind: menu_item, ref: Pumpkin & sage risotto}
+  fact_type: spec
+  attribute: allergens
+  value: null
+  unit: null
+  currency: null
+  value_text: contains milk and mustard
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2026-09-14'
+  review_by: null
+  source: {kind: doc, ref: Allergen matrix v3 (superseded)}
+  claim_class: regulated_food
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - Made in a kitchen that handles all 14 major allergens
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head chef
+  risk: high
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Old recipe (until 14 Sept 2026): the risotto contained milk and mustard. Superseded by matrix v4.'
+- key: deliveroo-promo
+  subject: {kind: offer, ref: Deliveroo autumn promo}
+  fact_type: price
+  attribute: discount
+  value: 20
+  unit: percent
+  currency: null
+  value_text: 20% off orders over £20 on Deliveroo
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [delivery], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-20'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: doc, ref: Deliveroo promo confirmation DR-55120}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 20% off Copper Kettle orders over £20 on Deliveroo, 20 Sept to 5 Oct 2026.
+- key: riverside-delivery-hours
+  subject: {kind: site, ref: Riverside}
+  fact_type: hours
+  attribute: delivery_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: 8am to 3pm every day
+  basis: null
+  conditions: []
+  scope: {sites: [Riverside], regions: [], channels: [delivery], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: Deliveroo menu (Riverside)}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Riverside delivers through Deliveroo from 8am to 3pm every day.
+- key: high-st-late-opening
+  subject: {kind: site, ref: High St}
+  fact_type: hours
+  attribute: late_opening
+  value: null
+  unit: null
+  currency: null
+  value_text: open until 7pm on Thursdays
+  basis: null
+  conditions: []
+  scope: {sites: [High St], regions: [], channels: [dine-in], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Rota Sept 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The High St café is open until 7pm on Thursdays (Riverside closes at 4pm).
+- key: brunch-box-food-cost
+  subject: {kind: menu_item, ref: Brunch box}
+  fact_type: price
+  attribute: food_cost
+  value: 28
+  unit: percent
+  currency: null
+  value_text: 28% food cost
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Menu costing sheet}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: The brunch box runs at a 28% food cost.
+- key: riverside-studios-catering
+  subject: {kind: service, ref: Staff catering}
+  fact_type: price
+  attribute: contract_price
+  value: 6.5
+  unit: null
+  currency: GBP
+  value_text: £6.50 per head
+  basis: per_person
+  conditions:
+  - {key: customer, op: '=', value: Riverside Studios}
+  scope: {sites: [Riverside], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2027-04-30'
+  review_by: null
+  source: {kind: doc, ref: Riverside Studios catering agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Riverside Studios pays £6.50 per head for weekday staff lunches.

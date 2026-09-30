@@ -1,0 +1,9 @@
+# WHY: "number one" has no source; "clinically proven" and "permanent results" are forbidden phrasings of the survey result; Maya holds Level 4, not Level 5.
+blocked: true
+findings:
+  - {contains: "London's number one skin clinic", label: no_source, fact_key: null}
+  - {contains: "clinically proven to plump and hydrate skin", label: forbidden_phrase, fact_key: glow-results}
+  - {contains: "Permanent results from one facial", label: forbidden_phrase, fact_key: glow-results}
+  - {contains: "who holds a Level 5 Diploma in Advanced Skin Treatments", label: conflict_or_expired, fact_key: maya-qualification}
+must_not_flag:
+  - "Lash lift and tint is £55, patch test required at least 48 hours before"

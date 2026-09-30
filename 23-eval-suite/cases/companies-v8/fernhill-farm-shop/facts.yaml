@@ -1,0 +1,400 @@
+# FICTIONAL farm shop. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company:
+  name: Fernhill Farm Shop
+  type: farm_shop
+  today: '2026-09-29'
+facts:
+- key: sirloin-price
+  subject:
+    kind: product
+    ref: Dry-aged sirloin steak
+  fact_type: price
+  attribute: retail_price
+  value: 34
+  unit: kg
+  currency: GBP
+  value_text: £34 per kg
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Butchery counter price list, September 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head butcher
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our 28-day dry-aged sirloin steak costs £34 per kg at the butchery counter.
+- key: organic-cert
+  subject:
+    kind: business
+    ref: Fernhill Farm
+  fact_type: certification
+  attribute: organic_licence
+  value: null
+  unit: null
+  currency: null
+  value_text: certified organic by the Soil Association, licence G7729
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: '2027-02-01'
+  source:
+    kind: certificate
+    ref: Soil Association certificate G7729, 2026-27
+  claim_class: origin
+  requires_evidence: true
+  evidence_ref: Soil Association certificate G7729
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing:
+  - certified organic beef and lamb
+  forbidden_phrasing:
+  - everything we sell is organic
+  - fully organic farm shop
+  - organic chicken
+  owner: Farm manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our own beef and lamb are certified organic by the Soil Association under licence G7729. Our chickens are free-range but not organic, and bought-in products are not covered.
+- key: hygiene-rating
+  subject:
+    kind: site
+    ref: Fernhill Farm Shop and butchery
+  fact_type: credential
+  attribute: food_hygiene_rating
+  value: 4
+  unit: null
+  currency: null
+  value_text: food hygiene rating of 4 (Good), FHRS ID 1184520
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-03-12'
+  valid_to: null
+  review_by: null
+  source:
+    kind: certificate
+    ref: Brampton Vale District Council FHRS record 1184520
+  claim_class: regulated_food
+  requires_evidence: true
+  evidence_ref: FHRS ID 1184520
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The shop and butchery hold a food hygiene rating of 4 (Good) from Brampton Vale District Council, FHRS ID 1184520, inspected 12 March 2026.
+- key: autumn-box
+  subject:
+    kind: package
+    ref: Autumn Meat Box
+  fact_type: price
+  attribute: box_price
+  value: 55
+  unit: null
+  currency: GBP
+  value_text: £55
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-11-30'
+  review_by: null
+  source:
+    kind: doc
+    ref: Meat box sheet, autumn 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - contents vary with the season
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Autumn Meat Box costs £55, feeds four for a week, and its contents vary with the season.
+- key: box-extras
+  subject:
+    kind: package
+    ref: Autumn Meat Box
+  fact_type: inclusion
+  attribute: extras
+  value: null
+  unit: null
+  currency: null
+  value_text: a Fernhill recipe card and a bag of beef bones for stock
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-11-30'
+  review_by: null
+  source:
+    kind: doc
+    ref: Meat box sheet, autumn 2026
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every Autumn Meat Box comes with a Fernhill recipe card and a bag of beef bones for stock.
+- key: collect-and-delivery
+  subject:
+    kind: service
+    ref: Click-and-collect and local delivery
+  fact_type: availability
+  attribute: slots
+  value: 40
+  unit: order_minimum
+  currency: GBP
+  value_text: click-and-collect Thursday to Saturday, 10am to 4pm, or free Friday delivery over £40 to Fernhill, Little Brampton, Oakley Cross and Sheepwash Green
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-05-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://fernhillfarmshop.example/collect
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Click-and-collect slots run Thursday to Saturday, 10am to 4pm, for orders placed by 8pm the day before. Free delivery on orders over £40 goes out on Fridays to Fernhill, Little Brampton, Oakley
+    Cross and Sheepwash Green only.
+- key: trade-mince
+  subject:
+    kind: product
+    ref: Beef mince (trade account)
+  fact_type: price
+  attribute: trade_price
+  value: 9.2
+  unit: kg
+  currency: GBP
+  value_text: £9.20 per kg
+  basis: per_unit
+  conditions:
+  - key: account
+    op: '='
+    value: trade
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - trade
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Trade price list 2026-09
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Head butcher
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Trade account holders (restaurants and pubs) pay £9.20 per kg for beef mince, minimum 10 kg.
+- key: sausage-stack
+  subject:
+    kind: offer
+    ref: Sausage Stack
+  fact_type: price
+  attribute: multibuy
+  value: null
+  unit: null
+  currency: null
+  value_text: buy 3 packs of sausages, get the 4th free
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source:
+    kind: doc
+    ref: Counter offers board, September 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Shop manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Sausage Stack offer (buy 3 packs of sausages, get the 4th free) runs until 4 October 2026.
+- key: mince-cost
+  subject:
+    kind: product
+    ref: Beef mince
+  fact_type: price
+  attribute: cost_price
+  value: 6.1
+  unit: kg
+  currency: GBP
+  value_text: £6.10 per kg
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: owner_statement
+    ref: Costing sheet 2026-09
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our cost for beef mince is £6.10 per kg. Not for customers.
+- key: old-forge-contract
+  subject:
+    kind: product
+    ref: Dry-aged sirloin (The Old Forge Inn supply)
+  fact_type: price
+  attribute: contract_price
+  value: 27.4
+  unit: kg
+  currency: GBP
+  value_text: £27.40 per kg
+  basis: per_unit
+  conditions:
+  - key: customer
+    op: '='
+    value: The Old Forge Inn
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - trade
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Old Forge supply agreement 2026
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: The Old Forge Inn pays £27.40 per kg for sirloin under its 2026 supply agreement.

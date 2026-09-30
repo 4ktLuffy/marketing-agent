@@ -1,0 +1,12 @@
+# FICTIONAL. Scope segments=[corporate]: the £45 day delegate rate is for registered charities only
+# (segments=[charity]), so quoting it to corporate bookers is a scope trap.
+# publish_on 2026-10-07 is after early-booking-offer ends (2026-10-04), valid today (2026-09-29).
+goal: "Fill autumn and winter weekdays with corporate away days and training events."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+  - {key: p2, channel: website, kind: section, max_chars: null}
+  - {key: p3, channel: email, kind: outreach, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [corporate], plan_tiers: [], variants: []}
+publish_on: "2026-10-07"
+audience: "HR, L&D and office managers at companies in South Yorkshire"
+notes: null

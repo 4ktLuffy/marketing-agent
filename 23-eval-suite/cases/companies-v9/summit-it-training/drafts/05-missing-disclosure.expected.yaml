@@ -1,0 +1,11 @@
+# WHY: the 94% pass rate requires its cohort "January to June 2026 cohort of 212 learners"; no piece gives the period or the number of learners in any wording (subject and body).
+blocked: true
+findings:
+  - {contains: "94% of Summit learners pass CloudCert Foundation first time.", label: missing_disclosure, fact_key: foundation-pass-rate}
+  - {contains: "Subject: 94% first-time pass rate on CloudCert Foundation", label: missing_disclosure, fact_key: foundation-pass-rate}
+  - {contains: "With a 94% first-time pass rate, our live online Foundation course gets results.", label: missing_disclosure, fact_key: foundation-pass-rate}
+  - {contains: "Nearly everyone passes first time with Summit: 94% first-time pass rate.", label: missing_disclosure, fact_key: foundation-pass-rate}
+must_not_flag:
+  - "CloudCert Foundation (Level 1), live online, is £645 plus VAT per learner."
+  - "Every CloudCert Foundation course includes the official exam voucher and one free resit."
+  - "Reply to book places for your team."

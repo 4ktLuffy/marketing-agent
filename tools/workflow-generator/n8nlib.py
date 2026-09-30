@@ -9,6 +9,10 @@ OLLAMA_CRED = {"ollamaApi": {"id": "mktOllamaCred001", "name": "Ollama (local)"}
 # Optional hosted chat model (Groq or any OpenAI-compatible API) for the chat agent's
 # "hosted" variant; import-n8n.sh creates it from CHAT_API_KEY / CHAT_BASE_URL.
 HOSTED_CRED = {"openAiApi": {"id": "mktHostedChat001", "name": "Hosted chat model"}}
+# The chat agent's model through the LLM gateway (03 POST /v1/chat/completions), so its calls
+# show on the control room's Activity page. import-n8n.sh creates it: base URL
+# http://llm-gateway:8000/v1, API key = INTERNAL_API_KEY, custom header X-Caller: 24 Chat agent.
+GATEWAY_CHAT_CRED = {"openAiApi": {"id": "mktGatewayChat01", "name": "LLM gateway (chat)"}}
 FORMS_CRED = {"httpBasicAuth": {"id": "mktFormsLogin001", "name": "Forms login"}}
 
 WF_IDS = {

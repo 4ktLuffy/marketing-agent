@@ -1,0 +1,8 @@
+# WHY: the £249 three-night break is true for static caravans only; the task is variants=[touring].
+blocked: true
+findings:
+  - {contains: "Our static caravan short breaks are £249 for 3 nights", label: wrong_scope, fact_key: static-short-break}
+  - {contains: "Three nights in a static caravan for two hundred and forty-nine quid", label: wrong_scope, fact_key: static-short-break}
+must_not_flag:
+  - "The indoor pool is open every day 9am to 7pm"
+  - "Touring pitches are £32 per pitch per night"

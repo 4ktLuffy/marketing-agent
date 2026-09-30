@@ -188,6 +188,7 @@ def test_second_chance_accepts_a_paraphrase_with_a_real_quote(monkeypatch):
         monkeypatch, "from somewhere new each time", "The Rotation brings a light roast from somewhere new each time.",
         {"implied": True, "quote": "a different origin in every shipment"})
     assert body["ok"] is True and calls.count("detail_entails") == 1
+    assert {"id": "x1", "quote": "a different origin in every shipment"} in body["claims"][0]["evidence"]
 
 
 @respx.mock
@@ -420,3 +421,103 @@ def test_layout_labels_are_not_claims_but_product_names_stay():
     assert "Wake up to fresh coffee." in got and "Fresh every week" in got
     assert not any(s.lower().startswith(("hook", "on screen", "subject")) for s in got)
     assert any(s.startswith("Team Box: two blends") for s in got)
+
+
+# ---------- facts input (88 task bridge) and per-claim evidence
+
+TASK_FACTS = ["- [[weekday-rate]] = £45 per hour — Weekday lessons cost £45 per hour.",
+              "Lessons run on Tuesday and Thursday evenings.",
+              "Desk Blend is a medium roast with chocolate and hazelnut tasting notes."]
+
+
+@respx.mock
+def test_facts_input_replaces_the_brand_facts_and_05_is_not_called():
+    facts_route = respx.get(f"{BRAND}/facts").mock(return_value=httpx.Response(200, json={"facts": FACTS}))
+    gw = respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({
+        "claim_details": details("Tuesday evenings"),
+        "detail_check": checks(("Tuesday evenings", True, "Lessons run on Tuesday and Thursday evenings."))}))
+    body = client.post("/verify", json={"text": "Lessons run on Tuesday evenings.", "facts": TASK_FACTS}).json()
+    assert facts_route.call_count == 0
+    assert body["ok"] is True and body["evidence_lines"] == 3
+    sent = evidence_sent(gw)
+    assert all("[s2] Lessons run on Tuesday" in s for s in sent)
+    assert not any("48 hours" in s for s in sent)            # brand facts are not evidence
+
+
+def test_facts_input_lines_are_labelled_s_and_keep_extra_facts_and_context():
+    lines = main.gather_evidence(main.VerifyRequest(text="x", facts=TASK_FACTS, extra_facts=["Extra."],
+                                                    context="Brief line."))
+    assert lines[0].startswith("[s1] ") and lines[2].startswith("[s3] ")
+    assert "[x1] Extra." in lines and "[c1] Brief line." in lines
+    assert "[[" not in lines[0]                              # slot keys are not facts
+
+
+@respx.mock
+def test_s_ids_and_slot_keys_do_not_count_as_evidence_numbers():
+    respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({"claim_details": details()}))
+    facts = [f"Fact line {chr(97 + i)}." for i in range(12)] + ["- [[rate-2026]] = £45 — Lessons cost £45."]
+    for n in ("12", "2026"):
+        body = client.post("/verify", json={"text": f"We have {n} coaches.", "facts": facts}).json()
+        assert body["ok"] is False and f"numbers not in the facts: {n}" in body["claims"][0]["reasons"]
+    assert main.ID_RE.sub("", "[s12] Lessons cost £45.") == "Lessons cost £45."
+
+
+@respx.mock
+def test_facts_input_invented_number_flagged_and_own_number_passes():
+    respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({"claim_details": details()}))
+    bad = client.post("/verify", json={"text": "Weekday lessons cost £40 per hour.", "facts": TASK_FACTS}).json()
+    assert bad["ok"] is False and bad["claims"][0]["evidence"] == []
+    good = client.post("/verify", json={"text": "Weekday lessons cost £45 per hour.", "facts": TASK_FACTS}).json()
+    assert good["ok"] is True
+    assert good["claims"][0]["evidence"][0]["id"] == "s1"
+    assert "£45 per hour" in good["claims"][0]["evidence"][0]["quote"]
+
+
+@respx.mock
+def test_evidence_ids_and_quotes_for_model_supported_details():
+    # "medium roast" is literally in s3 (accepted in code, the line is the quote); "weeknight lessons"
+    # is supported by the model's quote, which is mapped back to its line s2.
+    respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({
+        "claim_details": details("medium roast", "weeknight lessons"),
+        "detail_check": checks(("weeknight lessons", True, "[s2] Lessons run on Tuesday and Thursday evenings."))}))
+    body = client.post("/verify", json={"text": "A medium roast for weeknight lessons.", "facts": TASK_FACTS}).json()
+    claim = body["claims"][0]
+    assert claim["supported"] is True
+    assert {"id": "s2", "quote": "Lessons run on Tuesday and Thursday evenings."} in claim["evidence"]
+    assert any(e["id"] == "s3" and "medium roast" in e["quote"] for e in claim["evidence"])
+    assert len(claim["evidence"]) == 2
+
+
+@respx.mock
+def test_unsupported_claim_has_no_evidence_and_old_fields_stay():
+    mock({"claim_details": details("caramel notes"), "detail_check": checks(("caramel notes", False, ""))})
+    body = client.post("/verify", json={"text": "Desk Blend has caramel notes."}).json()
+    c = body["claims"][0]
+    assert set(body) == {"ok", "unsupported", "claims", "numbers", "evidence_lines"}
+    assert set(c) == {"claim", "supported", "reasons", "evidence"}
+    assert c["supported"] is False and c["evidence"] == []
+
+
+@respx.mock
+def test_brand_facts_evidence_uses_05_ids():
+    mock({"claim_details": details("medium roast"),
+          "detail_check": checks(("medium roast", True, "Desk Blend is a medium roast"))})
+    c = client.post("/verify", json={"text": "Desk Blend is a medium roast."}).json()["claims"][0]
+    assert c["evidence"] and c["evidence"][0]["id"] == "f1"
+
+
+@respx.mock
+def test_facts_input_keeps_product_scoping():
+    respx.get(f"{BRAND}/profile").mock(return_value=httpx.Response(200, json=PRODUCTS))
+    respx.post(f"{GW}/v1/run").mock(side_effect=fake_gateway({"claim_details": details()}))
+    facts = ["Desk Blend costs $18 / 340 g.", "Team Box ships to each teammate."]
+    r = client.post("/verify", json={"text": "The Team Box costs $18.", "facts": facts}).json()
+    assert r["ok"] is False and "numbers not in the facts: 18" in r["claims"][0]["reasons"]
+    assert client.post("/verify", json={"text": "Desk Blend costs $18.", "facts": facts}).json()["ok"] is True
+
+
+def test_facts_input_limits_enforced_before_any_call(monkeypatch):
+    monkeypatch.delenv("INTERNAL_API_KEY", raising=False)
+    assert client.post("/verify", json={"text": "Hi.", "facts": ["f"] * 201}).status_code == 422
+    assert client.post("/verify", json={"text": "Hi.", "facts": ["f" * 501]}).status_code == 422
+    assert client.post("/verify", json={"text": "Hi.", "facts": "not a list"}).status_code == 422

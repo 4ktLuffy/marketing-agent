@@ -1,0 +1,12 @@
+# WHY: NSI-7042198 is a look-alike of certificate NSI-7042189; homes are Grade 2, not Grade 3; "most trusted", the 4.9/5 rating and the engineer credentials have no source.
+blocked: true
+findings:
+  - {contains: "North West's Most Trusted Alarms", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9/5 by 2,000+ Homes", label: no_source, fact_key: null}
+  - {contains: "certificate NSI-7042198", label: conflict_or_expired, fact_key: nsi-gold}
+  - {contains: "Every home alarm fitted to BS EN 50131 Grade 3", label: conflict_or_expired, fact_key: grade-2-home}
+  - {contains: "Subject: The North West's most trusted alarm company", label: no_source, fact_key: null}
+  - {contains: "police-vetted, City & Guilds qualified security specialist", label: no_source, fact_key: null}
+must_not_flag:
+  - "Essential Monitoring costs £24.99 a month on a 12-month minimum term"
+  - "Our keyholders respond within 30 minutes"

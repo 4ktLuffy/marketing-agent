@@ -1,0 +1,9 @@
+# WHY: the Core price needs "12-month minimum term" and the Off-Peak price needs "access 10am to 4pm on weekdays"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Core membership at Northgate is just £34.99 per month", label: missing_disclosure, fact_key: core-price-northgate}
+  - {contains: "Subject: Off-Peak for £24.99 a month", label: missing_disclosure, fact_key: off-peak-northgate}
+  - {contains: "Off-Peak membership at Northgate is £24.99 per month", label: missing_disclosure, fact_key: off-peak-northgate}
+  - {contains: "Core membership at Northgate is £34.99 per month, with unlimited spin", label: missing_disclosure, fact_key: core-price-northgate}
+  - {contains: "Crestline Northgate: Core £34.99/month", label: missing_disclosure, fact_key: core-price-northgate}
+must_not_flag: []

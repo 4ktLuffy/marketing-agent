@@ -1,0 +1,10 @@
+# WHY: "biggest bike shop", a 5-star Google rating and an in-house physiotherapist have no source; no mechanic holds Cytech Technical Three (all hold Technical Two); workshop number 2219 is a look-alike of 2291.
+blocked: true
+findings:
+  - {contains: "Ashcombe's biggest bike shop", label: no_source, fact_key: null}
+  - {contains: "Rated 5 stars on Google", label: no_source, fact_key: null}
+  - {contains: "Cytech Technical Three qualified", label: conflict_or_expired, fact_key: cytech-mechanics}
+  - {contains: "our in-house physiotherapist", label: no_source, fact_key: null}
+  - {contains: "Cytech member workshop number 2219", label: conflict_or_expired, fact_key: cytech-mechanics}
+must_not_flag:
+  - "The Forge Tempo 3 hybrid costs £1,200"

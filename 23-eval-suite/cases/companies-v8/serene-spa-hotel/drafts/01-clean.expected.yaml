@@ -1,0 +1,15 @@
+# WHY: negative control: weekday day-guest facts only; 'per person' is in the price wherever it appears; the AA grade and ID are exact; the weekend is only mentioned in a question.
+blocked: false
+findings: []
+must_not_flag:
+  - "Midweek, but make it calm."
+  - "Our Weekday Spa Day is"
+  - "It includes a 25-minute Express Facial or back massage"
+  - "Spa days are for guests aged 18 and over"
+  - "#SpaDay #WeekdayEscape #SereneSpa"
+  - "Unwind at an AA Four Star Hotel with a Weekday Spa Day at £95 per person"
+  - "Your midweek escape is waiting"
+  - "Why save the spa for the weekend?"
+  - "We're an AA Four Star Hotel (AA establishment ID 7310442)"
+  - "spa days are over-18s only"
+  - "Book online or call 01632 960 915"

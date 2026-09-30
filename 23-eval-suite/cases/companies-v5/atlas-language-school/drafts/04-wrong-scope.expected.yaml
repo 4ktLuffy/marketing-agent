@@ -1,0 +1,8 @@
+# WHY: £1,650 per term is the B2 price on the Bristol campus (variants=[campus]); the task is variants=[online].
+blocked: true
+findings:
+  - {contains: "Our B2 General English course is £1,650 per 10-week term, taught live online", label: wrong_scope, fact_key: campus-b2-price}
+  - {contains: "Our B2 course, at £1,650 per 10-week term", label: wrong_scope, fact_key: campus-b2-price}
+must_not_flag:
+  - "Online B1 General English is £990 per 10-week term"
+  - "Every online course includes recordings of every live lesson"

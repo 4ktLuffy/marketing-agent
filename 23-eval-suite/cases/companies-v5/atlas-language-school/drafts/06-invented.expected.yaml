@@ -1,0 +1,11 @@
+# WHY: LSQB-2471 is a look-alike of LSQB-2417; the inspection grade is 2 (Good), not 1 (Outstanding); "top-rated", the Trustpilot rating and the teacher credential have no source.
+blocked: true
+findings:
+  - {contains: "Bristol's top-rated language school", label: no_source, fact_key: null}
+  - {contains: "accreditation LSQB-2471", label: conflict_or_expired, fact_key: lsqb-accreditation}
+  - {contains: "graded us 1 (Outstanding)", label: conflict_or_expired, fact_key: lsqb-accreditation}
+  - {contains: "Rated 4.9/5 on Trustpilot", label: no_source, fact_key: null}
+  - {contains: "DELTA-qualified Cambridge examiner", label: no_source, fact_key: null}
+must_not_flag:
+  - "Online B1 General English costs £990 per 10-week term"
+  - "92% of our B2 First candidates passed (48 candidates, 2025-26)"

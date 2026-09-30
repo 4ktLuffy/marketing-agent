@@ -1,0 +1,9 @@
+# WHY: the 87% result is used three times (post, subject line, body) without "2026 cohort of 212 students".
+blocked: true
+findings:
+  - {contains: "87% of our students hit grade 4 or above", label: missing_disclosure, fact_key: gcse-pass-rate}
+  - {contains: "87% pass rate in GCSE maths", label: missing_disclosure, fact_key: gcse-pass-rate}
+  - {contains: "Last summer 87% of our GCSE maths students achieved grade 4 or above", label: missing_disclosure, fact_key: gcse-pass-rate}
+must_not_flag:
+  - "Online sessions are £38 per hour, billed monthly in advance"
+  - "GCSE maths tutoring online at £38 per hour, billed monthly in advance"

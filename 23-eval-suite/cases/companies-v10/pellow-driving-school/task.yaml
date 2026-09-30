@@ -1,0 +1,11 @@
+# FICTIONAL. Scope variants=[manual] makes the automatic lesson price a scope trap;
+# publish_on 2026-10-12 is after intensive-autumn-offer ends (2026-10-05), valid today (2026-09-29).
+goal: "Get new manual learners in Castlebrook to book lessons in October."
+pieces:
+  - {key: p1, channel: tiktok, kind: video_caption, max_chars: 2200}
+  - {key: p2, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p3, channel: google_business, kind: update, max_chars: 1500}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [manual]}
+publish_on: "2026-10-12"
+audience: "Learner drivers aged 17-25 in Castlebrook and their parents"
+notes: null

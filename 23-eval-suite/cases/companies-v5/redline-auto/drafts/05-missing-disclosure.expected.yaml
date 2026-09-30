@@ -1,0 +1,11 @@
+# WHY: the warranty claim requires "using OE-quality parts", which appears nowhere in the draft.
+blocked: true
+findings:
+  - {contains: "Warranty-Safe Servicing", label: missing_disclosure, fact_key: warranty-safe}
+  - {contains: "Keep your manufacturer warranty valid with a full service at Redline Auto", label: missing_disclosure, fact_key: warranty-safe}
+  - {contains: "You don't need to go back to the dealer", label: missing_disclosure, fact_key: warranty-safe}
+  - {contains: "Servicing with us keeps your manufacturer warranty valid", label: missing_disclosure, fact_key: warranty-safe}
+  - {contains: "Redline Auto: warranty-safe servicing in Hatfield", label: missing_disclosure, fact_key: warranty-safe}
+must_not_flag:
+  - "A full service is £179 for engines up to 1.6 litres"
+  - "Headline 2: MOT £45 in Hatfield"

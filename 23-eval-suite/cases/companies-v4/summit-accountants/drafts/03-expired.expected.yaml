@@ -1,0 +1,10 @@
+# WHY: the half-price switching offer is valid today but ends 2026-10-09, before publish 2026-10-12; the free bookkeeping catch-up (mentioned in passing) ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "Move to Summit by 9 October and pay half price for your first three months", label: conflict_or_expired, fact_key: switch-offer}
+  - {contains: "switch by 9 Oct & get 3 months half price", label: conflict_or_expired, fact_key: switch-offer}
+  - {contains: "Half price for three months: why now is the time to switch", label: conflict_or_expired, fact_key: switch-offer}
+  - {contains: "New clients get a free bookkeeping catch-up too", label: conflict_or_expired, fact_key: summer-bookkeeping-offer}
+must_not_flag:
+  - "Our Sole Trader MTD package is £45 per month plus VAT"
+  - "Book a free first consultation, with no obligation"

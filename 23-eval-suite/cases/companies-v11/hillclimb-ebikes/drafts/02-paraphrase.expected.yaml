@@ -1,0 +1,12 @@
+# WHY: negative control — same Trail E1 facts reworded (price typed in words, 'riding in eco', 'shrug off splashes'); disclosures in other words; no new numbers or claims.
+blocked: false
+findings: []
+must_not_flag:
+- costs one thousand eight hundred and ninety-nine pounds
+- one charge takes you as far as 70 miles
+- representative APR 0%, and the finance is subject to status
+- The Hillclimb Trail E1 is £1,899
+- a full battery lasts for up to 70 miles
+- thanks to their IPX4 rating
+- we'll give it a safety check at no charge
+- with a free check-up six weeks after you take it home

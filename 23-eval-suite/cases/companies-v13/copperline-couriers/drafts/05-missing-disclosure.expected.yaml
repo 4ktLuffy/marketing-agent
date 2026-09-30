@@ -1,0 +1,8 @@
+# WHY: the Zone 1 rate requires "excl. VAT" and the 60-minute promise requires "weekdays 8am to 6pm"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Zone 1 drops are just £7.50 each", label: missing_disclosure, fact_key: zone-1-rate}
+  - {contains: "Seven pound fifty a drop in the centre", label: missing_disclosure, fact_key: zone-1-rate}
+  - {contains: "Delivered within 60 minutes of pickup", label: missing_disclosure, fact_key: sixty-minute-delivery}
+must_not_flag:
+  - "Our e-cargo bikes carry up to 100kg"

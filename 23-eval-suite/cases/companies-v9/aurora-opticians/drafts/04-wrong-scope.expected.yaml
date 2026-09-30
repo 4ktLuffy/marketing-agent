@@ -1,0 +1,11 @@
+# WHY: the free NHS sight test is a real fact but only for segment nhs-eligible; the task is segments=[private], so every "free eye test" line is wrong_scope, not no_source.
+blocked: true
+findings:
+  - {contains: "Eye tests at Aurora are free", label: wrong_scope, fact_key: nhs-sight-test}
+  - {contains: "Subject: Your free eye test at Aurora Harrogate", label: wrong_scope, fact_key: nhs-sight-test}
+  - {contains: "Book your free NHS sight test at our Harrogate branch this October.", label: wrong_scope, fact_key: nhs-sight-test}
+  - {contains: "Free eye tests for everyone at Aurora Harrogate", label: wrong_scope, fact_key: nhs-sight-test}
+must_not_flag:
+  - "Every pair of glasses includes free adjustments, free nose-pad and screw replacements, and a hard case."
+  - "Clearview varifocals are £149 per pair, frames not included."
+  - "Our optometrist Priya Nandakumar is GOC registered (01-34817)."

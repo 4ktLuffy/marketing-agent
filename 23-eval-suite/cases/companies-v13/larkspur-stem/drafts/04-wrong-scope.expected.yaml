@@ -1,0 +1,8 @@
+# WHY: the £45 wreath workshop is true but runs only at Harbour Street; the task is sites=[Market Square].
+blocked: true
+findings:
+  - {contains: "Book our wreath-making workshop at Market Square", label: wrong_scope, fact_key: harbour-street-workshop}
+  - {contains: "Forty-five quid a head for an evening of wreath making", label: wrong_scope, fact_key: harbour-street-workshop}
+must_not_flag:
+  - "Market Square is open Sundays 10am to 2pm"
+  - "Order by 1pm, Monday to Saturday, for same-day delivery"

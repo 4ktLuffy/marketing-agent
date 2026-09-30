@@ -1,0 +1,9 @@
+# WHY: £45 per delegate is the registered-charity rate (segments=[charity]); the task is segments=[corporate], whose rate is £59.
+blocked: true
+findings:
+  - {contains: "Day delegate rates start at £45 per delegate plus VAT", label: wrong_scope, fact_key: ddr-charity}
+  - {contains: "Day delegate rate: £45 per delegate plus VAT", label: wrong_scope, fact_key: ddr-charity}
+  - {contains: "Subject: Day delegate rates from £45", label: wrong_scope, fact_key: ddr-charity}
+  - {contains: "Our £45 day delegate rate makes your training budget go further", label: wrong_scope, fact_key: ddr-charity}
+must_not_flag:
+  - "The Atrium Hall seats 320 theatre-style or 180 cabaret"

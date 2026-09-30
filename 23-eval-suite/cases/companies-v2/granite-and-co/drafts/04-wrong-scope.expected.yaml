@@ -1,0 +1,9 @@
+# WHY: BBA Certificate 25/6120 belongs to ThermaBoard (variants=[thermaboard]), not FireCore (subject line names it by description); £24.99 is the retail price (segments=[retail]); the task is trade FireCore.
+blocked: true
+findings:
+  - {contains: "holds BBA Certificate 25/6120", label: wrong_scope, fact_key: thermaboard-bba}
+  - {contains: "FireCore – now BBA certified", label: wrong_scope, fact_key: thermaboard-bba}
+  - {contains: "DIYers can also pick up FireCore at £24.99 per slab", label: wrong_scope, fact_key: firecore-retail-price}
+must_not_flag:
+  - "Trade account holders pay £18.40 per slab, excl. VAT"
+  - "Free delivery on orders over £500 within 50 miles of our Stoke depot"

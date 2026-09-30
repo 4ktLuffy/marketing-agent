@@ -1,0 +1,9 @@
+# WHY: 20% off the Glow Facial is valid today but ends 2026-10-04 (publish 2026-10-10); the free brow tint with a lash lift ended 2026-08-31. The subject carries both, so its fact_key is left open.
+blocked: true
+findings:
+  - {contains: "Get 20% off your Glow Facial this October", label: conflict_or_expired, fact_key: autumn-facial-offer}
+  - {contains: "Book a lash lift and get a free brow tint too", label: conflict_or_expired, fact_key: summer-brow-offer}
+  - {contains: "20% off Glow Facials + a free brow tint", label: conflict_or_expired, fact_key: null}
+must_not_flag:
+  - "Glow Facial at Luma Richmond: £85 for 60 minutes, free skin consultation included"
+  - "Lash lift and tint is £55, patch test required at least 48 hours before"

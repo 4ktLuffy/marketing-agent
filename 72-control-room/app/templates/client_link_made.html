@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Client link made{% endblock %}
+{% block main %}
+<p><a href="/client-links">← Client links</a></p>
+<h1>Link made</h1>
+<p class="alert warn" role="alert"><b>This is the only time the link and the PIN are shown.</b> Copy both now.</p>
+<label>Link <input class="mono" readonly value="{{ url }}" data-client-url></label>
+<label>PIN <input class="mono big" readonly value="{{ pin }}" data-client-pin></label>
+<p>Works until {{ (link.expires_at or '')[:16]|replace('T', ' ') }} UTC, for {{ link.item_ids|length }} post{{ 's' if link.item_ids|length != 1 }}.</p>
+<h2>How to send it</h2>
+<ul>
+  <li><b>Send the link and the PIN by different routes</b>: the link by email, the PIN by text message or a call.
+    Whoever has both can answer as the client.</li>
+  <li>The client's "approve" is recorded next to each post. It does not approve the post: you still do, in the queue.</li>
+  <li>"Request changes" moves a post in review back to draft, with the client's comment.</li>
+  <li>It proves who had the link and the PIN, not a legal signature.</li>
+  <li>Sent it to the wrong person? <a href="/client-links">Withdraw it</a>.</li>
+</ul>
+{% endblock %}

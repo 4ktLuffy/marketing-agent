@@ -1,0 +1,7 @@
+# WHY: negative control; same Phase 2 facts reworded ("four bedrooms" typed out), every disclosure kept, no new numbers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Meet the Rowan: four bedrooms, detached, £389,995 (selected plots, subject to contract)"
+  - "Energy performance: EPC B (predicted)"
+  - "Flooring throughout and turfed rear gardens come as standard on Phase 2"

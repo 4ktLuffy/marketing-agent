@@ -1,0 +1,8 @@
+# WHY: negative control — the same direct facts reworded ("eight working days after artwork approval", "a run of 1,000 ... is £640 plus VAT"); "Top tip" is a harmless look-alike of a superlative.
+blocked: false
+findings: []
+must_not_flag:
+  - "a run of 1,000 printed cartons is £640 plus VAT"
+  - "certificate is NFP-COC-008213"
+  - "Top tip: send your artwork as a print-ready PDF"
+  - "dispatched eight working days after artwork approval"

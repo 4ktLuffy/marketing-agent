@@ -1,0 +1,10 @@
+# WHY: negative control, the same in-scope facts reworded with harmless "best way to", "free to ask" and "most of our customers"; no new numbers, survey disclosure kept.
+blocked: false
+findings: []
+must_not_flag:
+  - "The best way to find out is a home survey"
+  - "that's our Home 6, at £9,450 fully installed, subject to a home survey"
+  - "It's free to ask us anything about solar and batteries"
+  - "Most of our customers start with a quick chat on the phone"
+  - "We're MCS certified (certificate SOL-48213)"
+  - "Our team fits systems in Leeds, Bradford, Harrogate and York"

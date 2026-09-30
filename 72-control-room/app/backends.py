@@ -16,6 +16,15 @@ results carries a key or an internal URL back to a page.
 | brand setup: editable brand (read, save, reset), save voice | 05 brand-service | X-API-Key |
 | voice interview -> profile (`voice_profile` prompt) | 03 llm-gateway | X-API-Key (and `X-Caller: 72 voice interview`) |
 | activity (calls in flight, recent calls, model totals) | 03 llm-gateway (each gateway in ACTIVITY_GATEWAYS) | X-API-Key |
+| facts v2 (list, versions, add, edit, query), questions, starter kits, rules (read) | 05 brand-service | X-API-Key |
+| confirm / retire a fact, import, apply a starter kit, confirm / dismiss a kit rule | 05 brand-service | X-API-Key + X-Owner-Key (FACT_OWNER_KEY) |
+| tasks, packs, paste, split, submit, export, blockers, reconcile | 88 task-bridge | X-API-Key |
+| results: an item's audit and versions (read-only) | 19 content-calendar | X-API-Key |
+| client links: make, list, revoke; a client's page: resolve / respond with token + PIN | 19 content-calendar | X-API-Key |
+| onboarding: text of a web page or PDF | 07 page-extractor | none |
+| onboarding: is a model there (health, prompt list) | 03 llm-gateway | none |
+| onboarding: proposed facts per chunk (`propose_facts` prompt) | 03 llm-gateway | X-API-Key (and `X-Caller: 72 onboarding`) |
+| onboarding: add a draft fact, add an open question | 05 brand-service | X-API-Key (never X-Owner-Key) |
 
 The control room never holds APPROVER_KEY: only n8n (38, 39, and this webhook) can approve.
 """
@@ -78,6 +87,16 @@ class Backends:
 
     async def item(self, item_id: int) -> dict:
         return await self._get("calendar", f"{self.s.calendar_url}/items/{item_id}")
+
+    async def item_audit(self, item_id: int) -> list[dict]:
+        """19 GET /items/{id}/audit (keyed): every status change and edit, oldest first."""
+        body = await self._call("calendar", "GET", f"{self.s.calendar_url}/items/{item_id}/audit", key=True)
+        return [a for a in body if isinstance(a, dict)] if isinstance(body, list) else []
+
+    async def item_versions(self, item_id: int) -> list[dict]:
+        """19 GET /items/{id}/versions (keyed): the body as each version was written."""
+        body = await self._call("calendar", "GET", f"{self.s.calendar_url}/items/{item_id}/versions", key=True)
+        return [v for v in body if isinstance(v, dict)] if isinstance(body, list) else []
 
     async def reschedule(self, item_id: int, when: str) -> dict:
         try:
@@ -196,10 +215,11 @@ class Backends:
 
     # ---- 05 brand-service and 03 gateway: brand setup
     async def _call(self, service: str, method: str, url: str, *, json=None, key: bool = False,
-                    timeout: float = 10.0, none_on_404: bool = False, headers: dict | None = None):
+                    timeout: float = 10.0, none_on_404: bool = False, headers: dict | None = None,
+                    params=None):
         try:
             h = {**(self._key() if key else {}), **(headers or {})} or None
-            r = await self.c.request(method, url, json=json, headers=h, timeout=timeout)
+            r = await self.c.request(method, url, json=json, headers=h, timeout=timeout, params=params)
         except httpx.HTTPError as e:
             raise BackendError(service, f"unreachable ({type(e).__name__})") from None
         if none_on_404 and r.status_code == 404:
@@ -252,6 +272,193 @@ class Backends:
         if not isinstance(out, dict):
             raise BackendError("gateway", "the model did not return a profile; try again")
         return out
+
+    # ---- 05 brand-service: facts v2, questions, starter kits, rules (contract §2)
+    def _actor(self) -> dict:
+        return {"X-Actor": (self.s.reviewer or "control room")[:80]}
+
+    def _owner(self) -> dict:
+        """X-Owner-Key for the few calls that turn a draft into a fact (or retire one). Refused here,
+        before any call, when the control room has no FACT_OWNER_KEY."""
+        if not self.s.fact_owner_key:
+            raise BackendError("brand", "confirming is switched off: FACT_OWNER_KEY is not set on the control room", 503)
+        return {"X-Owner-Key": self.s.fact_owner_key, **self._actor()}
+
+    def _brand(self, method: str, path: str, *, owner: bool = False, **kw):
+        headers = self._owner() if owner else self._actor()
+        return self._call("brand", method, f"{self.s.brand_url}{path}", key=True, headers=headers, **kw)
+
+    async def facts_v2(self, status: str | None = None) -> dict:
+        return await self._brand("GET", "/facts/v2", params={"status": status} if status else None)
+
+    async def fact_v2(self, key: str) -> dict:
+        return await self._brand("GET", f"/facts/v2/{key}")
+
+    async def fact_create(self, fact: dict) -> dict:
+        return await self._brand("POST", "/facts/v2", json=fact)
+
+    async def fact_update(self, key: str, fact: dict) -> dict:
+        return await self._brand("PUT", f"/facts/v2/{key}", json=fact)
+
+    async def fact_confirm(self, key: str) -> dict:
+        return await self._brand("POST", f"/facts/v2/{key}/confirm", owner=True)
+
+    async def fact_retire(self, key: str) -> dict:
+        return await self._brand("POST", f"/facts/v2/{key}/retire", owner=True)
+
+    async def facts_import(self, facts: list[dict], confirm: bool = False) -> dict:
+        return await self._brand("POST", "/facts/v2/import", owner=True, json={"facts": facts, "confirm": confirm},
+                                 timeout=30)
+
+    async def facts_query(self, scope: dict | None = None, at: str | None = None,
+                          max_sensitivity: str = "internal") -> dict:
+        names = {"sites": "site", "regions": "region", "channels": "channel", "segments": "segment",
+                 "plan_tiers": "plan_tier", "variants": "variant"}
+        params = [(names[d], v) for d, vals in (scope or {}).items() if d in names for v in vals]
+        params += [("max_sensitivity", max_sensitivity)] + ([("at", at)] if at else [])
+        return await self._brand("GET", "/facts/query", params=params)
+
+    async def questions(self, status: str | None = "open") -> list[dict]:
+        body = await self._brand("GET", "/questions", params={"status": status} if status else None)
+        qs = body.get("questions") if isinstance(body, dict) else body
+        return [q for q in qs if isinstance(q, dict)] if isinstance(qs, list) else []
+
+    async def question_answer(self, qid: int, answer: str | None) -> dict:
+        return await self._brand("POST", f"/questions/{qid}/answer", json={"answer": answer or None})
+
+    async def question_create(self, body: dict) -> dict:
+        return await self._brand("POST", "/questions", json=body)
+
+    async def question_dismiss(self, qid: int) -> dict:
+        return await self._brand("POST", f"/questions/{qid}/dismiss")
+
+    async def starter_kits(self) -> list[dict]:
+        body = await self._brand("GET", "/starter-kits")
+        return [k for k in body if isinstance(k, dict)] if isinstance(body, list) else []
+
+    async def starter_kit_apply(self, kit_id: str) -> dict:
+        return await self._brand("POST", f"/starter-kits/{kit_id}/apply", owner=True)
+
+    async def kit_rules(self, status: str | None = None, kit: str | None = None) -> list[dict]:
+        params = {k: v for k, v in {"status": status, "kit": kit}.items() if v}
+        body = await self._brand("GET", "/rules", params=params or None)
+        rules = body.get("rules") if isinstance(body, dict) else body
+        return [r for r in rules if isinstance(r, dict)] if isinstance(rules, list) else []
+
+    async def kit_rule_set(self, rid: int, action: str) -> dict:
+        return await self._brand("POST", f"/rules/{rid}/{action}", owner=True)
+
+    # ---- onboarding: 07 page-extractor and the 03 gateway's propose_facts prompt
+    async def extract(self, body: dict) -> dict:
+        """07 POST /extract: {"url"} or {"pdf_base64", "filename"}. 07 is keyless (internal network)."""
+        if not self.s.extractor_url:
+            raise BackendError("page extractor", "not installed", 404)
+        out = await self._call("page extractor", "POST", f"{self.s.extractor_url}/extract", json=body, timeout=90)
+        if not isinstance(out, dict):
+            raise BackendError("page extractor", "unexpected answer")
+        return out
+
+    async def gateway_health(self) -> dict:
+        out = await self._call("gateway", "GET", f"{self.s.gateway_url}/health", timeout=4)
+        return out if isinstance(out, dict) else {}
+
+    async def gateway_prompts(self) -> set[str]:
+        async def load():
+            out = await self._call("gateway", "GET", f"{self.s.gateway_url}/v1/prompts", timeout=4)
+            return {str(p.get("name")) for p in out if isinstance(p, dict)} if isinstance(out, list) else set()
+        return await self._cached("gateway_prompts", 60, load)
+
+    async def propose_facts(self, source_text: str, business_type: str, known_facts: str) -> dict:
+        body = await self._call("gateway", "POST", f"{self.s.gateway_url}/v1/run", key=True,
+                                json={"prompt": "propose_facts", "vars": {"source_text": source_text,
+                                      "business_type": business_type or None, "known_facts": known_facts or None}},
+                                headers={"X-Caller": "72 onboarding"}, timeout=self.s.voice_timeout_s)
+        out = body.get("output") if isinstance(body, dict) else None
+        if not isinstance(out, dict):
+            raise BackendError("gateway", "the model did not return facts; try again")
+        return out
+
+    # ---- 88 task-bridge (contract §4)
+    def _tasks(self, method: str, path: str, **kw):
+        if not self.s.tasks_url:
+            raise BackendError("task bridge", "not installed", 404)
+        return self._call("task bridge", method, f"{self.s.tasks_url}{path}", key=True, **kw)
+
+    async def tasks(self) -> list[dict]:
+        body = await self._tasks("GET", "/tasks")
+        ts = body.get("tasks") if isinstance(body, dict) else body
+        return [t for t in ts if isinstance(t, dict)] if isinstance(ts, list) else []
+
+    async def task_list(self, limit: int) -> list[dict]:
+        """The newest `limit` tasks (88 caps at 500), for the Results page."""
+        body = await self._tasks("GET", "/tasks", params={"limit": limit})
+        ts = body.get("tasks") if isinstance(body, dict) else body
+        return [t for t in ts if isinstance(t, dict)] if isinstance(ts, list) else []
+
+    async def task(self, task_id: str) -> dict:
+        return await self._tasks("GET", f"/tasks/{task_id}")
+
+    async def task_create(self, body: dict) -> dict:
+        return await self._tasks("POST", "/tasks", json=body, timeout=60)
+
+    async def task_pack(self, task_id: str) -> dict:
+        return await self._tasks("GET", f"/tasks/{task_id}/pack")
+
+    async def task_paste(self, task_id: str, text: str, provider: str) -> dict:
+        return await self._tasks("POST", f"/tasks/{task_id}/paste", json={"text": text, "provider": provider}, timeout=30)
+
+    async def task_split(self, task_id: str, draft_id: int, pieces: list[dict]) -> dict:
+        return await self._tasks("POST", f"/tasks/{task_id}/drafts/{draft_id}/split", json={"pieces": pieces}, timeout=30)
+
+    async def task_accept(self, task_id: str, piece_key: str, finding: int, sha256: str, by: str, note: str) -> dict:
+        """A person says a missing-disclosure finding is wrong ("it's there, in other words")."""
+        return await self._tasks("POST", f"/tasks/{task_id}/pieces/{piece_key}/accept", timeout=30,
+                                 json={"finding": finding, "expected_sha256": sha256, "by": by, "note": note})
+
+    async def task_submit(self, task_id: str, draft_id: int) -> dict | list:
+        return await self._tasks("POST", f"/tasks/{task_id}/submit", json={"draft_id": draft_id}, timeout=180)
+
+    async def task_export(self, task_id: str, fmt: str) -> tuple[bytes, str]:
+        """The approved pack as one file; 88 refuses (409) until every piece is approved and valid."""
+        if not self.s.tasks_url:
+            raise BackendError("task bridge", "not installed", 404)
+        try:
+            r = await self.c.get(f"{self.s.tasks_url}/tasks/{task_id}/export", params={"format": fmt},
+                                 headers=self._key(), timeout=30)
+        except httpx.HTTPError as e:
+            raise BackendError("task bridge", f"unreachable ({type(e).__name__})") from None
+        if r.status_code >= 400:
+            raise BackendError("task bridge", _detail(r), r.status_code)
+        return r.content, r.headers.get("content-type", "text/plain")
+
+    async def blockers(self, timeout: float = 10.0) -> list[dict]:
+        body = await self._tasks("GET", "/blockers", timeout=timeout)
+        bs = body.get("blockers") if isinstance(body, dict) else body
+        return [b for b in bs if isinstance(b, dict)] if isinstance(bs, list) else []
+
+    async def reconcile(self) -> dict:
+        return await self._tasks("POST", "/reconcile", timeout=60)
+
+    # ---- 19 content-calendar: client approval links (Phase 2). The token and PIN travel only here.
+    def _links(self, method: str, path: str, **kw):
+        return self._call("calendar", method, f"{self.s.calendar_url}{path}", key=True, **kw)
+
+    async def client_link_create(self, item_ids: list[int], label: str, days: int, pin: str) -> dict:
+        return await self._links("POST", "/client-links", headers=self._actor(),
+                                 json={"item_ids": item_ids, "label": label, "days": days, "pin": pin})
+
+    async def client_links(self) -> list[dict]:
+        body = await self._links("GET", "/client-links")
+        return [x for x in body if isinstance(x, dict)] if isinstance(body, list) else []
+
+    async def client_link_revoke(self, link_id: int) -> dict:
+        return await self._links("POST", f"/client-links/{link_id}/revoke", headers=self._actor())
+
+    async def client_resolve(self, token: str, pin: str) -> dict:
+        return await self._links("POST", "/client-links/resolve", json={"token": token, "pin": pin})
+
+    async def client_respond(self, body: dict) -> dict:
+        return await self._links("POST", "/client-links/respond", json=body)
 
 
 async def gather_soft(*coros):

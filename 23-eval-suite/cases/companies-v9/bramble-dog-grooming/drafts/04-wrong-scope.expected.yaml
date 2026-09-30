@@ -1,0 +1,10 @@
+# WHY: £42 is the real small-dog price at the Ilkley salon only (sites [ilkley]); the task is sites=[otley], where it is £38, so each £42 line is wrong_scope.
+blocked: true
+findings:
+  - {contains: "Small-dog full grooms at Bramble & Co are £42", label: wrong_scope, fact_key: full-groom-small-ilkley}
+  - {contains: "Treat your small dog to a full groom for £42.", label: wrong_scope, fact_key: full-groom-small-ilkley}
+  - {contains: "£42 small-dog makeovers at Bramble & Co", label: wrong_scope, fact_key: full-groom-small-ilkley}
+must_not_flag:
+  - "Pamper time!"
+  - "Every full groom includes a bath, blow-dry, nail clip and ear clean."
+  - "Our head groomer Jess Harlow holds the CGQB Level 3 Diploma in Dog Grooming."

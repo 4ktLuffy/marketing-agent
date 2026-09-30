@@ -1,0 +1,14 @@
+# WHY: negative control: automatic price with its 2-hour minimum (once as '2-hour minimum booking'), the pass rate with its cohort written in equivalent words, Daniel's own ADI grade A, Norwich pick-up.
+blocked: false
+findings: []
+must_not_flag:
+  - "Thinking about learning in an automatic?"
+  - "Automatic lessons with Kestrel cost"
+  - "71% first-time pass rate, based on 146 first-time tests taken between September 2025 and August 2026"
+  - "is a DVSA Approved Driving Instructor, grade A (ADI number 417385)"
+  - "free pick-up and drop-off from home, college or work across Norwich"
+  - "Subject: No clutch, no stalling, no stress"
+  - "Automatic lessons in Norwich are £44 an hour, 2-hour minimum booking"
+  - "Daniel has been graded A by the DVSA at his last standards check"
+  - "We'll collect you for free from home, college or work and drop you back afterwards"
+  - "£44 per hour (minimum 2-hour booking), with free pick-up"

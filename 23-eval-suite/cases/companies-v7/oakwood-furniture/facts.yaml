@@ -1,0 +1,346 @@
+# FICTIONAL company. Held-out eval fixture (companies-v7, see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Oakwood Furniture, type: furniture maker and showroom, today: '2026-09-29'}
+facts:
+- key: harlow-oak-6
+  subject: {kind: variant, ref: 'Harlow dining table, 6-seater (180 cm), solid oak'}
+  fact_type: price
+  attribute: price
+  value: 1450
+  unit: null
+  currency: GBP
+  value_text: £1,450
+  basis: per_unit
+  conditions:
+  - {key: size, op: '=', value: 6-seater (180 cm)}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [oak]
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list 2026 v3}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Showroom manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Harlow six-seater dining table (180 cm) in solid oak costs £1,450.
+- key: harlow-walnut-6
+  subject: {kind: variant, ref: 'Harlow dining table, 6-seater (180 cm), solid walnut'}
+  fact_type: price
+  attribute: price
+  value: 1890
+  unit: null
+  currency: GBP
+  value_text: £1,890
+  basis: per_unit
+  conditions:
+  - {key: size, op: '=', value: 6-seater (180 cm)}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [walnut]
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list 2026 v3}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Showroom manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Harlow six-seater dining table (180 cm) in solid walnut costs £1,890.
+- key: fsc-oak
+  subject: {kind: product, ref: Oak range}
+  fact_type: certification
+  attribute: fsc
+  value: FSC 100%
+  unit: null
+  currency: null
+  value_text: FSC 100% certified oak (licence code FSC-C151207)
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [oak]
+  valid_from: '2025-11-01'
+  valid_to: '2030-10-31'
+  review_by: '2027-10-31'
+  source: {kind: certificate, ref: FSC chain-of-custody certificate FSC-C151207}
+  claim_class: origin
+  requires_evidence: true
+  evidence_ref: FSC-C151207
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [carbon neutral]
+  owner: Workshop manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: All oak we use is FSC 100% certified (licence code FSC-C151207). Our walnut is not FSC certified.
+- key: lead-time
+  subject: {kind: policy, ref: Made-to-order tables}
+  fact_type: availability
+  attribute: lead_time
+  value: 8-10
+  unit: weeks
+  currency: null
+  value_text: made to order in 8 to 10 weeks
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-06-01'
+  valid_to: null
+  review_by: '2026-12-31'
+  source: {kind: owner_statement, ref: Workshop plan 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [from order confirmation]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Workshop manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every table is made to order in 8 to 10 weeks from order confirmation.
+- key: free-delivery-local
+  subject: {kind: policy, ref: Delivery}
+  fact_type: price
+  attribute: delivery_fee
+  value: 0
+  unit: null
+  currency: null
+  value_text: free delivery and assembly
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: [local-zone]
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: oakwood-furniture.example/delivery}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [within 30 miles of our Ludlow showroom]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Showroom manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Free delivery and assembly within 30 miles of our Ludlow showroom.
+- key: warranty
+  subject: {kind: policy, ref: Structural guarantee}
+  fact_type: policy
+  attribute: guarantee
+  value: 10
+  unit: years
+  currency: null
+  value_text: a 10-year structural guarantee
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Guarantee terms 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [when registered within 30 days of delivery]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every table has a 10-year structural guarantee (joints and frame) when registered within 30 days of delivery.
+- key: care-kit
+  subject: {kind: product, ref: Every table}
+  fact_type: inclusion
+  attribute: care_kit
+  value: null
+  unit: null
+  currency: null
+  value_text: a free care kit (hardwax oil and cloths)
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Dispatch checklist 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Workshop manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Every table comes with a free care kit: hardwax oil and two cloths.'
+- key: autumn-sale
+  subject: {kind: offer, ref: Autumn Sale}
+  fact_type: price
+  attribute: discount
+  value: 15
+  unit: percent
+  currency: null
+  value_text: 15% off all oak dining tables
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [oak]
+  valid_from: '2026-09-19'
+  valid_to: '2026-10-06'
+  review_by: null
+  source: {kind: doc, ref: Sale plan autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn Sale: 15% off all oak dining tables, 19 September to 6 October 2026.'
+- key: oak-board-cost
+  subject: {kind: product, ref: Oak boards}
+  fact_type: price
+  attribute: material_cost
+  value: 38
+  unit: cubic_foot
+  currency: GBP
+  value_text: £38 per cubic foot
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-05-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Timber merchant invoice May 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We pay £38 per cubic foot for kiln-dried oak boards.
+- key: pembridge-contract
+  subject: {kind: variant, ref: Harlow dining table (trade)}
+  fact_type: price
+  attribute: contract_price
+  value: 1120
+  unit: null
+  currency: GBP
+  value_text: £1,120 per table
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Pembridge Hotels}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Pembridge Hotels fit-out contract}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Pembridge Hotels pays £1,120 per Harlow oak table under its fit-out contract.

@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[otley] makes the Ilkley small-dog price (£42) a scope trap;
+# publish_on 2026-10-10 is after Muddy Paws Month ends (2026-10-06), valid today (2026-09-29).
+goal: "Fill October grooming slots at the Otley salon."
+pieces:
+  - {key: p1, channel: sms, kind: message, max_chars: 160}
+  - {key: p2, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p3, channel: tiktok, kind: caption, max_chars: 300}
+scope: {sites: [otley], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-10"
+audience: "Dog owners around Otley"
+notes: null

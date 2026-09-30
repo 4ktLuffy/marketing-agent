@@ -1,0 +1,139 @@
+name: propose_facts
+description: Proposed facts (price, hours, inclusion, policy...) stated in one chunk of a business's own website, brochure or price list, each with its scope words and a quote copied verbatim; plus questions for things mentioned without a value. Proposals only; the owner confirms each one.
+output: json
+temperature: 0.1
+vars:
+  source_text: required
+  business_type: optional
+  known_facts: optional
+# Used by 72 control room, "Set up from your website or documents" (onboarding). The caller
+# (72) splits the source into chunks of about 6,000 characters and runs this once per chunk.
+# 72 does NOT trust the output: it drops every fact whose source_quote is not found in the
+# source text (whitespace, case and quote marks normalised), every fact whose value has a
+# number the quote does not have, and every date the quote does not mention; it drops
+# duplicates of known facts. What is left becomes DRAFT facts only after the owner ticks them,
+# and each draft still has to be confirmed on the Facts page. No brand here on purpose: the
+# brand profile is what this is building.
+system: |
+  You read a business's own website page, brochure or price list and write down the facts it
+  states, for an owner who will check each one. You never invent, infer, estimate, convert or
+  round anything. If the text does not state it, you leave it out. Every fact comes with a
+  quote copied character for character from the text.
+template: |
+  {% if business_type %}Type of business: {{ business_type }}
+  {% endif %}
+  {% if known_facts %}Facts the business already has (do not propose these again):
+  {{ known_facts }}
+
+  {% endif %}
+  Source text:
+  """
+  {{ source_text }}
+  """
+
+  Write JSON with "facts" and "questions".
+
+  facts: every separate fact the source text states about the business: prices, rates, fees,
+  opening hours, what is included, policies (cancellation, returns, delivery), specifications,
+  certifications, services offered, locations, contact details. One fact per price or rule.
+  For each fact:
+  - text: the fact as one plain sentence that a customer could read, using the source's own
+    words for the value and its conditions.
+  - subject: {kind, ref}. kind is one of business, site, product, variant, plan, service,
+    package, menu_item, person, policy, offer. ref is the name the text uses ("Midweek Escape",
+    "Leeds branch", "Pro plan"); "" for the business itself.
+  - fact_type: one of price, spec, availability, hours, inclusion, policy, certification,
+    credential, claim, testimonial, result, event, contact.
+  - attribute: a short word for what is stated (rate, opening_hours, breakfast, returns_window).
+  - value_text: the value exactly as written ("£180 per room per night", "9am to 5pm").
+  - value, unit, currency, basis: only when the text states them plainly (value 180, currency
+    GBP, basis per_room). Otherwise leave them out.
+  - scope_hints: where the fact applies, from the text's own words: sites (branches,
+    locations), regions, channels (online, in store, delivery), segments (customer groups like
+    students or members), plan_tiers, variants. Empty lists when the text does not limit it.
+  - valid_from / valid_to: YYYY-MM-DD, ONLY when the text states the dates. Never guess a year.
+  - conditions_text: conditions in the text's words ("2 sharing, Sunday to Thursday").
+  - required_disclosure_hint: small print the text attaches to the fact ("subject to
+    availability"), if any.
+  - source_quote: the sentence or phrase from the source text that states the fact, copied
+    exactly: same words, same numbers, same spelling. Do not fix typos, shorten in the middle,
+    join two sentences or add "...". Keep it under 300 characters.
+
+  questions: things the text mentions WITHOUT the value a customer would need, for example
+  "Airport transfers available" with no price, or "open late on Fridays" with no time. Each
+  question has text (a short question to the owner) and source_quote (copied exactly).
+
+  Rules:
+  - Only facts stated in the source text. Nothing from general knowledge about this type of
+    business.
+  - Never infer a price, a number or a date. "From £99" stays "from £99"; do not work out
+    a total, a per-night price or a discount.
+  - Keep the scope words with the fact: "at our Leeds branch", "per person", "weekdays only",
+    "for members", "Pro plan and above", "UK delivery only". A fact without its scope words is
+    wrong.
+  - A price for one branch, product, plan or season is its own fact; never merge two prices.
+  - Skip opinions and slogans ("the best in town") unless they are clearly a claim the
+    business makes; then fact_type is claim.
+  - Skip anything already in the known facts.
+  - If the text is empty, a menu of links, a cookie notice or an error page, return
+    {"facts": [], "questions": []}.
+example_vars:
+  business_type: Hospitality / accommodation
+  known_facts: |
+    - Lake Ember Lodge is on the east shore of Lake Ember.
+  source_text: |
+    [page 1]
+    Lake Ember Lodge - Rates 2026-27
+    Midweek Escape: £180 per room per night, 2 sharing, Sunday to Thursday, 1 October 2026 to 31 March 2027. Breakfast included.
+    Weekend rate: £240 per room per night, room only. Breakfast £15 per person.
+    [page 2]
+    Airport transfers available on request.
+    At our Keswick annexe, dogs are welcome (£20 per stay).
+schema:
+  type: object
+  required: [facts, questions]
+  properties:
+    facts:
+      type: array
+      maxItems: 40
+      items:
+        type: object
+        required: [text, subject, fact_type, value_text, scope_hints, source_quote]
+        properties:
+          text: {type: string, minLength: 3, maxLength: 500}
+          subject:
+            type: object
+            required: [kind, ref]
+            properties:
+              kind: {type: string, enum: [business, site, product, variant, plan, service, package, menu_item, person, policy, offer]}
+              ref: {type: string, maxLength: 120}
+          fact_type: {type: string, enum: [price, spec, availability, hours, inclusion, policy, certification, credential, claim, testimonial, result, event, contact]}
+          attribute: {type: string, maxLength: 60}
+          value_text: {type: string, maxLength: 200}
+          value: {type: [number, string, "null"]}
+          unit: {type: [string, "null"], maxLength: 30}
+          currency: {type: [string, "null"], maxLength: 3}
+          basis: {type: [string, "null"], enum: [per_unit, per_person, per_room, per_night, per_seat, per_month, per_year, flat, null]}
+          scope_hints:
+            type: object
+            properties:
+              sites: {type: array, items: {type: string, maxLength: 80}, maxItems: 10}
+              regions: {type: array, items: {type: string, maxLength: 80}, maxItems: 10}
+              channels: {type: array, items: {type: string, maxLength: 80}, maxItems: 10}
+              segments: {type: array, items: {type: string, maxLength: 80}, maxItems: 10}
+              plan_tiers: {type: array, items: {type: string, maxLength: 80}, maxItems: 10}
+              variants: {type: array, items: {type: string, maxLength: 80}, maxItems: 10}
+          valid_from: {type: [string, "null"], maxLength: 10}
+          valid_to: {type: [string, "null"], maxLength: 10}
+          conditions_text: {type: [string, "null"], maxLength: 300}
+          required_disclosure_hint: {type: [string, "null"], maxLength: 200}
+          source_quote: {type: string, minLength: 3, maxLength: 400}
+    questions:
+      type: array
+      maxItems: 15
+      items:
+        type: object
+        required: [text, source_quote]
+        properties:
+          text: {type: string, minLength: 3, maxLength: 300}
+          source_quote: {type: string, maxLength: 400}

@@ -1,0 +1,9 @@
+# WHY: the rating and "favourite pharmacy" have no source; "free flu jabs for everyone" and "guaranteed protection" are forbidden phrasings on the regulated flu facts.
+blocked: true
+findings:
+  - {contains: "rated 4.9 stars by over 800 patients", label: no_source, fact_key: null}
+  - {contains: "Free flu jabs for everyone", label: forbidden_phrase, fact_key: nhs-flu-eligible}
+  - {contains: "guaranteed protection all winter long", label: forbidden_phrase, fact_key: flu-jab-price}
+must_not_flag:
+  - "Walk-in flu jabs run on Saturdays, 9am to 1pm."
+  - "private flu jab £16 for adults 18 and over"

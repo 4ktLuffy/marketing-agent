@@ -1,0 +1,13 @@
+# WHY: invented: a UK superlative, the forbidden 'chartered accountants' and 'HMRC approved', a Trustpilot rating, 24/7 support (real: Mon-Fri 8-6), 'Fellow' (real grade: MAAT), and look-alike licence 104·97·38 (real 1049733).
+blocked: true
+findings:
+  - {contains: "the UK's best-loved bookkeeping app for sole traders", label: no_source, fact_key: null}
+  - {contains: "Our team of chartered accountants checks every return", label: forbidden_phrase, fact_key: aat-licence}
+  - {contains: "rated 4.8 stars on Trustpilot", label: no_source, fact_key: null}
+  - {contains: "Quill is HMRC approved for Making Tax Digital", label: forbidden_phrase, fact_key: mtd}
+  - {contains: "Our support team is available 24/7", label: conflict_or_expired, fact_key: support-hours}
+  - {contains: "led by Priya Doshi, a Fellow of the AAT", label: conflict_or_expired, fact_key: aat-licence}
+  - {contains: "licence 104·97·38", label: conflict_or_expired, fact_key: aat-licence}
+must_not_flag:
+  - "The Sole Trader plan costs £18 a month plus VAT"
+  - "Meet the bookkeepers behind Quill"

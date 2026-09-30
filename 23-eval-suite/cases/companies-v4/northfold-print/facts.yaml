@@ -1,0 +1,288 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Northfold Print & Packaging, type: commercial printer and packaging, today: '2026-09-29'}
+facts:
+- key: carton-board
+  subject: {kind: product, ref: Printed folding cartons}
+  fact_type: spec
+  attribute: board_grade
+  value: 350
+  unit: gsm
+  currency: null
+  value_text: 350gsm GC1 folding boxboard
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Board specification sheet 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Production manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Our standard printed cartons are made from 350gsm GC1 folding boxboard.
+- key: fsc-certification
+  subject: {kind: business, ref: Northfold Print & Packaging}
+  fact_type: certification
+  attribute: chain_of_custody
+  value: null
+  unit: null
+  currency: null
+  value_text: FSC chain-of-custody certificate NFP-COC-008213
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-02-01'
+  valid_to: '2030-01-31'
+  review_by: null
+  source: {kind: certificate, ref: FSC CoC certificate NFP-COC-008213}
+  claim_class: origin
+  requires_evidence: true
+  evidence_ref: FSC CoC certificate NFP-COC-008213
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Quality manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Northfold holds FSC chain-of-custody certificate NFP-COC-008213. FSC-certified board is available on request; only
+    products invoiced with an FSC claim may carry the FSC label.
+- key: carton-turnaround
+  subject: {kind: product, ref: Printed folding cartons}
+  fact_type: spec
+  attribute: turnaround
+  value: 8
+  unit: working_days
+  currency: null
+  value_text: 8 working days
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Service levels 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [after artwork approval]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Production manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Printed cartons are dispatched 8 working days after artwork approval.
+- key: carton-direct-price
+  subject: {kind: product, ref: Printed folding cartons (direct)}
+  fact_type: price
+  attribute: run_price
+  value: 640
+  unit: null
+  currency: GBP
+  value_text: £640 for 1,000 cartons
+  basis: flat
+  conditions:
+  - {key: quantity, op: '>=', value: 1000}
+  scope: {sites: [], regions: [], channels: [], segments: [direct], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Direct price list autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Direct customers pay £640 plus VAT for 1,000 printed cartons, our minimum run.
+- key: carton-trade-price
+  subject: {kind: product, ref: Printed folding cartons (trade)}
+  fact_type: price
+  attribute: run_price
+  value: 520
+  unit: null
+  currency: GBP
+  value_text: £520 for 1,000 cartons
+  basis: flat
+  conditions:
+  - {key: quantity, op: '>=', value: 1000}
+  scope: {sites: [], regions: [], channels: [], segments: [trade], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Trade price list autumn 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [plus VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Trade customers (print resellers) pay £520 plus VAT for 1,000 printed cartons.
+- key: colour-match
+  subject: {kind: service, ref: Colour matching}
+  fact_type: inclusion
+  attribute: colour_standard
+  value: null
+  unit: null
+  currency: null
+  value_text: spot colours matched to your brand references and signed off on press
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Colour management procedure v3}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Production manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: On every carton job, spot colours are matched to your brand references and signed off on press.
+- key: foil-offer
+  subject: {kind: offer, ref: Autumn gold foil offer}
+  fact_type: inclusion
+  attribute: free_finish
+  value: null
+  unit: null
+  currency: null
+  value_text: free gold foil on the lid
+  basis: null
+  conditions:
+  - {key: ordered_by, op: <=, value: '2026-10-06'}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-20'
+  valid_to: '2026-10-06'
+  review_by: null
+  source: {kind: doc, ref: Autumn promotion brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Carton orders placed by 6 October 2026 get free gold foil on the lid.
+- key: sample-pack-offer
+  subject: {kind: offer, ref: Free sample packs}
+  fact_type: inclusion
+  attribute: free_samples
+  value: null
+  unit: null
+  currency: null
+  value_text: free sample packs
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-05-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer 2026 promotion brief}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: Free sample packs of our board and finishes were available until 31 August 2026.
+- key: press-hour-cost
+  subject: {kind: business, ref: Litho press}
+  fact_type: price
+  attribute: hourly_cost
+  value: 140
+  unit: hour
+  currency: GBP
+  value_text: £140 per press hour
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Costing model 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our costed rate for the litho press is £140 per press hour.
+- key: hartley-contract
+  subject: {kind: package, ref: Hartley Foods carton contract}
+  fact_type: price
+  attribute: contract_price
+  value: 0.21
+  unit: carton
+  currency: GBP
+  value_text: £0.21 per carton
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Hartley Foods}
+  scope: {sites: [], regions: [], channels: [], segments: [direct], plan_tiers: [], variants: []}
+  valid_from: '2026-03-01'
+  valid_to: '2027-02-28'
+  review_by: null
+  source: {kind: doc, ref: Hartley Foods supply contract 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Managing director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hartley Foods pays £0.21 per carton under its annual supply contract.

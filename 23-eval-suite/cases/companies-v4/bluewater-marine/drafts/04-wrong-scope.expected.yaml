@@ -1,0 +1,9 @@
+# WHY: the £395 winter service package (lift-out, wash, engine service, antifouling) is the Hamble yard's tariff (sites=[hamble]); the task is sites=[poole].
+blocked: true
+findings:
+  - {contains: "Our winter service package is £395 including VAT", label: wrong_scope, fact_key: hamble-winter-service}
+  - {contains: "Subject: Winter service for £395", label: wrong_scope, fact_key: hamble-winter-service}
+  - {contains: "with our £395 winter service package", label: wrong_scope, fact_key: hamble-winter-service}
+  - {contains: "winter service from £395 at our Poole yard", label: wrong_scope, fact_key: hamble-winter-service}
+must_not_flag:
+  - "The ex-demo Solent Rider 6.5 in Poole is £44,950 including VAT"

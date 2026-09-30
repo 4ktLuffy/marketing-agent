@@ -1,0 +1,7 @@
+# WHY: only Starter-scoped or all-plan facts, the VAT disclosure is present, and "SOC 2 Type I" is the allowed phrasing.
+blocked: false
+findings: []
+must_not_flag:
+  - "Ledgerly has completed a SOC 2 Type I audit"
+  - "Still chasing invoices by hand?"
+  - "built for small businesses that are tired of spreadsheets"

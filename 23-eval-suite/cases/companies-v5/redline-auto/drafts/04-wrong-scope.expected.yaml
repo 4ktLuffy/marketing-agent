@@ -1,0 +1,10 @@
+# WHY: £35 is the fleet-account MOT price (segments=[fleet]); the task is segments=[private], where the MOT is £45.
+blocked: true
+findings:
+  - {contains: "MOTs Just £35 in Hatfield", label: wrong_scope, fact_key: fleet-mot-price}
+  - {contains: "Get your MOT done for £35 at Redline Auto", label: wrong_scope, fact_key: fleet-mot-price}
+  - {contains: "An MOT at Redline Auto is just £35", label: wrong_scope, fact_key: fleet-mot-price}
+  - {contains: "Redline Auto: MOTs £35 this autumn", label: wrong_scope, fact_key: fleet-mot-price}
+must_not_flag:
+  - "A full service costs £179 for engines up to 1.6 litres"
+  - "Courtesy car with every full service, subject to availability"

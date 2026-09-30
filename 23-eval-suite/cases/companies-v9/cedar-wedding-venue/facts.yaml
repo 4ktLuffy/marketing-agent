@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Written from the contracts only; no checker code was read.
+company: {name: "Cedar Hall Weddings Ltd", type: "wedding venue", today: "2026-09-29"}
+facts:
+  - key: "winter-weekday-package"
+    subject: {kind: "package", ref: "Winter Weekday package"}
+    fact_type: "price"
+    attribute: "package_price"
+    value: 6950
+    unit: "package"
+    currency: "GBP"
+    value_text: "£6,950"
+    basis: "flat"
+    conditions: [{key: "days", op: "in", value: ["Mon", "Tue", "Wed", "Thu"]}, {key: "months", op: "in", value: ["Nov", "Dec", "Jan", "Feb", "Mar"]}, {key: "day_guests", op: "=", value: 60}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["winter-weekday"]}
+    valid_from: "2026-06-01"
+    valid_to: "2027-03-31"
+    review_by: null
+    source: {kind: "doc", ref: "Cedar Hall wedding brochure 2026-27 v2"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["based on 60 day guests"]
+    allowed_phrasing: []
+    forbidden_phrasing: ["all-inclusive"]
+    owner: "Wedding manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "The Winter Weekday package (Monday to Thursday, November to March) costs £6,950 based on 60 day guests."
+  - key: "extra-guest-price"
+    subject: {kind: "package", ref: "Winter Weekday extra day guest"}
+    fact_type: "price"
+    attribute: "extra_guest"
+    value: 62
+    unit: "guest"
+    currency: "GBP"
+    value_text: "£62 per person"
+    basis: "per_person"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["winter-weekday"]}
+    valid_from: "2026-06-01"
+    valid_to: "2027-03-31"
+    review_by: null
+    source: {kind: "doc", ref: "Cedar Hall wedding brochure 2026-27 v2"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["per person"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Wedding manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Extra day guests on the Winter Weekday package cost £62 per person."
+  - key: "orangery-ceremony-licence"
+    subject: {kind: "site", ref: "The Orangery"}
+    fact_type: "certification"
+    attribute: "ceremony_licence"
+    value: 120
+    unit: "guests"
+    currency: null
+    value_text: "licensed for civil ceremonies for up to 120 guests"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2024-02-01"
+    valid_to: "2027-01-31"
+    review_by: "2026-12-01"
+    source: {kind: "certificate", ref: "Approved premises licence NYC/AP/0419"}
+    claim_class: "none"
+    requires_evidence: true
+    evidence_ref: "NYC/AP/0419"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Wedding manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "The Orangery is licensed for civil ceremonies and civil partnerships for up to 120 guests (approved premises licence NYC/AP/0419); the bar licence runs until midnight."
+  - key: "tithe-barn-capacity"
+    subject: {kind: "site", ref: "The Tithe Barn"}
+    fact_type: "spec"
+    attribute: "seated_capacity"
+    value: 180
+    unit: "seated_guests"
+    currency: null
+    value_text: "180 seated guests"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["summer-saturday", "summer-weekday"]}
+    valid_from: "2025-01-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Venue capacity sheet 2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Wedding manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "The Tithe Barn seats 180 guests for a wedding breakfast; it is unheated and used for summer packages only (May to September)."
+  - key: "food-hygiene-rating"
+    subject: {kind: "business", ref: "Cedar Hall kitchen"}
+    fact_type: "credential"
+    attribute: "food_hygiene_rating"
+    value: 5
+    unit: "rating"
+    currency: null
+    value_text: "food hygiene rating 5 (Very Good), FHRS reference 118842"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-03-12"
+    valid_to: null
+    review_by: "2027-03-12"
+    source: {kind: "certificate", ref: "FHRS inspection 2026-03-12, ref 118842"}
+    claim_class: "regulated_food"
+    requires_evidence: true
+    evidence_ref: "FHRS 118842"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Head chef"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Cedar Hall's kitchen holds food hygiene rating 5 (Very Good), FHRS reference 118842, from the March 2026 inspection."
+  - key: "winter-inclusions"
+    subject: {kind: "package", ref: "Winter Weekday package"}
+    fact_type: "inclusion"
+    attribute: "inclusions"
+    value: null
+    unit: null
+    currency: null
+    value_text: "a mulled-wine drinks reception by the log fire and the bridal suite for the wedding night"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["winter-weekday"]}
+    valid_from: "2026-06-01"
+    valid_to: "2027-03-31"
+    review_by: null
+    source: {kind: "doc", ref: "Cedar Hall wedding brochure 2026-27 v2"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Wedding manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Every Winter Weekday package includes a mulled-wine drinks reception by the log fire and the bridal suite for the wedding night."
+  - key: "autumn-booking-bonus"
+    subject: {kind: "offer", ref: "Autumn Booking Bonus"}
+    fact_type: "price"
+    attribute: "ceremony_room_hire"
+    value: 750
+    unit: null
+    currency: "GBP"
+    value_text: "free ceremony room hire (worth £750)"
+    basis: "flat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["winter-weekday"]}
+    valid_from: "2026-09-01"
+    valid_to: "2026-10-10"
+    review_by: null
+    source: {kind: "owner_statement", ref: "Owner email: booking bonus ends 10 Oct"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Autumn Booking Bonus: free ceremony room hire (worth £750) on Winter Weekday weddings booked by 10 October 2026."
+  - key: "winter-dates-2026"
+    subject: {kind: "package", ref: "Winter Weekday package"}
+    fact_type: "availability"
+    attribute: "free_dates"
+    value: null
+    unit: null
+    currency: null
+    value_text: "Thursdays 3, 10 and 17 December 2026"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["winter-weekday"]}
+    valid_from: "2026-09-29"
+    valid_to: "2026-12-17"
+    review_by: "2026-10-31"
+    source: {kind: "doc", ref: "Bookings diary export 2026-09-29"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Wedding manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Winter Weekday dates still free in December 2026: Thursday 3, Thursday 10 and Thursday 17 December."
+  - key: "planner-commission"
+    subject: {kind: "business", ref: "Cedar Hall Weddings Ltd"}
+    fact_type: "price"
+    attribute: "planner_commission"
+    value: 12
+    unit: "percent"
+    currency: null
+    value_text: "12% commission to wedding planners"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: ["planners"], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2026-12-31"
+    review_by: null
+    source: {kind: "doc", ref: "Planner partner terms 2026 (internal)"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "high"
+    sensitivity: "internal"
+    status: "active"
+    supersedes_key: null
+    text: "Wedding planners who bring a booking receive 12% commission on the package price."
+  - key: "pennine-bank-rate"
+    subject: {kind: "package", ref: "Corporate winter party"}
+    fact_type: "price"
+    attribute: "contract_price"
+    value: 48
+    unit: "guest"
+    currency: "GBP"
+    value_text: "£48 per head for Pennine Bank"
+    basis: "per_person"
+    conditions: [{key: "customer", op: "=", value: "Pennine Bank"}]
+    scope: {sites: [], regions: [], channels: [], segments: ["corporate"], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2027-12-31"
+    review_by: null
+    source: {kind: "doc", ref: "Pennine Bank events agreement PB-2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Owner"
+    risk: "high"
+    sensitivity: "restricted"
+    status: "active"
+    supersedes_key: null
+    text: "Pennine Bank pays £48 per head for its staff winter party under a two-year agreement."

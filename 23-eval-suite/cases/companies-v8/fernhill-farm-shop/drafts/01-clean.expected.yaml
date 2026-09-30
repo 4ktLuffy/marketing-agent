@@ -1,0 +1,14 @@
+# WHY: negative control: retail-scoped facts only, the box disclosure is written out, the certification wording matches the licence fact, and the hygiene grade and ID are exact.
+blocked: false
+findings: []
+must_not_flag:
+  - "Autumn Meat Boxes are back!"
+  - "feeds four for a week, and its contents vary with the season"
+  - "Our beef and lamb are certified organic by the Soil Association, licence G7729"
+  - "dry-aged sirloin is £34/kg"
+  - "Autumn Meat Box £55, contents vary with the season"
+  - "What's in this month's Autumn Meat Box?"
+  - "The shop holds a food hygiene rating of 4 (Good), FHRS ID 1184520"
+  - "Organic certification covers our own beef and lamb, and our chickens are free-range"
+  - "Thursday to Saturday between 10am and 4pm"
+  - "Call us on 0116 496 0321"

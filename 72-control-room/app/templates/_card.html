@@ -6,11 +6,16 @@
       <span class="chip net-chip net-{{ c.channel }}">{{ c.channel }}</span>
       {% if c.hook %}<span class="chip" title="how the post opens">hook: {{ c.hook }}</span>{% endif %}
       {% if c.pillar_id %}<span class="chip" title="content engine pillar">pillar: {{ c.pillar or ('#' ~ c.pillar_id) }}</span>{% endif %}
-      {% if c.item.campaign %}<span class="chip">campaign: {{ c.item.campaign }}</span>{% endif %}
+      {% if c.task_id %}<a class="chip" href="/tasks/{{ c.task_id }}">from task {{ c.task_id }}</a>{% elif c.item.campaign %}<span class="chip">campaign: {{ c.item.campaign }}</span>{% endif %}
+      {% if c.client %}<span class="chip {{ 'good' if c.client.approved and not c.client.earlier else 'bad' if not c.client.approved else '' }}" data-client="{{ 'approved' if c.client.approved else 'changes' }}">{% if c.client.approved %}client approved by {{ c.client.name }}{% else %}client asked for changes ({{ c.client.name }}){% endif %}{% if c.client.earlier %} · earlier version (v{{ c.client.version }}){% endif %}</span>{% endif %}
       <span class="chip muted">{% if c.item.scheduled_at %}{{ c.item.scheduled_at[:16]|replace('T', ' ') }} UTC{% else %}no time: next full hour{% endif %}</span>
     </div>
   </header>
-  {% if c.flags %}
+  {% if c.evidence %}
+  <ul class="evidence" aria-label="evidence">
+    {% for e in c.evidence %}<li><span class="ev ev-{{ e.level }}" data-label="{{ e.label }}">{{ e.words }}</span> <span class="small">{{ e.text }}</span></li>{% endfor %}
+  </ul>
+  {% elif c.flags %}
   <ul class="flags" aria-label="flags">
     {% for f in c.flags %}<li class="flag {{ f.level }}">{{ f.text }}</li>{% endfor %}
   </ul>
@@ -19,14 +24,16 @@
     {% include "_preview.html" %}
   </div>
   <div class="actions">
-    <button class="btn approve" data-act="approve" hx-post="/decide" hx-vals='{{ {"id": c.id, "decision": "approve"}|tojson }}'
+    <button class="btn approve" data-act="approve" hx-post="/decide" hx-vals='{{ {"id": c.id, "decision": "approve", "seen": c.body_sha256}|tojson }}'
             hx-target="#card-{{ c.id }}" hx-swap="outerHTML" aria-keyshortcuts="a">Approve <kbd>a</kbd></button>
     <a class="btn" data-act="edit" href="/items/{{ c.id }}/edit" aria-keyshortcuts="e">Edit <kbd>e</kbd></a>
     <button class="btn reject" type="button" data-act="reject" aria-keyshortcuts="r">Reject <kbd>r</kbd></button>
     <button class="btn ghost" type="button" data-act="skip" aria-keyshortcuts="s">Skip <kbd>s</kbd></button>
+    <a class="btn ghost" href="/client-links/new?items={{ c.id }}">Send to client</a>
   </div>
   <form class="reject-sheet" hidden hx-post="/decide" hx-target="#card-{{ c.id }}" hx-swap="outerHTML">
     <input type="hidden" name="id" value="{{ c.id }}">
+    <input type="hidden" name="seen" value="{{ c.body_sha256 }}">
     <p class="small muted">Why? The reason goes to the rewriter (49) and teaches the agent.</p>
     <div class="reason-chips">
       {% for r in ['tone is off', 'unsupported claim', 'off-brand', 'too long', 'wrong facts'] %}

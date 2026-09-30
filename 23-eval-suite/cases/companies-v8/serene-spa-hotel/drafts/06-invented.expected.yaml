@@ -1,0 +1,12 @@
+# WHY: invented: a Yorkshire superlative, 'five-star' (real grade: AA Four Star), a Booking.com rating, award-winning therapists, a personal-butler service, and look-alike ID 731-04-24 (real 7310442).
+blocked: true
+findings:
+  - {contains: "the most luxurious spa in Yorkshire", label: no_source, fact_key: null}
+  - {contains: "Relax at our five-star hotel", label: conflict_or_expired, fact_key: aa-rating}
+  - {contains: "Rated 9.6 out of 10 by guests on Booking.com", label: no_source, fact_key: null}
+  - {contains: "Our award-winning therapists are all trained in Swedish massage", label: no_source, fact_key: null}
+  - {contains: "Your personal butler is waiting", label: no_source, fact_key: null}
+  - {contains: "Every spa guest is greeted by a personal butler", label: no_source, fact_key: null}
+  - {contains: "establishment ID 731-04-24", label: conflict_or_expired, fact_key: aa-rating}
+must_not_flag:
+  - "The Weekday Spa Day is £95 per person, Monday to Thursday"

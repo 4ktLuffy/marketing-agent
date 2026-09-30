@@ -1,0 +1,11 @@
+# WHY: "leading" firm, the 4.9-star rating and the Chartered Tax Adviser staff credential have no source; "Platinum" changes the Tallyroo Gold tier; C008817246 is a look-alike of firm number C008812746; "registered auditors" is forbidden (the firm is not audit-registered).
+blocked: true
+findings:
+  - {contains: "Summit is the leading accountancy firm in North Yorkshire", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9 stars from 180 Google reviews", label: no_source, fact_key: null}
+  - {contains: "every return is prepared by a Chartered Tax Adviser", label: no_source, fact_key: null}
+  - {contains: "We're a Tallyroo Platinum Partner", label: conflict_or_expired, fact_key: tallyroo-partner}
+  - {contains: "firm number C008817246", label: conflict_or_expired, fact_key: icaew-firm}
+  - {contains: "As registered auditors, we know exactly what HMRC looks for", label: forbidden_phrase, fact_key: icaew-firm}
+must_not_flag:
+  - "Our Sole Trader MTD package is £45 per month plus VAT"

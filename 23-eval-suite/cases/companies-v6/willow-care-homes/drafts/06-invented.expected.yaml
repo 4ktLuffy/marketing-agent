@@ -1,0 +1,10 @@
+# WHY: "best care home", a 9.8/10 review score and an on-site GP have no source; the CQC has no "Excellent" grade and Alder Court is rated Good; location ID 1-4471029358 is a look-alike of 1-4471029385.
+blocked: true
+findings:
+  - {contains: "the best care home in Ashcombe", label: no_source, fact_key: null}
+  - {contains: "Families rate us 9.8 out of 10", label: no_source, fact_key: null}
+  - {contains: "rated Excellent by the CQC", label: conflict_or_expired, fact_key: cqc-alder-court}
+  - {contains: "Our on-site GP sees residents every morning", label: no_source, fact_key: null}
+  - {contains: "CQC location ID 1-4471029358", label: conflict_or_expired, fact_key: cqc-alder-court}
+must_not_flag:
+  - "Visiting is open from 9am to 8pm every day"

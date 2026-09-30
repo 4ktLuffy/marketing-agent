@@ -1,0 +1,22 @@
+Here's a fresh take on all three:
+
+## Facebook post
+Ready to get behind the wheel, without the gears?
+Forty-four pounds an hour gets you an automatic lesson with Kestrel, with a minimum 2-hour booking.
+Did you know 71% of our pupils passed first time?
+That figure comes from 146 first-time tests, Sep 2025 to Aug 2026.
+Who's teaching you? Daniel Okafor: grade A, DVSA-approved driving instructor, ADI number 417385.
+
+## Email
+Subject: Your first automatic lesson, collected from your door
+
+Hello,
+
+Pick-up and drop-off are free, from your home, college or workplace anywhere in Norwich.
+Lessons in our automatic car are £44/hr (minimum 2-hour booking).
+Nervous about your test? Our pass rate is 71% at the first attempt (146 first-time tests, Sep 2025 to Aug 2026).
+
+Quick one from Kestrel Driving School 👋 Automatic lessons in Norwich are {{auto-hourly}} (minimum 2-hour booking). Want a free pick-up from college after lectures? Just reply with a day that suits.
+
+---
+Happy to adjust the tone for parents!

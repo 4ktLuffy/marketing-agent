@@ -1,0 +1,7 @@
+# WHY: £28 is the private one-to-one lesson price; the task is variants=[group].
+blocked: true
+findings:
+  - {contains: "Private lessons are £28 per 30-minute lesson", label: wrong_scope, fact_key: private-lesson-price}
+  - {contains: "Twenty-eight pounds and your child gets the teacher all to themselves", label: wrong_scope, fact_key: private-lesson-price}
+must_not_flag:
+  - "Every teacher holds the AquaTeach Level 2 swimming teacher certificate"

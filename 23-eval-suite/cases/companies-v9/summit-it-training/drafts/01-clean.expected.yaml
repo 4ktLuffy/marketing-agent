@@ -1,0 +1,17 @@
+# WHY: negative control. Every claim is an online (or unscoped) public fact valid on 2026-10-14, slotted or typed exactly; "plus VAT" and the pass-rate cohort "January to June 2026 cohort of 212 learners" are present; the Facebook piece has no heading.
+blocked: false
+findings: []
+must_not_flag:
+  - "Want your team cloud-certified before the new year?"
+  - "Every CloudCert Foundation course includes the official exam voucher and one free resit."
+  - "CloudCert Practitioner (Level 2), live online, is £1,190 plus VAT per learner."
+  - "94% of our Foundation learners passed first time (January to June 2026 cohort of 212 learners)."
+  - "We're a CloudCert Institute Gold Training Partner (partner ID CCI-TP-40218)."
+  - "Our live online CloudCert Foundation course is £645 plus VAT per learner"
+  - "Top tip: book your exam within four weeks of the course"
+  - "Summit IT Training is a CloudCert Institute Gold Training Partner."
+  - "CloudCert Foundation online: £645 plus VAT."
+  - "Exam voucher included."
+  - "The best-kept secret of busy IT managers?"
+  - "Ready for the next step?"
+  - "Stepping up?"

@@ -1,0 +1,33 @@
+Here's a draft for each channel. I've kept the tone professional, as requested.
+
+### 1. LinkedIn post
+
+Clean offices, no long contracts.
+
+Brightfold cleans offices any time [[cleaning-hours]], so your team never has to work around us.
+Our rate is [[office-cleaning-rate]] plus VAT, minimum 2 hours per visit.
+Every cleaner on a commercial contract is security screened to BS 7858.
+And you're never locked in: it's a [[rolling-contract]].
+
+### 2. Email
+
+Subject: Office cleaning that fits around your week
+
+Hi {first_name},
+
+Brightfold's office cleaning costs £21 per cleaner per hour, plus VAT, minimum 2 hours per visit.
+We clean between 6am and 9pm, seven days a week, using EU Ecolabel cleaning products.
+Contracts are a 30-day rolling contract, no minimum term.
+
+Best regards,
+The Brightfold team
+
+### 3. Blog intro
+
+**Why more offices are moving to flexible cleaning contracts**
+
+Long cleaning contracts made sense when every office was full five days a week. Now they rarely do.
+At Brightfold, office contracts run on a 30-day rolling contract, no minimum term, and you can book cleans between 6am and 9pm, seven days a week.
+All our commercial cleaners are security screened to BS 7858, and we use EU Ecolabel cleaning products as standard.
+
+Let me know if you'd like a full-length blog post from this intro!

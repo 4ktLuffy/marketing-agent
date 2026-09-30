@@ -84,7 +84,7 @@ if docker compose version >/dev/null 2>&1; then
   base="$tmp/env.base"
   sed 's/=change-me.*$/=0123456789abcdef0123/' .env.example > "$base"
   render() {  # render ENVFILE PROJECT -> "published ports" | networks | volumes (json)
-    docker compose -p "$2" --env-file "$1" --profile full --profile newsletter --profile ollama \
+    docker compose -p "$2" --env-file "$1" --profile full --profile newsletter --profile ollama --profile claude \
       config --format json 2>/dev/null
   }
   ports_of() { python3 -c 'import json,sys

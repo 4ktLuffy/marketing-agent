@@ -498,3 +498,17 @@ def test_wrong_var_shape_is_a_422_not_a_500(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "store", PromptStore(str(tmp_path)))
     r = client.post("/v1/run", json={"prompt": "shape", "vars": {"topic": ["a", "b"]}})
     assert r.status_code == 422 and "could not be filled" in r.json()["detail"]
+
+
+def test_facts_sensitivity_follows_the_provider(monkeypatch):
+    """Internal facts stay on the machine: a hosted provider only gets public facts by default."""
+    from app import main as m
+    monkeypatch.delenv("FACTS_MAX_SENSITIVITY", raising=False)
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    assert m.facts_max_sensitivity() == "internal"
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    assert m.facts_max_sensitivity() == "public"
+    monkeypatch.setenv("FACTS_MAX_SENSITIVITY", "internal")
+    assert m.facts_max_sensitivity() == "internal"
+    monkeypatch.setenv("FACTS_MAX_SENSITIVITY", "restricted")   # never allowed: falls back to the default
+    assert m.facts_max_sensitivity() == "public"

@@ -1,0 +1,7 @@
+# WHY: negative control — same facts, reworded; values typed out still match facts, disclosure kept verbatim.
+blocked: false
+findings: []
+must_not_flag:
+  - "handles pressures up to 40 bar (PN40)"
+  - "expect delivery within 15 working days"
+  - "copes with up to 40 bar"

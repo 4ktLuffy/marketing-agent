@@ -1,0 +1,9 @@
+# WHY: "100% secure" is a forbidden phrasing on the security fact; the 4.9-star rating and "cheapest self storage in town" have no source fact.
+blocked: true
+findings:
+  - {contains: "Your belongings are 100% secure with us", label: forbidden_phrase, fact_key: site-security}
+  - {contains: "Rated 4.9 stars by over 2,000 customers", label: no_source, fact_key: null}
+  - {contains: "the cheapest self storage in town", label: no_source, fact_key: null}
+must_not_flag:
+  - "A 50 sq ft unit at Millgate is £24 per week"
+  - "Open 6am to 10pm, 7 days a week"

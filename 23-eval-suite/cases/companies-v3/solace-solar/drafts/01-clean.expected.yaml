@@ -1,0 +1,8 @@
+# WHY: in-scope Home 6 price with its survey disclosure, Aurelis warranty (task variant), Yorkshire area, correct MCS number.
+blocked: false
+findings: []
+must_not_flag:
+  - "Solace Solar is an MCS certified installer (certificate SOL-48213)"
+  - "The Home 6 package costs £9,450 fully installed, subject to a home survey"
+  - "App monitoring and bird-proofing mesh are included as standard"
+  - "Every Aurelis panel we fit carries a 25-year product warranty"

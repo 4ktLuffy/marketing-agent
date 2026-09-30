@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Task {{ task.id }}{% endblock %}
+{% block main %}
+<p><a href="/tasks">← Tasks</a> · <a href="/tasks/{{ task.id }}/pack">Pack</a></p>
+<h1>{{ task.goal or ('Task ' ~ task.id) }}</h1>
+<p class="small muted">{{ task.id }}{% if task.publish_on %} · publish {{ task.publish_on }}{% endif %} · {{ (task.status or 'open')|replace('_', ' ') }}</p>
+
+{% if split %}
+<section class="panel" aria-labelledby="split-h">
+  <h2 id="split-h">How the answer was split</h2>
+  {% if split.problems %}
+  <div class="alert warn" role="alert"><p><b>Check the split.</b></p><ul class="plain small">{% for p in split.problems %}<li>{{ p }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% for part in split.parts %}
+  <div class="split-part">
+    <h3>{{ part.piece_key }}{% if channels.get(part.piece_key) %} · {{ channels.get(part.piece_key) }}{% endif %}</h3>
+    {% if part.removed_pre %}<details class="removed"><summary class="small">Removed before it (show)</summary><p class="text small">{{ part.removed_pre }}</p></details>{% endif %}
+    <p class="text split-text">{{ part.text }}</p>
+    {% if part.removed_post %}<details class="removed"><summary class="small">Removed after it (show)</summary><p class="text small">{{ part.removed_post }}</p></details>{% endif %}
+  </div>
+  {% else %}<p class="muted">No piece was found in the answer.</p>{% endfor %}
+  {% if split.parts and split.draft_id is not none %}
+  <form method="post" action="/tasks/{{ task.id }}/submit">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="draft_id" value="{{ split.draft_id }}">
+    {% if split.problems %}{# confirming the split as shown: 88 wants a person to accept a split with notes #}
+    {% for part in split.parts %}<input type="hidden" name="piece_key" value="{{ part.piece_key }}"><input type="hidden" name="piece_text" value="{{ part.text }}">{% endfor %}
+    {% endif %}
+    <div class="actions"><button class="btn primary big" type="submit">Looks right: check and add to the calendar</button></div>
+  </form>
+  {% endif %}
+  {% if split.draft_id is not none %}
+  <details {% if split.problems or not split.parts %}open{% endif %}>
+    <summary>Put the text in the right piece yourself</summary>
+    <form method="post" action="/tasks/{{ task.id }}/split" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="draft_id" value="{{ split.draft_id }}">
+      {% for row in split.rows %}
+      <input type="hidden" name="piece_key" value="{{ row.key }}">
+      <label for="piece-{{ row.key }}">{{ row.key }}{% if row.channel %} · {{ row.channel }}{% endif %}</label>
+      <textarea id="piece-{{ row.key }}" name="piece_text" rows="6" maxlength="40000">{{ row.text }}</textarea>
+      {% endfor %}
+      <button class="btn" type="submit">Use this split</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if accept_error %}<p class="alert danger" role="alert">{{ accept_error }}</p>{% endif %}
+{% if accepted %}<p class="alert ok" role="status">Finding accepted and recorded. If nothing else blocks the piece, it is now waiting for approval in the queue.</p>{% endif %}
+{% if results %}
+<section aria-labelledby="res-h">
+  <h2 id="res-h">{% if submitted %}Checked and added{% else %}Pieces{% endif %}</h2>
+  <p class="small muted ev-legend">
+    <span class="ev ev-ok">matches</span> a fact backs it ·
+    <span class="ev ev-warn">needs your judgement</span> ·
+    <span class="ev ev-bad">conflicting or expired, wrong scope, no source, missing disclosure, forbidden wording, blocked placeholder</span> stop it from going out.
+  </p>
+  {% for r in results %}
+  <article class="panel piece{% if r.blocked %} blocked{% endif %}">
+    <h3>{{ r.key }}{% if r.channel %} · <span class="chip net-chip net-{{ r.channel }}">{{ r.channel }}</span>{% endif %}
+      {% if r.blocked %}<span class="chip st-bad">blocked: back to draft</span>{% elif r.state %}<span class="chip">{{ r.state|replace('_', ' ') }}</span>{% endif %}</h3>
+    {% if r.text %}<p class="text filled">{{ r.text }}</p>{% endif %}
+    {% if r.rule_problems %}<ul class="rule-problems">{% for q in r.rule_problems %}
+      <li><span class="ev {{ 'ev-bad' if q.blocking else 'ev-warn' }}">{{ q.where }}</span> {{ q.text }}</li>{% endfor %}
+    </ul>{% endif %}
+    {% include "_evidence.html" %}
+    {% if r.item_id %}<p><a class="btn small" href="/items/{{ r.item_id }}">Open calendar item #{{ r.item_id }}</a></p>{% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if not split and not results %}
+<p class="muted">No answer pasted yet. <a href="/tasks/{{ task.id }}/pack">Open the pack</a> to copy it and paste the answer back.</p>
+{% endif %}
+
+<section class="panel" aria-labelledby="exp-h">
+  <h2 id="exp-h">Export</h2>
+  {% if ready %}
+  <p>Every piece is approved and its facts still hold on the publish date.</p>
+  <p><a class="btn primary" href="/tasks/{{ task.id }}/export?format=md">Download (Markdown)</a> <a class="btn" href="/tasks/{{ task.id }}/export?format=txt">Download (plain text)</a></p>
+  {% else %}
+  <p class="small">Not ready to export yet.{% if missing %} Still missing:{% endif %}</p>
+  {% if missing %}<ul class="plain small export-missing">{% for m in missing %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+  {% endif %}
+</section>
+{% endblock %}

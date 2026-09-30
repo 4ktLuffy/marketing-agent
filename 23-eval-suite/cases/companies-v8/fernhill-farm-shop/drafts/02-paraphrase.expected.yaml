@@ -1,0 +1,16 @@
+# WHY: negative control: the same facts reworded (price in words, per-kilo formats, the season disclosure in equivalent words, 'certified'/'certification' used only for the licensed beef and lamb); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "Autumn is here, and so is our meat box"
+  - "Fifty-five pounds gets you a box that feeds four for a whole week"
+  - "You'll find a recipe card from us tucked inside"
+  - "carry Soil Association organic certification (G7729)"
+  - "we'll bring it round on a Friday if you spend over £40"
+  - "28-day aged sirloin, £34.00 a kilo"
+  - "Is your freezer ready for autumn?"
+  - "costs £34 per kilogram"
+  - "is a 4, which means \"Good\""
+  - "Is the beef certified?"
+  - "our own beef and lamb are Soil Association certified organic"
+  - "Order by 8pm and collect your box the next day"

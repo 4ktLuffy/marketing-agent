@@ -1,0 +1,8 @@
+# WHY: the half-price subscription month is valid today but ends 2026-10-04, before publish 2026-10-12; the peony sale ended 2026-07-31.
+blocked: true
+findings:
+  - {contains: "get half price on your first month", label: conflict_or_expired, fact_key: subscription-half-price}
+  - {contains: "Peony bunches are 25% off", label: conflict_or_expired, fact_key: peony-sale}
+must_not_flag:
+  - "Our seasonal hand-tied bouquet is £35 at Market Square"
+  - "Market Square is open Sundays 10am to 2pm"

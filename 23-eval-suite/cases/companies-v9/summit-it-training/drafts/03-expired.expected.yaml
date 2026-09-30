@@ -1,0 +1,12 @@
+# WHY: the October Early Bird is valid today but ends 2026-10-04, before publish 2026-10-14; it is used by name (heading, body, last piece), by its discount (subject, £548.25 = £645 less 15%) and loosely ("knock a nice chunk off").
+blocked: true
+findings:
+  - {contains: "OCTOBER EARLY BIRD", label: conflict_or_expired, fact_key: october-early-bird}
+  - {contains: "with our October Early Bird and save 15%", label: conflict_or_expired, fact_key: october-early-bird}
+  - {contains: "Book early this month and knock a nice chunk off your team's training bill.", label: conflict_or_expired, fact_key: october-early-bird}
+  - {contains: "Subject: 15% off live online courses this October", label: conflict_or_expired, fact_key: october-early-bird}
+  - {contains: "Foundation online drops to £548", label: conflict_or_expired, fact_key: october-early-bird}
+  - {contains: "Save 15% with the October Early Bird", label: conflict_or_expired, fact_key: october-early-bird}
+must_not_flag:
+  - "CloudCert Foundation (Level 1), live online, is £645 plus VAT per learner."
+  - "Every CloudCert Foundation course includes the official exam voucher and one free resit."

@@ -1,0 +1,52 @@
+# Starter kit: restaurant or café. Data, not code; applying creates DRAFT rules only.
+# Allergen rules are safety-critical; these are generic prompts, not food-safety advice.
+label: Restaurant / café
+description: Menu items and prices, delivery pricing that differs from dine-in, allergens, opening hours, seasonal menus.
+fact_types:
+  - fact_type: price
+    subject_kind: menu_item
+    attributes: [price, channel, portion]
+    example: "Flat white costs GBP 3.40 in the café; delivery apps add 15%."
+  - fact_type: spec
+    subject_kind: menu_item
+    attributes: [allergens, dietary, allergen_matrix_version]
+    example: "Allergen matrix v4 (2026-09): the brownie contains milk, egg, wheat."
+  - fact_type: hours
+    subject_kind: site
+    attributes: [opening_hours, kitchen_close]
+    example: "Kitchen closes at 9 pm."
+  - fact_type: event
+    subject_kind: offer
+    attributes: [start_date, end_date, days]
+    example: "Tuesday pie night runs through October."
+  - fact_type: availability
+    subject_kind: service
+    attributes: [delivery_area, booking, takeaway]
+    example: "Delivery within 3 miles via our own riders."
+claim_classes: [regulated_food, origin, comparative]
+forbidden_phrasing:
+  - phrase: allergen-free
+    why: Kitchens handle many allergens; "free from" needs controls and evidence, not a menu choice.
+    claim_class: regulated_food
+    needs: a spec fact from the current allergen matrix
+  - phrase: gluten-free
+    why: Often has a legal threshold; only use it when a current allergen fact supports it.
+    claim_class: regulated_food
+    needs: a spec fact from the current allergen matrix
+  - phrase: nut-free
+    why: Cross-contact risk; needs a current allergen fact.
+    claim_class: regulated_food
+    needs: a spec fact from the current allergen matrix
+  - phrase: locally sourced
+    why: An origin claim needs to be true for the ingredients named.
+    claim_class: origin
+    needs: an origin fact for the ingredient
+  - phrase: homemade
+    why: Readers take it literally; needs to be true for the item.
+    claim_class: origin
+required_disclosures:
+  - when: a dish or allergen is mentioned
+    text: Please tell us about any allergies before ordering.
+    claim_class: regulated_food
+  - when: a price is mentioned together with delivery
+    text: Delivery prices differ from the menu.

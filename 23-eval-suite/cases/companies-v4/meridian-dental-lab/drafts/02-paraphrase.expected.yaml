@@ -1,0 +1,8 @@
+# WHY: negative control — same facts reworded ("five working days", "£68 a unit", "Class 5 zirconia to ISO 6872", courier/model/shade report in words); disclosure kept; "top you up" is a harmless look-alike.
+blocked: false
+findings: []
+must_not_flag:
+  - "turns cases around in five working days, from receipt of the scan or impression"
+  - "costs £68 a unit, milled from Class 5 zirconia to ISO 6872"
+  - "certificate QMS-44817"
+  - "Ask us to top you up"

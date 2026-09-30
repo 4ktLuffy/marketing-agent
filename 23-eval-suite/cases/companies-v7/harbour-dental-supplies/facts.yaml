@@ -1,0 +1,348 @@
+# FICTIONAL company. Held-out eval fixture (companies-v7, see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Harbour Dental Supplies, type: wholesale distributor (dental consumables), today: '2026-09-29'}
+facts:
+- key: gloves-box-standard
+  subject: {kind: product, ref: Harbour nitrile exam gloves}
+  fact_type: price
+  attribute: trade_price
+  value: 5.4
+  unit: box
+  currency: GBP
+  value_text: £5.40 per box of 100
+  basis: per_unit
+  conditions:
+  - {key: pack_size, op: '=', value: 100}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: [standard-account]
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Trade price list H2 2026 v2}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excluding VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Standard trade accounts pay £5.40 per box of 100 Harbour nitrile exam gloves, excluding VAT.
+- key: gloves-box-gold
+  subject: {kind: product, ref: Harbour nitrile exam gloves}
+  fact_type: price
+  attribute: trade_price
+  value: 4.7
+  unit: box
+  currency: GBP
+  value_text: £4.70 per box of 100
+  basis: per_unit
+  conditions:
+  - {key: pack_size, op: '=', value: 100}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: [gold-account]
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Trade price list H2 2026 v2}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [excluding VAT]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Gold trade accounts (spend over £1,500 a quarter) pay £4.70 per box of 100 nitrile exam gloves, excluding
+    VAT.
+- key: gloves-marking
+  subject: {kind: product, ref: Harbour nitrile exam gloves}
+  fact_type: certification
+  attribute: conformity_marking
+  value: Class I
+  unit: null
+  currency: null
+  value_text: UKCA and CE marked Class I medical device (DoC HDS-DOC-2291)
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-02-10'
+  valid_to: null
+  review_by: '2027-02-10'
+  source: {kind: certificate, ref: Declaration of conformity HDS-DOC-2291 (2026-02-10)}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: HDS-DOC-2291
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [FDA approved]
+  owner: Regulatory lead
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Harbour nitrile exam gloves are UKCA and CE marked as a Class I medical device (declaration of conformity
+    HDS-DOC-2291). They are not FDA cleared.
+- key: cutoff-england-wales
+  subject: {kind: service, ref: Next-working-day delivery}
+  fact_type: availability
+  attribute: order_cutoff
+  value: '17:00'
+  unit: null
+  currency: null
+  value_text: order by 5pm for next-working-day delivery
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: [england-wales]
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Courier service schedule 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [Monday to Friday]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Warehouse manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Orders placed by 5pm, Monday to Friday, are delivered the next working day in England and Wales.
+- key: cutoff-scotland-ni
+  subject: {kind: service, ref: Next-working-day delivery}
+  fact_type: availability
+  attribute: order_cutoff
+  value: '13:00'
+  unit: null
+  currency: null
+  value_text: order by 1pm for next-working-day delivery
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: [scotland, northern-ireland]
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Courier service schedule 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [Monday to Friday]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Warehouse manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Orders to Scotland and Northern Ireland placed by 1pm, Monday to Friday, arrive the next working day.
+- key: stock-up-offer
+  subject: {kind: offer, ref: Autumn Stock-Up}
+  fact_type: price
+  attribute: gift
+  value: null
+  unit: null
+  currency: null
+  value_text: a free box of 100 nitrile gloves with every order over £250
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-15'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: doc, ref: Promotion brief PR-2026-09}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Marketing lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn Stock-Up: a free box of 100 nitrile gloves with every order over £250, 15 Sept to 3 Oct 2026.'
+- key: summer-clearance
+  subject: {kind: offer, ref: Summer Clearance}
+  fact_type: price
+  attribute: discount
+  value: 25
+  unit: percent
+  currency: null
+  value_text: 25% off prophy paste
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-07-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Promotion brief PR-2026-06}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Marketing lead
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: 'Summer Clearance: 25% off prophy paste, 1 July to 31 August 2026.'
+- key: account-manager
+  subject: {kind: service, ref: Trade account}
+  fact_type: inclusion
+  attribute: account_manager
+  value: null
+  unit: null
+  currency: null
+  value_text: a named account manager
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Sales handbook 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every trade account, standard or gold, includes a named account manager.
+- key: gloves-landed-cost
+  subject: {kind: product, ref: Harbour nitrile exam gloves}
+  fact_type: price
+  attribute: landed_cost
+  value: 3.15
+  unit: box
+  currency: GBP
+  value_text: £3.15 per box
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-07-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Import costing sheet Q3 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Landed cost of a box of 100 nitrile gloves is £3.15.
+- key: bayview-framework
+  subject: {kind: product, ref: Harbour nitrile exam gloves}
+  fact_type: price
+  attribute: contract_price
+  value: 4.05
+  unit: box
+  currency: GBP
+  value_text: £4.05 per box
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Bayview Dental Group}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2027-06-30'
+  review_by: null
+  source: {kind: doc, ref: Bayview framework agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Bayview Dental Group pays £4.05 per box of 100 under its framework agreement.

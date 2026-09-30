@@ -1,0 +1,9 @@
+# WHY: the £10,000 stamp duty contribution is valid today but ends 2026-10-12 (publish 2026-10-15); the HomeStart equity loan closed on 2026-03-31.
+blocked: true
+findings:
+  - {contains: "up to £10,000 towards your stamp duty", label: conflict_or_expired, fact_key: stamp-duty-offer}
+  - {contains: "Up to £10,000 towards stamp duty on Phase 2", label: conflict_or_expired, fact_key: stamp-duty-offer}
+  - {contains: "available with the HomeStart equity loan", label: conflict_or_expired, fact_key: homestart-scheme}
+must_not_flag:
+  - "the Rowan is £389,995 (selected plots, subject to contract)"
+  - "Every Phase 2 home comes with flooring throughout and turfed rear gardens"

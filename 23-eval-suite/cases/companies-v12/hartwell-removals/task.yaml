@@ -1,0 +1,12 @@
+# FICTIONAL. Scope regions=[local], segments=[home] makes the national per-mile rate and the business-only
+# weekend office moves scope traps; publish_on 2026-10-15 is after midweek-discount ends (2026-10-07),
+# valid today (2026-09-29).
+goal: "Book more local home moves for late October and November."
+pieces:
+  - {key: p1, channel: whatsapp, kind: broadcast, max_chars: 700}
+  - {key: p2, channel: flyer, kind: print, max_chars: null}
+  - {key: p3, channel: website, kind: banner, max_chars: 300}
+scope: {sites: [], regions: [local], segments: [home], channels: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-15"
+audience: "Households in and around Oakhampstead planning a move"
+notes: "Mention the free boxes."

@@ -1,0 +1,15 @@
+# WHY: negative control: the same weekday facts reworded ('each', '£95pp', 'four stars' in words, '25-min', the age rule reworded, a superlative only inside a question); nothing new.
+blocked: false
+findings: []
+must_not_flag:
+  - "Monday blues?"
+  - "Ninety-five pounds each buys you a whole day with us, Monday to Thursday"
+  - "A 25-min Express Facial or back massage is part of the day"
+  - "Robe, slippers, lunch in our Garden Room and the thermal suite and pool are all yours too"
+  - "Adults only: guests must be 18 or older"
+  - "Four-star calm, midweek"
+  - "We're rated four stars by the AA, and a weekday spa day here costs £95pp"
+  - "Is a weekday spa day the best-kept secret?"
+  - "Each guest pays £95 for a Weekday Spa Day, from Monday to Thursday"
+  - "We hold an AA Four Star rating (establishment ID 7310442)"
+  - "Spa guests need to be over 18"

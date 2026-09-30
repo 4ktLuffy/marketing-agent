@@ -1,0 +1,7 @@
+# WHY: weekend-scoped rate with its "room only" disclosure, transfer with "per person, each way", no breakfast claim.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our Weekend Break is £210 per room per night, room only"
+  - "book a station transfer for £25 per person, each way"
+  - "Every lodge has a private wood-fired hot tub"

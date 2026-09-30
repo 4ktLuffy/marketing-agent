@@ -1,0 +1,24 @@
+Here's a fresh take on both pieces. I've kept every figure exactly as supplied.
+
+### Piece 1 – LinkedIn post
+
+Running an online store? Get your pallets moving.
+Any full pallet booked before 16:00 lands the following working day, wherever it's going on UK mainland.
+Price: £68 per pallet (excl. VAT and fuel surcharge).
+Each load is insured in transit for up to £25,000 per consignment.
+Quality you can check: ISO 9001:2015, certificate NGF-QMS-4471.
+
+### Piece 2 – Email
+
+**Subject line:** Tomorrow's delivery starts with today's booking
+
+Hello,
+
+Customs forms slowing you down? Our AEO-C status (authorisation GBAEOC0042917) keeps the paperwork simpler.
+Book before 16:00 and we deliver the next working day across UK mainland for {{uk-next-day}}, excl. VAT and fuel surcharge.
+Just reply and we'll arrange your first collection.
+
+Kind regards,
+Northgate Freight
+
+Would you like a version with a stronger call to action?

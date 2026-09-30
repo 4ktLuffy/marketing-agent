@@ -1,0 +1,401 @@
+# FICTIONAL roofing contractor. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company:
+  name: Apex Roofing
+  type: roofing_contractor
+  today: '2026-09-29'
+facts:
+- key: reroof-price
+  subject:
+    kind: service
+    ref: Pitched re-roof (typical 3-bed semi)
+  fact_type: price
+  attribute: from_price
+  value: 6800
+  unit: null
+  currency: GBP
+  value_text: from £6,800
+  basis: flat
+  conditions:
+  - key: property
+    op: '='
+    value: 3-bed semi
+  scope:
+    sites: []
+    regions:
+    - bristol
+    - bath
+    - south-gloucestershire
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - pitched-roof
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Apex price guide 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - final price confirmed after a free survey
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A full pitched re-roof on a typical 3-bed semi costs from £6,800 inc VAT; the final price is confirmed after a free survey. We work across Bristol, Bath and South Gloucestershire.
+- key: pitched-guarantee
+  subject:
+    kind: policy
+    ref: Pitched re-roof guarantee
+  fact_type: policy
+  attribute: guarantee_years
+  value: 15
+  unit: year
+  currency: null
+  value_text: 15-year insurance-backed guarantee
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - pitched-roof
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Guarantee terms v4
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every pitched re-roof comes with a 15-year insurance-backed guarantee, so the customer is covered even if we cease trading.
+- key: flat-guarantee
+  subject:
+    kind: policy
+    ref: EPDM flat roof guarantee
+  fact_type: policy
+  attribute: guarantee_years
+  value: 25
+  unit: year
+  currency: null
+  value_text: 25-year insurance-backed guarantee
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - flat-roof
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Guarantee terms v4
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: EPDM rubber flat roofs come with a 25-year insurance-backed guarantee.
+- key: trustmark
+  subject:
+    kind: business
+    ref: Apex Roofing
+  fact_type: credential
+  attribute: trustmark_licence
+  value: null
+  unit: null
+  currency: null
+  value_text: TrustMark registered, licence number 2047815
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: '2026-12-01'
+  source:
+    kind: certificate
+    ref: TrustMark licence 2047815 (2026)
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: TrustMark licence 2047815
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Apex Roofing is a TrustMark registered business, licence number 2047815.
+- key: nfrc
+  subject:
+    kind: business
+    ref: Apex Roofing
+  fact_type: credential
+  attribute: nfrc_membership
+  value: null
+  unit: null
+  currency: null
+  value_text: NFRC Full Contractor Member, membership number 31972
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source:
+    kind: certificate
+    ref: NFRC membership certificate 31972
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: NFRC certificate 31972
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - NFRC approved
+  owner: Director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Apex Roofing is an NFRC Full Contractor Member, membership number 31972. NFRC membership is not an approval, so we never say 'NFRC approved'.
+- key: gutter-trio
+  subject:
+    kind: offer
+    ref: Gutter Trio
+  fact_type: price
+  attribute: multibuy
+  value: null
+  unit: null
+  currency: null
+  value_text: book 2 gutter cleans, get the 3rd free
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-10'
+  review_by: null
+  source:
+    kind: doc
+    ref: Autumn offers sheet 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Gutter Trio: book 2 gutter cleans and the 3rd is free, for bookings made by 10 October 2026.'
+- key: reroof-inclusions
+  subject:
+    kind: service
+    ref: Re-roof
+  fact_type: inclusion
+  attribute: included_work
+  value: null
+  unit: null
+  currency: null
+  value_text: scaffolding, skip hire and a full clear-up
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Apex price guide 2026
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every re-roof price includes scaffolding, skip hire and a full clear-up of the site.
+- key: landlord-rate
+  subject:
+    kind: service
+    ref: Roof inspection (landlords and letting agents)
+  fact_type: price
+  attribute: inspection_price
+  value: 85
+  unit: null
+  currency: GBP
+  value_text: £85 per property
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - landlord
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-03-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Lettings price sheet 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Office manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Landlords and letting agents pay £85 per property for a roof inspection with a written report.
+- key: margin-floor
+  subject:
+    kind: policy
+    ref: Quoting rule
+  fact_type: policy
+  attribute: minimum_margin
+  value: 28
+  unit: percent
+  currency: null
+  value_text: 28% minimum gross margin
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: owner_statement
+    ref: Director pricing note 2026
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Quotes must keep at least a 28% gross margin. Internal pricing rule.
+- key: hollybrook-framework
+  subject:
+    kind: service
+    ref: Re-roofing (Hollybrook Housing Association framework)
+  fact_type: price
+  attribute: contract_price
+  value: 41
+  unit: m2
+  currency: GBP
+  value_text: £41 per square metre
+  basis: per_unit
+  conditions:
+  - key: customer
+    op: '='
+    value: Hollybrook Housing Association
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2028-12-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Hollybrook framework agreement HF-26-03
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hollybrook Housing Association pays £41 per square metre for re-roofing under its 2026-2028 framework.

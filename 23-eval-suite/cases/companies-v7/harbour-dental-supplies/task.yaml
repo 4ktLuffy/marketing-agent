@@ -1,0 +1,16 @@
+# FICTIONAL. Scope segments=[standard-account], regions=[england-wales] makes the gold price and the 1pm
+# Scotland/NI cut-off scope traps; publish 2026-10-08 is after the Autumn Stock-Up ends (2026-10-03).
+goal: Win new standard trade accounts from dental practices in England and Wales in October.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 3000}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope:
+  sites: []
+  regions: [england-wales]
+  channels: []
+  segments: [standard-account]
+  plan_tiers: []
+  variants: []
+publish_on: '2026-10-08'
+audience: Practice managers at independent dental practices
+notes: Lead with the nitrile exam gloves.

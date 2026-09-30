@@ -1,0 +1,9 @@
+# WHY: the 5-working-day turnaround requires "from receipt of the scan or impression"; the draft states it four times (incl. the subject) and never gives the disclosure.
+blocked: true
+findings:
+  - {contains: "Crowns in 5 working days", label: missing_disclosure, fact_key: crown-turnaround}
+  - {contains: "Subject: 5-day crowns for your practice", label: missing_disclosure, fact_key: crown-turnaround}
+  - {contains: "your zirconia crown is back with you in 5 working days", label: missing_disclosure, fact_key: crown-turnaround}
+  - {contains: "Fast crowns for North West practices: 5 working days", label: missing_disclosure, fact_key: crown-turnaround}
+must_not_flag:
+  - "Zirconia crowns are £68 per unit, milled from ISO 6872 Class 5 zirconia"

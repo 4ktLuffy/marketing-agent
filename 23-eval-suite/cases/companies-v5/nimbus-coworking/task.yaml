@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[wharf], plan_tiers=[flex], segments=[freelancers]: the Headrow price (site), 24/7 access
+# (Resident plan only) and the charity price (segment) are scope traps. publish_on 2026-10-12 is after the half-price
+# offer ends (2026-10-09), which is valid today (2026-09-29). The summer day pass ended 2026-08-31.
+goal: "Sign up Leeds freelancers for Flex desks at Nimbus Wharf."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 3000}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope: {sites: [wharf], regions: [], channels: [], segments: [freelancers], plan_tiers: [flex], variants: []}
+publish_on: "2026-10-12"
+audience: "Freelancers and sole traders in Leeds"
+notes: "Flex plan at Nimbus Wharf only. Prices are shown plus VAT."

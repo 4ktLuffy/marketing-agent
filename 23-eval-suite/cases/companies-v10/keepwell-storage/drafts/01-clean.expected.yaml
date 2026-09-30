@@ -1,0 +1,12 @@
+# WHY: Millgate-only price and hours, the half-price offer (valid to 2026-12-31) always with "minimum 12-week stay", security stated as features, not as a guarantee.
+blocked: false
+findings: []
+must_not_flag:
+  - "Clearing out the garage before winter?"
+  - "A 50 sq ft unit at Keepwell Millgate is"
+  - "with a minimum 12-week stay"
+  - "with your own PIN"
+  - "Stored goods need to be insured, and our contents cover is"
+  - "Access 6am to 10pm, 7 days a week"
+  - "24-hour CCTV · PIN-controlled gate · individually alarmed units"
+  - "Reply YES and we'll hold a unit for you."

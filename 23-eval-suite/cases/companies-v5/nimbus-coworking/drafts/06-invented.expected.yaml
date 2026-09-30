@@ -1,0 +1,11 @@
+# WHY: Nimbus Wharf is WiredScore Gold, not Platinum, and WS-UK-40921 is a look-alike of WS-UK-40912; "best-connected", the Google rating and the IT team credential have no source.
+blocked: true
+findings:
+  - {contains: "The best-connected coworking space in Leeds", label: no_source, fact_key: null}
+  - {contains: "WiredScore Platinum certified", label: conflict_or_expired, fact_key: wiredscore-wharf}
+  - {contains: "Rated 4.9 stars on Google by 300+ members", label: no_source, fact_key: null}
+  - {contains: "Subject: Leeds' best-connected workspace", label: no_source, fact_key: null}
+  - {contains: "Cisco-certified network engineers", label: no_source, fact_key: null}
+  - {contains: "WS-UK-40921", label: conflict_or_expired, fact_key: wiredscore-wharf}
+must_not_flag:
+  - "A Flex desk at Nimbus Wharf costs £199 a month plus VAT"

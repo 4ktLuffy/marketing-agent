@@ -1,0 +1,9 @@
+# WHY: the £30 early-bird discount is valid today but ends 2026-10-02, before publish 2026-10-08; the £290 summer intensive ended 2026-08-29.
+blocked: true
+findings:
+  - {contains: "Get £30 off our Spanish evening course", label: conflict_or_expired, fact_key: early-bird-offer}
+  - {contains: "Early birds save £30 on the evening course", label: conflict_or_expired, fact_key: early-bird-offer}
+  - {contains: "The two-week summer intensive is £290", label: conflict_or_expired, fact_key: summer-intensive}
+must_not_flag:
+  - "The 10-week evening group course costs £240 per person (coursebook not included)"
+  - "Classes are on Tuesdays, 6:30pm to 8:30pm"

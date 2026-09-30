@@ -1,0 +1,12 @@
+# WHY: only Essentials/SMB-scoped or all-plan facts; "excl. VAT" and "Mon–Fri, 8am–6pm" are present wherever a price or the response time appears; "Cyber Essentials Plus certified" is the allowed phrasing.
+blocked: false
+findings: []
+must_not_flag:
+  - "Kittiwake Essentials is"
+  - "for teams of 10 users or more"
+  - "Mon–Fri, 8am–6pm."
+  - "We're Cyber Essentials Plus certified."
+  - "It costs £35 per user per month, excl. VAT."
+  - "Every plan includes Microsoft 365 backup with 1-year retention."
+  - "Getting started is a £450 one-off onboarding fee, excl. VAT."
+  - "£35 per user per month, excl. VAT, with a 4-hour response Mon–Fri, 8am–6pm"

@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Written from the contracts only; no checker code was read.
+company: {name: "Summit IT Training Ltd", type: "IT training provider", today: "2026-09-29"}
+facts:
+  - key: "foundation-online-fee"
+    subject: {kind: "service", ref: "CloudCert Foundation (Level 1), live online"}
+    fact_type: "price"
+    attribute: "course_fee"
+    value: 645
+    unit: "learner"
+    currency: "GBP"
+    value_text: "£645 plus VAT"
+    basis: "per_seat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["online"]}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Summit course fees 2026-27"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["plus VAT"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "CloudCert Foundation (Level 1), live online: £645 plus VAT per learner."
+  - key: "foundation-classroom-fee"
+    subject: {kind: "service", ref: "CloudCert Foundation (Level 1), Leeds classroom"}
+    fact_type: "price"
+    attribute: "course_fee"
+    value: 895
+    unit: "learner"
+    currency: "GBP"
+    value_text: "£895 plus VAT"
+    basis: "per_seat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["classroom"]}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Summit course fees 2026-27"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["plus VAT"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "CloudCert Foundation (Level 1) in the Leeds classroom: £895 plus VAT per learner."
+  - key: "practitioner-online-fee"
+    subject: {kind: "service", ref: "CloudCert Practitioner (Level 2), live online"}
+    fact_type: "price"
+    attribute: "course_fee"
+    value: 1190
+    unit: "learner"
+    currency: "GBP"
+    value_text: "£1,190 plus VAT"
+    basis: "per_seat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["online"]}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Summit course fees 2026-27"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["plus VAT"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "CloudCert Practitioner (Level 2), live online: £1,190 plus VAT per learner."
+  - key: "exam-voucher-inclusion"
+    subject: {kind: "service", ref: "CloudCert Foundation"}
+    fact_type: "inclusion"
+    attribute: "exam_voucher"
+    value: null
+    unit: null
+    currency: null
+    value_text: "the official exam voucher and one free resit"
+    basis: null
+    conditions: [{key: "course", op: "=", value: "CloudCert Foundation"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Summit course fees 2026-27"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Every CloudCert Foundation course (online or classroom) includes the official exam voucher and one free resit; Practitioner does not include a voucher."
+  - key: "cci-partner-status"
+    subject: {kind: "business", ref: "Summit IT Training Ltd"}
+    fact_type: "credential"
+    attribute: "accreditation_partner"
+    value: null
+    unit: null
+    currency: null
+    value_text: "CloudCert Institute Gold Training Partner, partner ID CCI-TP-40218"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2026-12-31"
+    review_by: "2026-11-30"
+    source: {kind: "certificate", ref: "CloudCert partner certificate CCI-TP-40218 (2026)"}
+    claim_class: "none"
+    requires_evidence: true
+    evidence_ref: "CCI-TP-40218"
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Summit is a CloudCert Institute Gold Training Partner (partner ID CCI-TP-40218) for 2026; the tiers are Silver, Gold and Platinum."
+  - key: "foundation-pass-rate"
+    subject: {kind: "service", ref: "CloudCert Foundation"}
+    fact_type: "result"
+    attribute: "first_time_pass_rate"
+    value: 94
+    unit: "percent"
+    currency: null
+    value_text: "94% first-time pass rate"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-07-15"
+    valid_to: null
+    review_by: "2027-01-31"
+    source: {kind: "doc", ref: "Exam results export Jan-Jun 2026"}
+    claim_class: "result"
+    requires_evidence: true
+    evidence_ref: "Exam results export Jan-Jun 2026"
+    consent_ref: null
+    required_disclosures: ["January to June 2026 cohort of 212 learners"]
+    allowed_phrasing: []
+    forbidden_phrasing: ["guaranteed pass"]
+    owner: "Director"
+    risk: "high"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "94% of the 212 learners who sat the CloudCert Foundation exam between January and June 2026 passed first time."
+  - key: "october-early-bird"
+    subject: {kind: "offer", ref: "October Early Bird"}
+    fact_type: "price"
+    attribute: "discount"
+    value: 15
+    unit: "percent"
+    currency: null
+    value_text: "15% off"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["online"]}
+    valid_from: "2026-09-15"
+    valid_to: "2026-10-04"
+    review_by: null
+    source: {kind: "doc", ref: "Autumn campaign brief"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial manager"
+    risk: "medium"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "October Early Bird: 15% off live online courses booked by 4 October 2026."
+  - key: "charity-rate"
+    subject: {kind: "service", ref: "CloudCert Foundation (Level 1), live online"}
+    fact_type: "price"
+    attribute: "course_fee"
+    value: 545
+    unit: "learner"
+    currency: "GBP"
+    value_text: "£545 plus VAT"
+    basis: "per_seat"
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: ["charity", "public-sector"], plan_tiers: [], variants: ["online"]}
+    valid_from: "2026-07-01"
+    valid_to: null
+    review_by: null
+    source: {kind: "doc", ref: "Summit course fees 2026-27"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: ["plus VAT"]
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Commercial manager"
+    risk: "low"
+    sensitivity: "public"
+    status: "active"
+    supersedes_key: null
+    text: "Charities and public-sector bodies pay £545 plus VAT per learner for live online CloudCert Foundation."
+  - key: "trainer-day-rate"
+    subject: {kind: "business", ref: "Summit IT Training Ltd"}
+    fact_type: "price"
+    attribute: "trainer_day_rate"
+    value: 420
+    unit: "day"
+    currency: "GBP"
+    value_text: "£420 per trainer day"
+    basis: null
+    conditions: []
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-01-01"
+    valid_to: "2026-12-31"
+    review_by: null
+    source: {kind: "doc", ref: "Trainer agreements 2026 (internal)"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "internal"
+    status: "active"
+    supersedes_key: null
+    text: "Freelance trainers are paid £420 per training day."
+  - key: "northgate-council-contract"
+    subject: {kind: "service", ref: "CloudCert Foundation, closed course"}
+    fact_type: "price"
+    attribute: "contract_price"
+    value: 380
+    unit: "learner"
+    currency: "GBP"
+    value_text: "£380 per delegate for Northgate Council"
+    basis: "per_seat"
+    conditions: [{key: "customer", op: "=", value: "Northgate Council"}]
+    scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+    valid_from: "2026-04-01"
+    valid_to: "2027-03-31"
+    review_by: null
+    source: {kind: "doc", ref: "Northgate Council contract NC-IT-2026"}
+    claim_class: "none"
+    requires_evidence: false
+    evidence_ref: null
+    consent_ref: null
+    required_disclosures: []
+    allowed_phrasing: []
+    forbidden_phrasing: []
+    owner: "Director"
+    risk: "high"
+    sensitivity: "restricted"
+    status: "active"
+    supersedes_key: null
+    text: "Northgate Council pays £380 per delegate for closed CloudCert Foundation courses."

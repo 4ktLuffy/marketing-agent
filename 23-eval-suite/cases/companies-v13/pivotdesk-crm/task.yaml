@@ -1,0 +1,11 @@
+# FICTIONAL. B2B SaaS. Scope plan_tiers=[team] makes the Solo price and Scale-only SSO scope traps;
+# publish_on 2026-10-14 is after migration-offer ends (2026-10-06), valid today (2026-09-29).
+goal: Win new 5-50 person sales teams to the Pivotdesk Team plan in October.
+pieces:
+- {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+- {key: p3, channel: x, kind: post, max_chars: 280}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [team], variants: []}
+publish_on: '2026-10-14'
+audience: Sales managers at UK small businesses still tracking deals in spreadsheets
+notes: Mention the free trial and the security certificate.

@@ -1,0 +1,283 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts section 1 Fact v2 shape.
+company: {"name": "Redline Auto", "type": "car_servicing", "today": "2026-09-29"}
+facts:
+- key: "mot-price"
+  subject: {"kind": "service", "ref": "MOT test (Class 4)"}
+  fact_type: "price"
+  attribute: "price"
+  value: 45
+  unit: null
+  currency: "GBP"
+  value_text: "£45"
+  basis: "flat"
+  conditions: [{"key": "vehicle_class", "op": "=", "value": 4}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["private"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {"kind": "url", "ref": "https://redlineauto.example/prices"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "A Class 4 MOT (cars) costs £45 for private customers."
+- key: "full-service-price"
+  subject: {"kind": "service", "ref": "Full service"}
+  fact_type: "price"
+  attribute: "price_by_engine_size"
+  value: null
+  unit: null
+  currency: "GBP"
+  value_text: "£179 for engines up to 1.6 litres, £229 above 1.6 litres"
+  basis: "flat"
+  conditions: [{"key": "engine_size", "op": "in", "value": ["up to 1.6 litres", "above 1.6 litres"]}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["private"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {"kind": "url", "ref": "https://redlineauto.example/prices"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "A full service costs £179 for petrol and diesel engines up to 1.6 litres and £229 above 1.6 litres. Hybrids and EVs are quoted separately."
+- key: "warranty-safe"
+  subject: {"kind": "service", "ref": "Servicing"}
+  fact_type: "claim"
+  attribute: "warranty_compatibility"
+  value: null
+  unit: null
+  currency: null
+  value_text: "servicing that keeps your manufacturer warranty valid"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2025-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "Warranty servicing policy (owner reviewed)"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "Warranty servicing policy"
+  consent_ref: null
+  required_disclosures: ["using OE-quality parts"]
+  allowed_phrasing: []
+  forbidden_phrasing: ["main dealer standard", "manufacturer approved", "approved by all manufacturers"]
+  owner: "Service manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "We service to the manufacturer schedule using OE-quality parts, which keeps a new car's manufacturer warranty valid."
+- key: "imi-master-tech"
+  subject: {"kind": "person", "ref": "Dan Okafor"}
+  fact_type: "credential"
+  attribute: "imi_accreditation"
+  value: null
+  unit: null
+  currency: null
+  value_text: "IMI Accredited Master Technician (IMI ID 0214889)"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2025-04-01"
+  valid_to: "2028-03-31"
+  review_by: null
+  source: {"kind": "certificate", "ref": "IMI Professional Register entry 0214889"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "IMI Professional Register entry 0214889"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Our workshop lead, Dan Okafor, is an IMI Accredited Master Technician (IMI ID 0214889). Our other technicians are IMI Accredited at Level 3."
+- key: "courtesy-car"
+  subject: {"kind": "service", "ref": "Full service"}
+  fact_type: "inclusion"
+  attribute: "courtesy_car"
+  value: null
+  unit: null
+  currency: null
+  value_text: "a courtesy car with every full service"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://redlineauto.example/servicing"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["subject to availability"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Every full service includes a courtesy car, subject to availability; book ahead."
+- key: "fleet-mot-price"
+  subject: {"kind": "service", "ref": "MOT test (fleet accounts)"}
+  fact_type: "price"
+  attribute: "price"
+  value: 35
+  unit: null
+  currency: "GBP"
+  value_text: "£35 per MOT"
+  basis: "per_unit"
+  conditions: [{"key": "vehicle_class", "op": "=", "value": 4}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["fleet"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Fleet account price list 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Fleet manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Fleet account customers pay £35 per Class 4 MOT."
+- key: "winter-check-offer"
+  subject: {"kind": "offer", "ref": "Free winter check"}
+  fact_type: "price"
+  attribute: "free_check"
+  value: null
+  unit: null
+  currency: null
+  value_text: "a free winter check (battery, tyres, lights and wipers)"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-14"
+  valid_to: "2026-10-07"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn promotions 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Free winter check (battery, tyres, lights and wipers) from 14 September to 7 October 2026."
+- key: "aircon-regas"
+  subject: {"kind": "offer", "ref": "Summer air-con regas"}
+  fact_type: "price"
+  attribute: "price"
+  value: 39
+  unit: null
+  currency: "GBP"
+  value_text: "air-con regas for £39"
+  basis: "flat"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Summer promotions 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "Summer offer: air-con regas for £39, June to August 2026. Ended."
+- key: "mot-price-rise"
+  subject: {"kind": "service", "ref": "MOT test (Class 4)"}
+  fact_type: "event"
+  attribute: "price_change"
+  value: 49
+  unit: null
+  currency: "GBP"
+  value_text: "£49 from 1 January 2027"
+  basis: "flat"
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["private"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "owner_statement", "ref": "Pricing review September 2026 (not public)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Owner"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "The private MOT price rises to £49 from 1 January 2027. Not announced yet."
+- key: "brightway-contract"
+  subject: {"kind": "service", "ref": "Fleet MOTs (Brightway Taxis)"}
+  fact_type: "price"
+  attribute: "contract_price"
+  value: 30
+  unit: null
+  currency: "GBP"
+  value_text: "£30 per MOT for Brightway Taxis"
+  basis: "per_unit"
+  conditions: [{"key": "customer", "op": "=", "value": "Brightway Taxis"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["fleet"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-03-01"
+  valid_to: "2027-02-28"
+  review_by: null
+  source: {"kind": "doc", "ref": "Brightway Taxis fleet agreement"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Owner"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Brightway Taxis pays £30 per MOT under its fleet agreement."

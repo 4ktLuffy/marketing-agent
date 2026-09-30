@@ -1,0 +1,9 @@
+# WHY: "every student passes" is a forbidden phrasing on the result fact (the real rate is 96%); the rating, review count and tutor credentials have no source.
+blocked: true
+findings:
+  - {contains: "Every student passes their grade exams with us", label: forbidden_phrase, fact_key: exam-pass-rate}
+  - {contains: "best-rated music school, with 300+ five-star reviews", label: no_source, fact_key: null}
+  - {contains: "Taught by conservatoire-trained tutors", label: no_source, fact_key: null}
+  - {contains: "tutors are DBS-checked and conservatoire-trained", label: no_source, fact_key: null}
+must_not_flag:
+  - "Group lessons for ages 7 to 12 are £120 per term, 10 weekly lessons."

@@ -1,0 +1,12 @@
+# WHY: "CGQB/3/55210" is a look-alike of CGQB-3-55120 and "Level Four" is a different grade from Level 3 (both conflict with jess-level3); "best in Wharfedale", the 5-star rating, vet-nurse groomers and free pick-up have no source fact.
+blocked: true
+findings:
+  - {contains: "the best dog groomer in Wharfedale", label: no_source, fact_key: null}
+  - {contains: "Rated 5 stars by 600+ happy owners!", label: no_source, fact_key: null}
+  - {contains: "holds the Level Four Diploma in Dog Grooming", label: conflict_or_expired, fact_key: jess-level3}
+  - {contains: "Her certificate number is CGQB/3/55210.", label: conflict_or_expired, fact_key: jess-level3}
+  - {contains: "Every groomer on our team is a qualified veterinary nurse.", label: no_source, fact_key: null}
+  - {contains: "Free pick-up and drop-off anywhere in Otley", label: no_source, fact_key: null}
+must_not_flag:
+  - "Book your small-dog full groom at Otley for £38."
+  - "Every full groom includes a bath, blow-dry, nail clip and ear clean."

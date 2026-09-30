@@ -5,14 +5,12 @@ from fastapi.testclient import TestClient
 
 from app.main import TRANSITIONS, app
 
-KEY = "test-key"
-AUTH = {"X-API-Key": KEY}
+from tests.conftest import APPROVER, KEY
 
-
-@pytest.fixture(autouse=True)
-def env(tmp_path, monkeypatch):
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "calendar.sqlite"))
-    monkeypatch.setenv("INTERNAL_API_KEY", KEY)
+# The approver key rides along on every write here, as n8n's approval form sends it; tests
+# that need "internal key only" use API_ONLY.
+API_ONLY = {"X-API-Key": KEY}
+AUTH = {**API_ONLY, "X-Approver-Key": APPROVER}
 
 
 client = TestClient(app)
@@ -57,7 +55,9 @@ def test_create_defaults_to_draft_with_all_fields():
         "id", "title", "channel", "body", "status", "scheduled_at", "published_at",
         "campaign", "link", "external_url", "notes", "created_at", "updated_at",
         "campaign_id", "short_url", "hook_style", "image_url", "video_url",
+        "origin", "require_bound", "body_sha256", "version",
     }
+    assert item["origin"] is None and item["require_bound"] is False and item["version"] == 1
     assert item["campaign_id"] is None and item["short_url"] is None
     assert isinstance(item["id"], int)
     assert item["status"] == "draft"
@@ -566,11 +566,13 @@ def test_migration_adds_hook_style_to_db_that_already_has_campaign_id(tmp_path, 
 def test_approving_and_publishing_need_the_approver_key(monkeypatch):
     monkeypatch.setenv("APPROVER_KEY", "boss")
     item = create(status="in_review")
-    assert move(item["id"], "approved").status_code == 403                      # internal key only
+    assert client.post(f"/items/{item['id']}/status", json={"status": "approved"},
+                       headers=API_ONLY).status_code == 403                     # internal key only
+    assert move(item["id"], "approved").status_code == 403                      # wrong approver key
     ok = client.post(f"/items/{item['id']}/status", json={"status": "approved"},
                      headers={**AUTH, "X-Approver-Key": "boss"})
     assert ok.status_code == 200
-    assert client.post(f"/items/{item['id']}/published", json={}, headers=AUTH).status_code == 403
+    assert client.post(f"/items/{item['id']}/published", json={}, headers=API_ONLY).status_code == 403
     assert client.post(f"/items/{item['id']}/published", json={},
                        headers={**AUTH, "X-Approver-Key": "boss"}).status_code == 200
     other = create(status="in_review")

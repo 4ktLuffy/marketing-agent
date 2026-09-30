@@ -71,8 +71,8 @@ class LoginLimiter:
     """At most `max_failures` failed logins per client in `window` seconds, and 4x that from
     all clients together (one approver: many failures from many addresses is an attack)."""
 
-    def __init__(self, max_failures: int, window: float, clock=time.time):
-        self.max, self.window, self.clock = max_failures, window, clock
+    def __init__(self, max_failures: int, window: float, clock=time.time, all_factor: int = 4):
+        self.max, self.window, self.clock, self.all_factor = max_failures, window, clock, all_factor
         self._per_ip: dict[str, deque] = {}
         self._all: deque = deque()
 
@@ -89,7 +89,7 @@ class LoginLimiter:
         waits = []
         if len(q) >= self.max:
             waits.append(q[0] + self.window - now)
-        if len(a) >= self.max * 4:
+        if len(a) >= self.max * self.all_factor:
             waits.append(a[0] + self.window - now)
         return int(max(waits)) + 1 if waits else 0
 

@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Single practice with a two-tier Pet Health Plan. Task scope plan_tiers=[essential], segments=[dogs].
+company: {name: "Thornbury Vets", type: "veterinary practice", today: '2026-09-29'}
+facts:
+- key: "essential-plan-dog"
+  subject: {kind: "plan", ref: "Pet Health Plan Essential (dogs)"}
+  fact_type: "price"
+  attribute: "monthly_price"
+  value: 16.5
+  unit: "month"
+  currency: "GBP"
+  value_text: "£16.50 a month"
+  basis: "per_month"
+  conditions: [{key: "term_months", op: ">=", value: 12}]
+  scope: {sites: [], regions: [], channels: [], segments: ["dogs"], plan_tiers: ["essential"], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pet Health Plan terms 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["12-month minimum term"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "The Essential Pet Health Plan for dogs costs £16.50 a month on a 12-month minimum term."
+- key: "plan-core-inclusions"
+  subject: {kind: "plan", ref: "Pet Health Plan (both tiers)"}
+  fact_type: "inclusion"
+  attribute: "includes"
+  value: null
+  unit: null
+  currency: null
+  value_text: "an annual booster, two health checks a year and monthly flea and worm treatment"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: ["dogs", "cats"], plan_tiers: ["essential", "complete"], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pet Health Plan terms 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Both plan tiers include an annual booster vaccination, two health checks a year and monthly flea and worm treatment."
+- key: "complete-plan-treatment-discount"
+  subject: {kind: "plan", ref: "Pet Health Plan Complete"}
+  fact_type: "inclusion"
+  attribute: "treatment_discount"
+  value: 10
+  unit: "percent"
+  currency: null
+  value_text: "10% off all other treatment"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: ["complete"], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pet Health Plan terms 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Complete plan members get 10% off all other treatment, including operations. Essential members do not."
+- key: "consultation-price"
+  subject: {kind: "service", ref: "Standard consultation"}
+  fact_type: "price"
+  attribute: "price"
+  value: 45
+  unit: null
+  currency: "GBP"
+  value_text: "£45"
+  basis: "flat"
+  conditions: [{key: "time", op: "=", value: "opening hours"}]
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-04-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Fee schedule Apr 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "A standard 15-minute consultation costs £45 during opening hours (Mon-Fri 8:30-18:30, Sat 9:00-13:00)."
+- key: "out-of-hours-partner"
+  subject: {kind: "policy", ref: "Out-of-hours emergencies"}
+  fact_type: "policy"
+  attribute: "emergency_cover"
+  value: null
+  unit: null
+  currency: null
+  value_text: "out-of-hours emergencies are seen by our partner Vetline Emergency, Carrow Road"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Out-of-hours agreement with Vetline 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["Vetline Emergency, Carrow Road"]
+  allowed_phrasing: []
+  forbidden_phrasing: ["open 24 hours", "24-hour vets on site", "24/7 vets"]
+  owner: "Practice manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Thornbury Vets has no overnight vet on site. Out-of-hours emergencies are seen by the partner clinic Vetline Emergency, Carrow Road."
+- key: "rcvs-psp-accredited"
+  subject: {kind: "business", ref: "Thornbury Vets"}
+  fact_type: "certification"
+  attribute: "rcvs_psp"
+  value: null
+  unit: null
+  currency: null
+  value_text: "accredited under the RCVS Practice Standards Scheme (General Practice)"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2025-11-01"
+  valid_to: "2029-10-31"
+  review_by: "2029-06-01"
+  source: {kind: "certificate", ref: "RCVS PSS certificate, General Practice, 2025"}
+  claim_class: "regulated_health"
+  requires_evidence: true
+  evidence_ref: "RCVS PSS certificate, General Practice, 2025"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: ["Veterinary Hospital", "RCVS hospital"]
+  owner: "Clinical director"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Thornbury Vets is accredited under the RCVS Practice Standards Scheme at General Practice level. It is not a Veterinary Hospital."
+- key: "free-dental-check"
+  subject: {kind: "offer", ref: "Free nurse dental check"}
+  fact_type: "price"
+  attribute: "price"
+  value: 0
+  unit: null
+  currency: "GBP"
+  value_text: "free dental check with a vet nurse"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: ["dogs", "cats"], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: "2026-10-09"
+  review_by: null
+  source: {kind: "doc", ref: "Dental month brief Sep 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Head nurse"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Free dental check with a vet nurse for dogs and cats, booked by 9 October 2026."
+- key: "spring-microchip-offer"
+  subject: {kind: "offer", ref: "Spring microchipping"}
+  fact_type: "price"
+  attribute: "price"
+  value: 10
+  unit: null
+  currency: "GBP"
+  value_text: "£10"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-03-01"
+  valid_to: "2026-05-31"
+  review_by: null
+  source: {kind: "doc", ref: "Spring offer brief 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Head nurse"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "Microchipping for £10 during spring 2026 (March to May)."
+- key: "plan-signup-target"
+  subject: {kind: "policy", ref: "Plan growth target"}
+  fact_type: "claim"
+  attribute: "target"
+  value: 400
+  unit: null
+  currency: null
+  value_text: "400 new plan members"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-07-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {kind: "doc", ref: "Practice plan H2 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: "low"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Internal target: 400 new plan members by 31 December 2026."
+- key: "wendham-kennels-contract"
+  subject: {kind: "offer", ref: "Wendham Kennels contract"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 25
+  unit: "percent"
+  currency: null
+  value_text: "25% off consultations"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-02-01"
+  valid_to: "2027-01-31"
+  review_by: null
+  source: {kind: "doc", ref: "Wendham Kennels contract 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Practice manager"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Wendham Kennels gets 25% off consultations under its boarding-kennel contract."

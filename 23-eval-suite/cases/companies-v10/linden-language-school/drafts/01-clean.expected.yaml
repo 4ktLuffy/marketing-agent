@@ -1,0 +1,13 @@
+# WHY: evening-group adult facts only, valid on 2026-10-08; every price carries "coursebook not included"; the 91% result names "2025-26 end-of-course tests"; teachers described as qualified, not as native speakers.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our 10-week Spanish evening group starts 20 Oct"
+  - "The 10-week evening group course costs"
+  - "Classes run"
+  - "Every Linden teacher holds"
+  - "Our 10-week Spanish evening group course costs £240 per person, coursebook not included"
+  - "The group meets on Tuesdays, 6:30pm to 8:30pm, at the Mill Street centre, starting 20 October"
+  - "A group runs once at least 5 learners have signed up"
+  - "of our 2025-26 adult evening learners moved up at least one level, based on 2025-26 end-of-course tests"
+  - "Take the free online level test first"

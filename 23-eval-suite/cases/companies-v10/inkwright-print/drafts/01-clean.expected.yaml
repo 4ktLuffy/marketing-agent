@@ -1,0 +1,12 @@
+# WHY: business-account price with "excl. VAT", next-day dispatch always with "artwork approved by 12 noon", UK delivery threshold, FSC and ISO 9001 stated as certified. All valid on 2026-10-07.
+blocked: false
+findings: []
+must_not_flag:
+  - "Autumn is the busy season for print"
+  - "500 standard 400gsm business cards cost"
+  - "Orders with artwork approved by 12 noon are dispatched the next working day"
+  - "Every job on our standard stocks is printed on FSC-certified paper"
+  - "Our quality management system is"
+  - "500 standard business cards are"
+  - "500 business cards: £29 excl. VAT"
+  - "Reorder your business cards in two minutes"

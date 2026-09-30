@@ -1,0 +1,11 @@
+# WHY: only business-segment or all-segment public facts; the office rate carries both 'plus VAT' and 'minimum 2 hours per visit'; 'EU Ecolabel' is the allowed phrasing.
+blocked: false
+findings: []
+must_not_flag:
+- Our rate is
+- Every cleaner on a commercial contract is security screened to BS 7858
+- costs £21 per cleaner per hour, plus VAT, minimum 2 hours per visit
+- using EU Ecolabel cleaning products
+- Contracts are a 30-day rolling contract, no minimum term
+- Long cleaning contracts made sense when every office was full five days a week
+- All our commercial cleaners are security screened to BS 7858

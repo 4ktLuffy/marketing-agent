@@ -1,0 +1,7 @@
+# WHY: only Wharf/Flex facts valid on 2026-10-12; the price carries "plus VAT"; the WiredScore certificate is the Wharf one.
+blocked: false
+findings: []
+must_not_flag:
+  - "Flex hot-desking there costs £199 a month plus VAT"
+  - "WiredScore Gold certified (certificate WS-UK-40912)"
+  - "2 hours of meeting-room credits a month"

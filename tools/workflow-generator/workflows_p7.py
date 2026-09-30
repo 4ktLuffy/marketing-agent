@@ -13,7 +13,8 @@ PATH_72 = "72-control-room/n8n/workflow.json"
 CHECK_REQUEST = r"""
 // 1. The caller must send X-Control-Key = CONTROL_ROOM_KEY (constant-time compare). No key set
 //    in n8n (or a short one) refuses everything.
-// 2. Body: {reviewer, decisions: [{id, decision, text?, reason?, publish_at?}]}.
+// 2. Body: {reviewer, decisions: [{id, decision, text?, reason?, publish_at?, seen_sha256?}]}.
+//    seen_sha256: the body_sha256 of the text shown on the card (64 hex characters, or empty).
 const req = $input.first().json;
 const want = String($env.CONTROL_ROOM_KEY || '');
 const got = String((req.headers || {})['x-control-key'] || '');
@@ -34,7 +35,9 @@ for (const [k, x] of b.decisions.entries()) {
   if (!KINDS.includes(x.decision)) return bad(`decisions[${k}].decision: one of ${KINDS.join(', ')}`);
   const text = str(x.text, 60000), reason = str(x.reason, 500), when = str(x.publish_at, 40);
   if (text === null || reason === null || when === null) return bad(`decisions[${k}]: text/reason/publish_at must be short text`);
-  decisions.push({ id: x.id, decision: x.decision, text, reason, publish_at: when });
+  const seen = str(x.seen_sha256, 64);
+  if (seen === null || (seen && !/^[0-9a-f]{64}$/.test(seen))) return bad(`decisions[${k}].seen_sha256: 64 hex characters (0-9a-f) or empty`);
+  decisions.push({ id: x.id, decision: x.decision, text, reason, publish_at: when, seen_sha256: seen });
 }
 return [{ json: { ok: true, reviewer: reviewer.trim() || 'control room', decisions } }];
 """
@@ -62,18 +65,18 @@ for (const x of req.decisions) {   // an id sent twice: the last one wins, as in
   a[`Text #${x.id}`] = x.text;
   a[`Reason #${x.id}`] = x.reason;
   a[`Publish at #${x.id}`] = x.publish_at;
+  a[`Seen #${x.id}`] = x.seen_sha256;   // empty: DECISIONS_CORE falls back to the fetched body_sha256
 }
 const reviewer = req.reviewer;
 const items = Object.fromEntries($('Review items').first().json.items.map(i => [String(i.id), i]));
 """
 
+# `stale`: items 19 refused because their text changed after the card was shown; each has a
+# "changed since you looked — reopen the card" line in `summary`.
 RESULT = r"""
-const d = $('Final decisions').first().json;
-const failed = ['Run stage 1', 'Run stage 2'].flatMap(n => $(n).all())
-  .filter(r => !r.json.noop && r.json.statusCode >= 300)
-  .map(r => ({ status: r.json.statusCode, detail: (r.json.body || {}).detail || r.json.body || null }));
-return [{ json: { ok: failed.length === 0, summary: d.summary, not_in_review: $('Review items').first().json.missing,
-  failed, message: $('Summary').first().json.message } }];
+const s = $('Summary').first().json;
+return [{ json: { ok: s.failed.length === 0 && s.stale.length === 0, summary: s.summary,
+  not_in_review: $('Review items').first().json.missing, stale: s.stale, failed: s.failed, message: s.message } }];
 """
 
 

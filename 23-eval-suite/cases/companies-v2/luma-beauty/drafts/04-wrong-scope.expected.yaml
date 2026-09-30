@@ -1,0 +1,8 @@
+# WHY: £110 is the Glow Facial price at sites=[chelsea]; the task is sites=[richmond] (£85). A checker may also note the conflict with the Richmond price; the required label is wrong_scope.
+blocked: true
+findings:
+  - {contains: "Glow Facial at Luma: £110 for 60 minutes", label: wrong_scope, fact_key: glow-facial-chelsea}
+  - {contains: "Glow Facial, £110 for 60 minutes", label: wrong_scope, fact_key: glow-facial-chelsea}
+must_not_flag:
+  - "Every facial comes with a free skin consultation"
+  - "Book with Maya Okafor, who holds a Level 4 Diploma in Advanced Skin Treatments"

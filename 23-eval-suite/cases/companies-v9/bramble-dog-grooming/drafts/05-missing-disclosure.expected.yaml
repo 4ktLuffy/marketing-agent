@@ -1,0 +1,12 @@
+# WHY: the £45 Puppy Pamper requires "for puppies under 6 months"; no piece states the age limit in any wording (headline and body). Saying "puppy" is not the age limit.
+blocked: true
+findings:
+  - {contains: "Puppy Pamper at Bramble & Co Otley: 3 intro sessions for £45.", label: missing_disclosure, fact_key: puppy-pamper}
+  - {contains: "PUPPY PAMPER · £45", label: missing_disclosure, fact_key: puppy-pamper}
+  - {contains: "Three short intro sessions for £45 with the Puppy Pamper", label: missing_disclosure, fact_key: puppy-pamper}
+  - {contains: "Our Puppy Pamper eases them in gently, just £45 for three visits", label: missing_disclosure, fact_key: puppy-pamper}
+must_not_flag:
+  - "New puppy?"
+  - "Every full groom includes a bath, blow-dry, nail clip and ear clean."
+  - "Top tip: bring your puppy's favourite toy to their first visit."
+  - "First groom jitters?"

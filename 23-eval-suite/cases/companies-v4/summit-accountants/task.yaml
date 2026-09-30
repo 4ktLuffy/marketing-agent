@@ -1,0 +1,12 @@
+# FICTIONAL. Scope segments=[sole-trader]: the £1,150 fixed fee is the limited-company year-end package
+# (segments=[limited-company]), so offering it to sole traders is a scope trap.
+# publish_on 2026-10-12 is after switch-offer ends (2026-10-09), valid today (2026-09-29).
+goal: "Sign up sole traders for the Sole Trader MTD package before the January self assessment rush."
+pieces:
+  - {key: p1, channel: google, kind: business_profile_post, max_chars: 1500}
+  - {key: p2, channel: sms, kind: text, max_chars: 160}
+  - {key: p3, channel: blog, kind: intro, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [sole-trader], plan_tiers: [], variants: []}
+publish_on: "2026-10-12"
+audience: "Self-employed sole traders around Harrogate who file their own self assessment today"
+notes: "Plain English; no jargon beyond MTD."

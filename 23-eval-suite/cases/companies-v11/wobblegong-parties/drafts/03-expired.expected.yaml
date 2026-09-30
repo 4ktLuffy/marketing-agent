@@ -1,0 +1,9 @@
+# WHY: the free Halloween balloon add-on is valid today but ends 2026-10-05, before publish 2026-10-09; the £150 Summer Garden special ended 2026-08-31.
+blocked: true
+findings:
+- {contains: comes with a free balloon-modelling add-on, label: conflict_or_expired, fact_key: halloween-balloons}
+- {contains: Free balloon-modelling add-on for Halloween parties, label: conflict_or_expired, fact_key: halloween-balloons}
+- {contains: £150 for an outdoor magic party, label: conflict_or_expired, fact_key: summer-garden-special}
+must_not_flag:
+- The Magic Show Party is £180 per party for up to 30 children
+- Travel is free within 10 miles of Ashcombe

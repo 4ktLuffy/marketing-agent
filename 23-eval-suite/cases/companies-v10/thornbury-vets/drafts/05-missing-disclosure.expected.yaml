@@ -1,0 +1,10 @@
+# WHY: the £16.50 plan price requires "12-month minimum term"; the term is not stated anywhere in the draft, in any wording.
+blocked: true
+findings:
+  - {contains: "Your dog's care, from £16.50 a month", label: missing_disclosure, fact_key: essential-plan-dog}
+  - {contains: "Join our Essential plan for dogs for just £16.50 a month", label: missing_disclosure, fact_key: essential-plan-dog}
+  - {contains: "Essential dog plan now just £16.50 a month", label: missing_disclosure, fact_key: essential-plan-dog}
+  - {contains: "Routine care for £16.50 a month?", label: missing_disclosure, fact_key: essential-plan-dog}
+must_not_flag:
+  - "It covers an annual booster, two health checks a year and monthly flea and worm treatment"
+  - "your dog is seen at Vetline Emergency, Carrow Road"

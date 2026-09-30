@@ -1,0 +1,10 @@
+# WHY: 24/7 SOC monitoring is true only on Guard and Sentinel; the task is plan_tiers=[essentials]. "Around the clock", "day and night, weekends included" and "24/7" all sell it on Essentials.
+blocked: true
+findings:
+  - {contains: "watches your network around the clock, all year round", label: wrong_scope, fact_key: round-the-clock-soc}
+  - {contains: "Someone watching your network 24/7", label: wrong_scope, fact_key: round-the-clock-soc}
+  - {contains: "keeps an eye on your alerts day and night, weekends included", label: wrong_scope, fact_key: round-the-clock-soc}
+  - {contains: "Kittiwake Essentials: 24/7 monitoring for small teams", label: wrong_scope, fact_key: round-the-clock-soc}
+must_not_flag:
+  - "Essentials is £35 per user per month, excl. VAT."
+  - "Every plan includes Microsoft 365 backup with 1-year retention."

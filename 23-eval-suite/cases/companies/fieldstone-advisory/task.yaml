@@ -1,0 +1,11 @@
+# FICTIONAL. Scope segments=[enterprise] makes the SMB Growth Sprint fee a scope trap;
+# publish_on 2026-10-07 is after pipeline-audit-offer ends (2026-10-02), valid today (2026-09-29).
+goal: "Book discovery calls with enterprise marketing leaders for the Enterprise Demand Programme."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+  - {key: p2, channel: email, kind: outreach, max_chars: null}
+  - {key: p3, channel: blog, kind: intro, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [enterprise], plan_tiers: [], variants: []}
+publish_on: "2026-10-07"
+audience: "CMOs and heads of demand generation at companies with 500+ staff"
+notes: null

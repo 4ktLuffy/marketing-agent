@@ -1,0 +1,9 @@
+# WHY: the 91% result needs its basis ("2025-26 end-of-course tests") and the £240 price needs "coursebook not included"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "91% of our evening learners moved up a level last year", label: missing_disclosure, fact_key: level-progress-result}
+  - {contains: "91% of our adult evening learners moved up at least one level", label: missing_disclosure, fact_key: level-progress-result}
+  - {contains: "The 10-week Spanish evening group course is £240 per person", label: missing_disclosure, fact_key: spanish-evening-course}
+must_not_flag:
+  - "Classes are on Tuesdays, 6:30pm to 8:30pm"
+  - "Every teacher at Linden holds a recognised language-teaching qualification"

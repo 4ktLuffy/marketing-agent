@@ -1,0 +1,11 @@
+# FICTIONAL. Scope plan_tiers=[essentials], segments=[smb] makes 24/7 SOC monitoring (Guard/Sentinel only)
+# a scope trap; publish_on 2026-10-14 is after free-phishing-test ends (2026-10-09), valid today (2026-09-29).
+goal: "Sign up UK small businesses to the Essentials plan in October."
+pieces:
+  - {key: p1, channel: linkedin, kind: post, max_chars: 1300}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+  - {key: p3, channel: x, kind: post, max_chars: 280}
+scope: {sites: [], regions: [], channels: [], segments: [smb], plan_tiers: [essentials], variants: []}
+publish_on: "2026-10-14"
+audience: "Owners and office managers of UK firms with 10 to 50 staff and no in-house IT security"
+notes: "Lead with the response time and the Microsoft 365 backup."

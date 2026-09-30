@@ -1,0 +1,9 @@
+# WHY: the £12 online early-bird price is valid today but ends 2026-10-04, before publish 2026-10-12 ("twelve quid" is the loose form); the free travel consultation ended 2026-06-30 ("on the house").
+blocked: true
+findings:
+  - {contains: "your flu jab is only twelve quid", label: conflict_or_expired, fact_key: early-bird-flu}
+  - {contains: "book your flu jab online for £12", label: conflict_or_expired, fact_key: early-bird-flu}
+  - {contains: "travel health consultation on the house", label: conflict_or_expired, fact_key: travel-consult-free}
+must_not_flag:
+  - "Walk-in flu jabs run on Saturdays, 9am to 1pm, at Castle Green"
+  - "Walk-in flu jabs every Saturday, 9am to 1pm, at our Castle Green branch"

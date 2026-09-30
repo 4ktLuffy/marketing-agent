@@ -1,0 +1,12 @@
+# WHY: local/home-scoped and all-scope facts only; "price confirmed after a free home survey" and "with a confirmed booking" sit with the price and the boxes; "Removals Trade Standard member" is the allowed phrasing.
+blocked: false
+findings: []
+must_not_flag:
+  - "A 2-bed local move with Hartwell & Daughters starts"
+  - "with a confirmed booking."
+  - "Every move comes with"
+  - "2-bed local moves from £495 (price confirmed after a free home survey)"
+  - "30 free boxes with a confirmed booking"
+  - "Goods-in-transit cover up to £50,000"
+  - "every local move includes goods-in-transit cover up to £50,000"
+  - "Book a free home survey and we'll confirm your price."

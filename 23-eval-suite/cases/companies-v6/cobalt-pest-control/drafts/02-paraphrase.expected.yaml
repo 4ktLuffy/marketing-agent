@@ -1,0 +1,13 @@
+# WHY: negative control — the same domestic facts reworded: "145 quid" / "£145.00" = £145 with "up to 3 visits"; "ninety days" = the 90-day guarantee; "pest-free this season" is not the forbidden "guaranteed pest-free forever".
+blocked: false
+findings: []
+must_not_flag:
+  - "one price of 145 quid for a rat job at your home, covering up to 3 visits"
+  - "It's £65 a nest"
+  - "it's within ninety days, the return visit costs you nothing"
+  - "Proud BPCA member, number 10472"
+  - "Keeping your home pest-free this season"
+  - "holds the RSPH Level 2 Award in Pest Management"
+  - "Rats: £145.00 per home treatment, up to 3 visits included"
+  - "Our rodent treatments carry a 90-day guarantee"
+  - "A warm house is an inviting house"

@@ -1,0 +1,11 @@
+# FICTIONAL. Scope variants=[winter-weekday] makes the Tithe Barn (summer packages only) a scope trap;
+# publish_on 2026-10-12 is after the Autumn Booking Bonus ends (2026-10-10), valid today (2026-09-29).
+goal: "Fill the remaining Winter Weekday wedding dates at Cedar Hall."
+pieces:
+  - {key: p1, channel: facebook, kind: post, max_chars: null}
+  - {key: p2, channel: pinterest, kind: pin, max_chars: 500}
+  - {key: p3, channel: newsletter, kind: newsletter, max_chars: null}
+scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: [winter-weekday]}
+publish_on: "2026-10-12"
+audience: "Engaged couples in North Yorkshire planning a smaller winter wedding"
+notes: null

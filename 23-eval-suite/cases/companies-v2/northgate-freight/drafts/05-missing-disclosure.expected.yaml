@@ -1,0 +1,9 @@
+# WHY: the £68 rate appears (body and subject) without "excl. VAT and fuel surcharge", and the £25,000 cover without "per consignment".
+blocked: true
+findings:
+  - {contains: "Next-day delivery on UK mainland is £68 per pallet", label: missing_disclosure, fact_key: uk-next-day}
+  - {contains: "Next-day pallets for £68", label: missing_disclosure, fact_key: uk-next-day}
+  - {contains: "insured in transit up to £25,000", label: missing_disclosure, fact_key: transit-cover}
+must_not_flag:
+  - "We're ISO 9001:2015 certified (certificate NGF-QMS-4471)"
+  - "Book by 16:00 and we deliver the next working day on UK mainland"

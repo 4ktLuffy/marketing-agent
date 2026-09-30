@@ -1,0 +1,8 @@
+# WHY: the free taster is valid today but ends 2026-10-11, before publish 2026-10-19; the £60 summer intensive ended 2026-08-28.
+blocked: true
+findings:
+  - {contains: "book a free taster lesson today", label: conflict_or_expired, fact_key: free-taster}
+  - {contains: "summer intensive is five lessons in a week for £60", label: conflict_or_expired, fact_key: summer-intensive}
+must_not_flag:
+  - "There's a qualified lifeguard on poolside at every lesson"
+  - "No more than 6 children per teacher"

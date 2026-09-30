@@ -1,0 +1,287 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Willow Care Homes, type: care_home_group, today: '2026-09-29'}
+facts:
+- key: cqc-alder-court
+  subject: {kind: site, ref: Alder Court}
+  fact_type: certification
+  attribute: cqc_overall_rating
+  value: Good
+  unit: null
+  currency: null
+  value_text: rated Good by the CQC
+  basis: null
+  conditions: []
+  scope: {sites: [alder-court], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-11-18'
+  valid_to: null
+  review_by: '2027-05-31'
+  source: {kind: url, ref: 'CQC inspection report, Alder Court, Nov 2025'}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: CQC location ID 1-4471029385
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Registered manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Alder Court is rated Good overall by the Care Quality Commission (report published 18 November 2025, CQC location
+    ID 1-4471029385).
+- key: cqc-willow-house
+  subject: {kind: site, ref: Willow House}
+  fact_type: certification
+  attribute: cqc_overall_rating
+  value: Outstanding
+  unit: null
+  currency: null
+  value_text: rated Outstanding by the CQC
+  basis: null
+  conditions: []
+  scope: {sites: [willow-house], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-03-03'
+  valid_to: null
+  review_by: '2027-09-30'
+  source: {kind: url, ref: 'CQC inspection report, Willow House, Mar 2026'}
+  claim_class: regulated_health
+  requires_evidence: true
+  evidence_ref: CQC report Willow House Mar 2026
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Registered manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Willow House is rated Outstanding overall by the Care Quality Commission (report published 3 March 2026). This rating
+    is for Willow House only.
+- key: fee-residential-alder
+  subject: {kind: service, ref: 'Residential care, Alder Court'}
+  fact_type: price
+  attribute: weekly_fee
+  value: 1250
+  unit: week
+  currency: GBP
+  value_text: £1,250 per week
+  basis: per_person
+  conditions: []
+  scope: {sites: [alder-court], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fee schedule 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [subject to a care needs assessment]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Home manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Residential care at Alder Court costs £1,250 per week, subject to a care needs assessment.
+- key: fee-nursing-alder
+  subject: {kind: service, ref: 'Nursing care, Alder Court'}
+  fact_type: price
+  attribute: weekly_fee
+  value: 1480
+  unit: week
+  currency: GBP
+  value_text: £1,480 per week
+  basis: per_person
+  conditions: []
+  scope: {sites: [alder-court], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fee schedule 2026-27}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [subject to a care needs assessment]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Home manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Nursing care at Alder Court costs £1,480 per week, subject to a care needs assessment.
+- key: respite-alder
+  subject: {kind: service, ref: 'Respite stays, Alder Court'}
+  fact_type: availability
+  attribute: respite
+  value: null
+  unit: null
+  currency: null
+  value_text: respite stays of one to six weeks
+  basis: null
+  conditions: []
+  scope: {sites: [alder-court], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: 'Home manager, Sept 2026'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Home manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Alder Court has rooms for respite stays of one to six weeks, subject to availability.
+- key: activities-included
+  subject: {kind: service, ref: Activities programme}
+  fact_type: inclusion
+  attribute: included_in_fee
+  value: null
+  unit: null
+  currency: null
+  value_text: daily activities and a weekly minibus outing included in the fee
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Resident guide 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Activities lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: At both homes the weekly fee includes a daily activities programme and a weekly minibus outing.
+- key: visiting-hours
+  subject: {kind: policy, ref: Visiting}
+  fact_type: hours
+  attribute: visiting_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: 9am to 8pm every day
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Resident guide 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Home manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Visitors are welcome at both homes from 9am to 8pm every day; no booking needed.
+- key: respite-offer
+  subject: {kind: offer, ref: Autumn respite offer}
+  fact_type: price
+  attribute: discount
+  value: 50
+  unit: percent
+  currency: null
+  value_text: half price on the first week of respite
+  basis: null
+  conditions: []
+  scope: {sites: [alder-court], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-05'
+  review_by: null
+  source: {kind: doc, ref: Autumn offers sheet 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Home manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn offer: the first week of a respite stay at Alder Court is half price, for stays booked 1 September to 5 October
+    2026.'
+- key: agency-rate-cap
+  subject: {kind: service, ref: Agency nursing}
+  fact_type: price
+  attribute: hourly_cap
+  value: 32
+  unit: null
+  currency: GBP
+  value_text: £32 per hour
+  basis: per_unit
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Finance director note}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: We cap agency nurse cover at £32 per hour.
+- key: council-contract-rate
+  subject: {kind: service, ref: 'Residential care, council-funded'}
+  fact_type: price
+  attribute: contract_rate
+  value: 940
+  unit: null
+  currency: GBP
+  value_text: £940 per week
+  basis: per_person
+  conditions:
+  - {key: customer, op: '=', value: Ashcombe Council}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Ashcombe Council framework 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Ashcombe Council pays £940 per week for council-funded residents.

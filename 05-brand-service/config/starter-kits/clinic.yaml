@@ -1,0 +1,54 @@
+# Starter kit: clinic (physio, dental, aesthetics, therapy). Data, not code; applying creates
+# DRAFT rules only. Health marketing is tightly regulated in most countries; these are cautious,
+# generic prompts, not legal or clinical advice. Check your regulator's advertising guidance.
+label: Clinic / health practice
+description: Treatments and prices per branch, practitioner credentials, offers with dates, cautious health claims.
+fact_types:
+  - fact_type: price
+    subject_kind: service
+    attributes: [price, duration, branch]
+    example: "A 45-minute physio assessment costs GBP 65 at the Quayside branch."
+  - fact_type: credential
+    subject_kind: person
+    attributes: [registration, registration_number, specialist_listing, qualifications]
+    example: "Dr Patel is on the specialist list for orthodontics."
+  - fact_type: hours
+    subject_kind: site
+    attributes: [opening_hours, late_evenings]
+    example: "Quayside is open until 8 pm on Thursdays."
+  - fact_type: event
+    subject_kind: offer
+    attributes: [start_date, end_date, eligible_patients]
+    example: "New-patient check-up offer ends 2026-09-15."
+  - fact_type: testimonial
+    subject_kind: service
+    attributes: [quote, consent_ref, date]
+    example: "Patient quote with written consent on file."
+claim_classes: [regulated_health, result, comparative]
+forbidden_phrasing:
+  - phrase: specialist
+    why: In many countries "specialist" is a protected title for practitioners on an official list.
+    claim_class: regulated_health
+    needs: a credential fact for this person
+  - phrase: cure
+    why: Claims to cure a condition need strong evidence and are often not allowed in adverts.
+    claim_class: regulated_health
+  - phrase: guaranteed results
+    why: Individual results vary; guarantees of outcome are misleading for treatments.
+    claim_class: result
+  - phrase: pain-free
+    why: An absolute promise about a clinical experience can't be guaranteed.
+    claim_class: regulated_health
+  - phrase: NHS approved
+    why: Implies an endorsement that usually does not exist.
+    claim_class: regulated_health
+    needs: a certification fact with the exact wording
+  - phrase: best dentist
+    why: Superlatives about clinical quality can't be substantiated.
+    claim_class: comparative
+required_disclosures:
+  - when: a treatment outcome or testimonial is mentioned
+    text: Individual results vary.
+    claim_class: result
+  - when: a price is mentioned
+    text: Prices at the named branch; other branches may differ.

@@ -1,0 +1,11 @@
+# WHY: the 10% early-booking discount is valid today but ends 2026-10-04, before publish 2026-10-07; the free terrace barbecue lunch (mentioned in passing) ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "book now and take 10% off the day delegate rate", label: conflict_or_expired, fact_key: early-booking-offer}
+  - {contains: "Book early, save 10%", label: conflict_or_expired, fact_key: early-booking-offer}
+  - {contains: "we'll take 10% off the day delegate rate", label: conflict_or_expired, fact_key: early-booking-offer}
+  - {contains: "Subject: Save 10% on your away day", label: conflict_or_expired, fact_key: early-booking-offer}
+  - {contains: "the free terrace barbecue lunch is still on the menu", label: conflict_or_expired, fact_key: summer-terrace-lunch}
+must_not_flag:
+  - "Corporate day delegate rate: £59 per delegate plus VAT"
+  - "certificate VM-G-20417"

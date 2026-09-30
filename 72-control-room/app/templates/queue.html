@@ -3,6 +3,7 @@
 {% block main %}
 <section class="queue-head">
   <h1>Needs you <span class="count">{{ total }}</span></h1>
+  {% include "_blockers.html" %}
   <nav class="tabs" aria-label="Filter">
     <a href="/" {% if tab == 'all' %}aria-current="page"{% endif %}>All ({{ total }})</a>
     <a href="/?tab=flagged" {% if tab == 'flagged' %}aria-current="page"{% endif %}>Flagged ({{ n_flagged }})</a>

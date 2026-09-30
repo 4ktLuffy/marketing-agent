@@ -1,0 +1,10 @@
+# WHY: the 2-bed price requires "price confirmed after a free home survey" and the boxes require "with a confirmed booking"; neither appears anywhere in the draft ("for every customer" drops the booking condition).
+blocked: true
+findings:
+  - {contains: "A 2-bed local move with us is £495", label: missing_disclosure, fact_key: local-two-bed-price}
+  - {contains: "2-BED LOCAL MOVES: £495", label: missing_disclosure, fact_key: local-two-bed-price}
+  - {contains: "Thirty free boxes for every customer", label: missing_disclosure, fact_key: free-boxes}
+  - {contains: "Local moves from £495, with thirty boxes thrown in", label: missing_disclosure, fact_key: local-two-bed-price}
+  - {contains: "Local moves from £495, with thirty boxes thrown in", label: missing_disclosure, fact_key: free-boxes}
+must_not_flag:
+  - "Every move includes goods-in-transit cover up to £50,000."

@@ -1,0 +1,12 @@
+# WHY: invented: a place superlative, a Checkatrade rating, look-alike licence 20-478/51 (real 2047815), 'Platinum Partner' (real grade: Full Contractor Member), a 24-hour call-out claim, and the forbidden 'NFRC approved'.
+blocked: true
+findings:
+  - {contains: "Bristol's number one roofer", label: no_source, fact_key: null}
+  - {contains: "rated 4.9 out of 5 on Checkatrade", label: no_source, fact_key: null}
+  - {contains: "licence number 20-478/51", label: conflict_or_expired, fact_key: trustmark}
+  - {contains: "Proud NFRC Platinum Partner", label: conflict_or_expired, fact_key: nfrc}
+  - {contains: "on call 24 hours a day for emergency repairs", label: no_source, fact_key: null}
+  - {contains: "NFRC approved roofers in Bristol", label: forbidden_phrase, fact_key: nfrc}
+must_not_flag:
+  - "Full pitched re-roofs from £6,800 for a typical 3-bed semi, final price confirmed after a free survey"
+  - "Every pitched re-roof comes with a 15-year insurance-backed guarantee"

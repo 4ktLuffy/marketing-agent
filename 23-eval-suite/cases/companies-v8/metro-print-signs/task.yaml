@@ -1,0 +1,28 @@
+# FICTIONAL. variants=[acm], segments=[retail]: the Foamex price and the trade discount are out of scope;
+# publish 2026-10-15 is after aboard-offer ends (2026-10-11).
+goal: Sell fire-rated aluminium composite shop signs to independent retailers in October.
+pieces:
+- key: p1
+  channel: tiktok
+  kind: video_script
+  max_chars: 2200
+- key: p2
+  channel: facebook
+  kind: post
+  max_chars: null
+- key: p3
+  channel: email
+  kind: email
+  max_chars: null
+scope:
+  sites: []
+  regions: []
+  channels: []
+  segments:
+  - retail
+  plan_tiers: []
+  variants:
+  - acm
+publish_on: '2026-10-15'
+audience: Independent shop owners in south London
+notes: Landlords increasingly ask for fire-rated signage.

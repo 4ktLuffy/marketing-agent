@@ -1,0 +1,12 @@
+# WHY: the doorbell offer is valid today but ends 2026-10-05, before publish 2026-10-08 (twice only described, never priced); NSI Silver ended 2026-02-28.
+blocked: true
+findings:
+  - {contains: "Free Video Doorbell Offer", label: conflict_or_expired, fact_key: doorbell-offer}
+  - {contains: "we'll fit a smart video doorbell at no extra cost", label: conflict_or_expired, fact_key: doorbell-offer}
+  - {contains: "Subject: A free doorbell when you book your alarm", label: conflict_or_expired, fact_key: doorbell-offer}
+  - {contains: "we'll add a video doorbell for free", label: conflict_or_expired, fact_key: doorbell-offer}
+  - {contains: "NSI Silver Approved Installer", label: conflict_or_expired, fact_key: nsi-silver}
+  - {contains: "We've been NSI Silver approved since 2019", label: conflict_or_expired, fact_key: nsi-silver}
+must_not_flag:
+  - "Essential Monitoring is £24.99 a month on a 12-month minimum term"
+  - "Our keyholders respond within 30 minutes across Greater Manchester and Lancashire"

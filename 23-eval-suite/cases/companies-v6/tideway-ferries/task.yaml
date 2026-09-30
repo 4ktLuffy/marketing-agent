@@ -1,0 +1,10 @@
+# FICTIONAL. Scope sites=[gull-island] (route), variants=[winter] (season) makes the summer fare a scope trap; publish
+# 2026-10-10 is after the summer timetable and bring-a-friend offer end (2026-10-04), both valid today.
+goal: Promote winter day trips to Gull Island.
+pieces:
+- {key: p1, channel: instagram, kind: post, max_chars: 2200}
+- {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope: {sites: [gull-island], regions: [], channels: [], segments: [], plan_tiers: [], variants: [winter]}
+publish_on: '2026-10-10'
+audience: Day-trippers and local residents
+notes: null

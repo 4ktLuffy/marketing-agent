@@ -1,0 +1,12 @@
+# WHY: the Volt Pro 22 price is real but only for variant three-phase (task: single-phase), and the Volt Work Twin price is only for segment business (task: homeowners); both are wrong_scope, not no_source.
+blocked: true
+findings:
+  - {contains: "The Volt Pro 22 (22kW) is £1,449 fitted.", label: wrong_scope, fact_key: volt-pro-22-price}
+  - {contains: "Upgrade to 22kW home charging with the Volt Pro 22", label: wrong_scope, fact_key: volt-pro-22-price}
+  - {contains: "the Volt Work Twin is £2,150 plus VAT fitted", label: wrong_scope, fact_key: workplace-twin-price}
+  - {contains: "Volt Pro 22 — 22kW, £1,449 fitted.", label: wrong_scope, fact_key: volt-pro-22-price}
+must_not_flag:
+  - "Want faster charging?"
+  - "Every Volt install includes app set-up, a load-balancing check and an electrical installation certificate."
+  - "We're registered with the NESR as an Approved Contractor, registration NESR-207731."
+  - "Volt Home 7 — £899 fitted (standard installation)."

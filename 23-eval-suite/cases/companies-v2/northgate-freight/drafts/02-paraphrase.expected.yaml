@@ -1,0 +1,7 @@
+# WHY: negative control; same facts reworded (cut-off, rate with its disclosure, cover per consignment, ISO 9001, AEO-C), no new numbers or claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "Price: £68 per pallet (excl. VAT and fuel surcharge)"
+  - "Each load is insured in transit for up to £25,000 per consignment"
+  - "Our AEO-C status (authorisation GBAEOC0042917)"

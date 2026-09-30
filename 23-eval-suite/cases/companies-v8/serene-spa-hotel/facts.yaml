@@ -1,0 +1,412 @@
+# FICTIONAL spa hotel. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company:
+  name: Serene Spa Hotel
+  type: spa_hotel
+  today: '2026-09-29'
+facts:
+- key: weekday-spa-day
+  subject:
+    kind: package
+    ref: Weekday Spa Day
+  fact_type: price
+  attribute: package_price
+  value: 95
+  unit: null
+  currency: GBP
+  value_text: £95 per person
+  basis: per_person
+  conditions:
+  - &id001
+    key: days
+    op: in
+    value:
+    - Mon
+    - Tue
+    - Wed
+    - Thu
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - weekday-spa-day
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Spa price list autumn-winter 2026-27
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per person
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Spa manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Weekday Spa Day costs £95 per person, Monday to Thursday, and includes a 25-minute Express Facial or back massage.
+- key: weekend-spa-day
+  subject:
+    kind: package
+    ref: Weekend Spa Day
+  fact_type: price
+  attribute: package_price
+  value: 125
+  unit: null
+  currency: GBP
+  value_text: £125 per person
+  basis: per_person
+  conditions:
+  - key: days
+    op: in
+    value:
+    - Fri
+    - Sat
+    - Sun
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants:
+    - weekend-spa-day
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Spa price list autumn-winter 2026-27
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per person
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Spa manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Weekend Spa Day costs £125 per person, Friday to Sunday, and includes a 55-minute treatment of your choice.
+- key: spa-inclusions
+  subject:
+    kind: package
+    ref: Spa days
+  fact_type: inclusion
+  attribute: included_items
+  value: null
+  unit: null
+  currency: null
+  value_text: a robe and slippers, lunch in the Garden Room and use of the thermal suite and pool
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: doc
+    ref: Spa price list autumn-winter 2026-27
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Spa manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every spa day includes a robe and slippers, lunch in the Garden Room and use of the thermal suite and pool.
+- key: aa-rating
+  subject:
+    kind: business
+    ref: Serene Spa Hotel
+  fact_type: credential
+  attribute: aa_rating
+  value: 4
+  unit: null
+  currency: null
+  value_text: AA Four Star Hotel, AA establishment ID 7310442
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: '2026-11-30'
+  source:
+    kind: certificate
+    ref: AA rating certificate 2026, establishment 7310442
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: AA certificate 7310442
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: General manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Serene Spa Hotel is rated an AA Four Star Hotel for 2026, AA establishment ID 7310442.
+- key: age-policy
+  subject:
+    kind: policy
+    ref: Spa age policy
+  fact_type: policy
+  attribute: minimum_age
+  value: 18
+  unit: year
+  currency: null
+  value_text: over-18s only
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: url
+    ref: https://serenespahotel.example/spa-rules
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Spa manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The spa, thermal suite and spa days are for guests aged 18 and over; under-18s cannot book a spa day.
+- key: friends-go-free
+  subject:
+    kind: offer
+    ref: Friends Go Free
+  fact_type: price
+  attribute: multibuy
+  value: null
+  unit: null
+  currency: null
+  value_text: book 3 spa days, the 4th guest goes free
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-12'
+  review_by: null
+  source:
+    kind: doc
+    ref: Autumn offers brief 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Spa manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Friends Go Free: book 3 spa days together and the 4th guest goes free, for visits by 12 October 2026.'
+- key: twilight-spa
+  subject:
+    kind: package
+    ref: Summer Twilight Spa
+  fact_type: price
+  attribute: package_price
+  value: 59
+  unit: null
+  currency: GBP
+  value_text: £59 per person
+  basis: per_person
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Summer offers brief 2026
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Spa manager
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The Summer Twilight Spa (£59 per person, 5pm to 9pm) ran from June to August 2026 and has ended.
+- key: member-price
+  subject:
+    kind: package
+    ref: Weekday Spa Day (Serene Club members)
+  fact_type: price
+  attribute: member_price
+  value: 79
+  unit: null
+  currency: GBP
+  value_text: £79 per person
+  basis: per_person
+  conditions:
+  - *id001
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - member
+    plan_tiers: []
+    variants:
+    - weekday-spa-day
+  valid_from: '2026-09-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Serene Club benefits 2026-27
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - per person
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Membership manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Serene Club members pay £79 per person for a Weekday Spa Day.
+- key: spa-day-cost
+  subject:
+    kind: package
+    ref: Weekday Spa Day
+  fact_type: price
+  attribute: cost_per_guest
+  value: 38
+  unit: null
+  currency: GBP
+  value_text: £38 per guest
+  basis: per_person
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source:
+    kind: owner_statement
+    ref: Finance costing 2026-09
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Finance manager
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Our cost per Weekday Spa Day guest is £38. Internal.
+- key: beacon-contract
+  subject:
+    kind: package
+    ref: Weekday Spa Day (Beacon Insurance staff)
+  fact_type: price
+  attribute: contract_price
+  value: 70
+  unit: null
+  currency: GBP
+  value_text: £70 per head
+  basis: per_person
+  conditions:
+  - key: customer
+    op: '='
+    value: Beacon Insurance
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments:
+    - corporate
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: '2026-12-31'
+  review_by: null
+  source:
+    kind: doc
+    ref: Beacon Insurance wellness agreement 2026
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Sales manager
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Beacon Insurance staff pay £70 per head for Weekday Spa Days under a 2026 corporate wellness agreement.

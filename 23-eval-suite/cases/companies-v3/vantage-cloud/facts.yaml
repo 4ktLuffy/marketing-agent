@@ -1,0 +1,288 @@
+# FICTIONAL company. Held-out eval fixture v3 (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: "Vantage Cloud", type: it_services, today: '2026-09-29'}
+facts:
+- key: essentials-price
+  subject: {kind: plan, ref: "Vantage Essentials"}
+  fact_type: price
+  attribute: price_per_user
+  value: 29
+  unit: "user"
+  currency: "GBP"
+  value_text: "£29 per user per month"
+  basis: "per_seat"
+  conditions:
+  - {key: users, op: ">=", value: 10}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: ["essentials"], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Managed services rate card 2026 v4"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures:
+  - "excluding VAT, minimum 10 users"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Vantage Essentials costs £29 per user per month, excluding VAT, minimum 10 users."
+- key: essentials-sla
+  subject: {kind: plan, ref: "Vantage Essentials"}
+  fact_type: spec
+  attribute: p1_response
+  value: 4
+  unit: "hour"
+  currency: null
+  value_text: "4-hour response to priority 1 incidents"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: ["essentials"], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Essentials SLA schedule v3"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service delivery manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Essentials includes a 4-hour response to priority 1 incidents during service desk hours."
+- key: premier-sla
+  subject: {kind: plan, ref: "Vantage Premier"}
+  fact_type: spec
+  attribute: p1_response
+  value: 30
+  unit: "minute"
+  currency: null
+  value_text: "30-minute response to priority 1 incidents, 24/7"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: ["premier"], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Premier SLA schedule v3"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service delivery manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Premier includes a 30-minute response to priority 1 incidents, 24/7."
+- key: uk-support-hours
+  subject: {kind: site, ref: "UK service desk"}
+  fact_type: hours
+  attribute: support_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: "8am to 6pm, Monday to Friday"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: ["uk"], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Service desk rota 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Service delivery manager"
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "The UK service desk is open 8am to 6pm, Monday to Friday (the Dublin desk keeps Irish hours)."
+- key: iso-27001
+  subject: {kind: business, ref: "Vantage Cloud"}
+  fact_type: certification
+  attribute: iso_27001
+  value: null
+  unit: null
+  currency: null
+  value_text: "ISO 27001:2022 certified (certificate IS 781204)"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2025-03-01"
+  valid_to: "2028-02-28"
+  review_by: null
+  source: {kind: certificate, ref: "ISO 27001 certificate IS 781204"}
+  claim_class: security
+  requires_evidence: true
+  evidence_ref: "ISO 27001 certificate IS 781204"
+  consent_ref: null
+  required_disclosures:
+  - "covers our service desk and hosting operations"
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Head of security"
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Vantage Cloud is ISO 27001:2022 certified, certificate IS 781204. The certificate covers our service desk and hosting operations."
+- key: microsoft-partner
+  subject: {kind: business, ref: "Vantage Cloud"}
+  fact_type: credential
+  attribute: microsoft_designation
+  value: null
+  unit: null
+  currency: null
+  value_text: "Microsoft Solutions Partner for Modern Work"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {kind: certificate, ref: "Microsoft Partner Center designation (Sept 2026)"}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: "Partner Center screenshot 2026-09"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing:
+  - "Gold Partner"
+  owner: "Alliances manager"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Vantage Cloud holds the Microsoft Solutions Partner for Modern Work designation."
+- key: onboarding-offer
+  subject: {kind: offer, ref: "Autumn switch offer"}
+  fact_type: price
+  attribute: onboarding_waiver
+  value: 1500
+  unit: null
+  currency: "GBP"
+  value_text: "free onboarding (worth £1,500)"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-10"
+  valid_to: "2026-10-02"
+  review_by: null
+  source: {kind: doc, ref: "Autumn switch offer terms"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: "Contracts signed between 10 Sept and 2 Oct 2026 get free onboarding (worth £1,500)."
+- key: migration-discount
+  subject: {kind: offer, ref: "Cloud Move"}
+  fact_type: price
+  attribute: discount
+  value: 25
+  unit: "percent"
+  currency: null
+  value_text: "25% off migration projects"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-06-30"
+  review_by: null
+  source: {kind: doc, ref: "Cloud Move offer terms"}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: "Cloud Move (January to June 2026): 25% off migration projects."
+- key: engineer-utilisation
+  subject: {kind: business, ref: "Vantage Cloud"}
+  fact_type: result
+  attribute: utilisation_target
+  value: 78
+  unit: "percent"
+  currency: null
+  value_text: "78% billable utilisation target"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: "Ops KPI pack 2026"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Operations director"
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: "Engineers are targeted at 78% billable utilisation."
+- key: brackwater-contract
+  subject: {kind: plan, ref: "Vantage Essentials"}
+  fact_type: price
+  attribute: contract_price
+  value: 21
+  unit: "user"
+  currency: "GBP"
+  value_text: "£21 per user per month"
+  basis: "per_seat"
+  conditions:
+  - {key: customer, op: "=", value: "Brackwater Legal"}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: ["essentials"], variants: []}
+  valid_from: "2025-07-01"
+  valid_to: "2028-06-30"
+  review_by: null
+  source: {kind: doc, ref: "Brackwater Legal master services agreement"}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Sales director"
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: "Brackwater Legal pays £21 per user per month for Essentials under a three-year deal."

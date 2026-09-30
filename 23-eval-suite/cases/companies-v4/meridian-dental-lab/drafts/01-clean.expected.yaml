@@ -1,0 +1,7 @@
+# WHY: negative control — crown price, turnaround with "from receipt of the scan or impression", Class 5 material, ISO 13485 certificate and North West inclusions, all valid and in scope at 2026-10-08.
+blocked: false
+findings: []
+must_not_flag:
+  - "Zirconia crowns are £68 per unit, and they come back in 5 working days from receipt of the scan or impression"
+  - "Tired of chasing the lab for a crown that was due yesterday?"
+  - "Best wishes"

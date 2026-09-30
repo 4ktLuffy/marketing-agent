@@ -1,0 +1,8 @@
+# WHY: £45 per hour is the true one-to-one rate; the task is variants=[evening-group] (one-to-one is another variant).
+blocked: true
+findings:
+  - {contains: "One-to-one lessons are £45 per hour", label: wrong_scope, fact_key: one-to-one-rate}
+  - {contains: "Private lessons are £45 per hour", label: wrong_scope, fact_key: one-to-one-rate}
+must_not_flag:
+  - "Our 10-week Spanish evening group course costs £240 per person, coursebook not included"
+  - "Every teacher at Linden holds a recognised language-teaching qualification"

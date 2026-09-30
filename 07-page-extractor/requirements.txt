@@ -5,3 +5,4 @@ httpx==0.28.1
 beautifulsoup4==4.15.0
 youtube-transcript-api==1.2.4
 requests==2.34.2
+pypdf==6.19.0

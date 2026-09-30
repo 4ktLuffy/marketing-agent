@@ -1,0 +1,9 @@
+# WHY: the 30-minute 24/7 response is Premier only (plan_tiers=[premier]); the task is plan_tiers=[essentials], which has a 4-hour response.
+blocked: true
+findings:
+  - {contains: "Vantage Essentials gives you a 30-minute response to priority 1 incidents, 24/7", label: wrong_scope, fact_key: premier-sla}
+  - {contains: "Subject: 24/7 support with a 30-minute response", label: wrong_scope, fact_key: premier-sla}
+  - {contains: "our engineers respond to priority 1 incidents within 30 minutes, day or night", label: wrong_scope, fact_key: premier-sla}
+must_not_flag:
+  - "Essentials is £29 per user per month, excluding VAT, minimum 10 users"
+  - "We're a Microsoft Solutions Partner for Modern Work"

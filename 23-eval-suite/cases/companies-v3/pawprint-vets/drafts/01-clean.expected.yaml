@@ -1,0 +1,8 @@
+# WHY: Ashby price with its disclosure, Ashby's own accreditation level and ref, the all-branch starter pack, and the out-of-hours partner with "emergency fees apply".
+blocked: false
+findings: []
+must_not_flag:
+  - "Pawprint Vets Ashby is an RCVS-accredited General Practice (Practice Standards Scheme ref PSS-71954)"
+  - "A standard consultation at Ashby costs £48, medicines and tests charged separately"
+  - "emergencies are seen by NightPaws Emergency Vets in Coleford, and emergency fees apply"
+  - "two vaccinations, a microchip and a nurse health check for £89"

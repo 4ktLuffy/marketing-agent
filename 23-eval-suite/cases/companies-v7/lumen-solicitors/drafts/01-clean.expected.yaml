@@ -1,0 +1,16 @@
+# WHY: negative control: band-1 fixed fee with its disclosure (LinkedIn and blog say 'plus VAT and disbursements', an equivalent of 'excluding VAT and disbursements'), SRA number, Lexcel, consultation terms, inclusion; the blog piece has no marker.
+blocked: false
+findings: []
+must_not_flag:
+  - "Buying your first home in Bristol for up to £250,000?"
+  - "Our residential conveyancing is a fixed fee of £895, plus VAT and disbursements"
+  - "Every fee includes a named solicitor and online case tracking"
+  - "authorised and regulated by the Solicitors Regulation Authority (SRA number 804517)"
+  - "Subject: A fixed fee for your first home"
+  - "Book a free 30-minute first consultation by phone or video (new clients only)"
+  - "We're Lexcel accredited (Lexcel v6.1, certificate LX-30958)"
+  - "First home, first solicitor: what to expect"
+  - "Wondering what the fee covers?"
+  - "At Lumen, a named solicitor looks after your purchase from start to finish"
+  - "it is a fixed fee of £895, plus VAT and disbursements such as searches"
+  - "Your first consultation is free, 30 minutes by phone or video, for new clients only"

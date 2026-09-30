@@ -1,0 +1,26 @@
+Here's a LinkedIn post and a newsletter for practice managers in England and Wales.
+
+=== 1 LINKEDIN ===
+Running low on gloves on a Thursday afternoon? 🧤
+
+Harbour nitrile exam gloves are UKCA and CE marked as a Class I medical device.
+On a standard trade account they cost £5.40 per box of 100, plus VAT.
+Order by 5pm, Monday to Friday, and they arrive the next working day anywhere in England and Wales.
+Every trade account comes with a named account manager, so you always know who to call.
+
+#DentalPractice #PracticeManager #DentalSupplies
+
+=== 2 EMAIL ===
+Subject: Gloves by tomorrow, one person to call
+
+Hi there,
+
+Our nitrile exam gloves are [[gloves-box-standard]] excluding VAT.
+Need them fast? {{cutoff-england-wales}}, Monday to Friday.
+They're UKCA and CE marked (Class I medical device, declaration of conformity HDS-DOC-2291).
+Your named account manager will help you set up your first order.
+
+Best wishes,
+The Harbour Dental Supplies team
+
+Want me to add a short P.S. with a link to the trade account form?

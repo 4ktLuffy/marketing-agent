@@ -1,0 +1,10 @@
+# FICTIONAL. Scope channels=[own-site] makes Amazon-only facts (Prime next-day, 30-day Amazon returns) a scope trap;
+# publish_on 2026-10-09 is after autumn-sale ends (2026-10-05), valid today (2026-09-29).
+goal: "Drive October traffic to the Brambleworth website with our cosy autumn range."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+scope: {sites: [], regions: [uk], channels: [own-site], segments: [], plan_tiers: [], variants: []}
+publish_on: "2026-10-09"
+audience: "Existing customers and followers in the UK"
+notes: "Link to the website, not Amazon."

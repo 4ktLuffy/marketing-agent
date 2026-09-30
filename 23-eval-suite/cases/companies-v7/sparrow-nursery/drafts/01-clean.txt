@@ -1,0 +1,23 @@
+Here's your Canal Street set 🐦
+
+🔹 Piece 1: Facebook
+Looking for a nursery place for your 2-year-old near Canal Street?
+Canal Street is rated Good by Ofsted (URN EY574418, inspected March 2025).
+A full day, 8am to 6pm, costs £66, before any funded hours are taken off.
+In our 2-year-old room there is 1 adult for every 4 two-year-olds.
+Fees include freshly cooked meals, nappies and wipes.
+
+🔹 Piece 2: Email
+Subject: A place for your 2-year-old at Canal Street
+
+Hi,
+Thank you for joining our waiting list.
+Our 2-year-old places can take [[funded-hours]] for eligible working families.
+A full day at Canal Street is {{fee-2yo-full-day}} before funded hours.
+Our Canal Street team keeps 1 adult for every 4 two-year-olds.
+Warm wishes,
+Sparrow Nursery
+
+Canal Street nursery: full days 8am to 6pm, rated Good by Ofsted. Fees include freshly cooked meals, nappies and wipes. Call us to book a visit.
+
+Would you like a shorter version for Instagram stories?

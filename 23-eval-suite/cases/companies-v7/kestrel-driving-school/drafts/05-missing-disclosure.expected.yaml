@@ -1,0 +1,10 @@
+# WHY: the pass rate requires its cohort ('146 first-time tests, Sep 2025 to Aug 2026'); no cohort, count or period appears anywhere. The clean draft carried it in equivalent words.
+blocked: true
+findings:
+  - {contains: "71% of Kestrel pupils pass first time", label: missing_disclosure, fact_key: pass-rate}
+  - {contains: "A 71% first-time pass rate", label: missing_disclosure, fact_key: pass-rate}
+  - {contains: "With a 71% first-time pass rate", label: missing_disclosure, fact_key: pass-rate}
+  - {contains: "Automatic lessons in Norwich, 71% pass first time", label: missing_disclosure, fact_key: pass-rate}
+must_not_flag:
+  - "Automatic lessons are £44 per hour (minimum 2-hour booking)"
+  - "Daniel Okafor is a DVSA Approved Driving Instructor, grade A (ADI number 417385)"

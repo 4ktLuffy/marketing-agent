@@ -1,0 +1,349 @@
+# FICTIONAL company. Held-out eval fixture (companies-v7, see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Sparrow Nursery, type: 'children''s day nursery (two sites: Elm Road, Canal Street)', today: '2026-09-29'}
+facts:
+- key: fee-2yo-full-day
+  subject: {kind: service, ref: 'Full-day place, 2-year-olds, Canal Street'}
+  fact_type: price
+  attribute: daily_fee
+  value: 66
+  unit: day
+  currency: GBP
+  value_text: £66 per full day (8am to 6pm)
+  basis: per_unit
+  conditions:
+  - {key: session, op: '=', value: full day}
+  scope:
+    sites: [canal-street]
+    regions: []
+    channels: []
+    segments: [2-year-olds]
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Fee schedule Canal Street Sept 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [before funded hours]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: At Canal Street a full day for a 2-year-old (8am to 6pm, Monday to Friday) costs £66, before funded hours.
+- key: ofsted-canal
+  subject: {kind: site, ref: Canal Street}
+  fact_type: certification
+  attribute: ofsted_rating
+  value: Good
+  unit: null
+  currency: null
+  value_text: rated Good by Ofsted (URN EY574418, inspected March 2025)
+  basis: null
+  conditions: []
+  scope:
+    sites: [canal-street]
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2025-04-10'
+  valid_to: null
+  review_by: '2027-03-31'
+  source: {kind: url, ref: Ofsted report EY574418}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Ofsted EY574418
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Sparrow Nursery Canal Street was rated Good by Ofsted at its March 2025 inspection (URN EY574418).
+- key: ofsted-elm
+  subject: {kind: site, ref: Elm Road}
+  fact_type: certification
+  attribute: ofsted_rating
+  value: Outstanding
+  unit: null
+  currency: null
+  value_text: rated Outstanding by Ofsted (URN EY561203, inspected November 2025)
+  basis: null
+  conditions: []
+  scope:
+    sites: [elm-road]
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2025-12-15'
+  valid_to: null
+  review_by: '2028-11-30'
+  source: {kind: url, ref: Ofsted report EY561203}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: Ofsted EY561203
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Sparrow Nursery Elm Road was rated Outstanding by Ofsted at its November 2025 inspection (URN EY561203).
+- key: funded-hours
+  subject: {kind: policy, ref: Funded childcare hours}
+  fact_type: policy
+  attribute: funded_hours
+  value: 30
+  unit: hours_per_week
+  currency: null
+  value_text: up to 30 funded hours a week
+  basis: null
+  conditions:
+  - {key: age_months, op: '>=', value: 9}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2025-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: Hartfield Council early years funding guidance 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [for eligible working families]
+  allowed_phrasing: []
+  forbidden_phrasing: [free childcare]
+  owner: Nursery manager
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Children aged 9 months to 4 years can get up to 30 funded hours a week, term time (38 weeks), for eligible
+    working families.
+- key: elm-road-hours
+  subject: {kind: site, ref: Elm Road}
+  fact_type: hours
+  attribute: opening_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: open 7:30am to 6:30pm, Monday to Friday
+  basis: null
+  conditions: []
+  scope:
+    sites: [elm-road]
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-05'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Parent handbook 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Elm Road is open 7:30am to 6:30pm, Monday to Friday. Canal Street is open 8am to 6pm.
+- key: ratio-2yo
+  subject: {kind: policy, ref: 'Staffing, 2-year-old rooms'}
+  fact_type: claim
+  attribute: staff_ratio
+  value: '1:4'
+  unit: null
+  currency: null
+  value_text: 1 adult for every 4 two-year-olds
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: [2-year-olds]
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-05'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Staffing rota policy 2026}
+  claim_class: comparative
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Both nurseries staff their 2-year-old rooms at 1 adult for every 4 two-year-olds (the legal minimum is 1
+    adult for every 5).
+- key: meals-inclusion
+  subject: {kind: policy, ref: Fees}
+  fact_type: inclusion
+  attribute: included
+  value: null
+  unit: null
+  currency: null
+  value_text: fees include freshly cooked meals, nappies and wipes
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-05'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Parent handbook 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Fees at both nurseries include freshly cooked meals, nappies and wipes.
+- key: settling-offer
+  subject: {kind: offer, ref: Free Settling-In Week}
+  fact_type: price
+  attribute: free_week
+  value: null
+  unit: null
+  currency: null
+  value_text: the first week free for October starters
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: doc, ref: Offer flyer Sept 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Nursery manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Free Settling-In Week: children starting in October 2026 get their first week free if registered by 3 October
+    2026.'
+- key: staff-cost
+  subject: {kind: business, ref: Canal Street}
+  fact_type: price
+  attribute: staff_cost
+  value: 41
+  unit: day
+  currency: GBP
+  value_text: £41 per child per day
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Budget 2026-27}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Staff cost at Canal Street runs at £41 per child per day.
+- key: council-placement
+  subject: {kind: service, ref: Council-funded placements}
+  fact_type: price
+  attribute: contract_price
+  value: 52
+  unit: day
+  currency: GBP
+  value_text: £52 per day
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Hartfield Council}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-01'
+  valid_to: '2027-03-31'
+  review_by: null
+  source: {kind: doc, ref: Hartfield Council placement agreement}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Hartfield Council pays £52 per day for family-support placements.

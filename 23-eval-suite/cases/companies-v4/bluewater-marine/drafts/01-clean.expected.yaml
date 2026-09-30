@@ -1,0 +1,7 @@
+# WHY: negative control — Poole ex-demo price and engine hours, Design Category C, autumn finance (valid from 2026-10-01) with "subject to status", warranty with its servicing condition, dealer code; all valid at 2026-10-09 for sites=[poole].
+blocked: false
+findings: []
+must_not_flag:
+  - "with just 38 engine hours on the clock"
+  - "5-year Tidewater engine warranty when serviced annually by an authorised dealer"
+  - "ex-demo Solent Rider 6.5, 38 engine hours, £44,950 including VAT"

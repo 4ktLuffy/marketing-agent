@@ -1,0 +1,11 @@
+# FICTIONAL. Scope sites=[online], segments=[gcse] makes the A-level rate (a-level) and the free termly mock exam
+# (leeds-centre only) scope traps; publish_on 2026-10-12 is after the free trial lesson ends (2026-10-05).
+goal: "Sign up GCSE students for online maths tutoring this autumn term."
+pieces:
+  - {key: p1, channel: instagram, kind: post, max_chars: 2200}
+  - {key: p2, channel: email, kind: newsletter, max_chars: null}
+  - {key: p3, channel: facebook, kind: post, max_chars: null}
+scope: {sites: [online], regions: [], channels: [], segments: [gcse], plan_tiers: [], variants: []}
+publish_on: "2026-10-12"
+audience: "Parents of Year 10 and Year 11 students"
+notes: null

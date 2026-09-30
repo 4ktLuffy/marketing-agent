@@ -100,10 +100,11 @@ def test_upstream_timeout_is_502():
 
 @respx.mock
 def test_non_html_is_502():
-    respx.get("https://example.com/f.pdf").mock(
-        return_value=httpx.Response(200, content=b"%PDF", headers={"content-type": "application/pdf"})
+    # (a PDF is read since the onboarding work: tests/test_pdf.py)
+    respx.get("https://example.com/f.zip").mock(
+        return_value=httpx.Response(200, content=b"PK", headers={"content-type": "application/zip"})
     )
-    assert client.post("/extract", json={"url": "https://example.com/f.pdf"}).status_code == 502
+    assert client.post("/extract", json={"url": "https://example.com/f.zip"}).status_code == 502
 
 
 @pytest.mark.parametrize("url", [

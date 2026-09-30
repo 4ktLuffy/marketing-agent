@@ -1,0 +1,12 @@
+# WHY: Gutter Trio (book 2, 3rd free) is valid today but ends 2026-10-10, before publish 2026-10-12; lines naming it or describing the deal are expired.
+blocked: true
+findings:
+  - {contains: "Gutter Trio is back for autumn", label: conflict_or_expired, fact_key: gutter-trio}
+  - {contains: "Book 2 gutter cleans and the 3rd is on us", label: conflict_or_expired, fact_key: gutter-trio}
+  - {contains: "Three gutter cleans for the price of two", label: conflict_or_expired, fact_key: gutter-trio}
+  - {contains: "Gutter cleaning deals in Bristol", label: conflict_or_expired, fact_key: gutter-trio}
+  - {contains: "grab the Gutter Trio before it goes", label: conflict_or_expired, fact_key: gutter-trio}
+must_not_flag:
+  - "Every pitched re-roof comes with a 15-year insurance-backed guarantee"
+  - "TrustMark registered, licence number 2047815"
+  - "Full pitched re-roofs start from £6,800 for a typical 3-bed semi"

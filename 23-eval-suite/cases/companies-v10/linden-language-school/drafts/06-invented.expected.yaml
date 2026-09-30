@@ -1,0 +1,9 @@
+# WHY: £240 is per person, so "£240 for you and a friend" conflicts with the basis; "all native speakers" is a forbidden phrasing (most, not all, are); British Council accreditation has no source fact.
+blocked: true
+findings:
+  - {contains: "£240 for you and a friend", label: conflict_or_expired, fact_key: spanish-evening-course}
+  - {contains: "Our teachers are all native speakers", label: forbidden_phrase, fact_key: teacher-qualifications}
+  - {contains: "Linden is a British Council accredited language school", label: no_source, fact_key: null}
+must_not_flag:
+  - "Classes are on Tuesdays, 6:30pm to 8:30pm"
+  - "Our 10-week Spanish evening group course costs £240 per person, coursebook not included"

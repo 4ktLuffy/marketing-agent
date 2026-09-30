@@ -1,0 +1,7 @@
+# WHY: only own-site facts valid on 2026-10-09; origin claim uses the sourced wording; UK mainland disclosure present.
+blocked: false
+findings: []
+must_not_flag:
+  - "woven in Lancashire from British wool"
+  - "The Hebden linen throw is £45"
+  - "free returns within 60 days"

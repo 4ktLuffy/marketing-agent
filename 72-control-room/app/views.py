@@ -16,6 +16,7 @@ _CLIP = re.compile(r"/clips/([0-9a-f]{32})\.(mp4|jpg)$")
 _TRANSITION = re.compile(r"^\[(\d{4}-\d\d-\d\dT[\d:]+Z)\]\s+(\w+)\s*->\s*(\w+)(?::\s*(.*))?$")
 _STAMP = re.compile(r"^\[(\d{4}-\d\d-\d\dT[\d:]+Z)\]\s*(.*)$")
 _PILLAR = re.compile(r"engine pillar #(\d+)")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 _FLAG_RULES = [
     (re.compile(r"^(?:quality gate|needs a human)\s*:\s*", re.I), "danger"),
@@ -28,6 +29,73 @@ _FLAG_WORDS = [
     (re.compile(r"video (?:not rendered|could not be re-rendered)", re.I), "danger"),
     (re.compile(r"novelty NOT checked|near-duplicate|without embeddings", re.I), "warn"),
 ]
+
+
+# Evidence labels (88, contract §4): label -> (words shown, css level). Shared by the task review
+# page and the queue cards of items that came from the task bridge.
+EVIDENCE = {
+    "match": ("matches", "ok"),
+    "review": ("needs your judgement", "warn"),
+    "conflict_or_expired": ("conflicting or expired", "bad"),
+    "wrong_scope": ("wrong scope", "bad"),
+    "no_source": ("no source", "bad"),
+    "missing_disclosure": ("missing disclosure", "bad"),
+    "forbidden_phrase": ("forbidden wording", "bad"),
+    "slot_blocked": ("blocked placeholder", "bad"),
+}
+_EVIDENCE_WORDS = [
+    ("slot_blocked", re.compile(r"placeholder|\bslot\b|\[\[", re.I)),
+    ("missing_disclosure", re.compile(r"disclosure", re.I)),
+    ("forbidden_phrase", re.compile(r"forbidden|banned|not allowed", re.I)),
+    ("wrong_scope", re.compile(r"scope", re.I)),
+    ("conflict_or_expired", re.compile(r"conflict|expired|out of date|no longer valid|changed", re.I)),
+    ("no_source", re.compile(r"no source|unsupported|not in (?:the )?facts", re.I)),
+    ("review", re.compile(r"judg(?:e)?ment|review", re.I)),
+    ("match", re.compile(r"^match(?:es|ed)?\b", re.I)),
+]
+TASK_ID = re.compile(r"\b(T-[A-Z0-9]{4,12})\b")
+
+
+def evidence_chips(item: dict) -> list[dict]:
+    """Evidence chips for a task-bridge item, read from the flags it wrote into notes (the existing
+    prefixes: quality gate / needs a human / unsupported claim = blocking, warnings = review).
+    [{label, words, level, text}]"""
+    out = []
+    for f in flags(item):
+        label = next((lab for lab, rx in _EVIDENCE_WORDS if rx.search(f["text"])), None)
+        if label is None:
+            if f["level"] == "info":
+                continue
+            label = "review" if f["level"] == "warn" else "no_source"
+        words, level = EVIDENCE[label]
+        out.append({"label": label, "words": words, "level": level, "text": f["text"]})
+    return out
+
+
+_CLIENT_OK = re.compile(r"^client approved by (.+?) \(v(\d+)\)$")
+_CLIENT_CHANGES = re.compile(r"^client requested changes \((.+?), v(\d+)\):")
+
+
+def client_signoff(item: dict) -> dict | None:
+    """The latest client answer written into notes by 19's client links:
+    {approved: bool, name, version, earlier: True when it was for an older version of the text}."""
+    last = None
+    for seg in _segments(item.get("notes")):
+        m = _CLIENT_OK.match(seg) or _CLIENT_CHANGES.match(seg)
+        if m:
+            last = {"approved": m.re is _CLIENT_OK, "name": m.group(1)[:80], "version": int(m.group(2))}
+    if last:
+        v = item.get("version")
+        last["earlier"] = isinstance(v, int) and v != last["version"]
+    return last
+
+
+def task_id_of(item: dict) -> str | None:
+    for src in (item.get("campaign"), item.get("notes")):
+        m = TASK_ID.search(str(src or ""))
+        if m:
+            return m.group(1)
+    return None
 
 
 def http_url(u) -> str | None:
@@ -144,9 +212,13 @@ def card(item: dict, pillars: dict | None = None) -> dict:
     if fold and len(body) > fold:   # the feed cuts at a word boundary
         space = body.rfind(" ", 0, fold + 1)
         fold = space if space > fold * 0.7 else fold
+    from_task = item.get("origin") == "task-bridge"
     return {
         "item": item,
         "id": item.get("id"),
+        "from_task": from_task,
+        "task_id": task_id_of(item) if from_task else None,
+        "evidence": evidence_chips(item) if from_task else [],
         "channel": ch or "other",
         "image": media_src(item.get("image_url")),
         "video": video,
@@ -154,9 +226,12 @@ def card(item: dict, pillars: dict | None = None) -> dict:
         "poster": poster_for(item) if video else None,
         "video_s": video_seconds(item),
         "flags": flags(item),
+        "client": client_signoff(item),
         "pillar_id": pid,
         "pillar": (pillars or {}).get(pid) if pid else None,
         "hook": item.get("hook_style"),
+        # The hash of the text shown: sent back with the decision, so 19 approves only this text.
+        "body_sha256": sha if isinstance(sha := item.get("body_sha256"), str) and SHA256.match(sha) else "",
         "links": [(k, u) for k in ("link", "short_url", "external_url") if (u := http_url(item.get(k)))],
         "fold": fold if fold and len(body) > fold else None,
         "body_head": body[:fold] if fold and len(body) > fold else body,

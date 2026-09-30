@@ -1,0 +1,291 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Spannerworks Garage, type: car garage and MOT centre (Canal Street + Ashby Road), today: '2026-09-29'}
+facts:
+- key: mot-price
+  subject: {kind: service, ref: MOT test}
+  fact_type: price
+  attribute: price
+  value: 45
+  unit: test
+  currency: GBP
+  value_text: £45
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://spannerworks.example/mot'}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [free partial retest within 10 working days]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: An MOT test costs £45 at both Spannerworks sites and includes a free partial retest within 10 working days.
+- key: service-canal-street
+  subject: {kind: service, ref: Full service (Canal Street)}
+  fact_type: price
+  attribute: price
+  value: 149
+  unit: service
+  currency: GBP
+  value_text: £149
+  basis: flat
+  conditions:
+  - {key: engine_size_litres, op: <=, value: 2.0}
+  scope: {sites: [canal-street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Canal Street price board 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [cars up to 2.0 litres]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Canal Street site lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A full service at the Canal Street garage costs £149 for cars with engines up to 2.0 litres.
+- key: service-ashby-road
+  subject: {kind: service, ref: Full service (Ashby Road)}
+  fact_type: price
+  attribute: price
+  value: 139
+  unit: service
+  currency: GBP
+  value_text: £139
+  basis: flat
+  conditions:
+  - {key: engine_size_litres, op: <=, value: 2.0}
+  scope: {sites: [ashby-road], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Ashby Road price board 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [cars up to 2.0 litres]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Ashby Road site lead
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: A full service at the Ashby Road garage costs £139 for cars with engines up to 2.0 litres. Canal Street
+    charges more.
+- key: winter-check
+  subject: {kind: offer, ref: Free winter health check}
+  fact_type: inclusion
+  attribute: free_check
+  value: null
+  unit: null
+  currency: null
+  value_text: free winter health check with every MOT
+  basis: null
+  conditions:
+  - {key: booked_with, op: '=', value: MOT}
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-03'
+  review_by: null
+  source: {kind: doc, ref: Autumn campaign brief 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service manager
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Until 3 October 2026 every MOT booked at either site includes a free winter health check (battery, tyres,
+    lights, antifreeze).
+- key: aircon-regas
+  subject: {kind: offer, ref: Summer air-con re-gas}
+  fact_type: price
+  attribute: price
+  value: 39
+  unit: service
+  currency: GBP
+  value_text: air-con re-gas for £39
+  basis: flat
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Summer campaign brief 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Service manager
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: The summer air-con re-gas offer (£39) ran from June to 31 August 2026 and has ended.
+- key: canal-street-saturday
+  subject: {kind: site, ref: Canal Street}
+  fact_type: hours
+  attribute: saturday_hours
+  value: null
+  unit: null
+  currency: null
+  value_text: Saturdays 8am–1pm
+  basis: null
+  conditions: []
+  scope: {sites: [canal-street], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: url, ref: 'https://spannerworks.example/canal-street'}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Canal Street site lead
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: The Canal Street garage is open on Saturdays from 8am to 1pm. Ashby Road is closed on Saturdays.
+- key: repair-warranty
+  subject: {kind: policy, ref: Repair warranty}
+  fact_type: policy
+  attribute: warranty
+  value: 12
+  unit: month
+  currency: null
+  value_text: 12-month parts and labour warranty
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2025-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Terms of business v4}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every repair at either site carries a 12-month parts and labour warranty.
+- key: dvsa-test-centre
+  subject: {kind: business, ref: Spannerworks Garage}
+  fact_type: certification
+  attribute: mot_authorisation
+  value: null
+  unit: null
+  currency: null
+  value_text: DVSA-authorised MOT test centre
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: '2019-04-01'
+  valid_to: null
+  review_by: '2027-04-01'
+  source: {kind: certificate, ref: 'DVSA authorisation letter, VTS ref SW-4821'}
+  claim_class: safety_cert
+  requires_evidence: true
+  evidence_ref: DVSA authorisation letter SW-4821
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: [DVSA-authorised MOT test centre]
+  forbidden_phrasing: [DVSA approved garage, government approved]
+  owner: Director
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Both sites are DVSA-authorised MOT test centres. Being authorised is not a government approval of the garage,
+    so we must not say 'government approved' or 'DVSA approved garage'.
+- key: fleet-discount
+  subject: {kind: offer, ref: Fleet servicing discount}
+  fact_type: price
+  attribute: discount
+  value: 15
+  unit: percent
+  currency: null
+  value_text: 15% off fleet servicing
+  basis: null
+  conditions:
+  - {key: vehicles, op: '>=', value: 5}
+  scope: {sites: [], regions: [], channels: [], segments: [fleet], plan_tiers: [], variants: []}
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Director note on fleet pricing}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Fleet accounts with 5 or more vehicles get 15% off servicing. Negotiated per account; not advertised.
+- key: harwood-taxis-contract
+  subject: {kind: service, ref: Full service (Harwood Taxis contract)}
+  fact_type: price
+  attribute: contract_price
+  value: 95
+  unit: service
+  currency: GBP
+  value_text: £95 per service
+  basis: flat
+  conditions:
+  - {key: customer, op: '=', value: Harwood Taxis}
+  scope: {sites: [], regions: [], channels: [], segments: [fleet], plan_tiers: [], variants: []}
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Harwood Taxis fleet agreement 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Director
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Harwood Taxis pays £95 per full service under its 2026 fleet contract.

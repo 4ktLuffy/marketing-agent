@@ -1,0 +1,11 @@
+# WHY: negative control — same facts reworded ('VAT added on top', 'at least two hours', 'roll month to month'); no new numbers or claims.
+blocked: false
+findings: []
+must_not_flag:
+- anywhere from 6 in the morning to 9 at night
+- We charge £21 an hour for each cleaner, with VAT added on top, and each visit is at least two hours long
+- they've passed BS 7858 security screening
+- our office contracts roll month to month, and 30 days' notice is all it takes to stop
+- The products we use are EU Ecolabel certified
+- £21 per hour per cleaner, excluding VAT, and we book a minimum of two hours each visit
+- Brightfold's office contracts run 30 days at a time, with no minimum term

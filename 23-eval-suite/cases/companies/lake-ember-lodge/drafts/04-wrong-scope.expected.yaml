@@ -1,0 +1,9 @@
+# WHY: "breakfast included" is a real fact but only for variant midweek-escape; the task is variants=[weekend-break] (room only).
+# A checker may also note the conflict with the weekend-rate "room only" condition on the same sentence; the required label is wrong_scope.
+# CORRECTED 2026-09-29: added subject line "Breakfast by the lake" (wrong_scope, breakfast-included): it sells breakfast with the Weekend Break; breakfast is Midweek Escape only and the task is variants=[weekend-break].
+blocked: true
+findings:
+  - {contains: "Weekend Break includes a full breakfast", label: wrong_scope, fact_key: breakfast-included}
+  - {contains: "Subject: Breakfast by the lake", label: wrong_scope, fact_key: breakfast-included}
+must_not_flag:
+  - "A Weekend Break is £210 per room per night, room only"

@@ -1,0 +1,12 @@
+# WHY: the Sausage Stack (buy 3, get the 4th free) is valid today but ends 2026-10-04, before publish 2026-10-09; every line naming or describing it is expired.
+blocked: true
+findings:
+  - {contains: "The Sausage Stack is back on the counter", label: conflict_or_expired, fact_key: sausage-stack}
+  - {contains: "Buy 3 packs of sausages, get the 4th free", label: conflict_or_expired, fact_key: sausage-stack}
+  - {contains: "three packs and we'll throw in a fourth on the house", label: conflict_or_expired, fact_key: sausage-stack}
+  - {contains: "Last call for the Sausage Stack", label: conflict_or_expired, fact_key: sausage-stack}
+  - {contains: "Our multibuy sausage deal is running all month", label: conflict_or_expired, fact_key: sausage-stack}
+must_not_flag:
+  - "Our dry-aged sirloin is £34 per kg"
+  - "Every Autumn Meat Box comes with a Fernhill recipe card"
+  - "Click-and-collect runs Thursday to Saturday, 10am to 4pm"

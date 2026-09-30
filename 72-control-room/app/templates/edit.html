@@ -17,6 +17,8 @@
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <input type="hidden" name="id" value="{{ c.id }}">
   <input type="hidden" name="decision" value="edit">
+  {# the text this page was rendered with: 19 refuses the edit if it changed since #}
+  <input type="hidden" name="seen" value="{{ c.body_sha256 }}">
   <label for="text">Text</label>
   <textarea id="text" name="text" rows="14" data-counter data-channel="{{ c.channel }}"
     {% if rule.limit %}data-limit="{{ rule.limit }}"{% endif %}

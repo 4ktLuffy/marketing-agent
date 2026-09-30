@@ -1,0 +1,19 @@
+Here's a Google ad, a short section for your services page and an SMS. 🚗
+
+**Google Ads**
+Headline 1: MOT £45 in Hatfield
+Headline 2: Servicing in Hatfield
+Headline 3: IMI Master Technician Led
+Description: A full service costs {{full-service-price}}. Courtesy car included, subject to availability.
+
+**Website section**
+Servicing and MOTs in Hatfield
+
+A Class 4 MOT at Redline Auto costs £45.
+A full service is £179 for engines up to 1.6 litres and £229 above 1.6 litres.
+We service to the manufacturer schedule using OE-quality parts, so your manufacturer warranty stays valid.
+Every full service includes a courtesy car, subject to availability.
+Your car is looked after by a team led by Dan Okafor, an IMI Accredited Master Technician (IMI ID 0214889).
+
+**SMS**
+Redline Auto: MOT £45, full service £179 (engines up to 1.6 litres). Book online or call us. Reply STOP to opt out

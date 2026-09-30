@@ -1,0 +1,12 @@
+# WHY: £38 is the Foamex price (variants=[foamex]) and 15% is the trade-account discount (segments=[trade]); the task is aluminium composite signs for retailers.
+blocked: true
+findings:
+  - {contains: "Shop signs from just £38 ex VAT", label: wrong_scope, fact_key: foamex-a1-price}
+  - {contains: "An A1 5mm Foamex board costs £38 ex VAT", label: wrong_scope, fact_key: foamex-a1-price}
+  - {contains: "Trade prices for every shop owner this October", label: wrong_scope, fact_key: trade-discount}
+  - {contains: "Take 15% off your sign with our trade discount", label: wrong_scope, fact_key: trade-discount}
+  - {contains: "15% off your new shop sign", label: wrong_scope, fact_key: trade-discount}
+  - {contains: "Every retailer gets our 15% trade discount this month", label: wrong_scope, fact_key: trade-discount}
+must_not_flag:
+  - "We install across Croydon, Sutton, Bromley and Merton"
+  - "Every sign includes a free digital proof and a fixing kit"

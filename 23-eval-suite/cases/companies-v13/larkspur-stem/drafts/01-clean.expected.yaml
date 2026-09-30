@@ -1,0 +1,11 @@
+# WHY: in-scope bouquet price and Sunday hours as slots; same-day delivery, pet-friendly range and stamp card with their disclosures.
+blocked: false
+findings: []
+must_not_flag:
+  - "Our seasonal hand-tied bouquet is"
+  - "Our pet-friendly range has no lilies"
+  - "Please keep all plants away from pets"
+  - "order by 1pm, Monday to Saturday, for same-day delivery"
+  - "£6.50 delivery fee within 5 miles"
+  - "your 10th hand-tied bouquet is free"
+  - "In-shop purchases only"

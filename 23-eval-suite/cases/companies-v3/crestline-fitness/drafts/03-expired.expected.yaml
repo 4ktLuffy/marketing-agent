@@ -1,0 +1,10 @@
+# WHY: Autumn Kickstart is valid today but ends 2026-10-05, before publish 2026-10-09 (line 4 describes it without its name); the Summer Pass ended 2026-08-31.
+blocked: true
+findings:
+  - {contains: "skip the £30 joining fee", label: conflict_or_expired, fact_key: kickstart-offer}
+  - {contains: "Subject: Autumn Kickstart ends soon", label: conflict_or_expired, fact_key: kickstart-offer}
+  - {contains: "With Autumn Kickstart there's no joining fee on any membership", label: conflict_or_expired, fact_key: kickstart-offer}
+  - {contains: "grab a Summer Pass: 3 months for £75", label: conflict_or_expired, fact_key: summer-pass}
+  - {contains: "no joining fee at Northgate this week", label: conflict_or_expired, fact_key: kickstart-offer}
+must_not_flag:
+  - "Core membership at Northgate is £34.99 per month on a 12-month minimum term"

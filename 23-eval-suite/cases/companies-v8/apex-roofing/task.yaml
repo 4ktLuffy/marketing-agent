@@ -1,0 +1,29 @@
+# FICTIONAL. variants=[pitched-roof] puts the 25-year flat-roof guarantee out of scope; segments=[homeowner]
+# puts the £85 landlord inspection out of scope; publish 2026-10-12 is after gutter-trio ends (2026-10-10).
+goal: Book pitched re-roof surveys with Bristol homeowners before winter.
+pieces:
+- key: p1
+  channel: google_business
+  kind: update
+  max_chars: 1500
+- key: p2
+  channel: flyer
+  kind: a5_flyer
+  max_chars: null
+- key: p3
+  channel: website
+  kind: landing_page
+  max_chars: null
+scope:
+  sites: []
+  regions:
+  - bristol
+  channels: []
+  segments:
+  - homeowner
+  plan_tiers: []
+  variants:
+  - pitched-roof
+publish_on: '2026-10-12'
+audience: Homeowners in Bristol with ageing pitched roofs
+notes: Every price must say the final price comes after a free survey.

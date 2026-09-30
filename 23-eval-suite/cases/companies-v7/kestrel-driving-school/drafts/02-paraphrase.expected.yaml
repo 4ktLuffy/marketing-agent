@@ -1,0 +1,15 @@
+# WHY: negative control: same facts in other formats (Forty-four pounds, £44/hr, 'at the first attempt', ADI number); 'DVSA-approved driving instructor' is the true credential, not the forbidden 'DVSA approved driving school'; the WhatsApp piece has no heading.
+blocked: false
+findings: []
+must_not_flag:
+  - "Ready to get behind the wheel, without the gears?"
+  - "Subject: Your first automatic lesson, collected from your door"
+  - "Forty-four pounds an hour gets you an automatic lesson with Kestrel, with a minimum 2-hour booking"
+  - "Did you know 71% of our pupils passed first time?"
+  - "That figure comes from 146 first-time tests, Sep 2025 to Aug 2026"
+  - "grade A, DVSA-approved driving instructor, ADI number 417385"
+  - "Pick-up and drop-off are free, from your home, college or workplace anywhere in Norwich"
+  - "Lessons in our automatic car are £44/hr (minimum 2-hour booking)"
+  - "Nervous about your test?"
+  - "Our pass rate is 71% at the first attempt"
+  - "Want a free pick-up from college after lectures?"

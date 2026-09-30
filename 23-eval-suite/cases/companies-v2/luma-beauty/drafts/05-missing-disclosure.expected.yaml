@@ -1,0 +1,9 @@
+# WHY: the £55 lash lift appears (post, subject line, body) without "patch test required at least 48 hours before"; the 9-in-10 result without "survey of 120 clients, results vary".
+blocked: true
+findings:
+  - {contains: "Lash lift and tint for just £55", label: missing_disclosure, fact_key: lash-lift}
+  - {contains: "Lash lift and tint, £55 this October", label: missing_disclosure, fact_key: lash-lift}
+  - {contains: "lash lift and tint for £55 at our Richmond salon", label: missing_disclosure, fact_key: lash-lift}
+  - {contains: "9 in 10 clients said their skin felt more hydrated", label: missing_disclosure, fact_key: glow-results}
+must_not_flag:
+  - "Our Glow Facial is £85 for 60 minutes"

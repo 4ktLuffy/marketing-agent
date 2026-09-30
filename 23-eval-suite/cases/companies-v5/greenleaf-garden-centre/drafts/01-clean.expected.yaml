@@ -1,0 +1,7 @@
+# WHY: only facts for everyone valid on 2026-10-15; delivery carries "within 10 miles of the centre"; the peat-free claim is about compost only.
+blocked: false
+findings: []
+must_not_flag:
+  - "A Japanese maple in a 3-litre pot costs £24.99"
+  - "Every bag of compost we sell is peat-free"
+  - "food hygiene rating of 4 (Good)"

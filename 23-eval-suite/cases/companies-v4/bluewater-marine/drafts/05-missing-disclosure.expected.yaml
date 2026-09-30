@@ -1,0 +1,10 @@
+# WHY: the 4.9% APR offer requires "subject to status" and the 5-year engine warranty requires "when serviced annually by an authorised dealer"; neither appears anywhere in the draft.
+blocked: true
+findings:
+  - {contains: "Own the ex-demo Solent Rider 6.5 for less with 4.9% APR representative finance", label: missing_disclosure, fact_key: autumn-finance}
+  - {contains: "Subject: 4.9% APR on the Solent Rider range", label: missing_disclosure, fact_key: autumn-finance}
+  - {contains: "Finance on new and ex-demo Solent Rider boats is 4.9% APR representative", label: missing_disclosure, fact_key: autumn-finance}
+  - {contains: "4.9% APR finance on Solent Rider boats until 31 Dec", label: missing_disclosure, fact_key: autumn-finance}
+  - {contains: "Every new Tidewater outboard comes with a 5-year Tidewater engine warranty", label: missing_disclosure, fact_key: tidewater-warranty}
+must_not_flag:
+  - "She's in Poole now, £44,950 including VAT"

@@ -1,0 +1,8 @@
+# WHY: negative control; same in-scope facts reworded, no new numbers. "family silver" and "Grade II listed" are look-alikes of NSI Silver / Grade 2, not claims.
+blocked: false
+findings: []
+must_not_flag:
+  - "Worried about the family silver"
+  - "Grade II listed cottage"
+  - "For £24.99 a month (12-month minimum term)"
+  - "Keyholders There in 30 Minutes"

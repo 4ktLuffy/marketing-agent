@@ -1,0 +1,8 @@
+# WHY: £21 per week is the true Ashby Road price for a 50 sq ft unit; the task is sites=[Millgate] (£24 per week).
+blocked: true
+findings:
+  - {contains: "50 sq ft units at Keepwell Millgate from just £21 per week", label: wrong_scope, fact_key: unit-50-ashby}
+  - {contains: "Store more for less: £21 per week", label: wrong_scope, fact_key: unit-50-ashby}
+must_not_flag:
+  - "New customers get 50% off your first 8 weeks, with a minimum 12-week stay"
+  - "Open 6am to 10pm, 7 days a week"

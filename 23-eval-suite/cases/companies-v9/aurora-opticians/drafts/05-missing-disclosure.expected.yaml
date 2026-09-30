@@ -1,0 +1,11 @@
+# WHY: the varifocal price requires "frames not included"; no piece says it in any wording (no mention of frames at all), in the subject or the body.
+blocked: true
+findings:
+  - {contains: "Clearer vision at every distance with Clearview varifocals, now £149", label: missing_disclosure, fact_key: varifocal-lenses}
+  - {contains: "Subject: Clearview varifocals for £149", label: missing_disclosure, fact_key: varifocal-lenses}
+  - {contains: "Clearview varifocal lenses cost £149 per pair at our Harrogate branch.", label: missing_disclosure, fact_key: varifocal-lenses}
+  - {contains: "Clearview varifocals £149 at Aurora Harrogate.", label: missing_disclosure, fact_key: varifocal-lenses}
+must_not_flag:
+  - "A standard private eye test is £25."
+  - "Every pair of glasses includes free adjustments, free nose-pad and screw replacements, and a hard case."
+  - "Book your eye test online."

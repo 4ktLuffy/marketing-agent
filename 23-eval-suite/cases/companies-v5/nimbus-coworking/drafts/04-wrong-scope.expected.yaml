@@ -1,0 +1,11 @@
+# WHY: 24/7 access is Resident-only (plan_tiers=[resident]); £249 is the Headrow price (sites=[headrow]); £149 is the charity price (segments=[charities]). Task: wharf, flex, freelancers.
+blocked: true
+findings:
+  - {contains: "Work when inspiration strikes, even at 2am", label: wrong_scope, fact_key: resident-access}
+  - {contains: "Flex members get 24/7 keycard access to Nimbus Wharf", label: wrong_scope, fact_key: resident-access}
+  - {contains: "Flex at Nimbus Headrow is £249 a month plus VAT", label: wrong_scope, fact_key: flex-headrow-price}
+  - {contains: "Subject: Your desk, any hour", label: wrong_scope, fact_key: resident-access}
+  - {contains: "With 24/7 access you can come and go whenever you like", label: wrong_scope, fact_key: resident-access}
+  - {contains: "Registered charities pay just £149 a month plus VAT", label: wrong_scope, fact_key: charity-flex-price}
+must_not_flag:
+  - "Flex at Nimbus Wharf costs £199 a month plus VAT and includes 2 hours of meeting-room credits a month"

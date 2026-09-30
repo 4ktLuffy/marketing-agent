@@ -1,0 +1,283 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts section 1 Fact v2 shape.
+company: {"name": "Greenleaf Garden Centre", "type": "retail", "today": "2026-09-29"}
+facts:
+- key: "acer-3l-price"
+  subject: {"kind": "product", "ref": "Japanese maple (Acer palmatum)"}
+  fact_type: "price"
+  attribute: "shelf_price"
+  value: 24.99
+  unit: null
+  currency: "GBP"
+  value_text: "£24.99 in a 3-litre pot"
+  basis: "per_unit"
+  conditions: [{"key": "pot_size", "op": "=", "value": "3 litre"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: "2026-11-30"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn plant price list v2"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Plant area manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Japanese maples (Acer palmatum) cost £24.99 each in a 3-litre pot."
+- key: "acer-10l-card-price"
+  subject: {"kind": "product", "ref": "Japanese maple (Acer palmatum)"}
+  fact_type: "price"
+  attribute: "card_price"
+  value: 49.99
+  unit: null
+  currency: "GBP"
+  value_text: "£49.99 in a 10-litre pot with your Greenleaf Card"
+  basis: "per_unit"
+  conditions: [{"key": "pot_size", "op": "=", "value": "10 litre"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["card-holders"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: "2026-11-30"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn plant price list v2"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Plant area manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Greenleaf Card holders pay £49.99 for a Japanese maple in a 10-litre pot. The shelf price for everyone else is higher."
+- key: "bulb-offer"
+  subject: {"kind": "offer", "ref": "Spring bulb offer"}
+  fact_type: "price"
+  attribute: "multibuy_price"
+  value: 10
+  unit: null
+  currency: "GBP"
+  value_text: "3 bags of spring bulbs for £10"
+  basis: "flat"
+  conditions: [{"key": "quantity", "op": "=", "value": 3}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-12"
+  valid_to: "2026-10-11"
+  review_by: null
+  source: {"kind": "doc", "ref": "Autumn promotions calendar 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Store manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Spring bulbs: any 3 bags for £10, 12 September to 11 October 2026."
+- key: "furniture-sale"
+  subject: {"kind": "offer", "ref": "Summer furniture sale"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 20
+  unit: "percent"
+  currency: null
+  value_text: "20% off garden furniture"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-06-01"
+  valid_to: "2026-08-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Summer promotions calendar 2026"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Store manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "Summer sale: 20% off garden furniture, June to August 2026. Ended."
+- key: "local-delivery"
+  subject: {"kind": "policy", "ref": "Local delivery"}
+  fact_type: "policy"
+  attribute: "free_delivery_threshold"
+  value: 40
+  unit: null
+  currency: "GBP"
+  value_text: "free delivery on orders over £40"
+  basis: null
+  conditions: [{"key": "distance_miles", "op": "<=", "value": 10}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-03-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://greenleafgc.example/delivery"}
+  claim_class: "price_reference"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["within 10 miles of the centre"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Store manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Free delivery on orders over £40 within 10 miles of the centre; £7.50 from 10 to 20 miles; no delivery beyond 20 miles."
+- key: "delivery-to-garden"
+  subject: {"kind": "service", "ref": "Local delivery"}
+  fact_type: "inclusion"
+  attribute: "includes"
+  value: null
+  unit: null
+  currency: null
+  value_text: "we carry plants and compost round to your back garden"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-03-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "url", "ref": "https://greenleafgc.example/delivery"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Store manager"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Our delivery team carries plants and compost round to your back garden, not just to the front door."
+- key: "peat-free-compost"
+  subject: {"kind": "product", "ref": "Compost range"}
+  fact_type: "claim"
+  attribute: "peat_content"
+  value: null
+  unit: null
+  currency: null
+  value_text: "every bag of compost we sell is peat-free"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2025-03-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "doc", "ref": "Supplier peat-free declarations 2025"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "Supplier peat-free declarations 2025"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: ["peat-free garden centre", "all our plants are peat-free", "100% peat-free"]
+  owner: "Store manager"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Every bag of compost we sell has been peat-free since March 2025. Some plants still arrive from growers in peat-based compost, so we do not call the whole centre peat-free."
+- key: "cafe-hygiene-rating"
+  subject: {"kind": "site", "ref": "Greenleaf café"}
+  fact_type: "certification"
+  attribute: "food_hygiene_rating"
+  value: 4
+  unit: null
+  currency: null
+  value_text: "food hygiene rating 4 (Good)"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2025-11-12"
+  valid_to: null
+  review_by: null
+  source: {"kind": "certificate", "ref": "FHRS establishment ID 1487302, inspected 12 November 2025"}
+  claim_class: "regulated_food"
+  requires_evidence: true
+  evidence_ref: "FHRS establishment ID 1487302"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Café manager"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "The Greenleaf café has a food hygiene rating of 4 (Good), FHRS establishment ID 1487302, inspected 12 November 2025."
+- key: "grotto-date"
+  subject: {"kind": "offer", "ref": "Christmas grotto 2026"}
+  fact_type: "event"
+  attribute: "opening_date"
+  value: null
+  unit: null
+  currency: null
+  value_text: "Christmas grotto opens 21 November 2026"
+  basis: null
+  conditions: []
+  scope: {"sites": [], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+  valid_from: "2026-09-01"
+  valid_to: null
+  review_by: null
+  source: {"kind": "owner_statement", "ref": "Christmas plan 2026 (not public)"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Owner"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "The Christmas grotto opens on 21 November 2026. Not announced yet."
+- key: "oakfield-trade-price"
+  subject: {"kind": "service", "ref": "Trade account (Oakfield Landscapes)"}
+  fact_type: "price"
+  attribute: "trade_discount"
+  value: 30
+  unit: "percent"
+  currency: null
+  value_text: "30% off all plants for Oakfield Landscapes"
+  basis: null
+  conditions: [{"key": "customer", "op": "=", "value": "Oakfield Landscapes"}]
+  scope: {"sites": [], "regions": [], "channels": [], "segments": ["trade"], "plan_tiers": [], "variants": []}
+  valid_from: "2026-01-01"
+  valid_to: "2026-12-31"
+  review_by: null
+  source: {"kind": "doc", "ref": "Oakfield Landscapes trade agreement"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Owner"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Oakfield Landscapes gets 30% off all plants under its 2026 trade agreement."

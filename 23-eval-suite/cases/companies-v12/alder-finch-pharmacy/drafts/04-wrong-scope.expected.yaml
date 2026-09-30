@@ -1,0 +1,9 @@
+# WHY: the 8pm weekday opening and the independent prescriber are true only for Market Street; the task is sites=[Castle Green]. "Every branch" and "either shop" stretch them to Castle Green.
+blocked: true
+findings:
+  - {contains: "Every branch now stays open till eight on weeknights", label: wrong_scope, fact_key: market-street-late-opening}
+  - {contains: "open till 8pm weekdays", label: wrong_scope, fact_key: market-street-late-opening}
+  - {contains: "Our independent prescriber can see you at either shop", label: wrong_scope, fact_key: independent-prescriber}
+must_not_flag:
+  - "A private flu jab is £16 for adults 18 and over"
+  - "Castle Green: walk-in flu jabs on Saturdays, 9am to 1pm"

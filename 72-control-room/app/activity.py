@@ -120,8 +120,14 @@ def seconds(ms) -> str:
     return f"{s:.1f} s" if s < 60 else f"{int(s // 60)} min {int(s % 60)} s"
 
 
+# Gateway calls that are not a named prompt: "chat" is one model step of the chat agent (24)
+# through 03's /v1/chat/completions (choosing a tool, or the reply).
+PROMPT_WORDS = {"chat": "a chat step"}
+
+
 def prompt_words(prompt: str) -> str:
-    return str(prompt or "").replace("_", " ")
+    p = str(prompt or "")
+    return PROMPT_WORDS.get(p, p.replace("_", " "))
 
 
 def ai_event(row: dict, gateway: str) -> dict:

@@ -1,0 +1,10 @@
+# WHY: "fastest web studio", a Clutch rating and a certified accessibility specialist have no source; "Premier Partner" is a forbidden phrasing (plain Google Partner only); company ID 518-204-7713 is a look-alike of 518-204-7731.
+blocked: true
+findings:
+  - {contains: "the UK's fastest web studio", label: no_source, fact_key: null}
+  - {contains: "Rated 5.0 on Clutch", label: no_source, fact_key: null}
+  - {contains: "Google Premier Partner", label: forbidden_phrase, fact_key: google-partner}
+  - {contains: "company ID 518-204-7713", label: conflict_or_expired, fact_key: google-partner}
+  - {contains: "a certified accessibility specialist", label: no_source, fact_key: null}
+must_not_flag:
+  - "Our Starter website is £1,800 excl. VAT"

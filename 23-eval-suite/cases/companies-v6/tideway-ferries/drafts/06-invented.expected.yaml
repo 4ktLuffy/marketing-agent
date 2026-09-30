@@ -1,0 +1,10 @@
+# WHY: "fastest crossing", a 4.9 Tripadvisor rating and paramedic crew have no source; MV Tern holds Gold, not Platinum; certificate AC-0874 is a look-alike of AC-0847.
+blocked: true
+findings:
+  - {contains: "The fastest crossing on the whole coast", label: no_source, fact_key: null}
+  - {contains: "Rated 4.9 stars on Tripadvisor", label: no_source, fact_key: null}
+  - {contains: "Accessible Coast Platinum award", label: conflict_or_expired, fact_key: accessible-coast-gold}
+  - {contains: "Every crew member is a qualified paramedic", label: no_source, fact_key: null}
+  - {contains: "certificate AC-0874", label: conflict_or_expired, fact_key: accessible-coast-gold}
+must_not_flag:
+  - "An adult return to Gull Island is £14 this winter"

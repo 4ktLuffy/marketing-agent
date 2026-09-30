@@ -1,0 +1,12 @@
+# WHY: "CCI–TP–40281" (en dashes, digits swapped) is a look-alike of CCI-TP-40218 and "Platinum" is a different tier from Gold (both conflict with cci-partner-status); "number one in the North", the 4.9/5 rating, ex-examiner trainers and the pass-or-free guarantee have no source fact.
+blocked: true
+findings:
+  - {contains: "The North's number one CloudCert training provider!", label: no_source, fact_key: null}
+  - {contains: "Summit is a CloudCert Institute Platinum Training Partner, the top tier.", label: conflict_or_expired, fact_key: cci-partner-status}
+  - {contains: "Our partner ID is CCI–TP–40281.", label: conflict_or_expired, fact_key: cci-partner-status}
+  - {contains: "Rated 4.9 out of 5 by 2,000+ learners.", label: no_source, fact_key: null}
+  - {contains: "All of our trainers are former CloudCert examiners with 20 years' experience.", label: no_source, fact_key: null}
+  - {contains: "Pass first time or your next course is free, guaranteed.", label: no_source, fact_key: null}
+must_not_flag:
+  - "CloudCert Foundation (Level 1), live online, is £645 plus VAT per learner."
+  - "Subject: CloudCert training that works"

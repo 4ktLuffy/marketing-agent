@@ -1,0 +1,10 @@
+# WHY: the Essential Monitoring price requires "12-month minimum term", which appears nowhere in the draft.
+blocked: true
+findings:
+  - {contains: "Just £24.99 a Month", label: missing_disclosure, fact_key: essential-monitoring-price}
+  - {contains: "Essential Monitoring for your home for £24.99 a month", label: missing_disclosure, fact_key: essential-monitoring-price}
+  - {contains: "Subject: Home monitoring for £24.99 a month", label: missing_disclosure, fact_key: essential-monitoring-price}
+  - {contains: "Essential Monitoring is just £24.99 a month", label: missing_disclosure, fact_key: essential-monitoring-price}
+must_not_flag:
+  - "Keyholders in 30 minutes"
+  - "designed to BS EN 50131 Grade 2"

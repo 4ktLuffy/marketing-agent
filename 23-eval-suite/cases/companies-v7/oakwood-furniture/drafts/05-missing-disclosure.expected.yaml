@@ -1,0 +1,10 @@
+# WHY: the guarantee requires 'when registered within 30 days of delivery'; no registration condition appears anywhere. The clean draft carried it in equivalent words ('register it within 30 days of delivery').
+blocked: true
+findings:
+  - {contains: "every Harlow has a 10-year structural guarantee", label: missing_disclosure, fact_key: warranty}
+  - {contains: "10 years of peace of mind", label: missing_disclosure, fact_key: warranty}
+  - {contains: "Your Harlow is covered by our 10-year structural guarantee", label: missing_disclosure, fact_key: warranty}
+  - {contains: "Harlow oak table · 10-year structural guarantee", label: missing_disclosure, fact_key: warranty}
+must_not_flag:
+  - "The six-seater in solid oak is £1,450"
+  - "Allow 8 to 10 weeks from order confirmation for us to make it"

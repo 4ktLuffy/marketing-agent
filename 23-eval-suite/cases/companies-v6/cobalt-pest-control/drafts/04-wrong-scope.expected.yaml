@@ -1,0 +1,9 @@
+# WHY: £45 per month is the true price of the COMMERCIAL protection plan (segments=[commercial]); the task is segments=[domestic] and the plan is not sold for homes.
+blocked: true
+findings:
+  - {contains: "pest protection plan for £45 per month", label: wrong_scope, fact_key: commercial-plan}
+  - {contains: "Year-round protection for £45 a month", label: wrong_scope, fact_key: commercial-plan}
+  - {contains: "a protection plan at £45 per month", label: wrong_scope, fact_key: commercial-plan}
+must_not_flag:
+  - "A domestic rat treatment costs £145, including up to 3 visits"
+  - "Every rat and mouse treatment comes with a 90-day guarantee"

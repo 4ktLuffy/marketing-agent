@@ -1,0 +1,346 @@
+# FICTIONAL company. Held-out eval fixture (companies-v7, see ../README.md). Contracts §1 Fact v2 shape.
+company: {name: Kestrel Driving School, type: driving school, today: '2026-09-29'}
+facts:
+- key: auto-hourly
+  subject: {kind: service, ref: Automatic driving lesson}
+  fact_type: price
+  attribute: hourly_rate
+  value: 44
+  unit: hour
+  currency: GBP
+  value_text: £44 per hour
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [automatic]
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list April 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [minimum 2-hour booking]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Automatic lessons cost £44 per hour (minimum 2-hour booking).
+- key: manual-hourly
+  subject: {kind: service, ref: Manual driving lesson}
+  fact_type: price
+  attribute: hourly_rate
+  value: 38
+  unit: hour
+  currency: GBP
+  value_text: £38 per hour
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: [manual]
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list April 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [minimum 2-hour booking]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Manual lessons cost £38 per hour (minimum 2-hour booking).
+- key: refresher-hourly
+  subject: {kind: service, ref: Refresher lesson}
+  fact_type: price
+  attribute: hourly_rate
+  value: 48
+  unit: hour
+  currency: GBP
+  value_text: £48 per hour
+  basis: per_unit
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: [full-licence-holders]
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-04-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Price list April 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: [minimum 2-hour booking]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Refresher lessons for full licence holders cost £48 per hour in either car (minimum 2-hour booking).
+- key: adi-grade
+  subject: {kind: person, ref: Daniel Okafor (owner-instructor)}
+  fact_type: credential
+  attribute: adi_grade
+  value: A
+  unit: null
+  currency: null
+  value_text: DVSA Approved Driving Instructor, grade A (ADI number 417385)
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-03-18'
+  valid_to: null
+  review_by: '2030-03-18'
+  source: {kind: certificate, ref: DVSA ADI certificate 417385; standards check 2026-03-18}
+  claim_class: none
+  requires_evidence: true
+  evidence_ref: ADI 417385
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: [DVSA approved driving school, DVSA-approved school]
+  owner: Owner
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Daniel Okafor is a DVSA Approved Driving Instructor, grade A at his last standards check (ADI number 417385).
+    DVSA approves instructors, not driving schools.
+- key: pass-rate
+  subject: {kind: business, ref: Kestrel Driving School}
+  fact_type: result
+  attribute: first_time_pass_rate
+  value: 71
+  unit: percent
+  currency: null
+  value_text: 71% first-time pass rate
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: null
+  review_by: '2027-09-01'
+  source: {kind: doc, ref: DVSA test results export Sep 2025 to Aug 2026}
+  claim_class: result
+  requires_evidence: true
+  evidence_ref: DVSA results export 2026-09-01
+  consent_ref: null
+  required_disclosures: ['146 first-time tests, Sep 2025 to Aug 2026']
+  allowed_phrasing: []
+  forbidden_phrasing: [guaranteed pass]
+  owner: Owner
+  risk: high
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 71% of Kestrel pupils passed at their first practical test (146 first-time tests, Sep 2025 to Aug 2026;
+    national average not compared).
+- key: pickup-inclusion
+  subject: {kind: service, ref: Driving lessons}
+  fact_type: inclusion
+  attribute: pickup
+  value: null
+  unit: null
+  currency: null
+  value_text: free pick-up and drop-off from home, college or work
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: [norwich, wymondham]
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: owner_statement, ref: Booking terms 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: low
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: Every lesson includes free pick-up and drop-off from home, college or work in Norwich and Wymondham.
+- key: block-offer
+  subject: {kind: offer, ref: Autumn Block Deal}
+  fact_type: price
+  attribute: free_hour
+  value: 1
+  unit: hour
+  currency: null
+  value_text: book 10 hours, get the 11th free
+  basis: null
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-09-01'
+  valid_to: '2026-10-04'
+  review_by: null
+  source: {kind: doc, ref: Offer sheet Sept 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: active
+  supersedes_key: null
+  text: 'Autumn Block Deal: book and pay for 10 hours of lessons and get the 11th hour free, 1 Sept to 4 Oct 2026.'
+- key: summer-intensive
+  subject: {kind: package, ref: 5-day Summer Intensive}
+  fact_type: price
+  attribute: package_price
+  value: 1290
+  unit: null
+  currency: GBP
+  value_text: £1,290 for a 5-day intensive course
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-06-01'
+  valid_to: '2026-08-31'
+  review_by: null
+  source: {kind: doc, ref: Offer sheet June 2026}
+  claim_class: price_reference
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: medium
+  sensitivity: public
+  status: expired
+  supersedes_key: null
+  text: '5-day Summer Intensive: 30 hours of lessons plus test booking for £1,290, July and August 2026 only.'
+- key: franchise-fee
+  subject: {kind: business, ref: Instructor franchise}
+  fact_type: price
+  attribute: franchise_fee
+  value: 260
+  unit: week
+  currency: GBP
+  value_text: £260 per week
+  basis: flat
+  conditions: []
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-01-01'
+  valid_to: null
+  review_by: null
+  source: {kind: doc, ref: Franchise agreement template 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: internal
+  status: active
+  supersedes_key: null
+  text: Franchised instructors pay Kestrel £260 per week.
+- key: college-rate
+  subject: {kind: service, ref: Wensum College staff lessons}
+  fact_type: price
+  attribute: contract_price
+  value: 36
+  unit: hour
+  currency: GBP
+  value_text: £36 per hour
+  basis: per_unit
+  conditions:
+  - {key: customer, op: '=', value: Wensum College}
+  scope:
+    sites: []
+    regions: []
+    channels: []
+    segments: []
+    plan_tiers: []
+    variants: []
+  valid_from: '2026-02-01'
+  valid_to: '2027-01-31'
+  review_by: null
+  source: {kind: doc, ref: Wensum College contract 2026}
+  claim_class: none
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: Owner
+  risk: high
+  sensitivity: restricted
+  status: active
+  supersedes_key: null
+  text: Wensum College staff get lessons at £36 per hour under the college wellbeing contract.

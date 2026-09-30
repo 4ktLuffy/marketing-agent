@@ -1,0 +1,9 @@
+# WHY: the £145 rat treatment requires "up to 3 visits", which is absent from both pieces (subject line and body).
+blocked: true
+findings:
+  - {contains: "A domestic rat treatment from Cobalt costs just £145", label: missing_disclosure, fact_key: rat-treatment-domestic}
+  - {contains: "£145 sorts it", label: missing_disclosure, fact_key: rat-treatment-domestic}
+  - {contains: "Our home rat treatment is £145", label: missing_disclosure, fact_key: rat-treatment-domestic}
+must_not_flag:
+  - "Wasp nests are £65 per nest"
+  - "We're BPCA members, membership number 10472"

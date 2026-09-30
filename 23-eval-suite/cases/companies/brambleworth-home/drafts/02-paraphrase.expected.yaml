@@ -1,0 +1,7 @@
+# WHY: negative control — same own-site facts reworded; values unchanged; disclosure kept (in brackets).
+blocked: false
+findings: []
+must_not_flag:
+  - "starts life as British wool and is woven for us in Lancashire"
+  - "60 days to send it back free of charge"
+  - "The Hebden linen throw costs £45 on our site"

@@ -1,0 +1,9 @@
+# WHY: the free winter health check is valid today but ends 2026-10-03, before publish 2026-10-06; the £39 air-con re-gas ended 2026-08-31.
+blocked: true
+findings:
+- {contains: get a free winter health check with every MOT, label: conflict_or_expired, fact_key: winter-check}
+- {contains: Every MOT this month comes with a free winter health check, label: conflict_or_expired, fact_key: winter-check}
+- {contains: Air-con re-gas for £39, label: conflict_or_expired, fact_key: aircon-regas}
+must_not_flag:
+- The MOT is £45, with a free partial retest within 10 working days
+- Canal Street is open Saturdays 8am–1pm

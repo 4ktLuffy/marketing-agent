@@ -1,0 +1,8 @@
+# WHY: £11 is the true Zone 2 rate; the task is regions=[zone-1].
+blocked: true
+findings:
+  - {contains: "Zone 2 drops are £11 excl. VAT", label: wrong_scope, fact_key: zone-2-rate}
+  - {contains: "Eleven quid a drop, plus VAT", label: wrong_scope, fact_key: zone-2-rate}
+must_not_flag:
+  - "Our e-cargo bikes carry up to 100kg"
+  - "Zone 1 drops are £7.50 excl. VAT"

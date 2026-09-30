@@ -1,0 +1,284 @@
+# FICTIONAL company. Held-out eval fixture (see ../README.md). Contracts §1 Fact v2 shape.
+# Adult evening groups, one-to-one lessons and a Saturday kids' club. Task scope variants=[evening-group], segments=[adults].
+company: {name: "Linden Language School", type: "language school", today: '2026-09-29'}
+facts:
+- key: "spanish-evening-course"
+  subject: {kind: "package", ref: "Spanish evening group course (10 weeks)"}
+  fact_type: "price"
+  attribute: "price"
+  value: 240
+  unit: null
+  currency: "GBP"
+  value_text: "£240 per person"
+  basis: "per_person"
+  conditions: [{key: "min_learners", op: ">=", value: 5}, {key: "weeks", op: "=", value: 10}]
+  scope: {sites: [], regions: [], channels: [], segments: ["adults"], plan_tiers: [], variants: ["evening-group"]}
+  valid_from: "2026-08-01"
+  valid_to: "2027-01-31"
+  review_by: null
+  source: {kind: "doc", ref: "Linden course guide autumn 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: ["coursebook not included"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "The 10-week Spanish evening group course costs £240 per person; the coursebook (£22) is not included. A group runs with at least 5 learners."
+- key: "evening-class-times"
+  subject: {kind: "service", ref: "Spanish evening group course"}
+  fact_type: "hours"
+  attribute: "class_time"
+  value: null
+  unit: null
+  currency: null
+  value_text: "Tuesdays, 6:30pm to 8:30pm"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["evening-group"]}
+  valid_from: "2026-08-01"
+  valid_to: "2027-01-31"
+  review_by: null
+  source: {kind: "doc", ref: "Linden course guide autumn 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "The evening group meets once a week on Tuesdays, 6:30pm to 8:30pm, at the Mill Street centre, from 20 October 2026."
+- key: "one-to-one-rate"
+  subject: {kind: "service", ref: "One-to-one lessons"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 45
+  unit: "hour"
+  currency: "GBP"
+  value_text: "£45 per hour"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["one-to-one"]}
+  valid_from: "2026-08-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Linden course guide autumn 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "One-to-one lessons cost £45 per hour."
+- key: "free-placement-test"
+  subject: {kind: "service", ref: "Online level test"}
+  fact_type: "price"
+  attribute: "price"
+  value: 0
+  unit: null
+  currency: "GBP"
+  value_text: "free online level test"
+  basis: "flat"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Linden course guide autumn 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "low"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Every new learner can take a free online level test before choosing a group."
+- key: "early-bird-offer"
+  subject: {kind: "offer", ref: "Early-bird discount"}
+  fact_type: "price"
+  attribute: "discount"
+  value: 30
+  unit: null
+  currency: "GBP"
+  value_text: "£30 off"
+  basis: "per_person"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: ["evening-group"]}
+  valid_from: "2026-09-01"
+  valid_to: "2026-10-02"
+  review_by: null
+  source: {kind: "doc", ref: "Early-bird brief autumn 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "£30 off the Spanish evening group course when booked by 2 October 2026."
+- key: "summer-intensive"
+  subject: {kind: "package", ref: "Summer intensive (2 weeks)"}
+  fact_type: "price"
+  attribute: "price"
+  value: 290
+  unit: null
+  currency: "GBP"
+  value_text: "£290"
+  basis: "per_person"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-05-01"
+  valid_to: "2026-08-29"
+  review_by: null
+  source: {kind: "doc", ref: "Summer course guide 2026"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "low"
+  sensitivity: "public"
+  status: "expired"
+  supersedes_key: null
+  text: "The two-week summer intensive cost £290 (July to August 2026)."
+- key: "teacher-qualifications"
+  subject: {kind: "business", ref: "Linden teaching staff"}
+  fact_type: "credential"
+  attribute: "teaching_qualification"
+  value: null
+  unit: null
+  currency: null
+  value_text: "a recognised language-teaching qualification"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-01-01"
+  valid_to: null
+  review_by: "2027-01-01"
+  source: {kind: "doc", ref: "Staff qualification register 2026"}
+  claim_class: "none"
+  requires_evidence: true
+  evidence_ref: "Staff qualification register 2026"
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: ["all native speakers", "native speakers only", "100% native"]
+  owner: "Director of studies"
+  risk: "medium"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "Every Linden teacher holds a recognised language-teaching qualification. Most, but not all, are native speakers."
+- key: "level-progress-result"
+  subject: {kind: "business", ref: "Linden evening groups"}
+  fact_type: "result"
+  attribute: "moved_up_a_level"
+  value: 91
+  unit: "percent"
+  currency: null
+  value_text: "91%"
+  basis: null
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: ["adults"], plan_tiers: [], variants: []}
+  valid_from: "2026-07-20"
+  valid_to: null
+  review_by: "2027-07-20"
+  source: {kind: "doc", ref: "End-of-course test summary 2025-26"}
+  claim_class: "result"
+  requires_evidence: true
+  evidence_ref: "End-of-course test summary 2025-26"
+  consent_ref: null
+  required_disclosures: ["2025-26 end-of-course tests"]
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director of studies"
+  risk: "high"
+  sensitivity: "public"
+  status: "active"
+  supersedes_key: null
+  text: "91% of 2025-26 adult evening learners moved up at least one level, based on 2025-26 end-of-course tests."
+- key: "teacher-hourly-pay"
+  subject: {kind: "policy", ref: "Teacher pay"}
+  fact_type: "price"
+  attribute: "hourly_pay"
+  value: 24
+  unit: "hour"
+  currency: "GBP"
+  value_text: "£24 per teaching hour"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-08-01"
+  valid_to: null
+  review_by: null
+  source: {kind: "doc", ref: "Pay scale 2026-27"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director"
+  risk: "high"
+  sensitivity: "internal"
+  status: "active"
+  supersedes_key: null
+  text: "Sessional teachers are paid £24 per teaching hour."
+- key: "harrowgate-corporate-rate"
+  subject: {kind: "offer", ref: "Harrowgate Logistics corporate rate"}
+  fact_type: "price"
+  attribute: "rate"
+  value: 38
+  unit: "hour"
+  currency: "GBP"
+  value_text: "£38 per hour"
+  basis: "per_unit"
+  conditions: []
+  scope: {sites: [], regions: [], channels: [], segments: [], plan_tiers: [], variants: []}
+  valid_from: "2026-09-01"
+  valid_to: "2027-08-31"
+  review_by: null
+  source: {kind: "doc", ref: "Harrowgate Logistics training contract"}
+  claim_class: "none"
+  requires_evidence: false
+  evidence_ref: null
+  consent_ref: null
+  required_disclosures: []
+  allowed_phrasing: []
+  forbidden_phrasing: []
+  owner: "Director"
+  risk: "high"
+  sensitivity: "restricted"
+  status: "active"
+  supersedes_key: null
+  text: "Harrowgate Logistics staff lessons are billed at £38 per hour under the corporate contract."

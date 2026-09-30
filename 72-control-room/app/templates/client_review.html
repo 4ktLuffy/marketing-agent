@@ -1,0 +1,52 @@
+{% extends "client_base.html" %}
+{% block title %}{{ label or 'Posts' }} · sign-off{% endblock %}
+{% block main %}
+<header class="client-head">
+  {% if brand %}<p class="muted small">{{ brand }}</p>{% endif %}
+  <h1>{{ label or 'Posts for your sign-off' }}</h1>
+  <p class="small muted">Each post is shown exactly as it will go out. Approve it or say what should change. This page works until {{ expires }}.</p>
+</header>
+{% if answered %}<p class="alert ok" role="status">Thank you: your answer on post #{{ answered }} was recorded{% if answered_changes %} and the post went back to the writer{% endif %}.</p>{% endif %}
+{% for p in items %}
+<article class="card client-post" id="post-{{ p.id }}">
+  <header class="card-head">
+    <b>#{{ p.id }}</b>
+    <div class="chips">
+      <span class="chip net-chip net-{{ p.channel }}">{{ p.channel }}</span>
+      {% if p.date %}<span class="chip muted">{{ p.date }}</span>{% endif %}
+      <span class="chip">{{ p.status_words }}</span>
+    </div>
+  </header>
+  {% if problem and problem.id == p.id %}<p class="alert danger" role="alert">{{ problem.text }}</p>{% endif %}
+  <div class="preview net-{{ p.channel }}">
+    {% if p.long_title %}<div class="preview-title">{{ p.title }}</div>{% endif %}
+    {% if p.video %}<div class="video-wrap"><video controls playsinline preload="none" {% if p.poster %}poster="{{ p.poster }}"{% endif %} src="{{ p.video }}"></video></div>
+    {% elif p.image %}<img class="media" src="{{ p.image }}" alt="image of post #{{ p.id }}" loading="lazy">{% endif %}
+    <div class="text">{{ p.body }}</div>
+    {% if p.link %}<p class="small"><a href="{{ p.link }}" target="_blank" rel="noopener noreferrer">{{ p.link|truncate(60, True) }}</a></p>{% endif %}
+  </div>
+  {% if p.chips %}
+  <ul class="evidence" aria-label="checks on this post">
+    {% for e in p.chips %}<li><span class="ev ev-{{ e.level }}" data-label="{{ e.label }}">{{ e.words }}</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% for a in p.answers %}
+  <p class="small muted">{% if a.approved %}Approved by {{ a.name }}{% else %}Changes asked by {{ a.name }}{% endif %}{% if a.version %} (version {{ a.version }}){% endif %} · {{ a.at }} UTC</p>
+  {% endfor %}
+  {% if p.open %}
+  <form method="post" action="/c/{{ token }}/respond" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="item_id" value="{{ p.id }}">
+    <input type="hidden" name="body_sha256" value="{{ p.body_sha256 }}">
+    <label>Your name <input name="name" maxlength="80" required autocomplete="name" value="{{ values.name if values and values.id == p.id else '' }}"></label>
+    <label>Comment (needed to request changes) <textarea name="comment" maxlength="2000" rows="3">{{ values.comment if values and values.id == p.id else '' }}</textarea></label>
+    <div class="actions">
+      <button class="btn approve" name="decision" value="approve">Approve</button>
+      <button class="btn reject ghost" name="decision" value="changes">Request changes</button>
+    </div>
+  </form>
+  {% endif %}
+</article>
+{% else %}<p class="muted">There is nothing to review in this link.</p>{% endfor %}
+<p class="small muted">Your answer is recorded with your name and the exact text you saw. It is sent to the agency, who publishes.</p>
+{% endblock %}
