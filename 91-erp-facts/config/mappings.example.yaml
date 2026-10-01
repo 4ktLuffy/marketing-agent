@@ -1,0 +1,66 @@
+# Copy, edit, and point MAPPINGS_FILE at your copy (mount it read-only in Docker). Nothing here is read from the
+# ERP unless it is listed under `fields`. Models with personal data (res.partner, res.users, hr.*,
+# mail.*, account.move*, sale.order) are refused unless named under allow_models. Do not do that
+# for prices.
+#
+# allow_models: []
+
+mappings:
+  # ---- Hotel: one product.template per room type, four rates per room ----
+  - name: hotel-rooms
+    model: product.template
+    domain: [["is_room_type", "=", true]]
+    fields: [name, hotel_rack_rate_single, hotel_rack_rate_double, hotel_tour_rate_single, hotel_tour_rate_double,
+             hotel_rate_currency_id, x_room_view_type, hotel_id]
+    subject: {kind: product, ref_template: "{name}"}
+    fact_type: price
+    attribute: rate
+    currency_field: hotel_rate_currency_id        # many2one to res.currency; its name is the ISO code
+    unit: night
+    basis: per_room
+    scope_fields: {sites: hotel_id}               # the hotel (many2one name) becomes the site scope
+    skip_if:                                      # 0 or 1 is a placeholder price, never a fact
+      - {field: value, op: "<=", value: 1}
+    text_template: "{name} ({x_room_view_type}) costs {currency} {value_fmt} per room per night."
+    outputs:
+      - key_template: "rate-{name|slug}-rack-single"
+        value_field: hotel_rack_rate_single
+        sensitivity: public
+        conditions: [{key: occupancy, op: "=", value: single}]
+        required_disclosures: ["single occupancy"]
+      - key_template: "rate-{name|slug}-rack-double"
+        value_field: hotel_rack_rate_double
+        sensitivity: public
+        conditions: [{key: occupancy, op: "=", value: double}]
+        required_disclosures: ["double occupancy"]
+      - key_template: "rate-{name|slug}-tour-single"
+        value_field: hotel_tour_rate_single
+        sensitivity: internal                      # tour operator rates never leave as text
+        conditions: [{key: occupancy, op: "=", value: single}, {key: channel, op: "=", value: tour_operator}]
+      - key_template: "rate-{name|slug}-tour-double"
+        value_field: hotel_tour_rate_double
+        sensitivity: internal
+        conditions: [{key: occupancy, op: "=", value: double}, {key: channel, op: "=", value: tour_operator}]
+
+  # ---- Beer distributor: price per crate in ETB; bottles per crate when the name says so ----
+  - name: beer-crates
+    model: product.template
+    domain: [["company_id", "=", 3], ["sale_ok", "=", true]]
+    fields: [name, list_price]
+    subject: {kind: product, ref_template: "{name}"}
+    fact_type: price
+    attribute: price
+    key_template: "price-{name|slug}-crate"
+    value_field: list_price
+    currency: ETB
+    unit: crate
+    basis: per_unit
+    sensitivity: public
+    skip_if:
+      - {field: value, op: "<=", value: 1}
+    derive:                                        # "Harer 24x33cl" -> pack_count 24, volume_cl 33
+      - {from: name, regex: '(\d+)\s*x\s*(\d+)\s*cl', names: [pack_count, volume_cl]}
+    text_variants:
+      - requires: [pack_count, volume_cl]
+        template: "{name} costs {currency} {value_fmt} per crate ({pack_count} bottles of {volume_cl}cl)."
+    text_template: "{name} costs {currency} {value_fmt} per crate."

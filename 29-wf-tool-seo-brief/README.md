@@ -1,6 +1,6 @@
 # 29 · SEO brief
 
-Deploy **29 of 90** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **29 of 91** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Builds an SEO content brief from real autocomplete searches (10) and, if you give one, an audit of a competitor page (12). The brief's prose (titles, meta description, outline, FAQ answers) is then fact-checked by the claim checker (44) against the approved facts and the inputs (keyword, audience; not the audited page, which may be a competitor's). Nothing is removed: if any statement is unsupported, the brief starts with a one-line warning and ends with a `## Claims to check before writing` list (each statement and why). If the checker is down, the brief says it was not checked.
 

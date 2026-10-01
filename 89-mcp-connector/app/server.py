@@ -25,7 +25,7 @@ from .redact import Redactor
 
 log = logging.getLogger("mcp_connector")
 
-TOOL_NAMES = ("get_business_facts", "make_task_pack", "submit_answer", "submit_split", "check_text", "get_task",
+TOOL_NAMES = ("get_business_facts", "make_task_pack", "submit_answer", "submit_split", "check_text", "get_task", "get_occasions", "render_template", "post_from_template", "make_quote", "audit_content",
               "list_blockers")
 HUMAN_ONLY = ("A person must approve this in the control room; you cannot approve or publish. "
               "Nothing is posted anywhere until a person approves it and posts it.")
@@ -226,8 +226,29 @@ def build_server(cfg: Config) -> MCPServer:
             if isinstance(e, dict) and isinstance(e.get("key"), str):
                 excluded.append({"key": e["key"], "reason": str(e.get("reason") or "excluded")})
         log.info("get_business_facts facts=%d excluded=%d", len(facts), len(excluded))
-        return {"at": out.get("at"), "fact_set_version": out.get("fact_set_version"), "facts": facts,
-                "excluded": excluded}
+        result = {"at": out.get("at"), "fact_set_version": out.get("fact_set_version"), "facts": facts,
+                  "excluded": excluded}
+        unspecified = [e for e in excluded if e["reason"] == "scope_unspecified"]
+        if unspecified and len(unspecified) * 2 >= len(excluded) + len(facts):
+            # Most facts are for a named site/region/...: say which values to pass (scope values only,
+            # never a fact's value), so a single-site business doesn't look empty.
+            try:
+                every = await up("brand", "GET", "/facts/v2")
+                dims: dict[str, set] = {}
+                for f in every.get("facts") or []:
+                    if isinstance(f, dict) and f.get("status") == "active":
+                        for dim, vals in (f.get("scope") or {}).items():
+                            for v in vals or []:
+                                dims.setdefault(dim, set()).add(str(v)[:80])
+                arg = {"sites": "site", "regions": "region", "channels": "channel", "segments": "segment",
+                       "plan_tiers": "plan_tier", "variants": "variant"}
+                if dims:
+                    result["hint"] = ("Most facts apply to a named " + ", ".join(arg.get(d, d) for d in sorted(dims))
+                                      + ". Call again with one of: " + "; ".join(
+                                          f"{arg.get(d, d)}={sorted(v)[:10]}" for d, v in sorted(dims.items())))
+            except upstream.UpstreamError:
+                pass
+        return result
 
     @mcp.tool(annotations=rw)
     async def make_task_pack(
@@ -324,6 +345,7 @@ def build_server(cfg: Config) -> MCPServer:
         findings = [r.finding(x) for x in out.get("findings") or [] if isinstance(x, dict)]
         log.info("check_text chars=%d sha=%s findings=%d", len(text), _sha8(text), len(findings))
         return {"blocked": bool(out.get("blocked")), "findings": findings,
+                "brand_and_channel_rules": rules(out.get("checks"), r),
                 "text_with_internal_values_hidden": r.text(out.get("filled_text"))}
 
     @mcp.tool(annotations=ro)
@@ -346,6 +368,93 @@ def build_server(cfg: Config) -> MCPServer:
                 "export": {k: (r.text(v) if isinstance(v, str) else [r.text(x) for x in v] if isinstance(v, list) else v)
                            for k, v in export.items()},
                 "share_preview": t.get("share_preview"), "pack": t.get("pack"), "message": HUMAN_ONLY}
+
+    TemplateName = Literal["price_list", "rate_card", "facts_digest"]
+
+    @mcp.tool(annotations=ro)
+    async def render_template(
+        template: Annotated[TemplateName, Field(description="price_list, rate_card or facts_digest")],
+        channel: Annotated[str, Field(min_length=1, max_length=30, description="telegram, whatsapp, sms, facebook...")],
+        publish_on: Annotated[Day, Field(description="Publish date, YYYY-MM-DD")],
+        scope: Annotated[Scope | None, Field(description="Site, region, etc.")] = None,
+        title: Annotated[str | None, Field(max_length=120)] = None,
+        intro: Annotated[str | None, Field(max_length=400)] = None,
+    ) -> dict[str, Any]:
+        """Write a repetitive post (a price list, a rate card, a facts digest) straight from the business's
+        current public facts, with zero model tokens: values, shared disclosures, business rules (e.g. a legal
+        warning) and channel limits are applied for you. Nothing is saved. Prefer this over writing such lists
+        yourself."""
+        limiter.hit()
+        body = {"template": template, "channel": channel, "publish_on": _day(publish_on, "publish_on"),
+                "scope": (scope or Scope()).model_dump(), "title": title, "intro": intro}
+        return await up("tasks", "POST", "/templates/render", json={k: v for k, v in body.items() if v is not None})
+
+    @mcp.tool(annotations=rw)
+    async def post_from_template(
+        template: Annotated[TemplateName, Field(description="price_list, rate_card or facts_digest")],
+        channels: Annotated[list[str], Field(min_length=1, max_length=5, description="Channels, one piece each")],
+        publish_on: Annotated[Day, Field(description="Publish date, YYYY-MM-DD")],
+        scope: Annotated[Scope | None, Field(description="Site, region, etc.")] = None,
+        title: Annotated[str | None, Field(max_length=120)] = None,
+        intro: Annotated[str | None, Field(max_length=400)] = None,
+    ) -> dict[str, Any]:
+        """Render a template post and send it for checks and human review in one step (it lands in the
+        approval queue; nothing is published)."""
+        limiter.hit()
+        body = {"template": template, "channels": channels, "publish_on": _day(publish_on, "publish_on"),
+                "scope": (scope or Scope()).model_dump(), "title": title, "intro": intro}
+        out = await up("tasks", "POST", "/templates/task", json={k: v for k, v in body.items() if v is not None})
+        out = dict(out) if isinstance(out, dict) else {"result": out}
+        out["message"] = HUMAN_ONLY
+        return out
+
+    @mcp.tool(annotations=ro)
+    async def make_quote(
+        lines: Annotated[list[dict[str, Any]], Field(min_length=1, max_length=50,
+                         description='[{"fact_key": "...", "quantity": 20, "nights": 3}] using public price facts')],
+        publish_on: Annotated[Day, Field(description="Date the quote is for, YYYY-MM-DD")],
+        scope: Annotated[Scope | None, Field(description="Site, region, etc.")] = None,
+    ) -> dict[str, Any]:
+        """Exact quote from the business's PUBLIC prices (quantity × nights × price, totals, disclosures).
+        Use it instead of doing the arithmetic yourself. Internal prices are never available here."""
+        limiter.hit()
+        clean = []
+        for ln in lines:
+            if not isinstance(ln, dict) or not isinstance(ln.get("fact_key"), str):
+                raise ToolError("each line needs a fact_key and a quantity")
+            clean.append({k: ln[k] for k in ("fact_key", "quantity", "nights", "guests") if k in ln})
+        body = {"lines": clean, "publish_on": _day(publish_on, "publish_on"), "scope": (scope or Scope()).model_dump()}
+        return await up("tasks", "POST", "/quote", json=body)
+
+    @mcp.tool(annotations=ro)
+    async def audit_content(
+        urls: Annotated[list[str] | None, Field(max_length=10, description="Public pages or PDFs of the business")] = None,
+        text: Annotated[str | None, Field(max_length=40_000, description="Or paste old posts / page text")] = None,
+        scope: Annotated[Scope | None, Field(description="Site, region, etc.")] = None,
+    ) -> dict[str, Any]:
+        """Check what the business's own pages, PDFs or old posts say against today's facts: lists only
+        contradictions (old prices, expired offers, another branch's facts). Nothing is changed."""
+        limiter.hit()
+        sources = [{"url": u} for u in (urls or []) if isinstance(u, str) and u.strip()]
+        if text and text.strip():
+            sources.append({"text": text, "label": "pasted"})
+        if not sources:
+            raise ToolError("give urls or text")
+        return await up("tasks", "POST", "/audit", json={"sources": sources[:10], "scope": (scope or Scope()).model_dump()})
+
+    @mcp.tool(annotations=ro)
+    async def get_occasions(
+        on_date: Annotated[Day | None, Field(description="Publish date to look around, YYYY-MM-DD (default today)")] = None,
+        days: Annotated[int, Field(ge=1, le=366, description="How many days ahead")] = 45,
+    ) -> dict[str, Any]:
+        """Holidays, seasons and fasts near a publish date, with the local calendar date and notes for
+        marketers (e.g. alcohol brands may not sponsor holidays in Ethiopia). Use it before planning a
+        campaign. Movable or unverified dates say so."""
+        limiter.hit()
+        params: dict[str, Any] = {"days": days}
+        if on_date:
+            params["on"] = _day(on_date, "on_date")
+        return await up("tasks", "GET", "/occasions", params=params)
 
     @mcp.tool(annotations=ro)
     async def list_blockers() -> dict[str, Any]:

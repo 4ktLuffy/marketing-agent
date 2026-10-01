@@ -25,7 +25,7 @@ yours in the control room's **Brand setup** (or `05-brand-service/config/brand.y
 your FAQs in the knowledge-base form (42). After installing, [PILOT.md](PILOT.md) is the
 day-by-day plan.
 
-## The 90 deploys: each folder is one GitHub repo
+## The 91 deploys: each folder is one GitHub repo
 
 | Group | Deploys | Where each one goes |
 |---|---|---|
@@ -56,6 +56,7 @@ day-by-day plan.
 | **Product feed** | 87 feed-optimizer: upload your Google Merchant Center feed file (CSV/TSV); the model proposes a title per product (brand, product, colour/size/material first), checked in code against that product's own row (an invented number, colour, material, size, claim or other brand is rejected and a rule-based title used instead); a person approves with the approver key; the export is your file with only the approved titles/descriptions changed, or a supplemental feed. Nothing is uploaded to Merchant Center | container (full profile) |
 | **Any chatbot, facts you can trust** | 88 task-bridge + scoped facts in 05: pick a task, copy a pack into free ChatGPT/Claude/Gemini (you see exactly what leaves the business; internal values go only as placeholders), paste the answer back; every sentence is checked against facts with scope and dates (wrong branch, plan, variant or channel; expired or not yet valid on the publish date; missing disclosures; certifications and ratings with no source); approval binds to the exact text; export when approved. Works with no model at all | container (core) |
 | **Approve without n8n** | 90 approval-service (core, used when `install.sh --approval service`): applies the control room's approve / edit / reject / back-to-draft decisions to the calendar, bound to the text the reviewer saw, with the reviewer's full name in the audit. Holds the approver key; only the control room may call it. Publishing (39) and automatic rewrites (49) still use n8n | container (core) |
+| **Prices from your ERP** | 91 erp-facts (profile `erp`): reads your Odoo read-only (only 7 read methods can be called) and turns room rates, product prices and the like into DRAFT facts with their source record; reports drift when the ERP changes so posts using the old price go back to draft. Never confirms a fact and holds no owner key | container (optional) |
 | **Claude connector** | 89 mcp-connector (profile `claude`): Claude uses your agent directly (public facts, packs, submit answers, checks) over MCP (stdio or HTTP with a token). It can't approve, confirm facts or publish: a person approves in the control room | container (optional) |
 | **Experiments** | the agent proposes one-variable A/B tests weekly (74), a person approves them (76), 61 gives the two versions to planned slots balanced by weekday and hour, 45 decides at weekly looks in code (HDI + ROPE on clicks per post within 72 h; 75); a winner becomes a provisional rule in 46 that writers only get after a later experiment agrees and a person approves it (51) | 45, 46, 61 → containers · 74–76 → n8n |
 | **Safety net** | 43 error handler | n8n |

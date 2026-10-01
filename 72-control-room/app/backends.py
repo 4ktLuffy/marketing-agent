@@ -417,6 +417,15 @@ class Backends:
         ts = body.get("tasks") if isinstance(body, dict) else body
         return [t for t in ts if isinstance(t, dict)] if isinstance(ts, list) else []
 
+    async def occasions(self, days: int = 45) -> dict:
+        """88 GET /occasions: holidays/seasons near today (empty when OCCASIONS is off). Never raises:
+        the New task page works without it."""
+        try:
+            body = await self._tasks("GET", "/occasions", params={"days": days})
+        except BackendError:
+            return {}
+        return body if isinstance(body, dict) else {}
+
     async def task_list(self, limit: int) -> list[dict]:
         """The newest `limit` tasks (88 caps at 500), for the Results page."""
         body = await self._tasks("GET", "/tasks", params={"limit": limit})

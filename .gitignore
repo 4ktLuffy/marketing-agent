@@ -20,3 +20,6 @@ __pycache__/
 .env.*
 !.env.example
 01-marketing-stack/clients/
+
+# real business data (Odoo reads, internal rates and volumes): never in this public repo
+23-eval-suite/cases/real-*/

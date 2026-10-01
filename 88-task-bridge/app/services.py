@@ -183,6 +183,19 @@ def open_questions() -> list[dict]:
 # ---------- 14 platform rules (optional)
 
 
+def kit_rules() -> tuple[list[dict], str | None]:
+    """05 GET /rules?status=active: the starter-kit rules the owner confirmed."""
+    base = brand_url()
+    if not base:
+        return [], None
+    try:
+        body = _call("GET", f"{base}/rules", "brand service", params={"status": "active"})
+    except ServiceError as exc:
+        return [], f"business rules skipped: {exc}"
+    rules = body.get("rules") if isinstance(body, dict) else None
+    return [r for r in rules or [] if isinstance(r, dict)], None
+
+
 def channel_rules() -> tuple[dict | None, str | None]:
     base = rules_url()
     if not base:

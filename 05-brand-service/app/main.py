@@ -17,6 +17,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, field_validator
 
+from . import ai_sheen
+from . import kit_rules
 from . import facts_store as store
 
 log = logging.getLogger("brand-service")
@@ -161,7 +163,8 @@ def find_token(text: str, phrase: str) -> str | None:
     """
     parts = [re.escape(p.strip()) for p in phrase.strip().split("*")]
     body = r"(?:\s+\S+){0,3}\s+".join(p for p in parts if p)
-    pattern = r"(?<!\w)" + body + r"(?!\w)"
+    plural = r"(?:s|es)?" if re.search(r"[A-Za-z]$", phrase.strip()) else ""   # "designated driver" = "designated drivers"
+    pattern = r"(?<!\w)" + body + plural + r"(?!\w)"
     m = re.search(pattern, text, re.IGNORECASE)
     return m.group(0) if m else None
 
@@ -812,6 +815,18 @@ def check(req: CheckRequest):
         if not domain_allowed(host, allowed_hosts):
             add("unknown_domain", f"link or domain '{host}' is not the brand's website or a link you gave",
                 b.get("unknown_domain_severity", "error"), match=host)
+
+    try:
+        with store.reading() as conn:
+            active_rules = store.list_rules(conn, "active", None)
+    except store.StoreError:
+        active_rules = []
+    for v in kit_rules.check(active_rules, text, find_token):
+        add(v["rule"], v["detail"], v["severity"], match=v.get("match"))
+
+    if str(b.get("ai_sheen", "on")).lower() not in ("off", "false", "0", "no"):
+        for v in ai_sheen.lint(text, b.get("ai_sheen_extra") or []):
+            add(v["rule"], v["detail"], v["severity"], match=v["match"])
 
     bangs = text.count("!")
     if bangs > MAX_EXCLAMATIONS:

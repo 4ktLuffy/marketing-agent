@@ -8,7 +8,8 @@ def test_lists_exactly_these_tools(server):
     listed = tools(server)
     assert sorted(t.name for t in listed) == sorted(TOOL_NAMES)
     assert sorted(TOOL_NAMES) == sorted(["get_business_facts", "make_task_pack", "submit_answer", "submit_split",
-                                         "check_text", "get_task", "list_blockers"])
+                                         "check_text", "get_task", "get_occasions", "render_template",
+                                         "post_from_template", "make_quote", "audit_content", "list_blockers"])
     for t in listed:
         assert t.description and len(t.description) > 60, t.name
         assert not any(w in t.name for w in ("approve", "publish", "confirm", "retire", "export"))
@@ -179,6 +180,9 @@ def test_check_text(fake, server):
     text = dump(r)
     assert INT_SENTINEL not in text and RES_SENTINEL not in text and "777" not in text and "42.5" not in text
     assert all(f["quote"] is None for f in out["findings"])
+    rules = out["brand_and_channel_rules"]
+    assert [(x["source"], x["rule"], x["severity"]) for x in rules] == [
+        ("brand", "kit_forbidden", "error"), ("platform", "too_long", "error")]
 
 
 def test_check_text_errors(fake, server):
@@ -218,3 +222,45 @@ def test_custom_text_cap(fake):
     s = build_server(cfg(max_text_chars=1000))
     assert call(s, "check_text", {"text": "x" * 1001, "publish_on": "2026-10-06"}).is_error
     assert not call(s, "check_text", {"text": "x" * 1000, "publish_on": "2026-10-06"}).is_error
+
+
+def test_single_site_business_gets_a_scope_hint(fake, server):
+    from .conftest import fact
+    site = {"sites": ["arbaminch"], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+    fake.facts = [fact(f"f{i}", f"Fact {i}.", None, f"text {i}", scope=site) for i in range(4)]
+    out = call(server, "get_business_facts", {}).structured_content
+    assert out["facts"] == [] and "site=['arbaminch']" in out["hint"]
+    assert "text 0" not in out["hint"]                     # scope values only, never fact values
+    out = call(server, "get_business_facts", {"site": "arbaminch"}).structured_content
+    assert len(out["facts"]) == 4 and "hint" not in out
+
+
+def test_no_hint_when_facts_are_found(fake, server):
+    out = call(server, "get_business_facts", {}).structured_content
+    assert out["facts"] and "hint" not in out
+
+
+def test_get_occasions(fake, server):
+    r = call(server, "get_occasions", {"on_date": "2026-12-20", "days": 30})
+    assert not r.is_error, dump(r)
+    out = r.structured_content
+    assert out["occasions"][0]["name"] == "Genna" and out["on"] == "2026-12-20"
+    assert call(server, "get_occasions", {"days": 0}).is_error
+
+
+
+def test_template_quote_audit_tools(fake, server):
+    r = call(server, "render_template", {"template": "price_list", "channel": "telegram", "publish_on": "2026-10-06",
+                                         "scope": {"sites": ["lakeside"]}})
+    assert not r.is_error, dump(r)
+    assert r.structured_content["text"].startswith("Prices")
+    r = call(server, "post_from_template", {"template": "price_list", "channels": ["telegram"], "publish_on": "2026-10-06"})
+    assert not r.is_error and "cannot approve" in r.structured_content["message"]
+    r = call(server, "make_quote", {"lines": [{"fact_key": "weekday-rate", "quantity": 2, "nights": 3}], "publish_on": "2026-10-06"})
+    assert not r.is_error and r.structured_content["total"] == "1080"
+    assert fake.bodies["quote"] == {"lines": [{"fact_key": "weekday-rate", "quantity": 2, "nights": 3}],
+                                    "publish_on": "2026-10-06", "scope": fake.bodies["quote"]["scope"]}
+    assert "allow_internal" not in fake.bodies["quote"]           # internal prices are never asked for
+    r = call(server, "audit_content", {"text": "Rooms are £150 a night."})
+    assert not r.is_error and r.structured_content["totals"]["drift"] == 1
+    assert call(server, "audit_content", {}).is_error

@@ -24,6 +24,7 @@ configuration, how to test). They also work as separate repos.
 | `88` | Task bridge: a task pack for any chatbot (free ChatGPT, Claude, Gemini…) with a preview of what leaves the business, paste-back, evidence per sentence against scoped facts, approval bound to the exact text, ready-to-post export. No model calls needed |
 | `89` | Claude connector (MCP, optional profile `claude`): Claude Desktop, Claude Code or one claude.ai custom connector can read public facts, make packs, submit answers and check text; it has no approve, confirm or publish tool and holds only the internal key |
 | `90` | Approval service: applies the control room's decisions to the calendar without n8n (install.sh `--approval service`); holds the approver key, only the control room may call it; approvals stay bound to the exact text and name the reviewer |
+| `91` | ERP facts (optional profile `erp`): reads your Odoo read-only and turns prices and products into draft facts with their source; reports drift when the ERP changes. Never writes to the ERP, never confirms a fact |
 | `72` | Control room: mobile web app to review, schedule, watch performance, and see what the agent is doing (Activity: running calls, timeline, models, abilities) |
 | `tools/workflow-generator` | The Python that generates every n8n `workflow.json` (edit there, not in the JSON; CI checks they match) |
 

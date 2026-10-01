@@ -40,6 +40,7 @@ class Stack:
     verify_answer: list = field(default_factory=list)
     brand_violations: list = field(default_factory=list)
     queries: list = field(default_factory=list)
+    kit_rules: list = field(default_factory=list)
     wording_posts: list = field(default_factory=list)
 
     def fact(self, key):
@@ -141,6 +142,7 @@ def stack(monkeypatch, mock):
     mock.post(f"{BRAND}/check").mock(side_effect=guarded(lambda r: httpx.Response(
         200, json={"ok": not any(v["severity"] == "error" for v in s.brand_violations), "violations": s.brand_violations})))
     mock.get(f"{BRAND}/questions").mock(side_effect=guarded(lambda r: httpx.Response(200, json=[])))
+    mock.get(f"{BRAND}/rules").mock(side_effect=guarded(lambda r: httpx.Response(200, json={"rules": s.kit_rules})))
 
     def changes(r):
         since = int(r.url.params.get("since") or 0)
@@ -157,7 +159,8 @@ def stack(monkeypatch, mock):
     s.wording_route = mock.post(f"{BRAND}/disclosure-wordings").mock(side_effect=guarded(propose_wording))
 
     # 14 platform rules
-    rules = {"linkedin": {"limit": 3000}, "instagram": {"limit": 2200, "max_hashtags": 30}, "x": {"limit": 280}}
+    rules = {"linkedin": {"limit": 3000}, "instagram": {"limit": 2200, "max_hashtags": 30}, "x": {"limit": 280},
+             "telegram": {"limit": 4096, "note": "1024 as a photo caption"}}
     mock.get(f"{RULES}/rules").mock(return_value=httpx.Response(200, json={"channels": rules}))
 
     def validate(r):

@@ -435,7 +435,7 @@ def test_questions_crud():
 
 # --- starter kits -------------------------------------------------------------------------
 
-KITS = {"hospitality", "manufacturing", "saas", "retail", "clinic", "restaurant", "consultancy"}
+KITS = {"hospitality", "manufacturing", "saas", "retail", "clinic", "restaurant", "consultancy", "ethiopia-alcohol", "ethiopia-hospitality"}
 
 
 def test_starter_kits_load_and_validate():

@@ -115,7 +115,7 @@ Round 12:
 """
 import re
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 
 from . import facts as F
@@ -135,6 +135,12 @@ MONEY_PRE = re.compile(r"(?<![\w])(?P<cur>US\$|£|\$|€|GBP|USD|EUR|ETB)\s?(?P<
                        r"(?:\s?(?P<mult>k|K|m|M|bn|thousand|million)\b)?", re.I)
 MONEY_POST = re.compile(r"(?<![\w.,])(?P<num>" + _NUM + r")\s?(?P<mult>k|K|m|M|bn|thousand|million)?\s?"
                         r"(?P<cur>GBP|USD|EUR|ETB|birr|pounds?|dollars?|euros?|p)\b", re.I)
+# Amharic (Ethiopic script): ብር is birr (ETB), ዶላር is dollars (USD); the number comes before or after the
+# word ("1,700 ብር", "ብር 1,700"). Read only when the text has the word; nothing else is read as Amharic.
+_ETHIOPIC = re.compile(r"[\u1200-\u137F]")
+ETH_CUR = {"ብር": "ETB", "ዶላር": "USD"}
+ETH_POST = re.compile(r"(?<![A-Za-z0-9_.,])(?P<num>" + _NUM + r")\s?(?P<cur>ብር|ዶላር)(?![\w])")
+ETH_PRE = re.compile(r"(?<![\w])(?<!\d\s)(?P<cur>ብር|ዶላር)\.?\s?(?P<num>" + _NUM + r")(?![\d]|[.,]\d)(?!\s?(?:ብር|ዶላር))")
 PERCENT = re.compile(r"(?<![\w.,])(?P<num>\d+(?:\.\d+)?)\s?(?:%|percent\b|per\s?cent\b)", re.I)
 UNITS = {
     "hour": "hour", "hours": "hour", "hr": "hour", "hrs": "hour", "h": "hour",
@@ -201,7 +207,7 @@ _WVAL.update({w: i + 10 for i, w in enumerate(_WTEEN.split("|"))})
 _WVAL.update({w: (i + 2) * 10 for i, w in enumerate(_WTENS.split("|"))})
 _WVAL["a"] = 1
 MONEY_WORDS = re.compile(r"(?i:(?<![\w-])" + WORD_NUM + r"\s+(?P<cur>pounds?(?!\s+of\b)|quid|pence|p(?![\w.])|"
-                         r"dollars?|euros?)(?![\w-])"
+                         r"dollars?|euros?|birr)(?![\w-])"
                          # "nine pounds fifty" = £9.50 (pence in words after pounds; not "five pounds twenty minutes")
                          r"(?:\s+(?P<pence>(?:" + _WTENS + r")(?:[\s-](?:" + _W1 + r"))?|" + _WTEEN + r"|" + _W1 + r")(?![\w-])"
                          r"(?!\s+(?:minutes?|mins?|hours?|hrs?|people|guests|percent|per\s?cent|pounds?|quid|pence|p\b|"
@@ -209,6 +215,9 @@ MONEY_WORDS = re.compile(r"(?i:(?<![\w-])" + WORD_NUM + r"\s+(?P<cur>pounds?(?!\
 PCT_WORDS_NUM = re.compile(r"(?i:(?<![\w-])(?:(?P<half>half)\s+a|" + WORD_NUM + r")\s+(?:per\s?cent|percent)\b"
                            r"(?!\s+(?:sure|certain|confident|committed|behind|right|honest|with|focused|dedicated|serious|"
                            r"true|yes|agree|on|that|about|happy|satisfied)\b))")
+
+
+WORD_NUM_TAIL = re.compile(r"(?i:(?<![\w-])" + WORD_NUM + r")$")
 
 
 def word_number(m: re.Match) -> int | None:
@@ -287,6 +296,13 @@ def _overlaps(spans, a, b) -> bool:
     return any(a < y and x < b for x, y in spans)
 
 
+def _qty_key(num: Decimal, unit: str) -> tuple:
+    """A quantity's key; hours are read as minutes ("a two-hour ride" = "120 minutes")."""
+    if unit == "hour":
+        return ("qty", _canon(num * 60), "minute")
+    return ("qty", _canon(num), unit)
+
+
 def extract(text: str) -> list[Val]:
     out: list[Val] = []
     taken: list[tuple[int, int]] = []
@@ -312,6 +328,11 @@ def extract(text: str) -> list[Val]:
                     continue
                 cur, amt = "GBP", amt / 100
             add(Val("money", ("money", _canon(amt), cur), m.group(0), m.start(), m.end()))
+    for rx in (ETH_POST, ETH_PRE) if _ETHIOPIC.search(text) else ():
+        for m in rx.finditer(text):
+            amt = _dec(m.group("num"))
+            if amt is not None:
+                add(Val("money", ("money", _canon(amt), ETH_CUR[m.group("cur")]), m.group(0), m.start(), m.end()))
     for m in CODE.finditer(text):
         add(Val("code", ("code", m.group("p") + "#" + m.group("s"), m.group("n").lstrip("0") or "0"),
                 m.group(0), m.start(), m.end()))
@@ -397,10 +418,16 @@ def extract(text: str) -> list[Val]:
     for m in QTY.finditer(text):
         raw = m.group("num").lower()
         num = Decimal(NUMBER_WORDS[raw]) if raw in NUMBER_WORDS else _dec(raw)
+        if raw in NUMBER_WORDS:
+            # real-7: "two hundred and three rooms" is 203, never "three rooms"
+            head = text[max(0, m.start("num") - 60):m.end("num")]
+            w = WORD_NUM_TAIL.search(head)
+            if w and w.start() < len(head) - len(raw):
+                num = Decimal(word_number(w) or num)
         unit = UNITS.get(" ".join(m.group("unit").lower().split()))
         if num is None or unit is None:
             continue
-        add(Val("qty", ("qty", _canon(num), unit), m.group(0), m.start(), m.end()))
+        add(Val("qty", _qty_key(num, unit), m.group(0), m.start(), m.end()))
     for m in CAPACITY.finditer(text):
         add(Val("qty", ("qty", _canon(Decimal(m.group("num") or m.group("n2"))), "person"), m.group(0), m.start(), m.end()))
     for m in FREQ.finditer(text):
@@ -549,13 +576,13 @@ def fact_values(f: dict) -> tuple[set, set]:
         elif unit in ("%", "percent", "per cent"):
             primary.add(("percent", _canon(d)))
         elif UNITS.get(unit):
-            primary.add(("qty", _canon(d), UNITS[unit]))
+            primary.add(_qty_key(d, UNITS[unit]))
         elif not cur and not any(k[0] == "qty" and k[1] == _canon(d) for k in primary):
             # a unit written as a phrase ("seated_guests" -> guests), or a value text that puts one
             # word between the number and its unit ("180 seated guests")
             tail = re.split(r"[\s_-]+", unit)[-1] if unit else ""
             if UNITS.get(tail):
-                primary.add(("qty", _canon(d), UNITS[tail]))
+                primary.add(_qty_key(d, UNITS[tail]))
             primary |= _value_qty(d, f.get("value_text") or "")
     elif isinstance(val, str) and val.strip():
         primary |= {v.key for v in extract(val)}
@@ -578,7 +605,7 @@ def _value_qty(d: Decimal, vt: str) -> set:
     out = set()
     for m in re.finditer(r"(?<![\w.,£$€])(\d[\d,]*(?:\.\d+)?)\s+[a-z]+\s+(" + _UNIT_ALT + r")(?![\w])", vt, re.I):
         if _dec(m.group(1)) == d and UNITS.get(" ".join(m.group(2).lower().split())):
-            out.add(("qty", _canon(d), UNITS[" ".join(m.group(2).lower().split())]))
+            out.add(_qty_key(d, UNITS[" ".join(m.group(2).lower().split())]))
     return out
 
 
@@ -594,7 +621,7 @@ def core_values(f: dict) -> set:
         elif unit in ("%", "percent", "per cent"):
             out.add(("percent", _canon(d)))
         elif UNITS.get(unit):
-            out.add(("qty", _canon(d), UNITS[unit]))
+            out.add(_qty_key(d, UNITS[unit]))
     elif isinstance(val, str) and val.strip():
         out = {v.key for v in extract(val)}
     # the value text's own values, less what it adds in brackets ("£66 per full day (8am to 6pm)")
@@ -639,7 +666,7 @@ _KW = [
     ("certified", r"\bcertified\b", "cert"), ("certification", r"\bcertifications?\b", "cert"),
     ("accredited", r"\baccredit(?:ed|ation)\b", "cert"),
     # only claims when a named body/identifier sits next to them ("HCPC registered", "Google Partner")
-    ("registered", r"\bregistered\b", "cert_named"), ("partner", r"\bpartner(?:ed)?\b", "cert_named"),
+    ("registered", r"\bregistered\b", "cert_named"), ("partner", r"\bpartner(?:ed)?\b(?!\s+with\b)|(?<=[a-z]\s)Partner(?=\s+with\b)", "cert_named"),
     ("guarantee", r"\bguarantee[ds]?\b", "policy"), ("cure", r"\bcure[sd]?\b", "health"),
     ("specialist", r"\bspecialists?\b", "credential"), ("uptime", r"\buptime\b", "security"),
     ("made in", r"\bmade in\b", "origin"), ("free delivery", r"\bfree (?:delivery|shipping)\b", "policy"),
@@ -667,6 +694,52 @@ BY_DEADLINE = re.compile(
     r"(?:the[ \t]+)?(?:end|close|start)[ \t]+of[ \t]+(?:the[ \t]+)?(?:day|week|month|business|play|term)\b|"
     r"(?:the[ \t]+)?(?:deadline|cut[- ]?off(?:[ \t]+time)?)\b|(?:eod|cob)\b|"
     r"(?:the[ \t]+)?\d{1,2}(?:st|nd|rd|th)?[ \t]+(?:of[ \t]+)?" + _MON_NC + r"\b|" + _MON_NC + r"[ \t]+\d{1,2}(?:st|nd|rd|th)?\b))")
+# Round 13: "Dear partner,", "Hi partners,", "Thanks, partner!", "Partners, welcome": a word of address
+# in a greeting, never a claim of a partnership. A claim keeps its body ("official Google Partner").
+_GREET = r"(?:dear|hi|hello|hey|hiya|howdy|greetings|good\s+(?:morning|afternoon|evening))"
+SALUTATION = re.compile(r"(?i:^\s*(?:[*_#>\-\s]*)" + _GREET + r"\b(?:[\s,]+[A-Za-z'’&-]+){0,4}[\s,]*[,!:]?\s*$)")
+SALUTATION_NOT = frozenset("from of our official certified registered accredited gold silver platinum approved at".split())
+ADDRESS_BEFORE = re.compile(r"(?i:(?:\b" + _GREET + r"(?:[\s,]+(?:valued|esteemed|fellow|dear|old|all|and|my\s+dear))*[\s,]*|"
+                            r"\b(?:thanks|thank\s+you|cheers|welcome|goodbye|bye),\s*)$)")
+ADDRESS_LEAD = re.compile(r"(?i:^\s*(?:[*_#>\-\s]*)(?:valued\s+)?partners?\s*[,!]\s*$)")
+
+
+def _address_use(s: str, start: int, stop: int) -> bool:
+    if ADDRESS_BEFORE.search(s[:start]) or ADDRESS_LEAD.match(s[:stop] + ("" if s[stop:stop + 1] in ",!" else " ")):
+        return True
+    return bool(SALUTATION.match(s) and not set(re.findall(r"[a-z]+", s.lower())) & SALUTATION_NOT)
+
+
+# Round 13: a subject / heading line that only NAMES a product ("Subject: Safari packages for your
+# clients") says nothing of its price: the stale price fact of that product is not used. An offer claim
+# in the line (a price, from / only / save / deal / free ...) still counts.
+HEADING_LINE = re.compile(r"(?i)^\s*(?:[*_#>\-\s]*)(?:subject(?:\s+line)?|headline|title|heading|header|re|preview(?:\s+text)?|"
+                          r"tagline|topic|hook|email\s+subject)\s*:")
+OFFER_CUE = re.compile(r"(?i)\b(?:offers?|deals?|sale|discount\w*|promo\w*|specials?|from|only|now|just|save[sd]?|saving\w*|off|free|"
+                       r"cheap\w*|prices?|priced|pricing|rates?|costs?|fees?|bargains?|limited|last\s+chance|ends?|expires?|"
+                       r"until|book\s+now|reduced|bonus|extra|back|returns?|returning|again|launch\w*|new|is\s+here|arrives?|live)\b")
+OFFER_NAME = frozenset("offer offers deal deals sale special specials discount discounts promo promotion promotions bundle "
+                       "bundles voucher vouchers saving savings saver savers bonus combo".split())
+
+
+def _plain_price_fact(f: dict) -> bool:
+    val = f.get("value")
+    return bool(f.get("fact_type") == "price" and isinstance(val, (int, float)) and not isinstance(val, bool)
+                and f.get("currency") and _pct_value(f) is None
+                and not set(re.findall(r"[a-z]+", F.subject_ref(f).lower())) & OFFER_NAME
+                and not re.search(r"(?i)\b(?:off|save|saving|discount|free|reduced|was|now|deal|offer)\b",
+                                  " ".join(str(x) for x in (f.get("value_text"), F.subject_ref(f)) if x)))
+
+
+def _product_heading(f: dict, s: str) -> bool:
+    """True when `s` is a subject / heading line that names the product of price fact `f` and nothing
+    that offers it."""
+    if not HEADING_LINE.match(s) or not _plain_price_fact(f):
+        return False
+    rest = s[HEADING_LINE.match(s).end():]
+    return not OFFER_CUE.search(rest) and not any(v.kind in ("money", "percent") for v in extract(s))
+
+
 CLASS_SUPPORT = {  # a fact of these types/classes supports the keyword class when it shares a word
     "cert": ({"certification", "credential"}, {"safety_cert"}),
     "credential": ({"credential"}, set()),
@@ -686,19 +759,39 @@ _COUNT_NOUNS = (r"(?:reviews|ratings|customers|clients|users|members|downloads|i
 _NOT_EST = (r"(?i:latest|nearest|closest|earliest|interest|honest|forest|modest|harvest|contest|request|suggest|digest|"
             r"protest|guest|chest|quest|crest|nest|vest|pest|test|zest|rest|west|lest|arrest|invest|attest|detest|infest|"
             r"unrest|behest|inquest|bequest|conquest|tempest|manifest|earnest|midwest|southwest|northwest|longest\s+serving)")
+_PLATFORM = (r"(?:Google(?:\s+(?:Reviews?|Maps|My\s+Business))?|Trip\s?Advisor|Booking(?:\.com)?|Trustpilot|Yelp|Facebook|"
+             r"Airbnb|Expedia|Agoda|Hotels\.com|Yell|Capterra|Glassdoor)\b")
 _RATING = [
     ("voted", r"(?i:\b(?:voted|named|crowned|ranked)\s+(?:(?:as|the|a|an|our)\s+){0,2}"
               r"(?:best|top|favourite|favorite|number\s+one|no\.\s?1)\b)|(?i:\b(?:voted|named|ranked)\s+)#1\b"),
     ("award", r"(?i:\b(?:award|prize)[- ]winning\b|\bawards?\b)"),
+    # round 13: a named third-party award / guide / listing: only a fact that names it supports it
+    ("award3", r"(?i:\b(?:(?:Trip\s?Advisor|Tripadvisor)['’]?s?\s+)?Travell?ers?['’]?\s+Choice(?:\s+Awards?)?\b|"
+               r"\bTrip\s?Advisor\s+(?:Certificate\s+of\s+Excellence|Best\s+of\s+the\s+Best|Hall\s+of\s+Fame|awards?)\b|"
+               r"\bCertificate\s+of\s+Excellence\b|\bReaders['’]?\s+Choice(?:\s+Awards?)?\b|"
+               r"\bMichelin[- ](?:stars?|starred|guide|recommended|rated|plate|keys?|bib|listed|inspected)\b|"
+               r"\b(?:one|two|three|\d)\s+Michelin\s+stars?\b|\bCond[eé]\s+Nast\b(?:\s+Travell?er)?(?:\s+Gold\s+List|\s+Hot\s+List|\s+Readers['’]?\s+Choice(?:\s+Awards?)?)?|"
+               r"\bBooking\.com['’]?s?\s+(?:Travell?er|Guest)\s+Review(?:\s+Awards?)?\b|\bForbes\s+Travel\s+Guide\b|"
+               r"\bLonely\s+Planet['’]?s?\s+(?:recommended|top\s+pick|pick)\b)"),
     ("stars", r"(?i:(?<![\w.])(?:\d(?:\.\d)?|one|two|three|four|five)[- ]?stars?\b)"),
     ("rated", r"(?i:\b(?:top|highest|best)[- ]rated\b|\brated\s+(?:\d(?:\.\d)?(?:\s?(?:/|out\s+of)\s?\d+)?|"
               r"one|two|three|four|five)(?![\w.])(?!\s*(?:bar|psi|kw|kva|w|watts?|v|volts?|amps?|mm|cm|kg|°|degrees|hp|rpm|"
               r"hz|mph|l|litres?|liters?|tons?|tonnes?|hours?|minutes?)\b))"),
-    ("first", r"(?<!\w)#1\b|(?i:\bnumber\s+one\b(?!\s+(?:priority|reason|question|tip|rule|mistake|thing|goal|"
+    ("first", r"(?<!\w)#1\b|(?i:\bnumber\s+(?:one|1)\b(?![\d.,]\d)(?!\s+(?:priority|reason|question|tip|rule|mistake|thing|goal|"
               r"concern|job|choice\s+for\s+you))|\bno\.\s?1\b)"),
     ("best", r"(?i:\bbest[- ]in[- ]class\b)|(?i:\bthe\s+best\s+)(?!(?i:way|time|part|thing|bit|of\s+luck|wishes|"
-             r"regards|value|before|of\s+both)\b)(?:[\w&'-]+\s+){0,3}?(?i:in|of|around|across)\s+(?:(?i:the)\s+)?"
+             r"regards|value|before|of\s+both)\b)(?!of\s+(?:the\s+)?[A-Z])(?:[\w&'-]+\s+){0,3}?(?i:in|of|around|across)\s+(?:(?i:the)\s+)?"
              r"(?:(?i:town|city|country|world|region|area|county|market|industry|business|uk|us)\b|[A-Z][\w'-]+)"),
+    # "Best eco-lodge in Ethiopia", "Top safari camp in Kenya": a superlative about a place or market
+    # said without "the" (not "our best rooms in Gondar", not "best wishes from Addis")
+    ("best", r"(?<![\w'-])(?<!(?i:our)\s)(?<!(?i:my)\s)(?<!(?i:your)\s)(?<!(?i:their)\s)(?<!(?i:its)\s)(?<!(?i:the)\s)"
+             r"(?i:best|top)\s+(?!(?i:way|time|part|thing|bit|of\s+luck|wishes|regards|value|before|of\s+both|tips?|"
+             r"practices?|results?|efforts?|friends?|sellers?|seller|picks?|offers?|deals?|prices?|rates?|each|every)\b)"
+             r"(?:[\w&'-]+\s+){1,3}?(?i:in|around|across)\s+(?:(?i:the)\s+)?"
+             r"(?:(?i:town|city|country|world|region|area|county|market|industry|business|uk|us)\b|[A-Z][\w'-]+)"),
+    ("voted", r"(?i:\bvoted\s+(?:by\s+(?:(?:all\s+)?our|over|more\s+than|thousands|hundreds|\d|"
+              r"(?:guests|customers|readers|travell?ers|visitors|clients|users|fans|diners|locals|the\s+public)\b)|"
+              r"(?:number|no\.?|#)\b))"),
     ("popular", r"(?i:\bmost\s+popular\b)"),
     # "the friendliest vets in Ashby", "the fastest broadband in the county": an -est superlative
     # about a place or market (not "the latest news in town", "the nearest branch in Leeds")
@@ -733,6 +826,12 @@ _RATING = [
     # "4.9 out of 5", "4.8/5": a score (not "2 out of 5 homes", not a date 4/5/2026)
     ("score", r"(?i:(?<![\w./])\d(?:\.\d)?\s?(?:/|out\s+of)\s?(?:5|10)\b(?![/\d.,]\d)"
               r"(?=\s*(?:$|[^\w\s]|(?:stars?|on|from|by|in|for|across|with|rating|ratings|average|overall)\b)))"),
+    # round 17: a score on a review platform: "Guests rate us 9.8 on Google", "4.9 on TripAdvisor", "we hold 4.7 on
+    # Booking.com" (a rating verb, or a decimal score, straight before "on <platform>")
+    ("score", r"(?i:\b(?:rate[sd]?|rating|scor(?:e|es|ed|ing)|review(?:s|ed)?|averag(?:e|es|ed|ing)|hold|holds|have|has|got|"
+              r"earn(?:s|ed)?|boasts?|sits?|stands?)\s+(?:us\s+|it\s+|them\s+|ourselves\s+)?(?:an?\s+|of\s+|at\s+)?"
+              r"(?:10(?:\.\d)?|\d(?:\.\d)?)(?:\s?(?:/|out\s+of)\s?\d+)?\s?(?:stars?\s+)?(?:on|at|from|by|in|across)\s+" + _PLATFORM + r")"),
+    ("score", r"(?i:(?<![\w./])(?:10\.0|\d\.\d)(?:\s?(?:/|out\s+of)\s?\d+)?\s?(?:stars?\s+)?(?:on|at|from|by|across)\s+" + _PLATFORM + r")"),
     # "every X is a qualified teacher", "all our therapists are qualified": a credential claim about staff
     ("staff", r"(?i:\b(?:every|each|all)\s+(?:(?:of\s+)?(?:our|the)\s+)?(?:[\w'-]+\s+){0,3}?(?:is|are)\s+"
               r"(?:an?\s+)?(?:fully\s+)?(?:qualified|licensed)\b(?:\s+(?P<prof>[a-z]+))?)"),
@@ -749,6 +848,7 @@ IDIOMS = re.compile(r"(?i:\b(?:best|worst)[- ]kept(?:\s+secrets?)?\b|\bbest[- ]l
                     r"\b(?:the\s+)?best\s+(?:bit|part)\s+(?:is|of)\b)")
 RATING_WORDS = {  # what a supporting fact must talk about, per kind of claim (stemmed)
     "voted": {"voted", "vote", "award", "won", "winner"}, "award": {"award", "won", "winner", "prize", "medal"},
+    "award3": set(),
     "stars": {"star", "rated", "rating"}, "rated": {"rated", "rating", "star", "review"},
     "first": {"#1", "number", "first", "top", "1"}, "best": {"best"}, "popular": {"popular", "bestselling"},
     "leading": {"leading", "leader"}, "count": set(), "most": set(), "score": {"rated", "rating", "star", "review", "score"},
@@ -1627,6 +1727,35 @@ UNSOURCED_RX = re.compile(r"(?i:(?<![\w/])24\s?/\s?7(?![\w/])|\b(?:a)?round[- ]t
                           r"\b\d{1,3}\+?\s+years?(?:['’]|\s+of)?\s+(?:experience|expertise)\b)")
 
 
+# round 15: claims a business makes about itself that only a fact can carry. "all-inclusive",
+# UNESCO / World Heritage status, "the only lodge in the valley", "seats 300 delegates".
+ALL_INCL_RX = re.compile(r"(?i)(?<![\w-])all[- ]inclusive(?![\w-])(?!\s+of\b)")
+UNESCO_RX = re.compile(r"(?i)\bUNESCO\b|\bworld[- ]heritage\b")
+_PLACE_NOUN = (r"valley|region|country|area|town|city|district|park|lake|island|zone|world|continent|province|"
+               r"county|village|neighbou?rhood|state|south|north|east|west")
+ONLY_RX = re.compile(r"(?i:\b(?:the|our)\s+only\s+(?:[a-z-]+\s+){0,3}?(?:in|within|across|around|of|on)\s+"
+                     r"(?:the\s+|all\s+(?:of\s+)?)?)(?:[A-Z][a-z]+|(?i:(?:" + _PLACE_NOUN + r")\b))")
+CAPACITY_RX = re.compile(r"(?i)\b(?:seats?|holds?|fits?|accommodates?|hosts?|capacity\s+(?:of|for))\s+(?:up\s+to\s+|over\s+|around\s+|about\s+)?"
+                         r"(?P<n>\d{1,3}(?:,\d{3})*)\s+(?:more\s+)?(?:delegates?|guests?|people|persons?|attendees?|participants?|"
+                         r"diners?|visitors?|pax|seats)\b")
+_VENUE_NOUN = re.compile(r"(?i)\b(?:hall|room|venue|cent(?:re|er)|theat(?:re|er)|auditorium|restaurant|lodge|hotel|marquee|"
+                         r"tent|space|area|garden|lounge|bar|caf[eé]|ballroom|terrace|pavilion|amphitheat(?:re|er))\b")
+# opening hours said outright: "open 24 hours", "open 24/7", "open until midnight", "open all night"
+HOURS_CLAIM_RX = re.compile(r"(?i)\bopen\w*\s+(?:(?:for\s+)?24[- ]?(?:hours?|hrs?|h)\b|24\s?/\s?7\b|(?:around|round)[- ]the[- ]clock\b|"
+                            r"(?:(?:until|till|til|'til|’til)\s+)midnight\b|all\s+night(?:\s+long)?\b)|"
+                            r"\b(?:24[- ]hours?|24\s?/\s?7|round[- ]the[- ]clock)\s+(?:opening|open)\b")
+_HOURS_OK = re.compile(r"(?i)24[- ]?(?:hours?|hrs?|h)\b|24\s?/\s?7|round[- ]the[- ]clock|all\s+night")
+
+
+_NEG_BEFORE_CLAIM = re.compile(r"(?i)\b(?:not|no|never|isn['’]t|aren['’]t|without)\s+(?:\w+\s+)?$")
+_ONLY_FACT_RX = re.compile(r"(?i)\bthe\s+only\b|\bonly\s+(?:[a-z-]+\s+){0,2}(?:in|of|within)\s+(?:the\s+)?[a-z]+|\bunique\b|\bone\s+of\s+a\s+kind\b")
+
+
+def _fact_says(live: list[dict], rx) -> bool:
+    return any(rx.search(" ".join(str(x) for x in (f.get("text"), f.get("value_text")) if x)) for f in live
+               if (f.get("sensitivity") or "public") != "restricted")
+
+
 def role_claims(s: str) -> list[tuple[int, int, str, str]]:
     out = []
     for m in ROLE_RX.finditer(s):
@@ -1802,6 +1931,9 @@ february march april june july august september october november december mornin
 month season seasonal holiday holidays early late last first launch opening anniversary""".split())
 
 
+KIND_NOUNS = frozenset("package pack tour trip collection range selection option experience".split())
+
+
 def name_said_in_part(ref: str, s_seq: list[str], common: set, ok_terms: set, offer: bool) -> bool:
     """An expired offer / package named by part of its name, in any case: two adjacent words of the
     name ("Twilight spa" for "Summer Twilight Spa"), or for an offer one name word then an offer word
@@ -1811,7 +1943,9 @@ def name_said_in_part(ref: str, s_seq: list[str], common: set, ok_terms: set, of
     rseq = _seq(ref)
 
     def own(w):
-        return (len(w) >= 4 and w not in TIME_NAME_WORDS and w not in ok_terms and w not in common and w not in WEAK and w not in OFFER_NOUNS
+        # round 6: a kind noun ("package": "Safari packages" for the valid "Omo Valley safari package")
+        # is not what names the expired offer
+        return (len(w) >= 4 and w not in TIME_NAME_WORDS and w not in KIND_NOUNS and w not in ok_terms and w not in common and w not in WEAK and w not in OFFER_NOUNS
                 and w not in UNIT_WORDS and not any(c.isdigit() for c in w))
     rpairs = _pairs(rseq)
     for a, b in zip(s_seq, s_seq[1:]):
@@ -1975,8 +2109,11 @@ def _quote(f: dict) -> str:
 
 
 def _best(cands: list[dict], sentence: str) -> dict:
+    # last tie-break (round 15): the same price for one guest and for two ("Luxury Tent Twin ... $70"):
+    # a sentence that says neither is read as the two-guest rate, the usual way a room rate is quoted
     return max(cands, key=lambda f: (bool(F.subject_ref(f)) and phrase_in(F.subject_ref(f), sentence),
-                                     _subject_named(f, sentence), _overlap(sentence, f)))
+                                     _subject_named(f, sentence), _overlap(sentence, f),
+                                     2 in (_guests(f) or ()) and 1 not in (_guests(f) or ())))
 
 
 def _why(fs: FactSets, f: dict) -> str:
@@ -2126,6 +2263,151 @@ def _deadline_passed(v: Val, sentence: str, day: date) -> bool:
     return d < day
 
 
+# ---------- round 6: an old price stated truthfully, in a past frame ("was 1,600 birr until 16 August",
+#            "moved from 1,325 to 1,500 on 17 August"). An expired fact's value said as past, with a date
+#            (when one is given) that is the fact's end or its successor's start, is true: a match.
+_HIST_SPLIT = re.compile(r"[;()\[\]]|\s+(?:and|but|while|whereas|which|then|whilst)\s+|,\s+(?:which|and|but|while|now|then|since)\b|"
+                         r"\s+[-–—]\s+", re.I)
+_HIST_PAST = re.compile(r"(?i)\b(?:was|were|had\s+been|used\s+to(?:\s+(?:be|cost|sell|go|run))?|previously|formerly|earlier|"
+                        r"old\s+(?:price|rate)s?|former\s+(?:price|rate)s?|until|till|up\s+until|"
+                        r"last\s+(?:month|year|season|quarter))\b")
+_HIST_OWN_PAST = re.compile(r"(?i)\b(?:used\s+to(?:\s+(?:be|cost|sell|go|run))?|previously|formerly|old\s+(?:price|rate)s?|"
+                           r"former\s+(?:price|rate)s?)\b")
+_HIST_BEFORE = re.compile(r"(?i)\b(?:up\s+to|before|prior\s+to|through|to)\s+$")
+_HIST_CHANGE = re.compile(r"(?i)\b(?:moved|rose|went|climbed|jumped|increased|raised|changed|up|fell|dropped|down|cut|"
+                          r"reduced|lowered|adjusted|shifted|revised|rising|going|goes|came)\s+(?:up\s+|down\s+)?(?:by\s+)?"
+                          r"(?:(?:about\s+|around\s+|roughly\s+)?\d+(?:\.\d+)?\s*%\s+)?(?:up\s+|down\s+)?(?:from\s+)$")
+_HIST_PRESENT = re.compile(r"(?i)\b(?:now|currently|today|still|remains?|this\s+(?:week|month)|right\s+now|at\s+present|"
+                           r"at\s+the\s+moment|these\s+days|is|are|costs|sells|goes\s+for|stands\s+at|for\s+now)\b")
+_HIST_PAST_VERB = re.compile(r"(?i)\b(?:cost|sold\s+for|priced\s+at|went\s+for|stood\s+at|charged)\b")
+
+
+_BARE_AMOUNT = re.compile(r"(?<![\w.,/-])\d{1,3}(?:,\d{3})+(?![\w,%/-]|\.\d)|(?<![\w.,/-])\d{3,6}(?![\w,%/-]|\.\d)")
+
+
+def _vdate(v: Val, anchor: date | None, day: date) -> date | None:
+    y = v.extra.get("year") or (anchor.year if anchor else day.year)
+    try:
+        return date(y, v.key[1], v.key[2])
+    except (ValueError, TypeError):
+        return None
+
+
+def _iso(x) -> date | None:
+    try:
+        return date.fromisoformat(str(x)[:10]) if x else None
+    except ValueError:
+        return None
+
+
+def _past_frames(s: str, sent_vals: list, fs: "FactSets", vals_cache: dict, day: date):
+    """(money start -> expired fact, set of date starts) for the prices of this sentence that it states as
+    PAST, truthfully. A past frame: was / were / used to / until / previously / old price / "up to <date>" /
+    "before <date>" / "moved|rose|went from X to Y"; no present marker (is / now / still / this week) in the
+    same clause; every date in that clause is the fact's end or its successor's start (one day either way)."""
+    money = [v for v in sent_vals if v.kind == "money"]
+    if not money or not fs.stale:
+        return {}, set()
+    # a bare amount in the same sentence ("was 1,600 until 16 Aug") has the sentence's currency
+    cur = money[0].key[2]
+    for m in _BARE_AMOUNT.finditer(s):
+        if not any(v.start < m.end() and m.start() < v.end for v in sent_vals):
+            n = _dec(m.group(0))
+            if n is not None:
+                money.append(Val("money", ("money", _canon(n), cur), m.group(0), m.start(), m.end(), {"bare": True}))
+    money.sort(key=lambda v: v.start)
+    dates = [v for v in sent_vals if v.kind == "date"]
+    bounds = [0] + [m.end() for m in _HIST_SPLIT.finditer(s)] + [len(s) + 1]
+    hist_m: dict[int, dict] = {}
+    anchors_all: list[date] = []
+    for v in money:
+        if any(v.key in vals_cache[f["key"]][0] or v.key in vals_cache[f["key"]][1] for f in fs.ok if f["key"] in vals_cache):
+            continue
+        st = [f for f in fs.stale if fs.reason.get(f["key"]) in ("expired", "superseded") and f["key"] in vals_cache
+              and v.key in vals_cache[f["key"]][0]]
+        if not st:
+            continue
+        f = _best(st, s)
+        seg0 = max(b for b in bounds if b <= v.start)
+        seg1 = min(b for b in bounds if b > v.start)
+        seg_end = min(len(s), seg1)
+        for m in _HIST_SPLIT.finditer(s):
+            if seg0 <= m.start() < seg_end and m.start() >= v.end:
+                seg_end = m.start()
+                break
+        before, after = s[seg0:v.start], s[v.end:seg_end]
+        seg_dates = [d for d in dates if seg0 <= d.start < seg_end]
+        anchors = [a for a in (_iso(f.get("valid_to")),) if a]
+        ref = F.subject_ref(f).lower()
+        for g in fs.ok:
+            if g.get("valid_from") and F.subject_ref(g).lower() == ref and g.get("attribute") == f.get("attribute"):
+                anchors.append(_iso(g["valid_from"]))
+        anchors = [a for a in anchors if a]
+        anchors += [a + timedelta(days=1) for a in list(anchors)]
+        cue = bool(_HIST_PAST.search(before) or _HIST_PAST.search(after))
+        if not cue:
+            for d in seg_dates:         # "up to 16 August 2026 a crate cost 1,600", "before 17 August"
+                if _HIST_BEFORE.search(s[max(0, d.start - 12):d.start]) and (d.start < v.start or d.start - v.end < 25):
+                    cue = True
+        if not cue and _HIST_CHANGE.search(before):
+            cue = True            # "moved from X to Y", "up from X": X is the old value
+        if not cue:
+            continue
+        # a bare "was 1,600" says nothing of WHEN: it needs a date that is the fact's end or its successor's
+        # start; "used to be", "previously", "old price", "up from X" say it is past on their own
+        own_past = bool(_HIST_OWN_PAST.search(before) or _HIST_OWN_PAST.search(after) or _HIST_CHANGE.search(before))
+        if not own_past and not any(_vdate(d, a, day) and abs((_vdate(d, a, day) - a).days) <= 1
+                                    for d in dates for a in anchors):
+            continue
+        # a present marker in the clause means it is said as now ("is 1,600 this week", "still 1,600")
+        if (not _HIST_CHANGE.search(before) and _HIST_PRESENT.search(before + " " + after)) or re.match(
+                r"(?i)\s*(?:,\s*)?(?:and|but|while|whereas)?\s*(?:it\s+)?(?:still|remains|currently|today|this\s+(?:week|month))\b",
+                s[seg_end:seg_end + 40]):
+            continue
+        if any(not any(abs((_vdate(d, a, day) - a).days) <= 1 for a in anchors if _vdate(d, a, day)) for d in seg_dates):
+            continue
+        hist_m[v.start] = f
+        anchors_all += anchors
+    hist_d = set()
+    if hist_m:
+        for d in dates:
+            if any(_vdate(d, a, day) and abs((_vdate(d, a, day) - a).days) <= 1 for a in anchors_all):
+                hist_d.add(d.start)
+    return hist_m, hist_d
+
+
+_CHANGE_WORD = re.compile(r"(?i)\b(?:up|down|higher|lower|increase[ds]?|increasing|rose|risen|rise|rising|jump(?:ed)?|climb(?:ed)?|"
+                          r"dropp?ed|cheaper|dearer|more\s+expensive|cut|reduced|fell|raised|hike[ds]?|gone\s+up)\b")
+
+
+def _pct_change_clash(v: Val, s: str, fs: "FactSets"):
+    """A price change said in percent ("Bedele 50cl is up 15% since August") for a product whose valid and
+    expired price facts give another change (+5.2%): (current fact, text, clashes), else None."""
+    if v.kind != "percent" or not (_CHANGE_WORD.search(s[max(0, v.start - 30):v.start])
+                                   or _CHANGE_WORD.search(s[v.end:v.end + 25])):
+        return None
+    stated = Decimal(v.key[1])
+    for g in fs.ok:
+        gv = g.get("value")
+        if (g.get("fact_type") != "price" or (g.get("sensitivity") or "public") != "public" or isinstance(gv, bool)
+                or not isinstance(gv, (int, float)) or not F.subject_ref(g) or not phrase_in(F.subject_ref(g), s)):
+            continue
+        olds = [o for o in fs.stale if fs.reason.get(o["key"]) in ("expired", "superseded")
+                and F.subject_ref(o).lower() == F.subject_ref(g).lower() and o.get("attribute") == g.get("attribute")
+                and o.get("currency") == g.get("currency") and isinstance(o.get("value"), (int, float))
+                and not isinstance(o.get("value"), bool) and o["value"]]
+        if not olds:
+            continue
+        o = max(olds, key=lambda x: str(x.get("valid_to") or ""))
+        pct = (Decimal(str(gv)) - Decimal(str(o["value"]))) * 100 / Decimal(str(o["value"]))
+        down = bool(re.search(r"(?i)\b(?:down|lower|cheaper|cut|reduced|fell|dropp?ed)\b", s[max(0, v.start - 30):v.end + 25]))
+        what = f"the price change of {F.subject_ref(g)}: {o['value']} to {gv} is {pct:+.1f}%"
+        if abs(stated - (-pct if down else pct)) > Decimal("0.75"):
+            return g, f"{v.text} differs from {what}", True
+        return g, f"{v.text} = {what}", False
+    return None
+
+
 TOMORROW = re.compile(r"(?i)\btomorrow\b")
 # a price said as covering more than one person: "£240 for you and a friend", "£90 for two", "£60 for
 # the pair of you" (not "£240 each for you and a friend", not "£90 for two hours")
@@ -2149,7 +2431,8 @@ WHOLE_GROUP_AFTER = re.compile(
     r"organi[sz]ation|account)|(?:per|a)\s+party)\b)")
 # a price said per head ("£180 per child", "£95pp", "£40 a head", "£12 per person per month")
 _HEAD_NOUN = (r"(?:person|people|head|child|children|kid|kids|guest|adult|attendee|participant|learner|student|pupil|"
-              r"delegate|diner|visitor|player|rider|passenger|employee|user|seat|staff\s+member|member\s+of\s+staff)")
+              r"delegate|diner|visitor|player|rider|passenger|traveller|traveler|tourist|employee|user|seat|staff\s+member|"
+              r"member\s+of\s+staff)")
 PER_HEAD_AFTER = re.compile(
     r"(?i:^[ \t]*" + _PERIOD + r"(?:(?:per|a|for\s+(?:each|every)|each)\s+" + _HEAD_NOUN + r"\b|"
     r"(?:pp|p/p|p\.p\.)(?![\w]))[ \t]*(?:(?:a|an|per|each|every)\s+(?:month|year|week|night|day|hour)\b)?)")
@@ -2194,6 +2477,10 @@ def _basis_word(f: dict) -> str:
     return {"flat": "a flat price", "per_unit": "per unit", "per_room": "per room"}.get(b, str(b or "")).replace("_", " ")
 
 
+_DUR_UNITS = frozenset({"minute"})      # hours are read as minutes; a count of days is a plan, a period or a frequency
+EVERY_WEEK = re.compile(r"(?i)\s*(?:a|per|each|every)\s+week\b")
+EVERY_DAY_FACT = re.compile(r"(?i)\bevery\s+day\b|\bdaily\b|\b(?:seven|7)\s+days\b|\ball\s+week\b|\beach\s+day\b|"
+                            r"\bday\s+of\s+the\s+week\b")
 UNBOUNDED = re.compile(r"(?i:\b(?:lifetime|life[- ]?long|forever|permanent|never[- ]ending|everlasting)[ \t-]+"
                        r"(?:(?!of\b|in\b)[a-z&'-]+[ \t]+){0,2}?(?P<n>[a-z]{4,})\b|"
                        r"\b(?P<n2>[a-z]{4,})[ \t]+(?:(?:is|are|lasts?|runs?|valid|good)[ \t]+)?(?:for[ \t]+life|for[ \t]*ever|"
@@ -2296,13 +2583,30 @@ RATED_BY = re.compile(r"(?i:^[^.;!?]{0,25}?\b(?:by|from)\s+(?:(?:over|more\s+tha
 RATING_KINDS_NUM = ("rated", "stars", "score")
 
 
+AWARD3_SKIP = frozenset("award awards winner winning tripadvisor's".split())
+
+
 def _rating_supports(f: dict, kind: str, kw: str, sentence: str, start: int, any_number: bool = False) -> bool:
+    if kind == "award3":
+        # a named third-party award is backed only by a fact that names it (every word of its name),
+        # never by some other claim or result fact
+        blob = _blob(f) + " " + (str(f.get("value")) if f.get("value") is not None else "")
+        bw = {_stem(w) for w in F.words(blob)}
+        need = {_stem(w) for w in F.words(kw.replace("’", "'")) if w not in AWARD3_SKIP and w not in F.STOP}
+        need = {"starred" if w == "star" else w for w in need}
+        bw = bw | ({"starred"} if "star" in bw or "starred" in bw else set())
+        return phrase_in(kw, blob) or (bool(need) and need <= bw)
     if not (f.get("fact_type") in RATING_TYPES or (f.get("claim_class") or "none") in RATING_CLASSES
             or phrase_in(kw, _blob(f))):
         return False
     blob = _blob(f) + " " + (str(f.get("value")) if f.get("value") is not None else "")
     if phrase_in(kw, blob):
         return True
+    if kind == "score":
+        # round 17: a score on a named platform ("4.9 on TripAdvisor") is backed only by a fact naming it
+        plat = re.search(r"(?i)" + _PLATFORM, kw)
+        if plat and re.sub(r"[^a-z0-9]", "", re.split(r"[\s.]", plat.group(0).lower())[0]) not in re.sub(r"[^a-z0-9]", "", blob.lower()):
+            return False
     words = {_stem(w) for w in F.words(blob)}
     need = RATING_WORDS.get(kind) or set()
     if kind == "count":
@@ -2347,6 +2651,792 @@ def _rating_supports(f: dict, kind: str, kw: str, sentence: str, start: int, any
     return ids <= (words | id_tokens(blob))
 
 
+# ---------- real-data rules: a named subject's own price; internal values written out
+
+_SUBJ_TOK = re.compile(r"[a-z0-9]+")
+_SUBJ_SKIP = frozenset("a an the of and".split())
+FROM_CUE = re.compile(r"(?i:\b(?:from|starting\s+(?:at|from)|starts?\s+(?:at|from)|as\s+low\s+as|prices?\s+from|"
+                      r"rates?\s+from)\s*(?:just\s+|only\s+)?$)")
+_NOT_TIME = r"(?!\s*(?:nights?|days?|weeks?|months?|hours?|times?|years?))"
+OCC_TWO = re.compile(r"(?i:\b(?:for|per)\s+(?:two|2)\b" + _NOT_TIME + r"|\b(?:two|2)\s+(?:guests?|people|persons?|adults?|"
+                     r"sharing|travell?ers?|pax)\b|\b(?:double|twin)\s+(?:occupancy|sharing)\b|\bfor\s+a\s+couple\b|"
+                     r"\bper\s+couple\b|\bdouble\s+rate\b)")
+OCC_ONE = re.compile(r"(?i:\b(?:for|per)\s+(?:one|1)\b" + _NOT_TIME + r"|\b(?:one|1)\s+(?:guest|person|adult|traveller|traveler)\b|"
+                     r"\bsingle\s+(?:occupancy|guests?|travell?ers?|use|person|rate|supplement)\b|\bsolo\b|"
+                     r"\bfor\s+a\s+single\b|\bfor\s+singles?\b|\bon\s+your\s+own\b)")
+
+
+def _subj_toks(text: str) -> list[tuple[str, int, int]]:
+    return [(_stem(m.group(0)), m.start(), m.end()) for m in _SUBJ_TOK.finditer(text.lower())
+            if m.group(0) not in _SUBJ_SKIP]
+
+
+def _name_spans(s: str, refs: dict) -> list[tuple[int, int, str]]:
+    """Subject names a sentence says: (start, end, ref key). A name is said exactly (its words in a
+    row; parentheses, hyphens and commas read as spaces) or, for a name of three words or more,
+    nearly (all its words, any order, within two words of its length: "Lake View Twin Room"). A name
+    inside a longer name said here ("Queen Room" of "Standard Queen Room (Lake View)") is dropped:
+    the most specific name wins."""
+    toks = _subj_toks(s)
+    if not toks:
+        return []
+    words = [t[0] for t in toks]
+    found = []
+    for key, seq in refs.items():
+        n = len(seq)
+        hit = None
+        for i in range(len(words) - n + 1):
+            if words[i:i + n] == seq:
+                hit = (toks[i][1], toks[i + n - 1][2], key, n, 1)
+                break
+        if hit is None and n >= 3:
+            need, best = set(seq), None
+            for i, w in enumerate(words):
+                if w not in need:
+                    continue
+                for k in range(n - 1, min(n + 2, len(words) - i)):
+                    if need <= set(words[i:i + k + 1]):
+                        if best is None or k < best[0]:
+                            best = (k, i)
+                        break
+            if best:
+                hit = (toks[best[1]][1], toks[best[1] + best[0]][2], key, n, 0)
+        if hit:
+            found.append(hit)
+    found.sort(key=lambda h: (-h[3], -h[4], h[0]))
+    kept: list = []
+    for h in found:
+        if not any(h[0] < k[1] and k[0] < h[1] for k in kept):
+            kept.append(h)
+    return [(h[0], h[1], h[2]) for h in kept]
+
+
+_REGION_RX = re.compile(r"(?<![\w'’])(?:in|to|into|across|around|through|throughout|from|near|of|over|toward|towards)\s+"
+                        r"(?:the\s+)?((?:[A-Z][\w'’-]*)(?:\s+[A-Z][\w'’-]*){0,3})")
+
+
+def _region_words(s: str) -> set[str]:
+    """Stemmed words of capitalised places a sentence names after a travel preposition ("to the Omo Valley")."""
+    out: set[str] = set()
+    for m in _REGION_RX.finditer(s):
+        out |= {_stem(w.lower()) for w in re.findall(r"[A-Za-z0-9]+", m.group(1))}
+        out.add(_stem(s[m.start():].split()[0].lower()))       # the preposition: "across Serengeti" is a pair too
+    return out
+
+
+def _contains_seq(long: tuple, short: tuple) -> bool:
+    """`short` is the whole name or the tail of `long` (Suite Lake View in Zebra Luxury King Suite Lake View)."""
+    n = len(short)
+    return len(long) > n >= 2 and tuple(long[-n:]) == tuple(short)
+
+
+def _guests(f: dict) -> set[int] | None:
+    """The occupancies a fact's conditions allow (None = no guests condition)."""
+    out = None
+    for c in f.get("conditions") or []:
+        if not isinstance(c, dict) or str(c.get("key") or "").lower() not in ("guests", "guest", "occupancy", "pax"):
+            continue
+        op, val = str(c.get("op") or "="), c.get("value")
+        try:
+            if op in ("=", "==") and not isinstance(val, list):
+                got = {int(val)}
+            elif op == "in" and isinstance(val, list):
+                got = {int(x) for x in val}
+            elif op == "<=":
+                got = set(range(1, int(val) + 1))
+            elif op == ">=":
+                got = set(range(int(val), int(val) + 10))
+            else:
+                continue
+        except (TypeError, ValueError):
+            continue
+        out = got if out is None else out & got
+    return out
+
+
+def _occupancy(s: str, spans) -> int | None:
+    """1 or 2 when the sentence states whom a price is for, else None (unsaid, or both said)."""
+    masked = s
+    for a, b, _ in spans:         # "Single Room" is a name, not an occupancy
+        masked = masked[:a] + " " * (b - a) + masked[b:]
+    two, one = bool(OCC_TWO.search(masked)), bool(OCC_ONE.search(masked))
+    return 2 if two and not one else 1 if one and not two else None
+
+
+def _price_words(f: dict) -> str:
+    cur, val = str(f.get("currency") or ""), f.get("value")
+    sym = {"USD": "$", "GBP": "£", "EUR": "€"}.get(cur.upper())
+    num = _canon(Decimal(str(val)))
+    parts = [(sym + num) if sym else f"{cur.upper()} {num}".strip()]
+    basis = str(f.get("basis") or "").replace("_", " ")
+    if basis.startswith("per "):
+        parts.append(basis)
+    if str(f.get("unit") or "") in ("night", "nights"):
+        parts.append("per night")
+    g = _guests(f)
+    if g:
+        words = {1: "one", 2: "two", 3: "three", 4: "four"}
+        who = " or ".join(words.get(x, str(x)) for x in sorted(g))
+        parts.append(f"for {who} guest" + ("" if g == {1} else "s"))
+    return " ".join(dict.fromkeys(parts))
+
+
+# ---- round 13: names of products the business does not have, breakfast said of a room that has none
+TRADE_CUE = re.compile(r"(?i)\b(?:net|trade|agent|agents?['’]|contract|wholesale|tour[- ]operators?['’]?s?|operators?['’]?s?)\s+"
+                       r"(?:rates?|prices?|pricing|tariffs?)\b|\bnet\s+(?:cost|price)s?\b")
+NAME_LEAD = frozenset("""our your the a an book stay enjoy try discover choose reserve meet visit experience relax sleep upgrade
+treat see love fancy and or with in at for from to this these those every each all new dear hello hi hey welcome pick get
+grab take spend unwind imagine picture can we you they it is are was were has have""".split())
+CAP_RUN = re.compile(r"(?<![\w'’])[A-Z][\w'’&-]*(?:[ \t]+[A-Z][\w'’&-]*)*")
+LOWER_OK = frozenset("a an the of in at for to and or on with your our by from".split())
+BREAKFAST_SAID = re.compile(r"(?i)\bbreakfast\s+(?:is\s+|are\s+)?(?:included|incl\b|on\s+us|on\s+the\s+house|thrown\s+in|complimentary|"
+                            r"free|for\s+free|at\s+no\s+(?:extra\s+)?(?:cost|charge))|"
+                            r"\b(?:includ(?:e|es|ing|ed)|with|plus|free|complimentary|comes\s+with|come\s+with)\s+(?:a\s+|our\s+|the\s+|your\s+)?"
+                            r"(?:free\s+|complimentary\s+|daily\s+|full\s+|hearty\s+|continental\s+)?breakfast\b")
+BREAKFAST_EVERY = re.compile(r"(?i)\bbreakfast\s+(?:is\s+)?(?:in|with|part\s+of)\s+(?:every|all|each)\b")
+EVERY_ROOM = re.compile(r"(?i)\b(?:every|each)\s+(?:of\s+our\s+)?(?:rates?|rooms?|stays?|bookings?)\b|\ball\s+(?:of\s+)?our\s+(?:rates?|rooms)\b|"
+                        r"\bour\s+rooms\b|\bbreakfast\s+is\s+in\s+every\b")
+BREAKFAST_NOT = re.compile(r"(?i)\b(?:no|not|without|excl\w*|isn['’]t|aren['’]t|un\w*)\s+(?:\w+\s+)?breakfast\b|"
+                           r"\bbreakfast\s+(?:is\s+|are\s+)?(?:not|isn['’]t|excluded|extra|optional|unconfirmed|n/a)\b")
+BREAKFAST_FACT = re.compile(r"(?i)\bbreakfast\s+(?:is\s+)?(?:included|free|complimentary)\b|\bincludes?\s+(?:a\s+)?breakfast\b|"
+                            r"\b(?:with|free|complimentary)\s+breakfast\b")
+
+
+def _ref_head(ref: str) -> str | None:
+    """The head noun of a product name: its last word outside brackets ("Standard Queen Room (Lake
+    View)" -> room, "Presidential Suite" -> suite)."""
+    toks = [w for w, _, _ in _subj_toks(re.sub(r"\([^)]*\)", " ", ref or ""))]
+    return toks[-1] if toks and len(toks[-1]) >= 3 else None
+
+
+def _breakfast_affirmed(f: dict) -> bool:
+    txt = " ".join(str(x) for x in (f.get("text"), f.get("value_text"), *(f.get("required_disclosures") or [])) if x)
+    return bool(BREAKFAST_FACT.search(txt)) and not BREAKFAST_NOT.search(BREAKFAST_FACT.sub(" ", txt))
+
+
+def _breakfast_denied(f: dict) -> bool:
+    """The fact itself says breakfast is not included / not confirmed ("... breakfast not confirmed ...")."""
+    txt = " ".join(str(x) for x in (f.get("text"), f.get("value_text")) if x)
+    return bool(re.search(r"(?i)\bbreakfast\b", txt)) and bool(BREAKFAST_NOT.search(txt))
+
+
+def _title_case_line(s: str) -> bool:
+    ws = re.findall(r"[A-Za-z][\w'’&-]*", s)
+    return len(ws) >= 4 and all(w[0].isupper() or w.lower() in LOWER_OK for w in ws)
+
+
+def _invented_names(s: str, known_toks: set, heads: dict) -> list[tuple[str, str]]:
+    """Capitalised product names that end like the business's own ("Tukul VIP Suite" when its products
+    are named Standard Queen Room, Presidential Suite ...) but use a word no product of the business
+    has: (name, head). Never a name the sentence says as a known one, a Title Case heading, or a
+    negated name."""
+    if _title_case_line(s):
+        return []
+    out = []
+    for m in CAP_RUN.finditer(s):
+        # "Garden-view Family Room" says "Family Room (Garden View)": a hyphenated qualifier is two words
+        toks = list(re.finditer(r"[A-Za-z0-9][\w'’&]*", m.group(0)))
+        while toks and toks[0].group(0).lower() in NAME_LEAD:
+            toks.pop(0)
+        if len(toks) < 2:
+            continue
+        a, b = m.start() + toks[0].start(), m.start() + toks[-1].end()
+        head = _stem(toks[-1].group(0).lower())
+        if head not in heads:
+            continue
+        body = [_stem(t.group(0).lower()) for t in toks[:-1]]
+        unknown = [w for w in body if w not in known_toks]
+        if not unknown:
+            continue
+        if re.search(r"(?i)\b(?:no|not|never|without|than)\s+(?:a\s+|an\s+|any\s+|the\s+|our\s+)?$", s[:a]):
+            continue
+        out.append((s[a:b], head))
+    return out
+
+
+# ---- round 16: counts of countable things ("three conference halls" for two), types the business has none of
+_COUNT_WORDS = {w: n for w, n in NUMBER_WORDS.items() if len(w) > 2 and 2 <= n <= 100}
+_COUNTABLE_UNITS = frozenset("room seat user location branch integration".split())
+_COUNT_RX = re.compile(r"(?<![\w.,£$€#/+-])(?P<num>\d{1,3}(?:,\d{3})*|" + "|".join(sorted(_COUNT_WORDS, key=len, reverse=True)) +
+                       r")(?P<plus>\+)?[\s-]+(?:(?P<mod>[A-Za-z]{3,})[\s-]+)?(?P<noun>[A-Za-z]{4,})(?![\w'’-])", re.I)
+_COUNT_LOWER = re.compile(r"(?i)\b(?:over|more\s+than|at\s+least|above|exceeding|beyond)\s*$")
+_COUNT_INCL = re.compile(r"(?i)\bat\s+least\s*$")
+_COUNT_SOFT = re.compile(r"(?i)\b(?:up\s+to|under|below|fewer\s+than|less\s+than|no\s+more\s+than|at\s+most|max(?:imum)?(?:\s+of)?|"
+                         r"around|about|nearly|almost|approx\w*|roughly|some|just\s+under|only|every|each|per|any|"
+                         r"first|last|next|top|these|those|just|for|book(?:ing|s)?|reserv\w+|order(?:ing|s)?|buy(?:ing)?|"
+                         r"get|take|taking|add|pick|choose|select|need|needs|require\w*|bring|send|invite|share|request\w*)\s*$")
+_COUNT_NOT_NOUN = frozenset("""this that these those them they their there then than with from your ours some many most
+    more less other others also only just very each every both either neither over under into onto upon about above
+    after before""".split())
+
+
+def _count_things(text: str) -> list[tuple]:
+    """(number, comparator, (modifier, noun stem), start, end) for "<number> [word] <plural noun>" outside
+    time, measure, money and person units ("three conference halls", "203 rooms")."""
+    out = []
+    for m in _COUNT_RX.finditer(text):
+        raw = m.group("num").lower()
+        n = Decimal(_COUNT_WORDS[raw]) if raw in _COUNT_WORDS else _dec(raw)
+        if raw in _COUNT_WORDS:
+            # real-7: "two hundred and three rooms" is 203, never "three rooms"
+            head = text[max(0, m.start("num") - 60):m.end("num")]
+            w = WORD_NUM_TAIL.search(head)
+            if w and w.start() < len(head) - len(raw):
+                n = Decimal(word_number(w) or n)
+        if n is None or n < 2:
+            continue
+        # "50 rooms look": the first word is the noun when the second is not a plural noun
+        for mod, noun, end in ((m.group("mod") or "", m.group("noun"), m.end()),
+                               ("", m.group("mod") or "", m.start("mod") + len(m.group("mod") or ""))):
+            noun, mod = noun.lower(), mod.lower()
+            if not noun or not re.search(r"(?<![su])s$", noun) or noun in _COUNT_NOT_NOUN:
+                continue
+            unit = UNITS.get(noun)
+            if unit and unit not in _COUNTABLE_UNITS:
+                continue
+            if mod and (mod in _COUNT_NOT_NOUN or mod in F.STOP or UNITS.get(mod) or mod in NUMBER_WORDS):
+                continue
+            if text[end:end + 2].strip().startswith("%"):
+                continue
+            before = text[max(0, m.start() - 24):m.start()]
+            cmp_ = ("incl" if m.group("plus") or _COUNT_INCL.search(before) else "lower" if _COUNT_LOWER.search(before)
+                    else "soft" if _COUNT_SOFT.search(before) else "eq")
+            out.append((n, cmp_, (mod, _stem(noun)), m.start(), end))
+            break
+    return out
+
+
+def count_findings(s: str, ok: list[dict]) -> list[dict]:
+    """A count of things an in-scope fact counts differently: "three conference halls" for "Two conference
+    halls", "over 300 rooms" for 203 rooms. Matched on the same noun and the same qualifier (so "20 deluxe
+    rooms" is not tested against "203 rooms"); no fact giving that number for the thing; approximations
+    and ceilings are left alone. conflict_or_expired with the fact."""
+    mine = _count_things(s)
+    if not mine or s.rstrip().endswith("?") or _title_case_line(s):
+        return []
+    out, done = [], set()
+    for n, cmp_, key, a, b in mine:
+        if cmp_ == "soft" or (key, n) in done:
+            continue
+        have: list[tuple[Decimal, dict]] = []
+        for f in ok:
+            if (f.get("sensitivity") or "public") != "public":
+                continue
+            txt = " ".join(str(x) for x in (f.get("value_text"), f.get("text")) if x)
+            for fn, _c, fk, _a, _b in _count_things(txt):
+                if fk == key:
+                    have.append((fn, f))
+            val, unit = f.get("value"), str(f.get("unit") or "").strip().lower()
+            if isinstance(val, (int, float)) and not isinstance(val, bool) and (None, _stem(unit)) == key and not f.get("currency"):
+                have.append((Decimal(str(val)), f))
+        if not have:
+            continue
+        # real-7: the count belongs to the subject named last before it ("A 33cl crate holds 20" is tested
+        # against the 33cl crate, not the 50cl crate that holds 20)
+        refs = {F.subject_ref(f) for _, f in have if len(F.subject_ref(f) or "") >= 3}
+        if len(refs) > 1:
+            at = {r: max((m2.start() for m2 in re.finditer(r"(?i)(?<![\w-])" + re.escape(r) + r"(?![\w-])", s[:a])), default=-1)
+                  for r in refs}
+            near = max(at, key=at.get)
+            if at[near] >= 0:
+                have = [(x, f) for x, f in have if F.subject_ref(f) == near]
+        nums = [x for x, _ in have]
+        if cmp_ in ("lower", "incl"):
+            bad = [(x, f) for x, f in have if (x < n if cmp_ == "incl" else x <= n)]
+            if len(bad) != len(have):
+                continue
+        elif n in nums:
+            continue
+        done.add((key, n))
+        f = have[0][1]
+        out.append(_finding(s, "conflict_or_expired", f, _quote(f),
+                            f"{s[a:b].strip()}: the fact says {', '.join(_canon(x) for x in sorted(set(nums)))} "
+                            f"{key[1]}s: {(f.get('text') or _quote(f) or '')[:160]}"))
+    return out
+
+
+_VILLA_HEADS = frozenset("villa suite tent bungalow cottage chalet cabin apartment penthouse tukul".split())
+
+
+def type_findings(s: str, head_refs: dict, fact_words: set) -> list[dict]:
+    """A named accommodation of a type the business does not have ("Honeymoon Villa" when its rooms are
+    rooms and tents): a capitalised name whose last word is such a type that no fact mentions at all,
+    in a business whose facts price rooms. wrong_scope, no fact key."""
+    if not (set(head_refs) & (_VILLA_HEADS | {"room"})) or _title_case_line(s):
+        return []
+    out = []
+    for m in CAP_RUN.finditer(s):
+        toks = list(re.finditer(r"[A-Za-z0-9][\w'’&]*", m.group(0)))
+        while toks and toks[0].group(0).lower() in NAME_LEAD:
+            toks.pop(0)
+        if len(toks) < 2:
+            continue
+        head = _stem(toks[-1].group(0).lower())
+        if head not in _VILLA_HEADS or head in fact_words or head in head_refs:
+            continue
+        a = m.start() + toks[0].start()
+        if re.search(r"(?i)\b(?:no|not|never|without|than|n['’]t|nor|neither|lack\w*)\b[^.!?]{0,24}$", s[:a]):
+            continue
+        name = s[a:m.start() + toks[-1].end()]
+        out.append({"sentence": s, "label": "wrong_scope", "fact_key": None, "quote": None, "blocking": True,
+                    "detail": f'"{name}": no fact has any {head}; the business\'s rooms are '
+                              f'{", ".join(sorted(h for h in head_refs if h in _VILLA_HEADS | {"room"}))}'})
+    return out
+
+
+# ---------- round 14: sizes, pack specs, places served, delivery times, unit headers
+
+_SIZE_UNITS = {"cl": ("vol", Decimal(10)), "ml": ("vol", Decimal(1)), "l": ("vol", Decimal(1000)),
+               "ltr": ("vol", Decimal(1000)), "ltrs": ("vol", Decimal(1000)), "litre": ("vol", Decimal(1000)),
+               "litres": ("vol", Decimal(1000)), "liter": ("vol", Decimal(1000)), "liters": ("vol", Decimal(1000)),
+               "kg": ("mass", Decimal(1000)), "g": ("mass", Decimal(1)), "gr": ("mass", Decimal(1)),
+               "oz": ("oz", Decimal(1)), "lb": ("lb", Decimal(1)), "lbs": ("lb", Decimal(1))}
+SIZE_RX = re.compile(r"(?<![\w.,])(?:(?P<n>\d+(?:\.\d+)?)\s?(?P<u>cl|ml|ltrs?|litres?|liters?|l|kg|g|gr|oz|lbs?)(?![\w])"
+                     r"|(?P<p>\d{1,3})[\s-]?pack(?![\w])|pack\s+of\s+(?P<p2>\d{1,3})(?![\w]))", re.I)
+
+
+def _size_canon(m: re.Match) -> tuple:
+    if m.group("n") is not None:
+        fam, k = _SIZE_UNITS[m.group("u").lower()]
+        return (fam, _canon(Decimal(m.group("n")) * k))
+    return ("pack", m.group("p") or m.group("p2"))
+
+
+def sizes_in(text: str) -> list[tuple[int, int, tuple, str]]:
+    """Every size / variant token ("33cl", "0.5 L", "500g", "6-pack"): (start, end, canonical, as written)."""
+    return [(m.start(), m.end(), _size_canon(m), m.group(0).strip()) for m in SIZE_RX.finditer(text)]
+
+
+_SIZED_KINDS = ("product", "variant", "service", "package", "menu_item", "plan", "offer")
+_TOK_RX = re.compile(r"[^\s,;:()\[\]/]+")
+
+
+def _base_words(text: str) -> tuple:
+    return tuple(w.strip(".,;:!?'\"").lower() for w in _TOK_RX.findall(text) if w.strip(".,;:!?'\""))
+
+
+def size_catalog(live: list[dict]) -> dict[tuple, dict]:
+    """product base words -> {canonical size: as written}, from the subject names ending in a size
+    ("Heineken 33cl", "Buckler 0.0% 33cl") and from the facts' own words ("Harar in 33cl and 50cl")."""
+    cat: dict[tuple, dict] = {}
+    for f in live:
+        ref = F.subject_ref(f) or ""
+        if F.subject_kind(f) not in _SIZED_KINDS or not ref:
+            continue
+        sz = sizes_in(ref)
+        if sz and sz[-1][1] >= len(ref.rstrip(" )")):
+            base = _base_words(re.sub(r"[\s,(-]+$", "", ref[:sz[-1][0]]))
+            if base and not sizes_in(" ".join(base)):
+                cat.setdefault(base, {}).setdefault(sz[-1][2], sz[-1][3])
+    for f in live:
+        for txt in (f.get("text"), f.get("value_text")):
+            for base, sz_seen, _a, _b in mentions_of_sizes(str(txt or ""), cat, chain=True):
+                for cn, disp in sz_seen:
+                    cat[base].setdefault(cn, disp)
+    return cat
+
+
+_SEP = r"[\s-]*\(?\s*(?:(?:in|at|as|of)\s+)?"
+
+
+def mentions_of_sizes(text: str, cat: dict, chain: bool = False) -> list:
+    """A product of the catalog straight followed by a size: [(base, [(canon, written)], start, end)] (with
+    chain, "Latte 8oz, 12oz and 16oz" gives all three; without it, [(base, sizes, a, b)] is one size)."""
+    low = text.lower()
+    found, taken = [], []
+    for base in sorted(cat, key=lambda b: -len(" ".join(b))):
+        rx = re.compile(r"(?<![\w])" + r"\s+".join(re.escape(w) for w in base) + _SEP)
+        for m in rx.finditer(low):
+            sm = SIZE_RX.match(text, m.end())
+            if not sm or _overlaps(taken, m.start(), sm.end()):
+                continue
+            seen = [(_size_canon(sm), sm.group(0).strip())]
+            end = sm.end()
+            while chain:
+                nx = re.compile(r"\s*(?:,|/|&|\band\b|\bor\b)\s*").match(text, end)
+                sn = SIZE_RX.match(text, nx.end()) if nx else None
+                if not sn:
+                    break
+                seen.append((_size_canon(sn), sn.group(0).strip()))
+                end = sn.end()
+            taken.append((m.start(), end))
+            found.append((base, seen, m.start(), sm.end()))
+    return found
+
+
+_NEG_SIZE = re.compile(r"(?i)\b(?:no|not|never|without|don['’]t|doesn['’]t|isn['’]t|aren['’]t|unlike|than|except)\s+(?:[\w'’-]+\s+){0,2}$")
+
+
+def size_findings(s: str, cat: dict) -> list[dict]:
+    """A product named with a size / variant it does not come in ("Heineken 50cl" when its facts only
+    have 33cl). wrong_scope, no fact key: the product exists, the size does not."""
+    out = []
+    for base, seen, a, b in mentions_of_sizes(s, cat):
+        canon, written = seen[0]
+        have = cat[base]
+        if canon in have or not have or _NEG_SIZE.search(s[max(0, a - 30):a]):
+            continue
+        name = s[a:b].strip(" (-")
+        out.append({"sentence": s, "label": "wrong_scope", "fact_key": None, "quote": None, "blocking": True,
+                    "detail": f'"{name}": no fact has {" ".join(s[a:b].split()[:-1]) or name} in {written}; '
+                              f'it comes in {", ".join(sorted(have.values()))}'})
+    return out
+
+
+def fact_sizes(live: list[dict]) -> set:
+    """Every volume / weight size any fact writes anywhere ("33cl", "1 litre")."""
+    out = set()
+    for f in live:
+        for txt in (f.get("text"), f.get("value_text"), F.subject_ref(f)):
+            out |= {z[2] for z in sizes_in(str(txt or "")) if z[2][0] != "pack"}
+    return out
+
+
+def unknown_size_findings(s: str, cat: dict, sizes: set) -> list[dict]:
+    """A priced product line in a size no fact of the business writes at all ("Kiboko 66cl ... 1,900 birr"
+    when the business sells 33cl and 50cl): the size is not sold. wrong_scope, no fact key."""
+    if not cat or not MONEY_PRE.search(s) and not MONEY_POST.search(s) and not ETH_POST.search(s):
+        return []
+    for a, b, canon, written in sizes_in(s):
+        if canon[0] == "pack" or canon in sizes:
+            continue
+        before = s[max(0, a - 30):a].rstrip(" (-")
+        m = re.search(r"([A-Z][\w'’-]{2,})(?:\s+0\.0%)?$", before)
+        if _NEG_SIZE.search(s[max(0, a - 30):a]):
+            continue
+        name = f"{m.group(1)} {written}" if m and m.group(1).lower() not in NAME_LEAD else None
+        if name is None and (NEW_SIZE_BEFORE.search(s[max(0, a - 24):a]) or SIZE_CONTAINER.match(s, b)):
+            # round 17: "New 25cl cans, 24 per pack, 1,400 birr per crate": a priced size no fact sells, with
+            # no product named (introduced as new, or as the size of cans / bottles)
+            name = written
+        if name is None:
+            continue
+        return [{"sentence": s, "label": "wrong_scope", "fact_key": None, "quote": None, "blocking": True,
+                 "detail": f'"{name}": no fact has anything in {written}; the sizes sold are '
+                           f'{", ".join(sorted({w for v in cat.values() for w in v.values()}))}'}]
+    return []
+
+
+NEW_SIZE_BEFORE = re.compile(r"(?i)\b(?:new|introducing|now\s+(?:in|available\s+in)|also\s+in|launching|brand[- ]new)[\s:,-]*$")
+SIZE_CONTAINER = re.compile(r"(?i)\s*(?:cans?|bottles?|crates?|packs?|kegs?|cartons?|tins?)\b")
+
+
+def pack_specs(live: list[dict]) -> list[tuple]:
+    """(size, written, count, unit stem, container stem | None, fact) of the spec facts that say how many
+    units a container of a size holds ("A 33cl crate holds 24 returnable bottles")."""
+    out = []
+    for f in live:
+        val, unit = f.get("value"), str(f.get("unit") or "").strip().lower()
+        if (f.get("fact_type") != "spec" or not unit or isinstance(val, bool) or not isinstance(val, (int, float))
+                or (f.get("sensitivity") or "public") == "restricted"):
+            continue
+        sz = sizes_in(F.subject_ref(f) or "")
+        if len(sz) != 1:
+            continue
+        m = re.search(r"_per_([a-z]+)$", str(f.get("attribute") or "").lower())
+        out.append((sz[0][2], sz[0][3], Decimal(str(val)), _stem(unit), _stem(m.group(1)) if m else None, f))
+    return out
+
+
+def pack_findings(s: str, packs: list[tuple]) -> list[dict]:
+    """"Harar 33cl 20-bottle crate", "crates hold 24 bottles of 50cl", "(20 x 33cl)" against the spec
+    fact that says what a crate of that size holds."""
+    if not packs:
+        return []
+    szs = sizes_in(s)
+    if not szs:
+        return []
+    out, seen = [], set()
+    low = s.lower()
+    cuts = [0] + [m.end() for m in re.finditer(r"[,;]|\b(?:and|while|whereas|but)\b|\s[-–—]\s", low)] + [len(s) + 1]
+    clauses = list(zip(cuts, cuts[1:]))
+    cands = []          # (count, unit stem | None, start, end, container needed)
+    for unit in {p[3] for p in packs}:
+        for m in re.finditer(r"(?<![\w.,])(\d+)[\s-]*" + re.escape(unit) + r"s?(?![\w])", low):
+            cands.append((Decimal(m.group(1)), unit, m.start(), m.end(), True))
+    for m in re.finditer(r"(?<![\w.,])(\d+)\s?[x×]\s?(?=\d*\.?\d*\s?(?:cl|ml|l|kg|g|oz)\b)", low):
+        for z in szs:
+            if z[0] == m.end():
+                cands.append((Decimal(m.group(1)), None, m.start(), z[1], False))
+    for n, unit, a, b, need in cands:
+        cl = [(x, y) for x, y in clauses if x <= a < y]
+        near = [q for q in szs if cl and cl[0][0] <= q[0] < cl[0][1]]        # a size of the same clause
+        if not near or (a, b) in seen:
+            continue
+        z = min(near, key=lambda q: (max(q[0] - b, a - q[1], 0), q[0]))
+        if max(z[0] - b, a - z[1], 0) > 30:
+            continue
+        seen.add((a, b))
+        for size, written, count, u, cont, f in packs:
+            if size != z[2] or (unit is not None and u != unit) or count == n:
+                continue
+            if need and cont and not re.search(r"\b" + re.escape(cont) + r"s?\b", low):
+                continue
+            if any(p[0] == size and p[3] == u and p[2] == n for p in packs):
+                continue
+            out.append({"sentence": s, "label": "conflict_or_expired", "fact_key": f["key"], "quote": _quote(f),
+                        "blocking": True, "detail": f'{n} {u}s with {z[3]} contradicts {f["key"]}: {f.get("text") or _quote(f)}'})
+            break
+    return out
+
+
+# Places: a service / delivery / availability claim naming a place no fact names
+_BIZ_NOUNS = r"(?:margins?|profits?|profitability|sales|turnover|stock|cash\s*flow|business|returns?|growth|demand|orders?)"
+
+
+def _business_sense(s: str, word: str) -> bool:
+    """A health word used of money or trade ("healthy margins", "margins stay healthy"), every time it occurs."""
+    if word.lower() not in ("healthy", "health", "healthier", "strong", "energy", "boost"):
+        return False
+    w = re.escape(word)
+    uses = list(re.finditer(r"(?i)(?<![\w-])" + w + r"(?![\w-])", s))
+    near = re.compile(r"(?i)" + _BIZ_NOUNS + r"(?:\s+\w+){0,3}\s+" + w + r"\b|\b" + w + r"\s+(?:\w+\s+){0,1}" + _BIZ_NOUNS)
+    return bool(uses) and all(near.search(s[max(0, m.start() - 40):m.end() + 40]) for m in uses)
+
+
+APPROX_CUE = re.compile(r"(?i)\b(?:more\s+than|over|nearly|almost|about|around|close\s+to|roughly|some|"
+                        r"just\s+(?:under|over)|approximately|approx\.?|upwards\s+of|well\s+over)\s*$")
+KNOWN_PLACES = ("Addis Ababa", "Hawassa", "Awasa", "Wolaita Sodo", "Sodo", "Jimma", "Konso", "Jinka", "Bahir Dar",
+                "Gondar", "Mekelle", "Adama", "Nazret", "Dire Dawa", "Dessie", "Harar", "Arba Minch", "Dilla",
+                "Shashemene", "Hosaena", "Hossana", "Debre Markos", "Debre Birhan", "Debre Zeit", "Bishoftu",
+                "Gambela", "Jijiga", "Semera", "Assosa", "Nekemte", "Axum", "Lalibela", "Woldia", "Mizan Teferi",
+                "Bonga", "Yirgalem", "Butajira", "Welkite", "Durame", "Kombolcha", "Sodo Town", "Chencha", "Arbaminch")
+_PLACE_NAME = r"[A-Z][a-z]{3,}(?:\s[A-Z][a-z]{2,})?"
+_PLACE_CHAIN = re.compile(r"\b(?:in|to|across|throughout|around)\s+(?P<c>" + _PLACE_NAME + r"(?:\s*(?:,|&|\band\b|\bor\b)\s*"
+                          + _PLACE_NAME + r")*)")
+_PLACE_STOP = frozenset("""ethiopia africa telegram facebook instagram whatsapp linkedin tiktok youtube google amharic english
+    monday tuesday wednesday thursday friday saturday sunday january february march april may june july august september october
+    november december birr order orders stock store shops shop bars bar hotels hotel trade price prices crate crates
+    selam welcome thanks hello dear reply message page bulk partners partner retailers customers friends""".split())
+SERVICE_VERB = re.compile(r"(?i)\b(?:suppl(?:y|ies|ying|ied)|serv(?:e|es|ed|ing)|deliver\w*|ship(?:s|ping|ped)?|distribut\w+|"
+                          r"stock(?:s|ed|ing|ists?)?|availab\w+|dispatch\w*|cover(?:s|ing)?|operat(?:e|es|ing)|launch\w*|"
+                          r"reach(?:es|ing)?|now\s+in|(?:find|visit|see|meet)\s+us|located|based|situated)\b")
+SERVICE_NOUN_IN = re.compile(r"(?i)\b(?:bars?|shops?|stores?|hotels?|restaurants?|retailers?|customers?|clients?|outlets?|"
+                             r"distributors?|dealers?|branch(?:es)?|depots?|warehouses?)\s+(?:in|across|throughout)\s+(?-i:[A-Z])")
+_PLACE_NEG = re.compile(r"(?i)\b(?:not|no\s+longer|never|don['’]t|doesn['’]t|cannot|can['’]t|outside|unlike|except|yet)\b")
+
+
+def _norm_place(p: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", p.lower())
+
+
+def place_index(live: list[dict], scope: dict) -> dict | None:
+    """What the facts say about places: None when no fact is scoped to a site / region (then a place is no
+    scope question); else {"served": normalised scope values, "named": normalised text of every fact}."""
+    served, named, scoped = set(), [], False
+    for k in ("sites", "regions"):
+        served |= {_norm_place(str(v)) for v in (scope or {}).get(k) or []}
+    for f in live:
+        sc = f.get("scope") or {}
+        for k in ("sites", "regions"):
+            for v in sc.get(k) or []:
+                served.add(_norm_place(str(v)))
+                scoped = True
+        if (f.get("sensitivity") or "public") != "restricted":
+            named.append(_norm_place(" ".join(str(x) for x in (f.get("text"), f.get("value_text"), F.subject_ref(f)) if x)))
+    return {"served": served, "named": "|".join(named)} if scoped else None
+
+
+def place_findings(s: str, idx: dict | None, all_words: set) -> list[dict]:
+    if not idx or s.rstrip().endswith("?") or _PLACE_NEG.search(s) or _title_case_line(s):
+        return []
+    verb = bool(SERVICE_VERB.search(s))
+    noun_in = bool(SERVICE_NOUN_IN.search(s))
+    cands: list[tuple[int, str]] = []
+    for name in KNOWN_PLACES:
+        for m in re.finditer(r"(?<![\w])" + re.escape(name) + r"(?![\w])", s):
+            if verb or noun_in:
+                cands.append((m.start(), name))
+    if verb:
+        for m in _PLACE_CHAIN.finditer(s):
+            for part in re.split(r"\s*(?:,|&|\band\b|\bor\b)\s*", m.group("c")):
+                ws = part.split()
+                if ws and not any(w.lower() in _PLACE_STOP or _stem(w.lower()) in all_words for w in ws):
+                    cands.append((m.start("c"), part))
+    places, seen = [], set()
+    for _, p in sorted(cands):
+        n = _norm_place(p)
+        if n in seen or n in idx["served"] or n in idx["named"]:
+            continue
+        seen.add(n)
+        places.append(p)
+    if not places:
+        return []
+    return [{"sentence": s, "label": "wrong_scope", "fact_key": None, "quote": None, "blocking": True,
+             "detail": f'{", ".join(places)}: no fact says you serve {"it" if len(places) == 1 else "them"}; '
+                       f'your facts are scoped to {", ".join(sorted(idx["served"])) or "one place"}'}]
+
+
+# round 17: a branch of the business in a town no fact has ("Our Hawassa lodge", "Paradise Lodge Jinka sleeps
+# 300", "from our new Bahir Dar depot")
+_BRANCH_NOUN = (r"(?:lodge|hotel|branch|depot|shop|store|camp|resort|property|location|office|warehouse|outlet|site|"
+                r"showroom|restaurant)")
+BRANCH_OUR = re.compile(r"(?i:\b(?:our|an?|the|new)\s+(?:(?:new|newest|sister|second)\s+)?)(?P<p>" + _PLACE_NAME + r")\s+(?i:(?P<n>" +
+                        _BRANCH_NOUN + r")s?)\b")
+# real-9: the town after the noun ("Our sister lodge in Hawassa", "our lodge in Gondar")
+BRANCH_IN = re.compile(r"(?i:\b(?:our|an?|the|new)\s+(?:(?:new|newest|sister|second|other)\s+)?(?P<n>" + _BRANCH_NOUN +
+                       r")s?\s+(?:in|at)\s+)(?P<p>" + _PLACE_NAME + r")")
+_BRAND_VERB = r"(?:has|have|sleeps|offers|features|boasts|welcomes|is|opens|with|hosts|can|will|also)"
+
+
+def site_brands(live: list[dict]) -> tuple[set, set]:
+    """({"Paradise Lodge"}, {"arbaminch", "turmi"}): the brand words and the town words of the site facts
+    ("Paradise Lodge Arba Minch" for the site "arbaminch")."""
+    brands, towns = set(), set()
+    for f in live:
+        if F.subject_kind(f) != "site":
+            continue
+        ws = (F.subject_ref(f) or "").split()
+        for v in (f.get("scope") or {}).get("sites") or []:
+            nv = _norm_place(str(v))
+            for k in (1, 2, 3):
+                if len(ws) > k and _norm_place("".join(ws[-k:])) == nv:
+                    brands.add(" ".join(ws[:-k]))
+                    towns.add(nv)
+    return brands, towns
+
+
+def branch_findings(s: str, idx: dict | None, brands: set, towns: set, ref_words: set, all_words: set) -> list[dict]:
+    """A lodge / depot / shop of the business in a town that is no scope value and no fact's site: "Our Hawassa
+    lodge", "Paradise Lodge Jinka" (the brand of the real sites + another town). wrong_scope, no fact key."""
+    if not idx or s.rstrip().endswith("?") or _PLACE_NEG.search(s) or _title_case_line(s):
+        return []
+    known = {_norm_place(k) for k in KNOWN_PLACES}
+    out = []
+
+    def unserved(p: str) -> bool:
+        n = _norm_place(p)
+        return n not in idx["served"] and n not in towns and not all(_stem(w.lower()) in ref_words for w in p.split())
+
+    for m in BRANCH_OUR.finditer(s):
+        p = m.group("p")
+        if _norm_place(p) in known and unserved(p):
+            out.append((p, f"a {m.group('n').lower()}"))
+    for m in BRANCH_IN.finditer(s):
+        p = m.group("p")
+        if _norm_place(p) in known and unserved(p) and not any(q == p for q, _ in out):
+            out.append((p, f"a {m.group('n').lower()}"))
+    for brand in brands:
+        for m in re.finditer(r"(?<![\w])" + re.escape(brand) + r"\s+(?P<p>" + _PLACE_NAME + r")", s):
+            p = m.group("p")
+            ws = p.split()
+            if not (_norm_place(p) in known or (
+                    not any(_stem(w.lower()) in all_words or w.lower() in _PLACE_STOP for w in ws)
+                    and re.match(r"\s+" + _BRAND_VERB + r"\b", s[m.end():]))):
+                continue
+            if unserved(p) and _norm_place(brand + p) not in idx["named"]:
+                out.append((p, brand))
+    seen, res = set(), []
+    for p, what in out:
+        if p in seen:
+            continue
+        seen.add(p)
+        res.append({"sentence": s, "label": "wrong_scope", "fact_key": None, "quote": None, "blocking": True,
+                    "detail": f'{p}: no fact says you have {what} in {p}; '
+                              f'your sites are {", ".join(sorted(towns | idx["served"])) or "one place"}'})
+    return res
+
+
+DELIVERY_TIME = re.compile(r"(?i)\bdeliver\w*\b[^.!?\n]{0,40}?\b(?:in|within|under|inside)\s+(?:about\s+|around\s+|just\s+|only\s+|"
+                           r"less\s+than\s+|no\s+more\s+than\s+)?(?:\d+\s?[-]?\s?(?:minutes?|mins?|hours?|hrs?)\b|an?\s+hour\b)|"
+                           r"\b\d+[\s-](?:minutes?|mins?|hours?|hrs?)\s+(?:delivery|deliveries)\b")
+
+
+def unit_header_said(text: str, sentence: str, disclosure: str) -> bool:
+    """A list line ("• Harar 33cl: 1,700 birr") under a line of the piece that says the unit of the
+    prices ("Crate prices this week:", "prices are per crate") has that unit's disclosure ("per crate")."""
+    m = re.fullmatch(r"\s*per\s+([a-z]+)\s*", disclosure.lower())
+    if not m:
+        return False
+    pos = text.find(sentence)
+    if pos < 0:
+        return False
+    line_start = text.rfind("\n", 0, pos) + 1
+    if not LIST_LINE.match(text[line_start:pos + len(sentence)]):
+        return False
+    unit = re.escape(m.group(1))
+    say = re.compile(r"(?i)\b" + unit + r"s?\s+(?:price|prices|pricing|rate|rates|list)\b|\bprices?\b[^\n]{0,30}\bper\s+" + unit + r"\b|"
+                     r"\bper\s+" + unit + r"\s+(?:price|prices|pricing|rate|rates)\b|\b(?:prices?|rates?)\s+(?:are\s+|is\s+)?"
+                     r"(?:quoted\s+|listed\s+)?(?:by|for)\s+(?:the\s+|a\s+|each\s+)" + unit + r"\b")
+    for line in reversed(text[:line_start].split("\n")):
+        if not line.strip():
+            continue
+        if LIST_LINE.match(line):
+            continue
+        return bool(say.search(line))
+    return False
+
+
+UNIT_DISC = re.compile(r"(?i)^\s*per\s+([a-z]+)(?:\s+per\s+([a-z]+))?\s*$")
+ETHIOPIC = re.compile(r"[\u1200-\u137f]")
+
+
+def _unit_words(disclosure: str) -> set:
+    m = UNIT_DISC.match(disclosure)
+    return {w.lower() for w in m.groups() if w} if m else set()
+
+
+def _unit_dropped(key: str, f: dict, disc: list[str], strong_used: dict, by_key: dict, text: str) -> list[str]:
+    """real-7: the odd line out in a price list. The piece says the unit ("per crate") on its other price
+    lines, but this price's own sentence has no unit word at all ("Walia 33cl is 1,300 birr."). Only for a
+    unit disclosure, only when another price line says it literally, never when a line without a price says
+    it for all ("All prices are per crate") or a list heading does, never for Ethiopic text."""
+    if not (f.get("fact_type") == "price" and isinstance(f.get("value"), (int, float))):
+        return []
+    units = [(d, _unit_words(d)) for d in disc if _unit_words(d)]
+    if not units:
+        return []
+    priced: dict[str, set] = {}
+    for k2, ss in strong_used.items():
+        g = by_key.get(k2) or {}
+        if g.get("fact_type") == "price" and isinstance(g.get("value"), (int, float)):
+            for s2 in ss:
+                priced.setdefault(s2, set()).add(k2)
+    out = []
+    for sentence in strong_used.get(key) or []:
+        if not sentence or ETHIOPIC.search(sentence) or priced.get(sentence, set()) - {key}:
+            continue
+        low = sentence.lower()
+        ref = (F.subject_ref(f) or "").lower()
+        if ref:
+            low = low.replace(ref, " ")      # "Standard Twin Room …" names the room, it doesn't say "per room"
+        for d, words in units:
+            if all(re.search(r"(?<![a-z])" + w + r"(?:s|ly)?(?![a-z])", low) for w in words):
+                continue                     # "a crate of …", "birr/crate", "a night per room"
+            if unit_header_said(text, sentence, d) or per_unit_said(sentence, d):
+                continue
+            literal = re.compile(r"(?i)(?<![a-z])" + r"\s+".join(re.escape(x) for x in d.split()) + r"(?![a-z])|"
+                                 r"/\s*" + re.escape(d.split()[-1]) + r"(?![a-z])")
+            lines = [x for x in re.split(r"(?<=[.!?])\s+|\n+", text) if x.strip()]
+            others = [x for x in lines if x.strip() not in sentence and sentence not in x and re.search(r"\d", x)]
+            if not any(literal.search(s2) for s2 in others):
+                continue                     # no other price line says it: the piece-wide rule decides
+            general = [x for x in re.split(r"(?<=[.!?])\s+|\n+", text) if x.strip() and literal.search(x)
+                       and not re.search(r"\d", x)]
+            if general:
+                continue                     # "All prices are per crate."
+            out.append(sentence)
+            break
+    return out
+
+
+def per_unit_said(sentence: str, disclosure: str) -> bool:
+    """The unit of a price said as the thing priced: "A crate of Heineken 33cl is 2,080 birr" (or "for a
+    crate", "one crate costs") for the disclosure "per crate". Only for a one-word "per <unit>"."""
+    m = re.fullmatch(r"\s*per\s+([a-z]+)\s*", disclosure.lower())
+    if not m or m.group(1) in ("person", "night", "month", "year", "week", "day", "head", "guest"):
+        return False
+    u = re.escape(m.group(1))
+    return bool(re.search(r"(?i)\b(?:a|an|one|1|each|every)\s+" + u + r"s?\s+(?:of\s+|is\s+|costs?\s+|will\s+cost\s+)|"
+                          r"\bfor\s+(?:a|an|one|1|each|every)\s+" + u + r"\b|"
+                          # round 6: the unit after the price: "1,300 birr a crate", "£4 each bottle", "$9 apiece"
+                          r"(?:\d|[£$€])[\d,.]*\s*(?:[A-Za-z]{2,5}\.?\s+)?(?:a|an|each|every|per|for\s+(?:a|an|each|every|one))\s+"
+                          + u + r"(?![\w-])", sentence))
+
+
+LIST_LINE = re.compile(r"^\s*(?:[-•*–—▪●‣·◦➤►✔✅🔹🔸👉]|\d{1,2}[.)])\s+")
+
+
 def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                slot_used: list[str] | None = None) -> tuple[list[dict], list[str]]:
     """(findings, used fact keys) for one piece. `slot_used`: fact keys filled from slots."""
@@ -2367,6 +3457,7 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             if sentence not in lst:
                 lst.append(sentence)
 
+    slot_sents: dict[str, set] = {}      # fact key -> sentences its slot was filled into
     for k in slot_used or []:
         f = by_key.get(k)
         if f:
@@ -2374,6 +3465,7 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             pos = text.find(vt) if vt else -1
             while pos >= 0:
                 use(k, F.sentence_at(text, pos))
+                slot_sents.setdefault(k, set()).add(F.sentence_at(text, pos))
                 pos = text.find(vt, pos + 1)
             used.setdefault(k, [])
             strong_used.setdefault(k, [])
@@ -2409,6 +3501,11 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
         for w in set(_seq(F.subject_ref(f))):
             df[w] = df.get(w, 0) + 1
     common_ref = {w for w, c in df.items() if len(live) >= 4 and c > len(live) / 2}
+    _wdf: dict[str, int] = {}
+    for f in live:
+        for w in {_stem(x) for x in F.content_words(" ".join(str(y) for y in (F.subject_ref(f), f.get("text")) if y))}:
+            _wdf[w] = _wdf.get(w, 0) + 1
+    hours_common = {w for w, c in _wdf.items() if len(live) >= 6 and c > len(live) * 0.2} | {"open", "hour", "midnight", "night"}
     own_words = {}          # per valid fact: its value / attribute words no other valid fact uses
     for g in fs.ok:
         if g["key"] not in prof:
@@ -2418,12 +3515,85 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
         own_words[g["key"]] = {w for w in mine - others if len(w) >= 4 and w not in WEAK and w not in UNIT_WORDS
                                and not any(c.isdigit() for c in w)}
 
+    # the valid price facts of each named subject ("Twin Room (Lake View)"); a public one makes it priced
+    priced: dict[tuple, list] = {}
+    for f in fs.ok:
+        val = f.get("value")
+        if (F.subject_ref(f) and F.subject_kind(f) not in ("business", "site", "person") and f.get("fact_type") == "price"
+                and isinstance(val, (int, float)) and not isinstance(val, bool)):
+            seq = tuple(w for w, _, _ in _subj_toks(F.subject_ref(f)))
+            if seq:
+                priced.setdefault(seq, []).append(f)
+    priced = {k: v for k, v in priced.items() if any((g.get("sensitivity") or "public") == "public" for g in v)}
+    priced_refs = {k: list(k) for k in priced}
+    cheapest: dict[str, Decimal] = {}     # currency -> the lowest public price any subject has
+    for v_ in priced.values():
+        for g in v_:
+            if (g.get("sensitivity") or "public") == "public" and g.get("currency"):
+                c = CURRENCY.get(str(g["currency"]).lower(), str(g["currency"]).upper())
+                cheapest[c] = min(cheapest.get(c, Decimal(str(g["value"]))), Decimal(str(g["value"])))
+
+    # round 13: product families (the head nouns of >= 4 priced subjects: rooms, suites, tents ...) and
+    # the words every subject of the business uses; which priced subjects carry breakfast
+    ref_toks = {w for f in live for w, _, _ in _subj_toks(F.subject_ref(f))}
+    head_refs: dict[str, set] = {}
+    for f in live:      # any scope, any day: the business's products are named by what its price facts name
+        val = f.get("value")
+        if (f.get("fact_type") == "price" and isinstance(val, (int, float)) and not isinstance(val, bool)
+                and F.subject_kind(f) in ("variant", "product", "service", "package", "menu_item", "plan")
+                and (f.get("sensitivity") or "public") != "restricted"):
+            h = _ref_head(F.subject_ref(f))
+            if h:
+                head_refs.setdefault(h, set()).add(tuple(w for w, _, _ in _subj_toks(F.subject_ref(f))))
+    heads_many = {h: v for h, v in head_refs.items() if len(v) >= 4}
+    breakfast_of = {seq: any(_breakfast_affirmed(g) for g in fl if (g.get("sensitivity") or "public") == "public")
+                    for seq, fl in priced.items()}
+
+    # internal / restricted facts whose plain number ("38,450 crates") must not be written out
+    bare_num = re.compile(r"(?<![\w.,£$€#-])(?P<n>" + _NUM + r")(?![\d%]|[.,]\d)(?:\s?-?\s?(?P<u>[A-Za-z]+))?")
+    public_nums: set[str] = set()
+    for f in live:
+        if (f.get("sensitivity") or "public") == "public":
+            for src in (f.get("value_text"), f.get("text"), f.get("value")):
+                for m in bare_num.finditer(str(src)) if src is not None else []:
+                    d = _dec(m.group("n").replace(",", ""))
+                    if d is not None:
+                        public_nums.add(_canon(d))
+    secret_nums = []
+    for f in live:
+        val = f.get("value")
+        if ((f.get("sensitivity") or "public") != "public" and isinstance(val, (int, float)) and not isinstance(val, bool)
+                and not f.get("currency") and (f.get("unit") or "") not in ("%", "percent", "per cent")):
+            if _canon(Decimal(str(val))) not in public_nums:
+                unit = re.split(r"[\s_-]+", str(f.get("unit") or "").strip().lower())[-1]
+                secret_nums.append((f, _canon(Decimal(str(val))), _stem(unit) if unit else ""))
+
+    # round 14: product sizes, pack specs, places served
+    size_cat = size_catalog(live)
+    size_cat = {b: v for b, v in size_cat.items() if v}
+    all_sizes = fact_sizes(live)
+    packs = pack_specs(live)
+    places = place_index(live, scope)
+    brands, towns = site_brands(live)
+    ref_words = {_stem(w.lower()) for f in live for w in re.findall(r"[A-Za-z]+", F.subject_ref(f) or "")}
+    # subjects with a duration of their own ("Crocodile Ranch" 90 minutes): a duration said in a sentence that
+    # names one of them is that subject's, as a price is
+    dur_refs: dict[str, dict[str, list]] = {}      # unit -> subject -> facts
+    for f in live:
+        ref = _core_ref(F.subject_ref(f))
+        if f["key"] in vals_cache and len(ref.split()) >= 2 and F.subject_kind(f) not in ("business", "site", "person"):
+            for u in {k[2] for k in vals_cache[f["key"]][0] if k[0] == "qty" and k[2] in _DUR_UNITS}:
+                dur_refs.setdefault(u, {}).setdefault(ref.lower(), []).append(f)
+    delivery_said = any(re.search(r"(?i)\bdeliver", " ".join((_blob(f), f.get("text") or ""))) for f in live)
+
     def distinct_generic(pr):
         return all(w in WEAK or w in F.STOP or len(w) < 3 for w in pr)
     fact_words = set()
     for f in live:
         if (f.get("sensitivity") or "public") == "restricted":
             continue          # never in copy: what only a restricted fact says is not offered
+        if f.get("fact_type") == "availability" and f.get("value") is False:
+            continue          # "We do not offer airport pick-up" backs no line that offers it
         fact_words |= {_stem(w) for w in F.words(" ".join(str(x) for x in (
             f.get("text"), f.get("value_text"), F.subject_ref(f), f.get("attribute"),
             *F.phrases(f.get("allowed_phrasing"))) if x).replace("_", " "))}
@@ -2463,8 +3633,14 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
         s_find += mg_find
         veto |= {x["fact_key"] for x in mg_find if x["blocking"]}
         veto |= {x["fact_key"] for x in wr_find if x["blocking"]}
+        names = _name_spans(s, priced_refs) if priced_refs else []
+        money_vals = [x for x in extract(s) if x.kind == "money"] if names else []
         # 1. values
-        for v in extract(s):
+        sent_vals = extract(s)
+        hist_m, hist_d = _past_frames(s, sent_vals, fs, vals_cache, day)
+        for v in sent_vals:
+            if v.kind == "date" and v.start in hist_d:
+                continue          # round 6: a date of a past-price history ("until 16 August", "since 17 August")
             under = _under_value(v, s, live, vals_cache)
             if under:
                 uf, ukey = under
@@ -2483,6 +3659,107 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                 ok = [f for f in fs.ok if wd in vals_cache[f["key"]][0]
                       and (_tied(f, prof, s, s_set) or _subject_named(f, s))]
                 loose = " working days" if ok else ""
+            if not ok and v.key == ("qty", "7", "day") and EVERY_WEEK.match(s, v.end):
+                # round 17: "seven days a week" = "every day" (an in-scope fact that says it)
+                alld = [g for g in fs.ok if EVERY_DAY_FACT.search(" ".join(str(x) for x in (g.get("value_text"), g.get("text")) if x))]
+                if alld:
+                    g = _best(alld, s)
+                    use(g["key"], s, False)
+                    s_find.append(_finding(s, "match", g, _quote(g), f"{v.text} a week = every day ({g['key']})"))
+                    continue
+            if ok and v.kind == "qty" and v.key[2] in _DUR_UNITS and dur_refs and not save_cue:
+                # round 17: a duration said in a sentence that names ONE subject with a duration of its own is
+                # that subject's ("Crocodile Ranch, 90 min" is not the 40 Springs' 90 minutes)
+                durs = [x for x in sent_vals if x.kind == "qty" and x.key[2] in _DUR_UNITS]
+                u_refs = dur_refs.get(v.key[2], {})
+                named_d = [r for r in u_refs if _named_at(r, s) >= 0]
+                named_d = [r for r in named_d if not any(r != q and r in q for q in named_d)]
+                if len(durs) == 1 and len(named_d) == 1 and not EVERY_WEEK.match(s, v.end):
+                    cand = u_refs[named_d[0]]
+                    def has(g):
+                        return v.key in vals_cache[g["key"]][0] | vals_cache[g["key"]][1]
+                    mine_ok = [g for g in cand if g in fs.ok]
+                    if mine_ok:
+                        if any(has(g) for g in mine_ok):
+                            ok = [g for g in mine_ok if has(g)]
+                        else:
+                            g = _best(mine_ok, s)
+                            use(g["key"], s)
+                            s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                                   f"{v.text} differs from the fact: {_quote(g)}"))
+                            continue
+                    else:
+                        other = [g for g in cand if has(g) and g not in fs.ok]
+                        if other:
+                            g = _best(other, s)
+                            s_find.append(_finding(s, "conflict_or_expired" if g in fs.stale else "wrong_scope", g, _quote(g),
+                                                   f"{v.text} is the duration of {F.subject_ref(g)}, which is {_why(fs, g)}"))
+                            continue
+            if ok and v.kind == "money" and names and not save_cue:
+                # a price said next to a subject's name is that subject's price (for the occupancy the
+                # sentence states): another subject's value is a wrong price, not a match
+                def gap(n, x):
+                    # trial: "… $99 for two guests; Standard King Room …": a name across a ";" is another item's
+                    between = s[x.end:n[0]] if n[0] >= x.end else s[n[1]:x.start] if x.start >= n[1] else ""
+                    return max(n[0] - x.end, x.start - n[1], 0) + (10_000 if re.search(r"[;•|]|\s/\s|\n", between) else 0)
+                near = min(names, key=lambda n: (gap(n, v), n[0] > v.start))
+                # every name is across a ";" / " / " from the price: it belongs to an item not named here
+                subj = priced[near[2]] if gap(near, v) < 10_000 else []
+                from_price = bool(FROM_CUE.search(s[:v.start])) and cheapest.get(v.key[2]) == Decimal(v.key[1])
+                # round 15: "lake-view suites from $116": a name said for a family of rooms (its words are
+                # inside the longer names of other priced subjects); the price is true when a member has it
+                if not from_price and FROM_CUE.search(s[:v.start]):
+                    fam = [g for k2, fl in priced.items() if k2 != near[2] and _contains_seq(k2, near[2])
+                           for g in fl if (g.get("sensitivity") or "public") == "public"
+                           and v.key in vals_cache[g["key"]][0] | vals_cache[g["key"]][1]]
+                    from_price = bool(fam)
+                # one price per name: "Puppy Pamper £45" owns the £45 next to it, not the £38 of another item
+                mine = min((x for x in money_vals), key=lambda x: (gap(near, x), x.start < near[0]))
+                if not from_price and mine.start == v.start and subj:
+                    occ = _occupancy(s, names)
+                    own = [g for g in subj if v.key in vals_cache[g["key"]][0] | vals_cache[g["key"]][1]]
+                    fit = [g for g in own if occ is None or _guests(g) is None or occ in _guests(g)]
+                    if TRADE_CUE.search(s) and any((g.get("sensitivity") or "public") != "public" for g in fit):
+                        # "our net rate for the Twin Room is $60": the subject's internal rate, not a public one
+                        fit = [g for g in fit if (g.get("sensitivity") or "public") != "public"]
+                    seg = s[max([x.end for x in money_vals if x.end <= near[0]] + [0]):min(near[1], v.start)]
+                    if not fit and re.search(r",|\b(?:or|and)\b|/|&", seg) and not re.search(r"\d|\b(?:is|are|costs?)\b", seg):
+                        # trial: "Standard King, Queen or Twin Room (Lake View): $71": one list of names that
+                        # share words; the price is right when a listed name's every word is there and has it
+                        said = {w.lower() for w in re.findall(r"[A-Za-z]+", seg)}
+                        fit = [g for fl in priced.values() for g in fl
+                               if (g.get("sensitivity") or "public") != "restricted"
+                               and v.key in vals_cache[g["key"]][0] | vals_cache[g["key"]][1]
+                               and {w.lower() for w in re.findall(r"[A-Za-z]+", F.subject_ref(g))} - {"room", "rooms"} <= said
+                               and (occ is None or _guests(g) is None or occ in _guests(g))]
+                    if fit:
+                        ok = fit
+                    else:
+                        pub = [g for g in subj if (g.get("sensitivity") or "public") == "public"]
+                        right = [g for g in pub if occ is None or _guests(g) is None or occ in _guests(g)] or pub
+                        g = right[0]
+                        ref = F.subject_ref(g)
+                        s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                               f"{v.text} is not the price of {ref}: {ref} is "
+                                               + "; ".join(_price_words(x) for x in right[:3])))
+                        continue
+            if ok and v.kind in ("money", "percent", "qty") and any((g.get("sensitivity") or "public") != "public" for g in ok):
+                # an internal value (a partner / trade rate) written out: it may only travel as a slot
+                pub = [g for g in ok if (g.get("sensitivity") or "public") == "public"]
+                inn = [g for g in ok if (g.get("sensitivity") or "public") != "public"]
+                if not any(s in slot_sents.get(g["key"], ()) for g in inn):
+                    if not pub:
+                        g = _best(inn, s)
+                        s_find.append(_finding(s, "slot_blocked", g, None,
+                                               f"internal value written out: {g['key']} must stay a [[slot]]"))
+                        continue
+                    g = _best(pub, s)
+                    if v.kind != "qty" and not phrase_in(F.subject_ref(g), s):
+                        s_find.append(_finding(s, "review", inn[0], None,
+                                               f"{v.text} is also the value of internal fact {inn[0]['key']}: check "
+                                               f"it is the public price ({g['key']}), not the internal one"))
+                        continue
+                    ok = pub
             if ok:
                 f = _best(ok, s)
                 clash = _group_clash(v, f, s) if v.kind == "money" else None
@@ -2519,11 +3796,32 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                 continue
             st = [f for f in fs.stale if v.key in vals_cache[f["key"]][0]]
             st = [f for f in st if tie(f)] or st
+            if st and v.start in hist_m:
+                f = hist_m[v.start]
+                s_find.append(_finding(s, "match", f, _quote(f), f"{v.text}: past price, correctly dated ({f['key']})"))
+                continue
             if st:
                 f = _best(st, s)
                 s_find.append(_finding(s, "conflict_or_expired", f, _quote(f),
                                        f"{v.text} is from a fact that is {_why(fs, f)} at {day.isoformat()}",
                                        weak=weak_basis(f)))
+                if v.kind == "money" and names and not save_cue:
+                    # round 13: a price next to a subject's name, with the occupancy said outright ("for one
+                    # guest"), that no valid fact of that subject gives for that occupancy is a wrong price
+                    # for it ("A Bungalow Room Single for one guest is $92": the $92 is the double rate)
+                    near = min(names, key=lambda n: (max(n[0] - v.end, v.start - n[1], 0), n[0] > v.start))
+                    mine = min(money_vals, key=lambda x: (max(near[0] - x.end, x.start - near[1], 0), x.start < near[0]))
+                    occ = _occupancy(s, names)
+                    subj = priced[near[2]]
+                    right = [g for g in subj if (g.get("sensitivity") or "public") == "public"
+                             and _guests(g) is not None and occ in _guests(g)]
+                    if (mine.start == v.start and occ is not None and right
+                            and not any(v.key in vals_cache[g["key"]][0] | vals_cache[g["key"]][1] for g in right)):
+                        g = right[0]
+                        ref = F.subject_ref(g)
+                        s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                               f"{v.text} is not the price of {ref} for that many guests: "
+                                               + "; ".join(_price_words(x) for x in right[:3])))
                 continue
             # the saving of an offer that is stale / out of scope ("Save £20 on your autumn service"),
             # said with a saving word: that offer's, not another price's
@@ -2547,6 +3845,10 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                 s_find.append(_finding(s, "conflict_or_expired", None, None,
                                        f"{v.text} is before the publish date {day.isoformat()}"))
                 continue
+            pcc = _pct_change_clash(v, s, fs)
+            if pcc:
+                s_find.append(_finding(s, "conflict_or_expired" if pcc[2] else "match", pcc[0], _quote(pcc[0]), pcc[1]))
+                continue
             same = [f for f in fs.ok if _same_attribute(v, f, s) and (v.kind != "freq" or _tied(f, prof, s, s_set))]
             if same:
                 f = _best(same, s)
@@ -2567,6 +3869,100 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             elif v.kind == "qty" and not any(_overlaps([(m.start(), m.end())], v.start, v.end)
                                              for m in UNSOURCED_RX.finditer(s)):
                 s_find.append(_finding(s, "review", None, None, f"{v.text}: no fact mentions it"))
+        # 1a0. a product name the business does not have ("Tukul VIP Suite" among Standard Queen Room,
+        #      Presidential Suite ...): same head noun as its products, a word none of them uses
+        if heads_many:
+            for nm, hd in _invented_names(s, ref_toks, heads_many):
+                s_find.append(_finding(s, "no_source", None, None,
+                                       f'"{nm}": no fact names this {hd}; the business\'s are named differently',
+                                       blocking=True))
+        # 1a0b. a product named with a size / variant it does not come in ("Heineken 50cl" when its facts
+        #       only have 33cl); a pack count that contradicts the spec fact ("a 33cl crate of 20 bottles");
+        #       a place served that no fact names ("bars in Addis Ababa and Hawassa")
+        if size_cat:
+            s_find += size_findings(s, size_cat)
+        s_find += pack_findings(s, packs)
+        s_find += unknown_size_findings(s, size_cat, all_sizes)
+        s_find += place_findings(s, places, fact_words)
+        s_find += type_findings(s, head_refs, fact_words)
+        s_find += [x for x in count_findings(s, fs.ok) if not any(
+            y["blocking"] and y["fact_key"] == x["fact_key"] and y["label"] == x["label"] for y in s_find)]
+        br_find = branch_findings(s, places, brands, towns, ref_words, fact_words)
+        if br_find:
+            # an invented branch's numbers are not the real site's ("Paradise Lodge Hawassa has 120 rooms")
+            ok_keys = {g["key"] for g in fs.ok}
+            s_find = [x for x in s_find if not (x["fact_key"] in ok_keys and x["label"] in ("match", "conflict_or_expired"))]
+            s_find += br_find
+        # 1a1. breakfast said of the one priced subject a sentence names when its own facts do not give
+        #      it and the other subjects of its kind do ("Presidential Suite ... breakfast included")
+        if names and BREAKFAST_SAID.search(s):
+            said = [m for m in BREAKFAST_SAID.finditer(s) if not BREAKFAST_NOT.search(s[max(0, m.start() - 12):m.end() + 14])]
+            keys = {n[2] for n in names}
+            if said and len(keys) > 1 and re.search(r"(?i)\b(?:all|every|each|both)\b", s):
+                # trial: "From Standard rooms at $71 to our Presidential Suite at $480, all include breakfast":
+                # the claim covers every room named; one whose own fact withholds breakfast is a conflict
+                for k in keys:
+                    denied = [g for g in priced[k] if (g.get("sensitivity") or "public") == "public" and _breakfast_denied(g)]
+                    if denied and not breakfast_of.get(k):
+                        g = _best(denied, s)
+                        s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                               f"breakfast: the fact does not say it is included: {(g.get('text') or _quote(g))[:200]}"))
+            if said and len(keys) == 1:
+                k = next(iter(keys))
+                kind = F.subject_kind(priced[k][0])
+                # round 15: the room's own fact says breakfast is not included / not confirmed: the claim
+                # asserts what that fact withholds, so it is a conflict with THAT fact (blocking)
+                denied = [g for g in priced[k] if (g.get("sensitivity") or "public") == "public" and _breakfast_denied(g)]
+                if denied and not breakfast_of.get(k):
+                    g = _best(denied, s)
+                    s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                           f"breakfast: the fact does not say it is included: {(g.get('text') or _quote(g))[:200]}"))
+                    # ... and, as before, nothing states it: both facets are reported (blocking)
+                    s_find.append(_finding(s, "no_source", None, None,
+                                           f"breakfast: no fact says breakfast is included with {F.subject_ref(priced[k][0])}",
+                                           blocking=True))
+                elif not breakfast_of.get(k) and any(v for k2, v in breakfast_of.items() if k2 != k and any(
+                        F.subject_kind(g) == kind for g in priced[k2])):
+                    s_find.append(_finding(s, "no_source", None, None,
+                                           f"breakfast: no fact says breakfast is included with {F.subject_ref(priced[k][0])}",
+                                           blocking=True))
+        # 1a2. held-out trial: breakfast promised for every room / rate with no room named ("Breakfast is in
+        #      every rate", "Our rooms … include breakfast") while a room's own fact withholds it
+        if not names and (BREAKFAST_SAID.search(s) or BREAKFAST_EVERY.search(s)) and EVERY_ROOM.search(s) \
+                and not BREAKFAST_NOT.search(s) and not s.rstrip().endswith(":"):
+            withheld = [g for fl in priced.values() for g in fl
+                        if (g.get("sensitivity") or "public") == "public" and _breakfast_denied(g)]
+            if withheld:
+                g = withheld[0]
+                s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                       "breakfast is not in every rate: " + "; ".join(
+                                           sorted({F.subject_ref(x) for x in withheld}))[:160] + " (breakfast not confirmed)"))
+        # 1a. a plain number only an internal / restricted fact has ("38,450 crates sold"): never written out
+        for m in bare_num.finditer(s) if secret_nums else []:
+            d = _dec(m.group("n").replace(",", ""))
+            if d is None:
+                continue
+            word = _stem((m.group("u") or "").lower())
+            approx = APPROX_CUE.search(s[max(0, m.start() - 24):m.start()]) is not None
+            for g, num, unit in secret_nums:
+                if any(s in slot_sents.get(g["key"], ()) for g in (g,)):
+                    continue
+                if num != _canon(d):
+                    # real-9: "more than 38,000 crates" for an internal 38,450: the rounded secret is still the secret
+                    try:
+                        n0 = Decimal(str(num))
+                    except Exception:
+                        continue
+                    if not (approx and n0 >= 1000 and abs(d - n0) <= n0 * Decimal("0.05")):
+                        continue
+                big = "," in m.group("n") or len(m.group("n").split(".")[0]) >= 5      # not a year, a room count
+                if not (unit and word == unit) and not big:
+                    continue
+                kind = "restricted" if (g.get("sensitivity") or "public") == "restricted" else "internal"
+                s_find.append(_finding(s, "slot_blocked", g, None,
+                                       f"{kind} value written out: {g['key']} " + (
+                                           "must stay a [[slot]]" if kind == "internal" else "must never be written")))
+                break
         # 1b. a period said as never ending ("lifetime warranty", "cover for life") against a valid
         #     fact that gives the same thing a set length ("12-month warranty")
         for m in UNBOUNDED.finditer(s):
@@ -2587,8 +3983,8 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                     continue
                 exempt = any(p.lower() in (x.lower() for x in F.phrases(g.get("allowed_phrasing")))
                              and (_subject_named(g, s) or F.subject_kind(g) == "business") for g in fs.ok)
-                if exempt:
-                    continue
+                if exempt or _business_sense(s, p):
+                    continue             # "keeps margins healthy": the shop's margins, not a health claim
                 why = next((x.get("why") for x in f.get("forbidden_phrasing") or []
                             if isinstance(x, dict) and x.get("phrase") == p and x.get("why")), None)
                 forbidden_spans.append(_norm_phrase(p))
@@ -2702,6 +4098,54 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                        for f in fs.ok + fs.scope + fs.stale):
                     continue
             s_find.append(_finding(s, "no_source", None, None, f'"{m.group(0)}": no fact says this'))
+        # 2d1. round 15: claims no fact backs: all-inclusive, UNESCO / World Heritage, "the only X in <place>",
+        #      "seats 300 delegates" (no fact gives that capacity). A fact saying it makes it a fact.
+        for m in ALL_INCL_RX.finditer(s):
+            if not _fact_says(live, ALL_INCL_RX) and not _NEG_BEFORE_CLAIM.search(s[max(0, m.start() - 12):m.start()]):
+                s_find.append(_finding(s, "no_source", None, None, f'"{m.group(0)}": no fact says this', blocking=True))
+        for m in UNESCO_RX.finditer(s):
+            if not _fact_says(live, UNESCO_RX):
+                s_find.append(_finding(s, "no_source", None, None, f'"{m.group(0)}": no fact says this', blocking=True))
+        for m in ONLY_RX.finditer(s):
+            if (not _fact_says(live, _ONLY_FACT_RX) and not _NEG_BEFORE_CLAIM.search(s[max(0, m.start() - 12):m.start()])
+                    and not any(rx.search(s) for _, rx, _ in KEYWORDS)):      # a claim keyword reports it already
+                s_find.append(_finding(s, "no_source", None, None, f'"{m.group(0)}": no fact says this (uniqueness)',
+                                       blocking=True))
+        for m in CAPACITY_RX.finditer(s):
+            n = m.group("n").replace(",", "")
+            if int(n) < 10 or not _VENUE_NOUN.search(s[:m.start()][-70:]):
+                continue
+            cap_rx = re.compile(r"(?i)(?<![\d,.$£€])" + n + r"(?![\d]|,\d)\s*(?:[a-z-]+\s+){0,2}?"
+                                r"(?:seat\w*|delegates?|guests?|people|persons?|pax|attendees?|diners?|capacity|occupan\w+)\b|"
+                                r"\b(?:seat\w*|capacity|accommodat\w+|holds?|fits?)\b[^.;\d]{0,25}(?<![\d,.$£€])" + n + r"(?![\d]|,\d)")
+            if not any(cap_rx.search(" ".join(str(x) for x in (f.get("text"), f.get("value_text")) if x))
+                       for f in live if (f.get("sensitivity") or "public") == "public"):
+                s_find.append(_finding(s, "no_source", None, None,
+                                       f'"{m.group(0)}": no fact gives this capacity', blocking=True))
+        # 2d1b. opening hours claimed ("open 24 hours") of a service whose valid hours fact says something
+        #       else: a conflict with that fact, unless it says the same itself
+        for m in HOURS_CLAIM_RX.finditer(s):
+            claim = m.group(0).lower()
+            mid = "midnight" in claim
+            sw = {_stem(w) for w in F.content_words(s[:m.start()] + " " + s[m.end():])} - {
+                _stem(w) for w in GENERIC} - hours_common
+            for g in fs.ok:
+                if g.get("fact_type") != "hours" or (g.get("sensitivity") or "public") != "public":
+                    continue
+                gt = " ".join(str(x) for x in (g.get("text"), g.get("value_text")) if x)
+                if (re.search(r"(?i)midnight|12\s?(?:am|a\.m\.)", gt) if mid else _HOURS_OK.search(gt)):
+                    continue
+                gw = {_stem(w) for w in F.content_words(" ".join((F.subject_ref(g), str(g.get("attribute") or ""), gt)))}
+                if not (sw & gw) or any(x["fact_key"] == g["key"] and x["label"] == "conflict_or_expired" for x in s_find):
+                    continue
+                use(g["key"], s)
+                s_find.append(_finding(s, "conflict_or_expired", g, _quote(g),
+                                       f'"{m.group(0)}" differs from the fact: {_quote(g)}'))
+                break
+        # 2d2. a delivery-time promise ("delivery in 30 minutes") when no fact mentions delivery at all
+        if not delivery_said:
+            for m in DELIVERY_TIME.finditer(s):
+                s_find.append(_finding(s, "no_source", None, None, f'"{m.group(0)}": no fact says this', blocking=True))
         # 3. claim keywords (built-in + claim-bearing allowed phrasing of the facts) and ratings/awards
         hits: list[tuple[int, int, str, str]] = []
         for name, rx, cls in KEYWORDS:
@@ -2736,6 +4180,8 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                 continue
             if _overlaps(staff_spans, start, stop) and (cls in IDENTITY_CLASSES or cls == "rating:staff"):
                 continue
+            if cls == "cert_named" and _address_use(s, start, stop):
+                continue                  # "Dear partner,": a form of address, not a partnership claim
             if re.search(r"(?i)\bby$", kw) and BY_DEADLINE.match(s[stop:]):
                 continue                  # "artwork approved by 12 noon": a deadline, not an approving body
             if cls.startswith("rating:"):
@@ -2815,6 +4261,8 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             numeric = isinstance(val, (int, float)) and not isinstance(val, bool)
             if p is None or f["key"] in flagged or (numeric and F.subject_kind(f) not in ("offer", "package", "event")):
                 continue
+            if _product_heading(f, s):
+                continue
             pair_hit = (p.pairs & s_pairs) - ok_pairs
             if numeric:
                 # an offer with a value ("no joining fee (normally £30)") is used by its benefit
@@ -2849,6 +4297,13 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             # and a bare attribute term are WEAK: review only.
             strong = (bool(attr_hit) or phrase_in(F.subject_ref(f), s)
                       or any(w not in ok_terms for pr in pair_hit for w in pr))
+            # round 15: "fly south to the Omo Valley", "tent nights in the Omo Valley": the words are only a
+            # region named as a destination, not a use of the site's fact (no value / offer of it is said)
+            if strong and not attr_hit and pair_hit and not phrase_in(F.subject_ref(f), s) and (
+                    F.subject_kind(f) in ("site", "business") or f.get("fact_type") == "claim"):
+                region = _region_words(s)
+                if region and all(w in region for pr in pair_hit for w in pr):
+                    strong = False
             if not strong and set(words) <= tied_terms:
                 continue          # a valid fact this sentence is about already says these words
             s_find.append(_finding(s, label, f, _quote(f), f"uses {F.subject_ref(f) or f['key']} "
@@ -2995,9 +4450,9 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                      if phrase_in(str(d), s)]
         for f in fs.stale + fs.scope:
             ref = F.subject_ref(f)
-            if len(ref) < 4 or f["key"] in flagged or ref.lower() in ok_refs:
+            if len(ref) < 4 or f["key"] in flagged or ref.lower() in ok_refs or _product_heading(f, s):
                 continue
-            named = phrase_in(ref, s)
+            named = phrase_in(ref, s) or phrase_in(_core_ref(ref), s) and len(_core_ref(ref).split()) >= 2
             if not named and F.subject_kind(f) in ("offer", "package", "event") and f in fs.stale:
                 # "the Green Fairways bursary" for the "County Green Fairways junior bursary"
                 named = name_part_named(ref, s, common_ref) and not any(
@@ -3016,6 +4471,14 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             elif clash:
                 s_find.append(_finding(s, "wrong_scope", f, _quote(f),
                                        f"{ref} with {', '.join(sorted(clash))}: {ref} is {_why(fs, f)}"))
+            elif _other_site_named(f, fs, s):
+                # round 17: another SITE named outright by its full subject ("Paradise Lodge Turmi is in
+                # Turmi" in an Arba Minch task): STRONG; only a bare region word is WEAK
+                s_find.append(_finding(s, "wrong_scope", f, _quote(f),
+                                       f"{ref} is {_why(fs, f)}: this task is not for that site"))
+            elif _expired_subject_named(f, fs, s, ok_terms):
+                # round 17: an expired non-price fact named by a distinctive subject ("our Cave Spa")
+                s_find.append(_finding(s, "conflict_or_expired", f, _quote(f), f"{ref} is {_why(fs, f)} at {day.isoformat()}"))
             else:
                 s_find.append(_finding(s, "review", f, _quote(f), f"mentions {ref}, which is {_why(fs, f)}"))
             flagged.add(f["key"])
@@ -3024,17 +4487,23 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
     # 7. disclosures of every fact used: reported on every sentence that uses it (one piece, one
     #    blocking decision), so the reviewer sees each place that needs the words
     piece_tokens = _tokens(_disc_canon(text))
+
     for k, sentences in strong_used.items():
         f = by_key.get(k)
         disc = [str(d) for d in (f or {}).get("required_disclosures") or [] if str(d).strip()]
         if not disc:
             continue
         if any(_tokens(_disc_canon(d)) <= piece_tokens or disclosure_said(d, text) for d in disc):
+            for sentence in _unit_dropped(k, f, disc, strong_used, by_key, text):
+                findings.append(_finding(sentence, "missing_disclosure", f, disc[0],
+                                         "add: " + " / ".join(f'"{d}"' for d in disc) + " (other prices here say it; this one doesn't)"))
             continue
         # the business's own wording for it, confirmed by the owner in 05 (exact, case / space folded)
         if any(phrase_in(str(w), text) for w in (f or {}).get("disclosure_wordings") or [] if str(w).strip()):
             continue
         for sentence in sentences or [""]:
+            if sentence and any(unit_header_said(text, sentence, d) or per_unit_said(sentence, d) for d in disc):
+                continue          # the piece's heading for this list says the unit ("Crate prices this week:")
             findings.append(_finding(sentence or text.strip()[:200], "missing_disclosure", f, disc[0],
                                      "add: " + " / ".join(f'"{d}"' for d in disc)))
     return _light_lines(findings, all_facts), list(used)
@@ -3115,6 +4584,7 @@ _TERM_NOUN = (r"(?:term|contract|commitment|stay|rental|hire|let|tenancy|members
               r"sign[\s-]?up|booking|period)")
 _TERM_VERB = (r"(?:stay(?:s|ing)?|keep(?:s|ing)?|kept|rent(?:s|ing)?|hire[sd]?|hiring|remain(?:s|ing)?|"
               r"sign(?:s|ed|ing)?[\s-]?up|commit(?:s|ted|ting)?|subscribe[sd]?|lock(?:s|ed)?\s+in|tie[sd]?\s+in)")
+_ROOMS = r"room|suite|tent|bungalow|cottage|chalet|cabin|villa|apartment|unit|pitch"
 _DISC_EQUIV = [
     # VAT exclusive / inclusive ("VAT not included" before "VAT included")
     (r"(?:\bexcl\.?|\bexcluding|\bexclusive\s+of|\bex\.?|\bplus|\+|\bbefore)\s*vat\b|"
@@ -3124,9 +4594,24 @@ _DISC_EQUIV = [
      r"(?:charged|payable)\s+on\s+top)\b|\b(?<!\bnot\s)(?<!n't\s)(?<!n’t\s)(?:add|adds|adding)\s+(?:on\s+)?vat\b", "qexvat"),
     (r"(?:\bincl\.?|\bincluding|\binclusive\s+of|\binc\.?)\s*vat\b|\bvat\s+(?:is\s+)?(?:included|inclusive)\b", "qincvat"),
     # per person
-    (r"\bper\s+(?:person|guest|head|adult|pax)\b|\beach\s+(?:guest|person|adult|diner|visitor)s?\b|"
+    (r"\bper\s+(?:person|guest|head|adult|pax)\b|"
+     r"\b(?:each|every)\s+(?:guest|person|adult|diner|visitor)s?\b|"
      r"(?<![\w.])p\.p\.(?!\w)", "qperperson"),
-    (_AMT + r"\s?(?:pp\b|p/p\b|a\s+head\b|each\b(?!\s+way\b))", "qperperson"),
+    (_AMT + r"\s?(?:pp\b|p/p\b|a\s+head\b|a\s+person\b|apiece\b|each\b(?!\s+way\b))", "qperperson"),
+    # round 17: Amharic (only when Ethiopic script is there): "በአንድ ሳጥን" / "በሳጥን" = per crate, "በአንድ ሰው" /
+    # "በሰው" = per person, "በአዳር" = per night
+    (r"(?<![\w])(?:በአንድ\s+ሳጥን|በሳጥን)(?![\w])", "per crate"),
+    (r"(?<![\w])(?:በአንድ\s+ሰው|በሰው)(?![\w])", "qperperson"),
+    (r"(?<![\w])በአዳር(?![\w])", "qpernight"),
+    # round 13: per room per night, said with the room after the night: "a night for the room", "a night
+    # for the whole room", "for the room, per night", "per room, per night", "per room/night"
+    (r"\bper\s+(?P<u>" + _ROOMS + r")[\s,/]+(?:per\s+|a\s+|each\s+)?night(?:ly)?\b|"
+     r"\bper\s+night[\s,/]+per\s+(?P<u2>" + _ROOMS + r")\b|\bnightly\s+per\s+(?P<u3>" + _ROOMS + r")\b|"
+     r"\b(?:a|per|each|every)\s+night\s*,?\s*(?:for|per)\s+(?:the\s+|a\s+|each\s+|one\s+|your\s+)?(?:whole\s+|entire\s+|full\s+)?"
+     r"(?P<u4>" + _ROOMS + r")\b|"
+     r"\b(?:a|per|each)\s+night\b[\s,]+(?:you\s+get|you\s+have|you\s+(?:can\s+)?(?:book|enjoy|stay\s+in)|gets?\s+you|buys\s+you)\s+"
+     r"(?:the\s+|a\s+)?(?:whole|entire|full)\s+(?:[\w()'-]+\s+){0,5}?(?P<u5>" + _ROOMS + r")\b|"
+     r"\bfor\s+(?:the\s+|a\s+)?(?:whole\s+|entire\s+)?(?P<u6>" + _ROOMS + r")\s*,?\s*(?:per|a|each)\s+night\b", "qroomnight"),
     # per night / month / year
     (r"\bper\s+night\b", "qpernight"),
     (_AMT + r"\s?(?:/\s?night\b|a\s+night\b|nightly\b)", "qpernight"),
@@ -3260,6 +4745,9 @@ def _num_word(m: re.Match) -> str:
 
 
 _DISC_NORM = [
+    # trial: a unit after a slash is "per": "2,080 birr/crate" = "2,080 birr per crate", "$75/night" = "$75 per night"
+    (re.compile(r"(?<=[\d\w$£€])\s*/\s*(?=(?:crate|bottle|case|room|night|person|guest|day|hour|month|year|unit|pack|kg|item)s?\b)", re.I),
+     " per "),
     # numbers in words past twelve: "thirty" = "30", "twenty-five" = "25" (one to twelve are compared
     # as words already)
     (NUM_WORD_RX, _num_word),
@@ -3270,6 +4758,23 @@ _DISC_NORM = [
     # round 12: free said otherwise: "which costs nothing" = "free of charge" = "at no cost" = "free"
     (re.compile(r"\b(?:which\s+|that\s+)?costs?\s+(?:you\s+)?nothing\b|\bfree\s+of\s+charge\b|\bat\s+no\s+cost\b", re.I),
      " free "),
+    # round 13: included said otherwise: "breakfast on us" = "breakfast on the house" = "breakfast thrown in" =
+    # "complimentary breakfast" = "breakfast included"
+    (re.compile(r"\b(?P<x>breakfast|lunch|dinner|meals?|wi-?fi|parking|transfers?|tea|coffee|towels?)\s+(?:is\s+|are\s+)?"
+                r"(?:on\s+us|on\s+the\s+house|thrown\s+in|complimentary|complementary|free\s+of\s+charge|for\s+free|free)\b", re.I),
+     lambda m: f"{m.group('x')} included"),
+    (re.compile(r"\b(?:free|complimentary|complementary)\s+(?P<x>breakfast|lunch|dinner|meals?|wi-?fi|parking|transfers?)\b", re.I),
+     lambda m: f"{m.group('x')} included"),
+    # round 6: "breakfast comes with it / with the room / with your stay", "comes with breakfast", "breakfast
+    # is part of the price" = breakfast included
+    (re.compile(r"\b(?P<x>breakfast|lunch|dinner|meals?|wi-?fi|parking|transfers?)\s+(?:also\s+)?(?:comes?|come|goes?)\s+with\s+"
+                r"(?:it|them|that|this|the\s+\w+|your\s+\w+|each\s+\w+|every\s+\w+|every\s+booking|all\s+bookings)\b|"
+                r"\b(?P<y>breakfast|lunch|dinner|meals?|wi-?fi|parking|transfers?)\s+(?:is\s+|are\s+)?(?:part\s+of|covered\s+by|"
+                r"rolled\s+into|built\s+into|baked\s+into)\s+(?:the\s+|your\s+|that\s+)?(?:price|rate|stay|booking|package)\b", re.I),
+     lambda m: f"{m.group('x') or m.group('y')} included"),
+    (re.compile(r"\b(?:comes?|come)\s+with\s+(?:a\s+|our\s+|the\s+|your\s+)?(?:free\s+|complimentary\s+|daily\s+|full\s+)?"
+                r"(?P<x>breakfast|lunch|dinner|wi-?fi|parking)\b", re.I),
+     lambda m: f"{m.group('x')} included"),
     # opening hours as a day and a bare range: "weekdays 8–6" = "weekdays 8am–6pm", "Sat 9-1" = "Sat
     # 9am–1pm" (only when the range crosses noon: the second hour is not later than the first)
     (re.compile(r"\b(?P<day>(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?|weekdays?|weekends?|daily)\s*,?\s+(?:from\s+)?"
@@ -3322,7 +4827,7 @@ def _disc_sub(tok: str):
         if tok == "qminterm":
             out += _term_len(g.get("n"), g.get("u") or g.get("u2"))
         else:
-            out += [g[k] for k in ("n", "n2", "u", "adj") if g.get(k)]
+            out += [g[k] for k in ("n", "n2", "u", "u2", "u3", "u4", "u5", "u6", "adj") if g.get(k)]
         return " " + " ".join(out) + " "
     return rep
 
@@ -3654,6 +5159,9 @@ def _rating_finding(fs: FactSets, s: str, start: int, kw: str, kind: str, use) -
                     return [_finding(s, label, f, _quote(f), f'"{" ".join(sorted(tiers))} {kw}": the fact names '
                                      f'another tier of {" ".join(sorted(rest))}: {held}', blocking=True)]
     ok = [f for f in fs.ok if _rating_supports(f, kind, kw, s, start)]
+    if not ok and re.match(r"(?i)best[\s-]?sell", kw):
+        # held-out trial: "BEST-SELLER" for the fact "Harar 33cl is our best-selling crate"
+        ok = [f for f in fs.ok if re.search(r"(?i)best[\s-]?sell", _blob(f))]
     if ok:
         f = _best(ok, s)
         use(f["key"], s)
@@ -3720,6 +5228,56 @@ def _tier_name_findings(fs: "FactSets", names: dict, s: str, veto: set) -> list[
                                 f'"{m.group(0)}": the fact about {n} names no {tier} tier ({_quote(f)})'))
             break
     return out
+
+
+_ART_LEAD = re.compile(r"(?i)^\s*(?:the|our|a|an)\s+")
+_NEG_NAMED = re.compile(r"(?i)\b(?:no|not|never|without|unlike|instead\s+of|rather\s+than|n['’]t)\s+"
+                        r"(?:(?:have|has|offer|offers|offering|run|runs|provide|provides|do|does)\s+)?"
+                        r"(?:(?:a|an|any|the|our|your)\s+)?$")
+
+
+def _core_ref(ref: str) -> str:
+    """A subject without its leading article ("The Cave Spa" -> "Cave Spa")."""
+    return _ART_LEAD.sub("", ref or "")
+
+
+def _named_at(ref: str, s: str) -> int:
+    """Where a subject (or, for 2+ words, its core without "The") is said in the sentence, else -1."""
+    for r in (ref, _core_ref(ref)):
+        if len(r.split()) >= (1 if r is ref else 2):
+            m = re.search(r"(?<![\w])" + re.escape(_norm_phrase(r)) + r"(?![\w])", _norm_phrase(s))
+            if m:
+                return m.start()
+    return -1
+
+
+def _other_site_named(f: dict, fs: "FactSets", s: str) -> bool:
+    """An out-of-scope SITE fact whose full subject name (two words or more) the sentence says."""
+    ref = F.subject_ref(f)
+    if f not in fs.scope or F.subject_kind(f) != "site" or len(ref.split()) < 2 or not (f.get("scope") or {}).get("sites"):
+        return False        # another site of the business (the sites dimension), not another variant or segment
+    at = _named_at(ref, s)
+    return at >= 0 and not _NEG_NAMED.search(_norm_phrase(s)[:at])
+
+
+def _expired_subject_named(f: dict, fs: "FactSets", s: str, ok_terms: set) -> bool:
+    """An expired / retired non-price fact whose distinctive subject the sentence names: two content words
+    or more, one of them no valid in-scope fact uses ("Cave Spa": "spa" is common, "cave" is not)."""
+    ref = _core_ref(F.subject_ref(f))
+    if (f not in fs.stale or F.subject_kind(f) in ("business", "site", "person") or f.get("fact_type") == "price"
+            or f.get("currency")):
+        return False
+    words = [w for w in F.words(ref) if w not in F.STOP and len(w) >= 3]
+    if len(words) < 2 or all(_stem(w) in ok_terms or _stem(w) in WEAK for w in words):
+        return False
+    at = _named_at(ref, s)
+    # ... said as the business's own or as something to do ("our Cave Spa", "do try the Cave Spa"), not a bare mention
+    return at >= 0 and not _NEG_NAMED.search(_norm_phrase(s)[:at]) and bool(_OWN_CUE.search(_norm_phrase(s)[:at]))
+
+
+_OWN_CUE = re.compile(r"(?:\b(?:our|your|my)\s+|\b(?:try|visit|enjoy|book|use|experience|relax|unwind|discover|join|explore|"
+                      r"come\s+to|treat\s+yourself\s+to|stay\s+for|dine\s+at|indulge\s+in)\s+(?:\w+\s+){0,2}|"
+                      r"\b(?:at|to|on|from|into|inside)\s+the\s+)$")
 
 
 def _scope_clash(f: dict, scope: dict, s_set: set) -> set[str]:

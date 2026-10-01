@@ -42,3 +42,4 @@ services:
   utm-builder: {ports: !reset []}
   task-bridge: {ports: !reset []}
   mcp-connector: {ports: !reset []}
+  erp-facts: {ports: !reset []}

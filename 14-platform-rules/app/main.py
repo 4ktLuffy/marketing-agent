@@ -16,6 +16,11 @@ RULES: dict[str, dict] = {
     "instagram": {"limit": 2200, "max_hashtags": 30},
     "facebook": {"limit": 63206},
     "threads": {"limit": 500},
+    "telegram": {"limit": 4096,
+                 "note": "4096 for a text message; 1024 when sent as a photo/video caption (use telegram_caption); "
+                         "markdown-like formatting and hashtags are fine"},
+    "telegram_caption": {"limit": 1024,
+                         "note": "caption on a photo or video; markdown-like formatting and hashtags are fine"},
     "mastodon": {"limit": 500, "url_length": 23,
                  "note": "default instance limit; URLs count as 23 chars"},
     "email_subject": {"limit": 78, "warn_above": 60,

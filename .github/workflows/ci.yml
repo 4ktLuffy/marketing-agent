@@ -61,6 +61,7 @@ jobs:
           - 88-task-bridge
           - 89-mcp-connector
           - 90-approval-service
+          - 91-erp-facts
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -41,7 +41,8 @@ def test_allowlist_refuses(method, path):
 
 def test_allowlist_is_exactly_the_tool_paths():
     assert {(s, m) for s, m, _ in upstream.ALLOWED} == {("brand", "GET"), ("tasks", "POST"), ("tasks", "GET")}
-    assert len(upstream.ALLOWED) == 9
+    assert len(upstream.ALLOWED) == 14          # 9 tool paths + occasions, templates (render, task), quote, audit
+    assert ("tasks", "GET", r"/occasions") in upstream.ALLOWED
 
 
 def test_code_has_no_approve_or_owner_paths():

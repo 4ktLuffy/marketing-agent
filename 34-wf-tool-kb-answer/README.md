@@ -1,6 +1,6 @@
 # 34 · Knowledge base answer
 
-Deploy **34 of 90** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **34 of 91** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
 
 Answers questions about your brand only from the knowledge base (06), with numbered citations. If nothing relevant is found, it says so instead of guessing.
 

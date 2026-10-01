@@ -860,6 +860,10 @@ services:
       MODEL_CHECK: ${TASKS_MODEL_CHECK:-off}
       CLAIMS_URL: ${TASKS_CLAIMS_URL:-}
       PACK_MAX_CHARS: ${TASKS_PACK_MAX_CHARS:-8000}
+      # Ethiopian calendar, holidays and the 24-hour clock rule in packs and GET /occasions: "ethiopia" or empty.
+      OCCASIONS: ${TASKS_OCCASIONS:-}
+      # Content drift audit (POST /audit): web pages and text PDFs are read through the page extractor (07).
+      EXTRACTOR_URL: http://page-extractor:8000
     volumes: [task_data:/data]
 
   # Approval service (90): applies the control room's decisions (approve / edit / reject / back to
@@ -879,6 +883,27 @@ services:
       CALENDAR_URL: http://content-calendar:8000
       LEARNING_URL: http://learning-service:8000
       ENGINE_URL: ${ENGINE_URL-http://content-engine:8000}
+
+  # ERP facts (91, profile "erp"): reads your Odoo READ-ONLY (7 read methods only), turns prices and
+  # products into DRAFT facts in 05 and reports drift. It holds no owner or approver key and never
+  # confirms: a person confirms on the Facts page. Mappings: ./erp/mappings.yaml (copy the example).
+  #   COMPOSE_PROFILES=core,erp
+  erp-facts:
+    <<: *service
+    profiles: [erp]
+    image: marketing-agent-erp-facts
+    build: ../91-erp-facts
+    ports: ["127.0.0.1:${PORT_PREFIX:-81}91:8000"]
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY in .env}
+      BRAND_URL: http://brand-service:8000
+      ODOO_URL: ${ODOO_URL:-}
+      ODOO_DB: ${ODOO_DB:-}
+      ODOO_LOGIN: ${ODOO_LOGIN:-}
+      ODOO_KEY: ${ODOO_KEY:-}
+      MAPPINGS_FILE: /config/${ERP_MAPPINGS_FILE:-mappings.example.yaml}
+      SYNC_EVERY_MIN: ${ERP_SYNC_EVERY_MIN:-0}
+    volumes: ["${ERP_MAPPINGS_DIR:-../91-erp-facts/config}:/config:ro"]
 
   # Claude connector (89, MCP): read public facts, make packs, submit answers, check text. It holds
   # only the internal key, so it can never approve, confirm a fact or publish. Profile "claude":

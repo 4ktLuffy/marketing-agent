@@ -151,3 +151,32 @@ def meta_get(conn, k: str, default: str | None = None) -> str | None:
 
 def meta_set(conn, k: str, v: str) -> None:
     conn.execute("INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v", (k, v))
+
+
+def approved_examples(conn, exclude_task: str | None = None, limit: int = 60) -> list[dict]:
+    """Pieces that were approved and exported, newest export first, from this service's own records:
+    the export manifest names each piece and the hash of the approved text; the piece row carries
+    that text (filled_text) only while its hash still matches. Never the task `exclude_task`."""
+    out, seen = [], set()
+    rows = conn.execute("SELECT id, task_id, manifest FROM exports ORDER BY id DESC LIMIT 200").fetchall()
+    for r in rows:
+        if r["task_id"] == exclude_task:
+            continue
+        try:
+            listed = json.loads(r["manifest"]).get("pieces") or []
+        except (ValueError, AttributeError):
+            continue
+        for mp in listed:
+            key, sha = mp.get("piece_key"), mp.get("sha256")
+            if not key or not sha or (r["task_id"], key) in seen:
+                continue
+            p = conn.execute("SELECT channel, filled_text, filled_sha256 FROM pieces WHERE task_id = ? AND piece_key = ?",
+                             (r["task_id"], key)).fetchone()
+            if not p or not p["filled_text"] or p["filled_sha256"] != sha:
+                continue
+            seen.add((r["task_id"], key))
+            out.append({"task_id": r["task_id"], "piece_key": key, "channel": p["channel"],
+                        "text": p["filled_text"], "export_id": r["id"]})
+        if len(out) >= limit:
+            break
+    return out

@@ -1,6 +1,6 @@
 # 36 · Morning trend digest
 
-Deploy **36 of 90** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **36 of 91** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
 
 Every morning it polls your RSS feeds (08) and Hacker News/Reddit mentions (11), writes a short digest with post ideas, saves it to the knowledge base so the chat agent can answer "what was in today's digest?", and posts it to your webhook.
 

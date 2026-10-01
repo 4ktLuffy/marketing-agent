@@ -190,6 +190,19 @@ def export_state(task: dict) -> tuple[bool, list[str]]:
     return ready is True, [str(m)[:300] for m in missing]
 
 
+def occasion_view(body: dict) -> dict | None:
+    """88 /occasions answer -> {on_ec, items[{name, when, flag, notes}], note} or None when off/empty."""
+    items = [o for o in (body or {}).get("occasions") or [] if isinstance(o, dict) and o.get("name")]
+    if not items:
+        return None
+    out = []
+    for o in items[:8]:
+        when = str(o.get("date") or "")[:10] + (f" to {str(o['end'])[:10]}" if o.get("end") and o.get("end") != o.get("date") else "")
+        out.append({"name": str(o["name"])[:80], "when": when, "ec": str(o.get("ec") or "")[:40],
+                    "flag": "" if o.get("verified") else "date not confirmed", "notes": str(o.get("notes") or "")[:200]})
+    return {"on_ec": str(body.get("on_ec") or "")[:40], "items": out, "note": str(body.get("note") or "")[:200]}
+
+
 def blocker_view(b: dict) -> dict:
     link = str(b.get("link") or "")
     if not SAFE_LINK.match(link):
@@ -244,7 +257,9 @@ def register(app, page, current, csrf, B, need=None):
             return off(request, session)
         v = {"goal": "", "audience": "", "notes": "", "publish_on": "", "pieces": [blank_piece()],
              **{f"scope_{d}": [] for d, _ in DIMS}, **{f"scope_{d}_other": "" for d, _ in DIMS}}
-        return new_page(request, session, values=v, options=await options(), today=today().isoformat())
+        occ = await B().occasions()
+        return new_page(request, session, values=v, options=await options(), today=today().isoformat(),
+                        occasions=occasion_view(occ))
 
     @app.post("/tasks/new", response_class=HTMLResponse)
     async def task_create(request: Request, session=Depends(need("writer"))):

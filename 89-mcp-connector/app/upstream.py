@@ -22,6 +22,11 @@ ALLOWED = (
     ("tasks", "POST", rf"/tasks/{TASK_ID}/submit"),
     ("tasks", "POST", r"/check"),
     ("tasks", "GET", r"/blockers"),
+    ("tasks", "GET", r"/occasions"),
+    ("tasks", "POST", r"/templates/render"),
+    ("tasks", "POST", r"/templates/task"),
+    ("tasks", "POST", r"/quote"),
+    ("tasks", "POST", r"/audit"),
 )
 NAMES = {"brand": "the brand service (05)", "tasks": "the task bridge (88)"}
 

@@ -91,15 +91,35 @@ def fill(text: str, snapshot: dict[str, dict], known: dict[str, dict], day: date
     bare_keys = set(snapshot) if snapshot else {k for k, f in known.items() if F.classify(f, day, scope) is None}
     hits = find(text, bare_keys)
     parts, used, blocked, pos, cursor = [], [], [], 0, 0
+    cites = _citations(text, hits)
+    for h in hits:                       # "… Lake Abaya [[arbaminch-views]].": the words before already say it
+        f = (snapshot or {}).get(h.key) or known.get(h.key)
+        if id(h) not in cites and f and _restates(text[:h.start], f):
+            cites.add(id(h))
     for h in hits:
+        if id(h) in cites and not MISSING_RE.match(h.inner):
+            # "The Cave Spa has a sauna. [[cave-spa]]": the chatbot citing its source, not a value to insert.
+            # The marker goes; the fact counts as used; the sentence is checked like any other.
+            before = text[cursor:h.start]
+            parts.append(before.rstrip(" \t"))
+            pos += len(parts[-1])
+            cursor = h.end
+            if h.key in (snapshot or known):
+                used.append(h.key)
+            continue
         parts.append(text[cursor:h.start])
         pos += h.start - cursor
         cursor = h.end
         reason, detail, value, key = _decide(h, snapshot, known, day, scope, allow_unsnapshotted)
         if reason is None:
+            value = _trim_overlap(value, text[:h.start], text[h.end:])
             parts.append(value)
             used.append(key)
             pos += len(value)
+            # the pack's own form copied back: "[[rate]] = $71 for one guest" -> "$71 per room per night for one guest"
+            dup = _echo(value, text[cursor:])
+            if dup:
+                cursor += dup
         else:
             parts.append(h.raw)
             blocked.append({"key": key, "raw": h.raw, "reason": reason, "detail": detail, "pos": pos})
@@ -112,6 +132,76 @@ def fill(text: str, snapshot: dict[str, dict], known: dict[str, dict], day: date
         "quote": None, "blocking": True, "detail": f"{b['raw']}: {b['detail']}",
     } for b in blocked]
     return FillResult(filled, list(dict.fromkeys(used)), blocked, findings)
+
+
+_CITE_BEFORE = re.compile(r"[.!?)\]:;]\s*$|[.!?)]\s+\S.*[.!?)]\s*$")
+
+
+def _citations(text: str, hits) -> set:
+    """Slots that only cite a source: each comes after a finished sentence (". [[x]]", ") [[x]] [[y]]") with
+    nothing but other slots after it up to the end of the line."""
+    out = set()
+    for i, h in enumerate(hits):
+        line_start = text.rfind("\n", 0, h.start) + 1
+        before = text[line_start:h.start]
+        # strip earlier citation slots on the same line ("… sales). [[a]] [[b]]")
+        prev = before
+        for g in reversed(hits[:i]):
+            if g.start >= line_start and id(g) in out and prev.rstrip().endswith(g.raw):
+                prev = prev.rstrip()[:-len(g.raw)]
+        line_end = text.find("\n", h.end)
+        after = text[h.end:line_end if line_end >= 0 else len(text)]
+        rest = re.sub(r"\[\[[^\]]*\]\]|\{\{[^}]*\}\}", "", after).strip(" \t.")
+        words = len(re.findall(r"[A-Za-z]{2,}", prev))
+        after_slots = re.sub(r"^(?:\s*(?:\[\[[^\]]*\]\]|\{\{[^}]*\}\}))*", "", after)
+        finished = re.search(r"[.!?)]\s*$", prev.rstrip()) is not None
+        new_sentence = re.match(r"\s+[A-Z\"“(]", after_slots) is not None
+        bullet = re.match(r"\s*(?:[-•*–]|\d{1,2}[.)])\s", text[line_start:h.start]) is not None
+        label_end = re.search(r"(?:[:=]|\b(?:is|are|at|from|of|costs?|only|just|for|to|here|see))\s*$", prev.rstrip(), re.I)
+        if words >= 3 and ((finished and (rest == "" or new_sentence)) or (bullet and rest == "" and not label_end)):
+            out.add(id(h))
+    return out
+
+
+_STOPW = frozenset("the a an and or of in on at to for with by from our your its is are we you this that".split())
+
+
+def _restates(before: str, f: dict) -> bool:
+    """The sentence up to the slot already says the fact: 60% or more of its content words (at least 3)."""
+    sent = re.split(r"(?<=[.!?])\s+|\n", before)[-1].lower()
+    src = " ".join(str(x) for x in (f.get("value_text"), f.get("text")) if x).lower()
+    words = {w for w in re.findall(r"[a-z][a-z'-]{2,}|\d[\d,.]*", src) if w not in _STOPW}
+    if len(words) < 3:
+        return False
+    have = {w for w in words if re.search(r"(?<![\w])" + re.escape(w) + r"(?![\w])", sent)}
+    return len(have) >= 3 and len(have) >= 0.6 * len(words)
+
+
+def _echo(value: str, after: str) -> int:
+    """Length of a " = $71" / ": 1,700 birr" right after a filled slot that repeats the value's own amount."""
+    m = re.match(r"\s*[=:]\s*(?P<amt>[$£€]?\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:birr|usd|etb|dollars?))?)", after, re.I)
+    if not m:
+        return 0
+    num = re.sub(r"[^\d.]", "", m.group("amt"))
+    have = [re.sub(r"[^\d.]", "", x) for x in re.findall(r"\d[\d,]*(?:\.\d+)?", value)]
+    return m.end() if num and num in have else 0
+
+
+def _trim_overlap(value: str, before: str, after: str) -> str:
+    """Writers often repeat around a slot what its value already says: "[[rate]] per crate" with the
+    value "1,700 birr per crate", or "$[[rate]]" with "$111 per room". Drop the value's own copy so
+    the filled text says it once (the words the writer typed stay)."""
+    words = value.split()
+    nxt = after.lstrip(" \t").lower()
+    for n in range(min(4, len(words) - 1), 0, -1):
+        tail = " ".join(words[-n:]).lower().rstrip(".,")
+        if nxt.startswith(tail) and (len(nxt) == len(tail) or not nxt[len(tail)].isalnum()):
+            value = " ".join(words[:-n])
+            break
+    prev = before[-1:] if before else ""
+    if prev and not prev.isspace() and not prev.isalnum() and value.startswith(prev):
+        value = value[1:]
+    return value
 
 
 def _decide(h: Hit, snapshot, known, day, scope, allow_unsnapshotted):

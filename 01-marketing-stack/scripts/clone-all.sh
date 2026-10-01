@@ -56,6 +56,7 @@ repos=(
   88-task-bridge
   89-mcp-connector
   90-approval-service
+  91-erp-facts
 )
 for r in "${repos[@]}"; do
   if [ -d "$r" ]; then echo "skip $r (exists)"; continue; fi

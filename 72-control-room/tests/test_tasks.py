@@ -57,6 +57,7 @@ def bridge(monkeypatch, mock):
     mock.get(f"{BRAND}/facts/v2").respond(json={"facts": [
         {"key": "a", "scope": {"sites": ["Quayside", "Leeds"], "channels": ["email"], "segments": ["couples"]}},
         {"key": "b", "scope": {"sites": ["Quayside"], "plan_tiers": ["Pro+"]}}]})
+    mock.get(f"{TASKS}/occasions").respond(json={"country": None, "occasions": []})
     with TestClient(create_app(), follow_redirects=False) as c:
         assert login(c).status_code == 303
         yield c, csrf_of(c.get("/more").text), mock
@@ -485,3 +486,24 @@ def test_accepted_finding_shows_who_and_no_button(bridge):
     h = c.get(f"/tasks/{TID}").text
     assert "accepted</span> by Henos" in h and "said as per room, two sharing" in h
     assert "It’s there, in other words" not in h
+
+
+def test_new_task_page_shows_occasions_when_88_has_them(bridge):
+    c, _, mock = bridge
+    mock.get(f"{TASKS}/occasions").respond(json={"country": "ethiopia", "on_ec": "21 Meskerem 2019 E.C.",
+        "occasions": [{"name": "Genna (Ethiopian Christmas)", "date": "2027-01-07", "ec": "29 Tahsas 2019 E.C.",
+                       "verified": True, "notes": "No alcohol sponsorship of holidays."},
+                      {"name": "Eid al-Fitr", "date": "2027-03-10", "verified": False}],
+        "note": "Ethiopian clock time runs 6 hours off"})
+    h = c.get("/tasks/new").text
+    assert "Coming up" in h and "21 Meskerem 2019 E.C." in h and "Genna (Ethiopian Christmas)" in h
+    assert "date not confirmed" in h and "No alcohol sponsorship" in h
+
+
+def test_new_task_page_without_occasions(bridge):
+    c, _, mock = bridge
+    mock.get(f"{TASKS}/occasions").respond(json={"country": None, "occasions": []})
+    assert "Coming up" not in c.get("/tasks/new").text
+    mock.get(f"{TASKS}/occasions").respond(500)
+    r = c.get("/tasks/new")
+    assert r.status_code == 200 and "Coming up" not in r.text

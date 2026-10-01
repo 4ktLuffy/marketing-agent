@@ -22,7 +22,7 @@ def test_health():
 def test_rules_lists_every_channel():
     body = client.get("/rules").json()
     assert set(body["channels"]) == {
-        "x", "linkedin", "instagram", "facebook", "threads", "mastodon", "email_subject",
+        "x", "linkedin", "instagram", "facebook", "threads", "telegram", "telegram_caption", "mastodon", "email_subject",
         "google_ads_headline", "google_ads_description", "meta_description",
     }
     assert body["channels"]["x"]["limit"] == 280
@@ -97,3 +97,18 @@ def test_unknown_channel_is_422_and_lists_valid():
     assert r.status_code == 422
     detail = r.json()["detail"]
     assert all(c in detail for c in RULES)
+
+
+def test_telegram_message_and_caption_limits():
+    assert validate("telegram", "a" * 4096)["ok"] is True
+    body = validate("telegram", "a" * 4097)
+    assert not body["ok"] and "too_long" in rule_ids(body) and body["limit"] == 4096
+    assert validate("telegram_caption", "a" * 1024)["ok"] is True
+    body = validate("telegram_caption", "a" * 1025)
+    assert not body["ok"] and body["limit"] == 1024
+
+
+def test_telegram_allows_markdown_and_many_hashtags():
+    text = "*Lake view rooms* from [our site](https://example.com) " + " ".join(f"#tag{i}" for i in range(40))
+    body = validate("Telegram", text)
+    assert body["ok"] is True and body["hashtags"] == 40 and body["violations"] == []

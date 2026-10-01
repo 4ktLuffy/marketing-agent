@@ -1,6 +1,6 @@
 # platform-rules
 
-Deploy **14 of 90** of the local-LLM marketing agent. It knows the character limits and
+Deploy **14 of 91** of the local-LLM marketing agent. It knows the character limits and
 hashtag caps of each channel and tells you, before anything is scheduled, whether a draft
 fits. Small local models are bad at counting, so the social writer, ad copy and repurpose
 tools check every draft here instead of trusting the LLM.
@@ -53,6 +53,8 @@ case-insensitive.
 | `instagram` | 2200 | max 30 hashtags |
 | `facebook` | 63206 | |
 | `threads` | 500 | |
+| `telegram` | 4096 | text message; bold/italic/links allowed, hashtags fine |
+| `telegram_caption` | 1024 | caption on a photo or video |
 | `mastodon` | 500 | each URL counts as 23 (default instance limit) |
 | `email_subject` | 78 | warn above 60 |
 | `google_ads_headline` | 30 | |

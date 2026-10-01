@@ -27,9 +27,9 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from . import evidence, pack, paste, services, slots
+from . import arith, evidence, extras, pack, paste, quote, selfaudit, services, slots, templates_render
 from . import facts as F
-from .db import db, event, meta_get, meta_set, now, write
+from .db import approved_examples, db, event, meta_get, meta_set, now, write
 
 # ---------- settings
 
@@ -44,6 +44,16 @@ def env_int(name: str, default: int, lo: int, hi: int) -> int:
 
 def pack_max_chars() -> int:
     return env_int("PACK_MAX_CHARS", 8000, 2000, 100_000)
+
+
+def pack_target_chars() -> int:
+    """Free chatbots want short packs: fill by relevance up to this, never past PACK_MAX_CHARS."""
+    return env_int("PACK_TARGET_CHARS", 5000, 1000, 100_000)
+
+
+def pack_examples_on() -> bool:
+    """PACK_EXAMPLES=on|off (default on): approved, exported pieces of this business as "write like these"."""
+    return (os.environ.get("PACK_EXAMPLES") or "on").strip().lower() not in ("off", "0", "false", "no")
 
 
 def paste_max_chars() -> int:
@@ -195,7 +205,7 @@ class TaskIn(BaseModel):
 class PasteIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     text: str = Field(max_length=200_000)
-    provider: Literal["chatgpt", "claude", "gemini", "other", "self"] = "other"
+    provider: Literal["chatgpt", "claude", "gemini", "other", "self", "template"] = "other"
 
 
 class ManualPiece(BaseModel):
@@ -416,10 +426,43 @@ def review_findings(text: str, fact_lines: list[str], findings: list[dict], know
     return out, note
 
 
+def _amount_of(detail: str) -> str | None:
+    """The amount a price finding is about ("12,480 birr differs from …" -> "12480")."""
+    m = re.match(r"\s*[$£€]?\s?(\d[\d,]*(?:\.\d+)?)", detail)
+    if not m:
+        return None
+    from decimal import Decimal, InvalidOperation
+    try:
+        return str(Decimal(m.group(1).replace(",", "")).normalize())
+    except InvalidOperation:
+        return None
+
+
+def _self_flagged(text: str, listed: list[str], findings: list[dict]) -> list[dict]:
+    """The chatbot's own "NOT IN FACTS" sentences, on sentences no blocking finding has already."""
+    if not listed or not selfaudit.on():     # the list is always cut off the answer; it blocks only when on
+        return []
+    flagged = {f["sentence"] for f in findings if f.get("blocking")}
+    sents = [text[a:b] for a, b in F.sentence_spans(text)]
+    return [x for x in selfaudit.findings(text, listed, sents) if x["sentence"] not in flagged]
+
+
 def check_piece(text: str, snapshot: dict, known: dict, day: date, scope: dict, fact_lines: list[str]):
     fill = slots.fill(text, snapshot, known, day, scope)
     found, used = evidence.check_text(fill.text, list(known.values()), day, scope, fill.used)
-    findings = fill.findings + found
+    sums = arith.check(fill.text, list(known.values()), day, scope)
+    # real-10: "Six crates at 2,080 birr per crate cost 12,480 birr": a total the arithmetic proves is not a
+    # wrong price for the product
+    for m in [x for x in sums if x["label"] == "match" and x.get("total_amount")]:
+        found = [f for f in found if not (f["sentence"] == m["sentence"] and f["label"] == "conflict_or_expired"
+                                          and _amount_of(f.get("detail") or "") == _amount_of(m["total_amount"]))]
+    findings = fill.findings + found + sums
+    if extras_on():
+        # a product the business doesn't carry ("Castel 33cl at 1,450 birr"): say that, not "wrong price"
+        for u in extras.unknown_products(fill.text, list(known.values())):
+            findings = [f for f in findings if not (f["sentence"] == u["sentence"] and f["label"] == "conflict_or_expired")] + [u]
+        flagged = {f["sentence"] for f in findings if f.get("blocking")}
+        findings += [x for x in extras.check(fill.text, list(known.values()), day, scope) if x["sentence"] not in flagged]
     if services.model_check_mode() == "review":
         extra, note = review_findings(fill.text, fact_lines, findings, known)
     else:
@@ -430,12 +473,53 @@ def check_piece(text: str, snapshot: dict, known: dict, day: date, scope: dict, 
 # ---------- endpoints
 
 
+def pick_examples(conn, task_id: str, pieces: list[dict], scope: dict, publish_on: str, q: dict,
+                  everything: list[dict] | None) -> list[dict]:
+    """Up to 2 short approved examples for this task's channels, each re-checked against the facts valid
+    on this task's publish date and scope. Same channel first, then same family, newest first; an
+    example with a blocking finding, a slot, or an internal/restricted value is skipped. Never raises."""
+    if not pack_examples_on() or everything is None:
+        return []
+    try:
+        day = F.parse_day(publish_on)
+        task_channels = [p["channel"] for p in pieces]
+        ranked = []
+        for i, c in enumerate(approved_examples(conn, task_id)):
+            rk = pack.example_rank(c["channel"], task_channels)
+            if rk is not None:
+                ranked.append((rk, i, c))
+        ranked.sort(key=lambda x: (x[0], x[1]))
+        known = known_facts(q, everything)
+        secret = [f for f in list(everything) + [f for f in q.get("facts") or [] if isinstance(f, dict)]
+                  if (f.get("sensitivity") or "public") != "public"]
+        out, texts = [], set()
+        for tier in (0, 1):             # same channel first; the family only when no same-channel one qualifies
+            for _rk, _i, c in [r for r in ranked if r[0] == tier][:20]:
+                text = pack.trim_example(c["text"])
+                if not text or text in texts or not pack.example_safe(text, secret):
+                    continue
+                sc = piece_scope(scope, c["channel"])
+                found, _used = evidence.check_text(text, list(known.values()), day, sc, [])
+                if evidence.blocked(found):
+                    continue
+                texts.add(text)
+                out.append({"task_id": c["task_id"], "piece_key": c["piece_key"], "channel": c["channel"],
+                            "text": text})
+                if len(out) >= pack.EXAMPLES_MAX:
+                    break
+            if out:
+                break
+        return out
+    except Exception:       # examples are a bonus: never stop a task from being created
+        return []
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "brand": bool(services.brand_url()), "calendar": bool(services.calendar_url()),
             "rules": bool(services.rules_url()), "model_check": services.model_check_on(),
             "model_check_mode": services.model_check_mode(),
-            "leads": bool(services.leads_url()), "pack_max_chars": pack_max_chars(),
+            "pack_examples": pack_examples_on(), "leads": bool(services.leads_url()), "pack_max_chars": pack_max_chars(), "pack_target_chars": pack_target_chars(),
             "paste_max_chars": paste_max_chars(), "reconcile_min": reconcile_minutes()}
 
 
@@ -456,17 +540,20 @@ def create_task(req: TaskIn):
         notes.append(f"voice left out: cannot list all facts to keep internal values out of it ({exc})")
     voice, n1 = services.profile_summary() if everything is not None else (None, None)
     rules, n2 = services.channel_rules()
-    notes += [n for n in (n1, n2) if n]
+    kit, n3 = services.kit_rules()
+    notes += [n for n in (n1, n2, n3) if n]
     with db() as conn, write(conn):
         tid = new_task_id(conn)
+        examples = pick_examples(conn, tid, pieces, qscope, req.publish_on, q, everything)
         try:
             built = pack.build(tid, str(q["fact_set_version"]), req.publish_on, req.goal, req.audience, req.notes,
                                pieces, qscope, [f for f in q["facts"] if isinstance(f, dict) and f.get("key")],
                                [e for e in q["excluded"] if isinstance(e, dict)], everything or [], voice, rules,
-                               pack_max_chars())
+                               pack_max_chars(), pack_target_chars(), calendar_lines(req.publish_on), examples, kit)
         except pack.PackTooLong as exc:
             raise HTTPException(422, str(exc)) from None
-        preview = {"sent": built.sent, "slotted": built.slotted, "withheld": built.withheld, "chars": len(built.text)}
+        preview = {"sent": built.sent, "slotted": built.slotted, "withheld": built.withheld, "chars": len(built.text),
+                   "examples": built.examples}
         ts = now()
         conn.execute(
             "INSERT INTO tasks (id, goal, audience, notes, pieces, scope, publish_on, pack, pack_sha256,"
@@ -479,7 +566,8 @@ def create_task(req: TaskIn):
             conn.execute("INSERT INTO pieces (task_id, piece_key, n, channel, updated_at) VALUES (?, ?, ?, ?, ?)",
                          (tid, p["key"], i, p["channel"], ts))
         event(conn, tid, "created", pack_sha256=pack.sha256(built.text), chars=len(built.text),
-              sent=len(built.sent), slotted=built.slotted, withheld=[w["key"] for w in built.withheld])
+              sent=len(built.sent), examples=[f"{e['task_id']}/{e['piece_key']}" for e in built.examples],
+              slotted=built.slotted, withheld=[w["key"] for w in built.withheld])
     return {"id": tid, "pack": built.text, "pack_sha256": pack.sha256(built.text),
             "fact_set_version": str(q["fact_set_version"]), "snapshot": built.snapshot,
             "share_preview": preview, "status": "open", "notes": notes}
@@ -559,7 +647,10 @@ def paste_answer(task_id: str, req: PasteIn):
         raise HTTPException(422, "the pasted text is empty")
     with db() as conn, write(conn):
         t = task_or_404(conn, task_id)
-        res = paste.split(req.text, t["pieces"])
+        answer, listed = selfaudit.extract(req.text)     # the chatbot's own "NOT IN FACTS" list
+        res = paste.split(answer, t["pieces"])
+        for sp in res.split:
+            sp["self_flagged"] = listed
         did = _store_draft(conn, task_id, "paste", req.provider, req.text, res.split, res.problems)
         event(conn, task_id, "pasted", draft_id=did, provider=req.provider, chars=len(req.text),
               sha256=pack.sha256(req.text), pieces=len(res.split), problems=len(res.problems))
@@ -649,6 +740,7 @@ def submit(task_id: str, req: SubmitIn):
         text = split[p["key"]]["text"]
         scope = piece_scope(t["scope"], p["channel"])
         fill, findings, used, mnote = check_piece(text, snapshot, known, day, scope, fact_lines)
+        findings += _self_flagged(fill.text, split[p["key"]].get("self_flagged") or [], findings)
         filled = fill.text.strip()
         brand, bnote = services.brand_check(filled, p["channel"])
         platform, pnote = services.validate(p["channel"], filled)
@@ -752,6 +844,50 @@ def accept_finding(task_id: str, piece_key: str, req: AcceptIn):
     return out
 
 
+def extras_on() -> bool:
+    """EXTRAS_CHECK=off turns off the invented-extras check (on by default)."""
+    return os.environ.get("EXTRAS_CHECK", "on").strip().lower() not in ("off", "0", "false", "no")
+
+
+def calendar_lines(publish_on: str) -> list[str] | None:
+    """For the pack: the publish date in the local calendar, occasions near it (short) and the clock-time
+    rule. Only with OCCASIONS=ethiopia; None otherwise (the pack is unchanged)."""
+    if occasions_country() != "ethiopia":
+        return None
+    from . import ethiopia
+    day = F.parse_day(publish_on)
+    lines = [f"Publish date {publish_on} = {ethiopia.format_ec(day)} (Ethiopian calendar)."]
+    for o in ethiopia.occasions_near(day, days=21, past_days=3)[:4]:
+        when = str(o["date"]) + (f" to {o['end']}" if o.get("end") and o["end"] != o["date"] else "")
+        note = f" {o['notes']}" if o.get("notes") else ""
+        flag = "" if o.get("verified") else " (date not confirmed)"
+        lines.append(f"{o['name']}: {when}{flag}.{note}"[:220])
+    lines.append("Write clock times in 24-hour format (Ethiopian clock time is 6 hours off: 3:00 can mean 09:00).")
+    return lines
+
+
+def occasions_country() -> str:
+    """OCCASIONS=ethiopia turns on the Ethiopian calendar and occasions; empty = off."""
+    return os.environ.get("OCCASIONS", "").strip().lower()
+
+
+@app.get("/occasions", dependencies=[Depends(require_key)])
+def occasions(on: str | None = Query(None, max_length=10), days: int = Query(45, ge=1, le=366)):
+    """Dated occasions near a publish date (holidays, seasons, fasts), with notes for marketers.
+    Only Ethiopia is built in (OCCASIONS=ethiopia)."""
+    if occasions_country() != "ethiopia":
+        return {"country": None, "occasions": [], "note": "occasions are off (set OCCASIONS=ethiopia)"}
+    from . import ethiopia
+    day = F.parse_day(on) if on else date.today()
+    items = [{k: o.get(k) for k in ("name", "date", "end", "ec", "kind", "movable", "verified", "notes", "source")}
+             for o in ethiopia.occasions_near(day, days=days, past_days=3)]
+    for o in items:
+        o["date"] = str(o["date"]) if o.get("date") else None
+        o["end"] = str(o["end"]) if o.get("end") else None
+    return {"country": "ethiopia", "on": day.isoformat(), "on_ec": ethiopia.format_ec(day), "occasions": items,
+            "note": ethiopia.EAT_NOTE}
+
+
 @app.post("/check", dependencies=[Depends(require_key), Depends(rate_limit)])
 def check(req: CheckIn):
     """Stateless: slots and evidence for any text (no task, nothing written, no calendar item)."""
@@ -770,10 +906,172 @@ def check(req: CheckIn):
     day = F.parse_day(day_s)
     ok_lines = [pack.public_line(f) for f in known.values()
                 if F.classify(f, day, scope) is None and (f.get("sensitivity") or "public") == "public"]
-    fill, findings, used, note = check_piece(paste.normalise(req.text), {}, known, day, scope, ok_lines)
-    return {"findings": findings, "blocked": evidence.blocked(findings), "filled_text": fill.text,
+    answer, listed = selfaudit.extract(paste.normalise(req.text))
+    fill, findings, used, note = check_piece(answer, {}, known, day, scope, ok_lines)
+    findings += _self_flagged(fill.text, listed, findings)
+    # the same brand (05: banned phrases, confirmed kit rules, AI-sheen) and channel (14) checks a
+    # submitted piece gets, so a "check this line" answer matches what submit would say
+    filled = fill.text.strip()
+    brand, bnote = services.brand_check(filled, channel)
+    platform, pnote = services.validate(channel, filled) if channel else ([], None)
+    notes = [n for n in (note, bnote, pnote) if n]
+    gate = any(v.get("severity") == "error" for v in brand + platform)
+    return {"findings": findings, "blocked": evidence.blocked(findings) or gate, "filled_text": fill.text,
             "used_facts": used, "fact_set_version": q.get("fact_set_version"), "publish_on": day_s,
-            "notes": [note] if note else []}
+            "checks": {"brand": brand, "platform": platform}, "notes": notes}
+
+
+# ---------- zero-AI post templates (price list, rate card, facts digest)
+
+
+class TemplateRenderIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    template: Literal["price_list", "rate_card", "facts_digest"]
+    channel: str = Field(min_length=1, max_length=30)
+    scope: Scope = Field(default_factory=Scope)
+    publish_on: str
+    title: str | None = Field(default=None, max_length=120)
+    intro: str | None = Field(default=None, max_length=500)
+    subjects: list[str] | None = Field(default=None, max_length=20)
+    group_by: Literal["subject"] | None = None
+
+    @field_validator("publish_on")
+    @classmethod
+    def day(cls, v):
+        return _day_str(v)
+
+    @field_validator("channel")
+    @classmethod
+    def chan(cls, v):
+        return PieceIn(key="p1", channel=v).channel
+
+
+class TemplateTaskIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    template: Literal["price_list", "rate_card", "facts_digest"]
+    channel: str | None = Field(default=None, min_length=1, max_length=30)
+    channels: list[str] | None = Field(default=None, max_length=5)
+    scope: Scope = Field(default_factory=Scope)
+    publish_on: str
+    goal: str | None = Field(default=None, min_length=3, max_length=2000)
+    title: str | None = Field(default=None, max_length=120)
+    intro: str | None = Field(default=None, max_length=500)
+    subjects: list[str] | None = Field(default=None, max_length=20)
+    group_by: Literal["subject"] | None = None
+    audience: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("publish_on")
+    @classmethod
+    def day(cls, v):
+        return _day_str(v)
+
+
+def _render_template(req, channel: str, kit: list[dict], kit_note: str | None, limits: dict | None) -> dict:
+    scope = piece_scope(req.scope.model_dump(), channel, [channel])
+    try:
+        q = services.query_facts(scope, req.publish_on)
+    except services.ServiceError as exc:
+        raise upstream(exc) from None
+    rule = ((limits or {}).get("channels") or {}).get(channel) or {}
+    out = templates_render.render(
+        req.template, channel, [f for f in q["facts"] if isinstance(f, dict)], F.parse_day(req.publish_on), scope,
+        kit, rule.get("limit"), req.title, req.intro, req.subjects, req.group_by, [kit_note] if kit_note else None)
+    out["channel"] = channel
+    out["publish_on"] = req.publish_on
+    out["fact_set_version"] = q.get("fact_set_version")
+    return out
+
+
+@app.post("/templates/render", dependencies=[Depends(require_key), Depends(rate_limit)])
+def templates_render_endpoint(req: TemplateRenderIn):
+    """A post written from the facts alone, no chatbot. Nothing is stored; /templates/task does the rest."""
+    kit, kit_note = services.kit_rules()
+    limits, _ = services.channel_rules()
+    out = _render_template(req, req.channel, kit, kit_note, limits)
+    return {k: out[k] for k in ("text", "parts", "facts_used", "chars", "notes", "channel", "publish_on",
+                                "fact_set_version")}
+
+
+@app.post("/templates/task", status_code=201, dependencies=[Depends(require_key), Depends(rate_limit)])
+def templates_task(req: TemplateTaskIn):
+    """Render, then take the normal path: a task, the text pasted as provider "template", submitted
+    (same checks, a calendar item bound to the text). A person still approves in the calendar."""
+    chans = list(dict.fromkeys(PieceIn(key="p1", channel=c).channel for c in (req.channels or []) + ([req.channel] if req.channel else [])))
+    if not chans:
+        raise HTTPException(422, "give channel or channels")
+    kit, kit_note = services.kit_rules()
+    limits, _ = services.channel_rules()
+    rendered, pieces, texts = [], [], []
+    for ch in chans:
+        out = _render_template(req, ch, kit, kit_note, limits)
+        if not out["text"]:
+            raise HTTPException(422, {"message": f"nothing to render for {ch}", "notes": out["notes"]})
+        for part in out["parts"]:
+            key = f"p{len(pieces) + 1}"
+            pieces.append({"key": key, "channel": ch, "kind": req.template})
+            texts.append(part)
+            rendered.append({"piece_key": key, "channel": ch, "chars": len(part), "facts_used": out["facts_used"],
+                             "notes": out["notes"]})
+    if len(pieces) > 10:
+        raise HTTPException(422, f"that makes {len(pieces)} messages; a task holds at most 10")
+    goal = req.goal or f"{templates_render.TITLES[req.template]} for {req.publish_on}"
+    created = create_task(TaskIn(goal=goal, pieces=[PieceIn(**p) for p in pieces], scope=req.scope,
+                                 publish_on=req.publish_on, audience=req.audience, notes=req.notes))
+    raw = "\n\n".join(pack.marker(i, p["channel"]) + "\n" + t for i, (p, t) in enumerate(zip(pieces, texts), 1))
+    pasted = paste_answer(created["id"], PasteIn(text=raw, provider="template"))
+    if pasted["problems"]:
+        raise HTTPException(409, {"message": "the rendered text did not split into its pieces", "task_id": created["id"],
+                                  "problems": pasted["problems"]})
+    res = submit(created["id"], SubmitIn(draft_id=pasted["draft_id"]))
+    return {**res, "rendered": rendered, "blocked": any(p["blocked"] for p in res["pieces"]),
+            "calendar_item_ids": [p["calendar_item_id"] for p in res["pieces"]]}
+
+
+# ---------- exact quote (arithmetic in code, not in the chatbot)
+class QuoteLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    fact_key: str = Field(max_length=80)
+    quantity: int = Field(ge=1, le=1_000_000)
+    nights: int | None = Field(default=None, ge=1, le=3650)
+    guests: int | None = Field(default=None, ge=1, le=10_000)
+
+
+class QuoteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scope: Scope = Field(default_factory=Scope)
+    publish_on: str | None = None
+    lines: list[QuoteLine] = Field(min_length=1, max_length=50)
+    currency: str | None = Field(default=None, max_length=3)
+    allow_internal: bool = False
+
+    @field_validator("publish_on")
+    @classmethod
+    def day(cls, v):
+        return _day_str(v) if v else None
+
+
+@app.post("/quote", dependencies=[Depends(require_key), Depends(rate_limit)])
+def make_quote(req: QuoteIn, x_internal_quote: str | None = Header(default=None)):
+    day_s = req.publish_on or date.today().isoformat()
+    internal_ok = req.allow_internal and (x_internal_quote or "").strip().lower() == "yes"
+    if req.allow_internal and not internal_ok:
+        raise HTTPException(422, "allow_internal needs the header X-Internal-Quote: yes")
+    scope = F.norm_scope(req.scope.model_dump())
+    try:
+        q = services.query_facts(scope, day_s)
+        known = {f["key"]: f for f in services.all_facts()}
+    except services.ServiceError as exc:
+        raise upstream(exc) from None
+    by_key = {f["key"]: f for f in q.get("facts") or [] if isinstance(f, dict) and f.get("key")}
+    excluded = {e.get("key"): e.get("reason") for e in q.get("excluded") or [] if isinstance(e, dict)}
+    try:
+        out = quote.build([ln.model_dump() for ln in req.lines], by_key, known, excluded, F.parse_day(day_s), scope,
+                          req.currency, internal_ok)
+    except quote.QuoteError as exc:
+        raise HTTPException(422, exc.message) from None
+    out.update({"publish_on": day_s, "fact_set_version": q.get("fact_set_version")})
+    return out
 
 
 # ---------- export
@@ -1084,3 +1382,9 @@ def blockers():
                     "link": "/leads"})
     return out
 
+
+
+# ---------- public content drift audit (app/audit.py): POST /audit, read-only
+from . import audit as _audit  # noqa: E402
+
+app.include_router(_audit.make_router(require_key, rate_limit, piece_scope, known_facts))

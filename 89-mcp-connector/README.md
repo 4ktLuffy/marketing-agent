@@ -1,6 +1,6 @@
 # mcp-connector
 
-Deploy **89 of 90** of the local-LLM marketing agent. It is an **MCP server** that lets Claude use
+Deploy **89 of 91** of the local-LLM marketing agent. It is an **MCP server** that lets Claude use
 the business's facts and the task bridge directly: Claude Desktop and Claude Code on your machine,
 or claude.ai through **one custom remote connector** (the Free plan allows one). It needs no model
 and holds no key that can approve anything.
@@ -51,6 +51,11 @@ approve or publish.**
 | `check_text(text, publish_on, scope?, channel?)` | 88 `POST /check` | `blocked`, `findings` |
 | `get_task(task_id)` | 88 `GET /tasks/{id}` | pieces, drafts, export readiness, pack |
 | `list_blockers()` | 88 `GET /blockers` | `[{kind, count, text, link}]` |
+| `get_occasions(on_date?, days?)` | 88 `GET /occasions` | holidays, seasons, fasts near a date (when OCCASIONS is on) |
+| `render_template(template, channel, publish_on, scope?)` | 88 `POST /templates/render` | a price list / rate card / digest from facts, zero model tokens |
+| `post_from_template(template, channels, publish_on, scope?)` | 88 `POST /templates/task` | the same, sent for checks and human review |
+| `make_quote(lines, publish_on, scope?)` | 88 `POST /quote` | exact quote from PUBLIC prices (internal prices never) |
+| `audit_content(urls?, text?, scope?)` | 88 `POST /audit` | contradictions between the business's pages/posts and today's facts |
 
 Inputs are validated from JSON Schema (lengths, dates, task id `T-XXXXXX`, at most 10 pieces,
 unknown fields refused). Text is capped at `MAX_TEXT_CHARS` (40,000).
@@ -87,7 +92,7 @@ Edit config):
 }
 ```
 
-Restart Claude Desktop; the seven tools appear under the connector. (Anthropic documents local
+Restart Claude Desktop; the twelve tools appear under the connector. (Anthropic documents local
 MCP in Claude Desktop without a plan gate; that the Free plan includes it is not confirmed.)
 
 ### Claude Code (local)

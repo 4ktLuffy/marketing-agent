@@ -1,6 +1,6 @@
 # clip-finder
 
-Deploy **73 of 90** of the local-LLM marketing agent. It turns one **long video** (a talk, a
+Deploy **73 of 91** of the local-LLM marketing agent. It turns one **long video** (a talk, a
 webinar, a podcast recording) into a few **short vertical clips**, 1080×1920, with
 word-by-word captions burned in, ready for Reels, TikTok or Shorts:
 

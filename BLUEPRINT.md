@@ -3,7 +3,7 @@
 A marketing agent that runs on a **local LLM (Ollama)**, is driven by **n8n**, and is
 reachable two ways: **n8n chat** (you talk to it) and **schedules** (it works on its own).
 
-Every folder in `marketing-agent/` is one deploy = one GitHub repo. 90 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility, 84 paid ads, 85 client report, 86 email flows, 87 product feed, 88 task bridge, 89 Claude connector, 90 approval service).
+Every folder in `marketing-agent/` is one deploy = one GitHub repo. 91 deploys (01–44 below, 45–53 in Phase 2, 54–81 in Phase 3, 82–83 AI visibility, 84 paid ads, 85 client report, 86 email flows, 87 product feed, 88 task bridge, 89 Claude connector, 90 approval service, 91 ERP facts).
 
 ## What the agent does
 

@@ -58,6 +58,7 @@ GATE_TRAP_LABELS = {"conflict_or_expired", "wrong_scope", "forbidden_phrase", "m
 NEGATIVE_CONTROLS = ("01-clean", "02-paraphrase")
 # Set by --claims-gateway: {"gateway": url, "model": name|None, "timeout": seconds}. None = zero-model.
 MODEL_CHECK: dict | None = None
+KITS: list[str] = []          # starter kits applied and confirmed for every company (--kits)
 
 
 # ---------------------------------------------------------------- text helpers (pure)
@@ -99,6 +100,28 @@ def sentence_hits(sentence: str, target: str, texts: list[str]) -> str | None:
                 if a0 < b1 and b0 < a1:
                     return "overlap"
     return None
+
+
+def kit_findings(piece: dict) -> list[dict]:
+    """Confirmed starter-kit rules are enforced by the brand check (05 /check), which reports them as
+    piece-level violations, not sentence findings. For scoring, turn them into findings: a forbidden
+    phrase on the sentence that contains it, a missing kit disclosure on the piece's first sentence."""
+    text = piece.get("filled_text") or ""
+    sentences = [x.strip() for x in re.split(r"(?<=[.!?])\s+|\n+", text) if x.strip()]
+    out = []
+    for v in (piece.get("checks") or {}).get("brand") or []:
+        if v.get("severity") != "error":
+            continue
+        if v.get("rule") == "kit_forbidden":
+            m = (v.get("match") or "").lower()
+            sent = next((x for x in sentences if m and m in x.lower()), text[:200])
+            out.append({"sentence": sent, "label": "forbidden_phrase", "fact_key": None, "blocking": True,
+                        "detail": v.get("detail"), "piece_key": piece.get("piece_key"), "source": "kit"})
+        elif v.get("rule") == "kit_disclosure":
+            out.append({"sentence": sentences[0] if sentences else text[:200], "label": "missing_disclosure",
+                        "fact_key": None, "blocking": True, "detail": v.get("detail"),
+                        "piece_key": piece.get("piece_key"), "source": "kit"})
+    return out
 
 
 def score_draft(expected: dict, findings: list[dict], texts: list[str], piece_blocked: bool | None = None) -> dict:
@@ -255,7 +278,8 @@ class Stack:
         self.logs: dict[str, Path] = {}
 
     def env(self, name: str) -> dict:
-        base = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "SYSTEMROOT")}
+        base = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "SYSTEMROOT",
+                                                             "PROMISE_CHECK", "EXTRAS_CHECK")}
         base["PYTHONDONTWRITEBYTECODE"] = "1"
         if name == "brand":
             brand = {"name": self.company["name"], "website": "https://example.invalid"}
@@ -350,6 +374,13 @@ def run_company(slug: str) -> dict:
             # 2. import facts
             r = c.post(BR + "/facts/v2/import", headers=OH, json={"facts": facts, "confirm": True})
             out["import"] = _rec(r)
+            for spec in KITS:     # the owner applied and confirmed these rules (enforced by 05 /check)
+                prefix, _, kit = spec.rpartition(":")    # "kit" = every company; "beer-:kit" = slugs starting beer-
+                if prefix and not slug.startswith(prefix):
+                    continue
+                c.post(BR + f"/starter-kits/{kit}/apply", headers=OH)
+                for rule in c.get(BR + "/rules", headers=H, params={"kit": kit}).json().get("rules", []):
+                    c.post(BR + f"/rules/{rule['id']}/confirm", headers=OH)
             if r.status_code != 200:
                 out["integration"].append({"step": "import", "request": "POST /facts/v2/import confirm=true",
                                            "response": _rec(r), "expected": "200"})
@@ -449,6 +480,7 @@ def run_company(slug: str) -> dict:
                 for p in sj["pieces"]:
                     for f in p.get("findings") or []:
                         findings.append({**f, "piece_key": p["piece_key"]})
+                    findings += kit_findings(p)
                 d["pieces"] = [{"piece_key": p["piece_key"], "blocked": p["blocked"], "status": p.get("status"),
                                 "calendar_item_id": p.get("calendar_item_id"), "filled_text": p["filled_text"],
                                 "filled_sha256": p["filled_sha256"], "checks": p.get("checks"),
@@ -742,10 +774,12 @@ def main(argv=None) -> int:
     ap.add_argument("--claims-gateway", default="", help="optional model check: a running 03 gateway URL for 44")
     ap.add_argument("--verifier-model", default="", help="VERIFIER_MODEL for 44 (default: the gateway's MODEL)")
     ap.add_argument("--claims-timeout", type=float, default=300, help="CLAIMS_TIMEOUT for 88 and 44 (seconds)")
+    ap.add_argument("--kits", default="", help="comma-separated starter kits to apply and confirm (e.g. ethiopia-alcohol, or beer-:ethiopia-alcohol for slugs starting beer-)")
     ap.add_argument("--model-check-mode", choices=("auto", "review"), default="auto",
                     help="MODEL_CHECK for 88 with --claims-gateway: auto (whole piece) or review (unsure sentences)")
     a = ap.parse_args(argv)
-    global COMPANIES, MODEL_CHECK
+    global COMPANIES, MODEL_CHECK, KITS
+    KITS = [k.strip() for k in a.kits.split(",") if k.strip()]
     if a.claims_gateway:
         MODEL_CHECK = {"gateway": a.claims_gateway.rstrip("/"), "model": a.verifier_model or None,
                        "timeout": a.claims_timeout, "mode": a.model_check_mode}

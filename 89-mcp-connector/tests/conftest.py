@@ -190,7 +190,10 @@ def fake():
                               "blocking": True, "detail": "differs from £777"},
                              {"sentence": f"Margin {RES_SENTINEL} 42.5%.", "label": "no_source", "fact_key": "owner-margin",
                               "quote": f"{RES_SENTINEL}-TEXT our margin is 42.5 percent.", "blocking": True,
-                              "detail": "42.5 percent not in any public fact"}]})
+                              "detail": "42.5 percent not in any public fact"}],
+                "checks": {"brand": [{"rule": "kit_forbidden", "severity": "error",
+                                      "detail": "'official beer of' is not allowed"}],
+                           "platform": [{"rule": "too_long", "severity": "error", "detail": "300 chars, max 280"}]}})
 
         def get_task(r, tid):
             if tid != TID:
@@ -206,6 +209,18 @@ def fake():
                 "export": {"ready": False, "reasons": [f"piece p2 is a draft (£777 {INT_SENTINEL})"]}})
 
         m.post(f"{TASKS}/tasks").mock(side_effect=record("tasks", create))
+        m.post(f"{TASKS}/templates/render").mock(side_effect=guarded(lambda r: httpx.Response(200, json={
+            "text": "Prices per room per night:\n- Midweek Escape: £180", "facts_used": ["weekday-rate"], "chars": 48})))
+        m.post(f"{TASKS}/templates/task").mock(side_effect=guarded(lambda r: httpx.Response(201, json={
+            "blocked": False, "calendar_item_ids": [7], "pieces": []})))
+        m.post(f"{TASKS}/quote").mock(side_effect=record("quote", lambda r: httpx.Response(200, json={
+            "lines": [], "total": "1080", "currency": "GBP", "text": "2 × 3 nights × £180 = £1,080", "confidential": False})))
+        m.post(f"{TASKS}/audit").mock(side_effect=guarded(lambda r: httpx.Response(200, json={
+            "sources": [], "totals": {"sources": 1, "drift": 1, "errors": 0}})))
+        m.get(f"{TASKS}/occasions").mock(side_effect=guarded(lambda r: httpx.Response(200, json={
+            "country": "ethiopia", "on": r.url.params.get("on") or "2026-10-01", "on_ec": "21 Meskerem 2019 E.C.",
+            "occasions": [{"name": "Genna", "date": "2027-01-07", "kind": "public_holiday", "verified": True}],
+            "note": "Ethiopian clock time runs 6 hours off"})))
         m.post(url__regex=rf"^{TASKS}/tasks/(?P<tid>[^/]+)/paste$").mock(side_effect=record("paste", paste))
         m.post(url__regex=rf"^{TASKS}/tasks/(?P<tid>[^/]+)/drafts/(?P<did>\d+)/split$").mock(
             side_effect=record("split", split))

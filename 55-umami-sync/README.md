@@ -1,6 +1,6 @@
 # umami-sync
 
-Deploy **55 of 90** of the local-LLM marketing agent. It reads your Umami website
+Deploy **55 of 91** of the local-LLM marketing agent. It reads your Umami website
 analytics one day at a time: visits and conversions for each `utm_source` and `utm_campaign`
 pair. It uploads them to `20-analytics-ingest` as a generic CSV, labelled `umami`.
 Campaign scorecards (45) and the weekly report (41) can then use real site numbers

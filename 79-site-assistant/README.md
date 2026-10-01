@@ -1,6 +1,6 @@
 # site-assistant
 
-Deploy **79 of 90** of the local-LLM marketing agent. A chat widget for your website that
+Deploy **79 of 91** of the local-LLM marketing agent. A chat widget for your website that
 answers visitors' questions **only from your knowledge base (06) and approved facts (05)**,
 checks every answer with the claim checker (44) before showing it, asks at most two
 qualifying questions when someone wants to buy, offers your booking link, and **hands off to

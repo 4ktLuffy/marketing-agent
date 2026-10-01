@@ -6,6 +6,17 @@
 <h1>New task</h1>
 <p class="small muted">Say what you need. The next page shows exactly what would leave your business before you copy anything.</p>
 {% if errors %}<p class="alert danger" role="alert">Not created yet: fix what is marked below.</p>{% endif %}
+{% if occasions %}
+<details class="panel occasions"{% if not errors %} open{% endif %}>
+  <summary>Coming up{% if occasions.on_ec %} · today is {{ occasions.on_ec }}{% endif %}</summary>
+  <ul class="plain small">
+  {% for o in occasions["items"] %}
+    <li><b>{{ o.name }}</b> {{ o.when }}{% if o.ec %} ({{ o.ec }}){% endif %}{% if o.flag %} <span class="muted">· {{ o.flag }}</span>{% endif %}{% if o.notes %}<br><span class="muted">{{ o.notes }}</span>{% endif %}</li>
+  {% endfor %}
+  </ul>
+  {% if occasions.note %}<p class="small muted">{{ occasions.note }}</p>{% endif %}
+</details>
+{% endif %}
 {{ err("general") }}
 <form method="post" action="/tasks/new" class="stack brand-form">
   <input type="hidden" name="csrf" value="{{ csrf }}">

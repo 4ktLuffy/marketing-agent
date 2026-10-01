@@ -1,6 +1,6 @@
 # customer-language
 
-Deploy **70 of 90** of the local-LLM marketing agent. It is a "voice of customer" engine.
+Deploy **70 of 91** of the local-LLM marketing agent. It is a "voice of customer" engine.
 It collects what customers wrote or searched, finds the words they repeat, and gives writers
 the phrases that fit a topic, so copy uses the customers' words rather than generic AI words.
 

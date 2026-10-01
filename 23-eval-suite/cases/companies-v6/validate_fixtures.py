@@ -113,6 +113,8 @@ def check_company(cdir: Path, errs: list[str]) -> dict:
             e(f"fact {fk}: subject.ref / source.ref empty")
         if set(f["scope"]) != set(DIMS) or not all(isinstance(f["scope"][d], list) for d in DIMS):
             e(f"fact {fk}: scope must have exactly the six list dimensions")
+        if isinstance(f.get("value_text"), str) and len(f["value_text"]) > 200:
+            e(f"fact {fk}: value_text over 200 characters (05 refuses it)")
         for c in f["conditions"]:
             if set(c) != {"key", "op", "value"}:
                 e(f"fact {fk}: condition {c} needs key/op/value")

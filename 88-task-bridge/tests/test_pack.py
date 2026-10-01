@@ -8,7 +8,8 @@ from .conftest import AUTH, BIKE_TASK, make_task
 
 
 def fact_lines(text):
-    return [line for line in text.split("\n") if line.startswith("- [[")]
+    body = text.split("\nFACTS", 1)[1].split("\nRULES:", 1)[0]
+    return [line for line in body.split("\n") if line.startswith("- ")]
 
 
 def test_pack_has_no_internal_value_and_no_restricted_fact(client, stack):
@@ -88,7 +89,7 @@ def test_pack_is_capped_and_drops_least_relevant_facts_first(client, stack, monk
 
 def test_smaller_cap_from_env(client, stack, monkeypatch):
     monkeypatch.setenv("PACK_MAX_CHARS", "2000")
-    t = make_task(client, stack, task={**BIKE_TASK, "notes": "Mention the coast path. " * 30})
+    t = make_task(client, stack, task={**BIKE_TASK, "notes": "Mention the coast path. " * 24})
     assert len(t["pack"]) <= 2000
     assert any(w["reason"] == "too_long" for w in t["share_preview"]["withheld"])
 

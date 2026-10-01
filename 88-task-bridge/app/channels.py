@@ -15,6 +15,8 @@ _TABLE = {
     "facebook": ["facebook", "fb", "facebook page", "facebook post", "fb post", "meta post"],
     "x": ["twitter", "tweet", "twitter x", "x twitter", "x post", "x thread", ("x", False)],
     "threads": ["threads", "threads post"],
+    "telegram": ["telegram", "telegram post", "telegram message", "telegram channel", "telegram broadcast",
+                 "telegram channel post", ("tg", False)],
     "mastodon": ["mastodon", "toot"],
     "tiktok": ["tiktok", "tik tok", "tiktok caption", "tiktok script"],
     "youtube": ["youtube", ("yt", False), "youtube description", "youtube short", "youtube shorts",

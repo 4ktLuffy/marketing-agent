@@ -77,7 +77,7 @@ print(json.dumps({"ik": e["IK"], "ak": e["AK"], "method": e["M"], "url": e["U"],
 
 # Every NN published as ${PORT_PREFIX}NN in docker-compose.yml (core, growth and full).
 # shellcheck disable=SC2034  # read by preflight.sh and leak-test.sh
-SERVICE_PORT_NUMBERS="03 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 44 45 46 47 48 54 55 58 61 62 63 67 70 71 72 73 78 79 80 82 84 86 87 88 89"
+SERVICE_PORT_NUMBERS="03 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 44 45 46 47 48 54 55 58 61 62 63 67 70 71 72 73 78 79 80 82 84 86 87 88 89 91"
 # Of those, the ones a client still publishes (docker-compose.private.yml closes the rest): short
 # links, cards, status page, video, control room, clips, site assistant, lead webhooks.
 # shellcheck disable=SC2034  # read by leak-test.sh

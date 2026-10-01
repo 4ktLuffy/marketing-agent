@@ -1,6 +1,6 @@
 # ad-library-sync
 
-Deploy **78 of 90** of the local-LLM marketing agent. It is the **competitor registry** and
+Deploy **78 of 91** of the local-LLM marketing agent. It is the **competitor registry** and
 the competitors' **ads**. It uses official APIs only.
 
 - **Registry.** This is the one list of competitors. Each has a name, website, key pages,

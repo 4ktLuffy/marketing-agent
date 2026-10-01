@@ -1,6 +1,6 @@
 # brand-service
 
-Deploy **05 of 90** of the local-LLM marketing agent. It holds one brand profile (voice,
+Deploy **05 of 91** of the local-LLM marketing agent. It holds one brand profile (voice,
 products, key messages, banned phrases, disclaimers) and serves it two ways: as JSON, and
 as a compact plain-text summary the LLM gateway (03) embeds in every prompt. `POST /check`
 lints any draft against the brand rules before it goes near the calendar.
@@ -228,7 +228,7 @@ store cannot be read, `/facts` logs it and serves the brand profile's facts alon
 
 ### Industry starter kits
 
-`config/starter-kits/{hospitality,manufacturing,saas,retail,clinic,restaurant,consultancy}.yaml` are
+`config/starter-kits/{hospitality,manufacturing,saas,retail,clinic,restaurant,consultancy,ethiopia-alcohol,ethiopia-hospitality}.yaml` are
 data, not code: a label, suggested fact types with example attributes, the claim classes that
 matter, wording to avoid with a one-line reason and the fact that would make it acceptable (e.g.
 "UL Listed" needs a certification fact naming the variant; "SOC 2 Type II" needs that report;
@@ -238,6 +238,19 @@ separate `rules` table as drafts (rules are not facts, so they never appear in `
 `/facts/query`); the owner confirms or dismisses each. 05 does not enforce rules yet; 88 and the
 control room read them. Kits are validated on load (a broken kit file is a 500, never a partial
 rule set); `STARTER_KITS_DIR` points elsewhere.
+
+Two Ethiopia kits (researched 2026-10-01, see `_dev/research/night4-ethiopia.md`):
+
+- `ethiopia-alcohol` (beer, wine, spirits makers, distributors, bars): from Proclamation 1112/2019
+  Art. 60. Required disclosure "Selling to persons under 21 is prohibited." (English only; the owner
+  must confirm the Amharic wording, none is supplied). Forbidden: health claims, appeal to minors,
+  drink-driving and sport links, lottery/raffle/prize-draw tie-ins, holiday/sports/youth sponsorship
+  wording. Broadcast and billboard advertising are not allowed for alcohol (Art. 60(4), 60(5)). All
+  public alcohol copy should be held for human review, never auto-published. Rules resting on
+  unverified reading say "needs legal check"; this is not legal advice.
+- `ethiopia-hospitality`: rates must say whether 15% VAT and 10% service charge are included, USD
+  for foreign passport holders vs ETB for residents (confirm with your finance team), 24-hour times,
+  no unsourced star ratings or awards.
 
 ## Configuration
 

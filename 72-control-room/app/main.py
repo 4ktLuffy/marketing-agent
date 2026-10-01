@@ -18,7 +18,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import activity, brand_setup, client_links, config, facts_page, feeds, onboarding, positioning, tasks, users, views
+from . import activity, audit_page, brand_setup, client_links, config, facts_page, feeds, onboarding, positioning, tasks, users, views
 from . import results as results_page
 from .backends import BackendError, Backends, gather_soft
 from .pending import PendingDecisions
@@ -467,6 +467,7 @@ def create_app() -> FastAPI:
     facts_page.register(app, page, current, csrf, B, need=need)
     results_page.register(app, page, current)       # /tasks/results before /tasks/{task_id}
     tasks.register(app, page, current, csrf, B, need=need)
+    audit_page.register(app, page, current, csrf, B, need=need)
 
     # ------------------------------------------------------------------ 17 client approval links (19; /c/ is public)
     client_links.register(app, page, current, csrf, B, need=need)

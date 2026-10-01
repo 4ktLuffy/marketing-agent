@@ -104,7 +104,7 @@ def test_model_check_only_adds_non_blocking_findings(client, stack, monkeypatch)
     out = paste_and_submit(client, t["id"], text)
     assert stack.verify_route.call_count == 2
     sent = stack.verify_calls[0]
-    assert set(sent) == {"text", "facts"} and all(line.startswith("- [[") for line in sent["facts"])
+    assert set(sent) == {"text", "facts"} and all(line.startswith("- ") for line in sent["facts"])
     assert data.INTERNAL_SENTINEL not in json.dumps(sent["facts"])
     p1, p2 = out["pieces"]
     assert p1["blocked"]                                            # deterministic findings stay
@@ -374,3 +374,25 @@ def test_background_reconcile_thread_starts_and_stops(stack, monkeypatch):
         assert c.get("/health").json()["reconcile_min"] == 1
         assert any(t.name == "reconcile" for t in threading.enumerate())
     assert main._stop.is_set()
+
+
+def test_chatbot_own_not_in_facts_list_blocks_and_is_never_published(client, stack, monkeypatch):
+    monkeypatch.setenv("PACK_SELF_AUDIT", "on")
+    t = make_task(client, stack)
+    text = CLEAN.replace("Let me know if you want changes!",
+                         "NOT IN FACTS:\n- Hotel guests ask about [[partner-rate]].")
+    out = paste_and_submit(client, t["id"], text)
+    p1, p2 = out["pieces"]
+    assert not p1["blocked"] and p2["blocked"]
+    assert any("chatbot itself listed" in f["detail"] for f in p2["findings"])
+    assert all("NOT IN FACTS" not in x["body"] for x in stack.items.values())
+    out = paste_and_submit(client, t["id"], CLEAN.replace("Let me know if you want changes!", "NOT IN FACTS: none"))
+    assert not any(p["blocked"] for p in out["pieces"])
+
+
+def test_not_in_facts_list_is_cut_but_does_not_block_when_off(client, stack):
+    t = make_task(client, stack)
+    out = paste_and_submit(client, t["id"], CLEAN.replace("Let me know if you want changes!",
+                                                          "NOT IN FACTS:\n- Hotel guests ask about [[partner-rate]]."))
+    assert not any(p["blocked"] for p in out["pieces"])
+    assert all("NOT IN FACTS" not in x["body"] for x in stack.items.values())

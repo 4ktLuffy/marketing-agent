@@ -1,6 +1,6 @@
 # control-room
 
-Deploy **72 of 90** of the local-LLM marketing agent. A small, mobile-first web app for the one
+Deploy **72 of 91** of the local-LLM marketing agent. A small, mobile-first web app for the one
 person who approves the agent's work:
 
 1. **Login**: one owner from `CONTROL_USER` / `CONTROL_PASSWORD`, or named people with roles
@@ -477,3 +477,12 @@ No other outside code is in this repo.
 
 `.github/workflows/ci.yml` runs the tests, then pushes `ghcr.io/<you>/<repo>:latest` on every
 push to `main`.
+
+## Audit: is your public content still true?
+
+**More → Audit** compares what your own web pages, PDFs or old posts say with today's facts. Paste
+URLs (one per line; the task bridge reads them through the page extractor, 07) or paste text, pick
+the scope, and you get a table: *where* · *it says* · *the facts say* · *why*. Only contradictions are
+listed: an old or wrong price, another branch's fact, an expired offer, or an internal value that must
+never be public. Nothing is changed anywhere. Writers and up can run it; image-only PDFs (scanned rate
+cards) can't be read — the page says so.

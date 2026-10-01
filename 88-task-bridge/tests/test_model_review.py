@@ -37,7 +37,7 @@ def test_only_review_and_cued_sentences_are_sent(client, stack, monkeypatch):
     assert set(sent) == {"text", "facts"}                        # no context: 44 would read it as evidence
     assert sent["text"].split("\n") == [REVIEWED, CUED]          # review first, then cued; never blocked/matched
     # public lines only, with validity / scope added
-    assert all(line.startswith("- [[") for line in sent["facts"])
+    assert all(line.startswith("- ") for line in sent["facts"])
     assert data.INTERNAL_SENTINEL not in "\n".join(sent["facts"])
     assert any("applies only to sites: porthleven" in line for line in sent["facts"])
     assert out["findings"] == before["findings"] and out["blocked"] == before["blocked"]   # 44 said all fine

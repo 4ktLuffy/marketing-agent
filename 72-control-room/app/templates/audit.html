@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Audit{% endblock %}
+{% block main %}
+<h1>Audit</h1>
+<p class="small muted">Is what you already published still true? Paste the addresses of your pages and PDFs (a rate card, a price page, a menu) or old posts, and every sentence is compared with today's facts. Only what is out of date, wrong for the branch, or should never be public is listed. Nothing is changed or saved.</p>
+{% if not_installed %}<p class="muted">The task bridge (88) isn't installed.</p>{% else %}
+{% if errors %}<div class="alert danger" role="alert">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+{% if can('writer') %}
+<form method="post" action="/audit" class="stack brand-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="urls">Page or PDF addresses, one per line</label>
+  <textarea id="urls" name="urls" rows="4" placeholder="https://example.com/rates&#10;https://example.com/rates-2024.pdf">{{ values.urls }}</textarea>
+  <label for="text">Or paste old text (a post, a leaflet)</label>
+  <textarea id="text" name="text" rows="6" maxlength="40000">{{ values.text }}</textarea>
+  <label for="label" class="small">Name for the pasted text (optional)</label>
+  <input id="label" name="label" maxlength="120" value="{{ values.label }}" placeholder="LinkedIn post, March 2024">
+  <label for="on" class="small">Facts as of (optional, like 2026-10-01; default today)</label>
+  <input id="on" name="on" maxlength="10" value="{{ values.on }}" placeholder="today">
+  {% for d, label in dims %}{% if options.get(d) %}
+  <fieldset><legend class="small">{{ label }} these pages are about (leave empty if they cover everything)</legend>
+    {% for o in options[d] %}<label class="small"><input type="checkbox" name="scope_{{ d }}" value="{{ o }}" {% if o in values['scope_' ~ d] %}checked{% endif %}> {{ o }}</label> {% endfor %}
+  </fieldset>
+  {% endif %}{% endfor %}
+  <div class="actions"><button class="btn primary big" type="submit">Check what is published</button></div>
+</form>
+{% else %}<p class="small muted">Running an audit needs a writer. You can read results others share with you.</p>{% endif %}
+
+{% if result %}
+<section class="panel" id="results">
+  <h2>Result{% if result.on %} <span class="small muted">· facts as of {{ result.on }}</span>{% endif %}</h2>
+  <ul class="plain small">
+  {% for s in result.sources %}
+    <li><b>{{ s.source }}</b>:
+      {% if s.error %}<span class="chip bad">not checked</span> {{ s.error }}
+      {% elif s.note %}<span class="chip warn">no text</span> {{ s.note }}
+      {% else %}{{ s.checked }} sentence{{ 's' if s.checked != 1 }} checked, {{ s.drift }} out of date, {{ s.ok }} match{{ '' if s.ok == 1 else 'es' }}.{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+  {% if result.rows %}
+  <table>
+    <thead><tr><th scope="col">Where</th><th scope="col">It says</th><th scope="col">The facts say</th><th scope="col">Why</th></tr></thead>
+    <tbody>
+    {% for r in result.rows %}
+    <tr>
+      <td class="small">{{ r.source }}</td>
+      <td>{{ r.says }}<br><span class="small muted">{{ r.sentence }}</span></td>
+      <td>{% if r.should_say %}{{ r.should_say }}{% if r.fact_key %} <span class="small muted">({{ r.fact_key }})</span>{% endif %}
+          {% elif r.leak %}<span class="chip bad">never public</span>
+          {% else %}<span class="muted">no current fact for this: check by hand</span>{% endif %}</td>
+      <td class="small">{{ r.why }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% elif not result.sources|selectattr('error')|list and not result.sources|selectattr('note')|list %}
+  <p class="alert ok">Nothing out of date found.</p>
+  {% else %}<p class="muted">No out-of-date sentences in the sources that could be read.</p>{% endif %}
+</section>
+{% elif not errors and can('writer') %}<p class="muted">No audit run yet.</p>{% endif %}
+{% endif %}
+{% endblock %}
