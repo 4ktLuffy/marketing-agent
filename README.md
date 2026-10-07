@@ -55,6 +55,4 @@ profile, and shellchecks the scripts.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Each numbered deploy folder carries the same `LICENSE`, so it stays
-licensed when pushed as its own repo. Vendored third-party files keep their own licences
-(`72-control-room/app/static/vendor/`: htmx 0BSD, FullCalendar and Chart.js MIT).
+MIT, see [LICENSE](LICENSE). 
