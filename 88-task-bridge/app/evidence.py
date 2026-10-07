@@ -119,6 +119,7 @@ from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 
 from . import facts as F
+from . import local as L
 
 BLOCKING = {"conflict_or_expired", "wrong_scope", "missing_disclosure", "forbidden_phrase", "slot_blocked"}
 
@@ -127,20 +128,27 @@ BLOCKING = {"conflict_or_expired", "wrong_scope", "missing_disclosure", "forbidd
 NUMBER_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
                 "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "a": 1, "an": 1, "single": 1}
 CURRENCY = {"£": "GBP", "gbp": "GBP", "pound": "GBP", "pounds": "GBP", "$": "USD", "us$": "USD", "usd": "USD",
-            "dollar": "USD", "dollars": "USD", "€": "EUR", "eur": "EUR", "euro": "EUR", "euros": "EUR",
-            "etb": "ETB", "birr": "ETB", "p": "GBP-p"}
+            "dollar": "USD", "dollars": "USD", "€": "EUR", "eur": "EUR", "euro": "EUR", "euros": "EUR", "p": "GBP-p"}
+# a market's own currency words come from the local add-on (LOCAL_DIR/words.yaml "currency"): Latin-script
+# words join the built-in ones; words in another script are read only when that script is in the text
+_LOCAL_CUR = L.currency()
+CURRENCY.update({w: c for w, c in _LOCAL_CUR.items() if re.fullmatch(r"[a-z]+", w)})
+_CODES = sorted({"GBP", "USD", "EUR"} | set(_LOCAL_CUR.values()))
+_LATIN_WORDS = sorted({w for w in _LOCAL_CUR if re.fullmatch(r"[a-z]+", w)} - {c.lower() for c in _CODES})
 MULT = {"k": 1000, "m": 1_000_000, "bn": 1_000_000_000, "thousand": 1000, "million": 1_000_000}
 _NUM = r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?"
-MONEY_PRE = re.compile(r"(?<![\w])(?P<cur>US\$|£|\$|€|GBP|USD|EUR|ETB)\s?(?P<num>" + _NUM + r")"
+MONEY_PRE = re.compile(r"(?<![\w])(?P<cur>US\$|£|\$|€|" + "|".join(_CODES) + r")\s?(?P<num>" + _NUM + r")"
                        r"(?:\s?(?P<mult>k|K|m|M|bn|thousand|million)\b)?", re.I)
 MONEY_POST = re.compile(r"(?<![\w.,])(?P<num>" + _NUM + r")\s?(?P<mult>k|K|m|M|bn|thousand|million)?\s?"
-                        r"(?P<cur>GBP|USD|EUR|ETB|birr|pounds?|dollars?|euros?|p)\b", re.I)
-# Amharic (Ethiopic script): ብር is birr (ETB), ዶላር is dollars (USD); the number comes before or after the
-# word ("1,700 ብር", "ብር 1,700"). Read only when the text has the word; nothing else is read as Amharic.
-_ETHIOPIC = re.compile(r"[\u1200-\u137F]")
-ETH_CUR = {"ብር": "ETB", "ዶላር": "USD"}
-ETH_POST = re.compile(r"(?<![A-Za-z0-9_.,])(?P<num>" + _NUM + r")\s?(?P<cur>ብር|ዶላር)(?![\w])")
-ETH_PRE = re.compile(r"(?<![\w])(?<!\d\s)(?P<cur>ብር|ዶላር)\.?\s?(?P<num>" + _NUM + r")(?![\d]|[.,]\d)(?!\s?(?:ብር|ዶላር))")
+                        r"(?P<cur>" + "|".join(_CODES + _LATIN_WORDS) + r"|pounds?|dollars?|euros?|p)\b", re.I)
+# local currency words in another script ("1,700 <word>", "<word> 1,700"); read only when that script is there
+NON_LATIN = re.compile(r"[\u0370-\u03ff\u0400-\u052f\u0590-\u08ff\u0900-\u0dff\u0e00-\u0fff\u1000-\u137f"
+                       r"\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
+_SCRIPT_CUR = {w: c for w, c in _LOCAL_CUR.items() if NON_LATIN.search(w)}
+_SW = "|".join(re.escape(w) for w in sorted(_SCRIPT_CUR, key=len, reverse=True))
+SCRIPT_POST = re.compile(r"(?<![A-Za-z0-9_.,])(?P<num>" + _NUM + r")\s?(?P<cur>" + _SW + r")(?![\w])") if _SW else None
+SCRIPT_PRE = re.compile(r"(?<![\w])(?<!\d\s)(?P<cur>" + _SW + r")\.?\s?(?P<num>" + _NUM + r")(?![\d]|[.,]\d)(?!\s?(?:"
+                        + _SW + r"))") if _SW else None
 PERCENT = re.compile(r"(?<![\w.,])(?P<num>\d+(?:\.\d+)?)\s?(?:%|percent\b|per\s?cent\b)", re.I)
 UNITS = {
     "hour": "hour", "hours": "hour", "hr": "hour", "hrs": "hour", "h": "hour",
@@ -207,7 +215,7 @@ _WVAL.update({w: i + 10 for i, w in enumerate(_WTEEN.split("|"))})
 _WVAL.update({w: (i + 2) * 10 for i, w in enumerate(_WTENS.split("|"))})
 _WVAL["a"] = 1
 MONEY_WORDS = re.compile(r"(?i:(?<![\w-])" + WORD_NUM + r"\s+(?P<cur>pounds?(?!\s+of\b)|quid|pence|p(?![\w.])|"
-                         r"dollars?|euros?|birr)(?![\w-])"
+                         r"dollars?|euros?" + "".join("|" + w for w in _LATIN_WORDS) + r")(?![\w-])"
                          # "nine pounds fifty" = £9.50 (pence in words after pounds; not "five pounds twenty minutes")
                          r"(?:\s+(?P<pence>(?:" + _WTENS + r")(?:[\s-](?:" + _W1 + r"))?|" + _WTEEN + r"|" + _W1 + r")(?![\w-])"
                          r"(?!\s+(?:minutes?|mins?|hours?|hrs?|people|guests|percent|per\s?cent|pounds?|quid|pence|p\b|"
@@ -328,11 +336,11 @@ def extract(text: str) -> list[Val]:
                     continue
                 cur, amt = "GBP", amt / 100
             add(Val("money", ("money", _canon(amt), cur), m.group(0), m.start(), m.end()))
-    for rx in (ETH_POST, ETH_PRE) if _ETHIOPIC.search(text) else ():
+    for rx in (SCRIPT_POST, SCRIPT_PRE) if SCRIPT_POST is not None and NON_LATIN.search(text) else ():
         for m in rx.finditer(text):
             amt = _dec(m.group("num"))
             if amt is not None:
-                add(Val("money", ("money", _canon(amt), ETH_CUR[m.group("cur")]), m.group(0), m.start(), m.end()))
+                add(Val("money", ("money", _canon(amt), _SCRIPT_CUR[m.group("cur")]), m.group(0), m.start(), m.end()))
     for m in CODE.finditer(text):
         add(Val("code", ("code", m.group("p") + "#" + m.group("s"), m.group("n").lstrip("0") or "0"),
                 m.group(0), m.start(), m.end()))
@@ -782,8 +790,8 @@ _RATING = [
     ("best", r"(?i:\bbest[- ]in[- ]class\b)|(?i:\bthe\s+best\s+)(?!(?i:way|time|part|thing|bit|of\s+luck|wishes|"
              r"regards|value|before|of\s+both)\b)(?!of\s+(?:the\s+)?[A-Z])(?:[\w&'-]+\s+){0,3}?(?i:in|of|around|across)\s+(?:(?i:the)\s+)?"
              r"(?:(?i:town|city|country|world|region|area|county|market|industry|business|uk|us)\b|[A-Z][\w'-]+)"),
-    # "Best eco-lodge in Ethiopia", "Top safari camp in Kenya": a superlative about a place or market
-    # said without "the" (not "our best rooms in Gondar", not "best wishes from Addis")
+    # "Best eco-lodge in Portugal", "Top safari camp in Kenya": a superlative about a place or market
+    # said without "the" (not "our best rooms in Northgate", not "best wishes from Capital City")
     ("best", r"(?<![\w'-])(?<!(?i:our)\s)(?<!(?i:my)\s)(?<!(?i:your)\s)(?<!(?i:their)\s)(?<!(?i:its)\s)(?<!(?i:the)\s)"
              r"(?i:best|top)\s+(?!(?i:way|time|part|thing|bit|of\s+luck|wishes|regards|value|before|of\s+both|tips?|"
              r"practices?|results?|efforts?|friends?|sellers?|seller|picks?|offers?|deals?|prices?|rates?|each|every)\b)"
@@ -1314,7 +1322,7 @@ SEG_ID_CTX = re.compile(r"(?i:\b(?:number|no\.?|num|registration|registered|reg|
                         r"licen[cs]e|licensed|id|permit|membership)\b[^.\n]{0,25}$)")
 SEG_NOT_CTX = re.compile(r"(?i:\b(?:tel|phone|call|mobile|ring|text|whatsapp|fax|dated?|on|valid|expires?|from|until)\b"
                          r"[^.\n]{0,12}$)")
-NOT_ID_PREFIX = frozenset("GBP USD EUR ETB AUD CAD NZD CHF JPY UK US EU AM PM ID NO REF NUM".split())
+NOT_ID_PREFIX = frozenset(set("GBP USD EUR AUD CAD NZD CHF JPY UK US EU AM PM ID NO REF NUM".split()) | set(_CODES))
 ID_TYPES = {"certification", "credential"}
 ID_CLASSES = {"safety_cert", "security", "regulated_health", "regulated_food"}
 
@@ -1943,7 +1951,7 @@ def name_said_in_part(ref: str, s_seq: list[str], common: set, ok_terms: set, of
     rseq = _seq(ref)
 
     def own(w):
-        # round 6: a kind noun ("package": "Safari packages" for the valid "Omo Valley safari package")
+        # round 6: a kind noun ("package": "Safari packages" for the valid "Red Valley safari package")
         # is not what names the expired offer
         return (len(w) >= 4 and w not in TIME_NAME_WORDS and w not in KIND_NOUNS and w not in ok_terms and w not in common and w not in WEAK and w not in OFFER_NOUNS
                 and w not in UNIT_WORDS and not any(c.isdigit() for c in w))
@@ -2263,7 +2271,7 @@ def _deadline_passed(v: Val, sentence: str, day: date) -> bool:
     return d < day
 
 
-# ---------- round 6: an old price stated truthfully, in a past frame ("was 1,600 birr until 16 August",
+# ---------- round 6: an old price stated truthfully, in a past frame ("was 1,600 kora until 16 August",
 #            "moved from 1,325 to 1,500 on 17 August"). An expired fact's value said as past, with a date
 #            (when one is given) that is the fact's end or its successor's start, is true: a match.
 _HIST_SPLIT = re.compile(r"[;()\[\]]|\s+(?:and|but|while|whereas|which|then|whilst)\s+|,\s+(?:which|and|but|while|now|then|since)\b|"
@@ -2381,7 +2389,7 @@ _CHANGE_WORD = re.compile(r"(?i)\b(?:up|down|higher|lower|increase[ds]?|increasi
 
 
 def _pct_change_clash(v: Val, s: str, fs: "FactSets"):
-    """A price change said in percent ("Bedele 50cl is up 15% since August") for a product whose valid and
+    """A price change said in percent ("Brand D 50cl is up 15% since August") for a product whose valid and
     expired price facts give another change (+5.2%): (current fact, text, clashes), else None."""
     if v.kind != "percent" or not (_CHANGE_WORD.search(s[max(0, v.start - 30):v.start])
                                    or _CHANGE_WORD.search(s[v.end:v.end + 25])):
@@ -2716,7 +2724,7 @@ _REGION_RX = re.compile(r"(?<![\w'’])(?:in|to|into|across|around|through|throu
 
 
 def _region_words(s: str) -> set[str]:
-    """Stemmed words of capitalised places a sentence names after a travel preposition ("to the Omo Valley")."""
+    """Stemmed words of capitalised places a sentence names after a travel preposition ("to the Red Valley")."""
     out: set[str] = set()
     for m in _REGION_RX.finditer(s):
         out |= {_stem(w.lower()) for w in re.findall(r"[A-Za-z0-9]+", m.group(1))}
@@ -2826,7 +2834,7 @@ def _title_case_line(s: str) -> bool:
 
 
 def _invented_names(s: str, known_toks: set, heads: dict) -> list[tuple[str, str]]:
-    """Capitalised product names that end like the business's own ("Tukul VIP Suite" when its products
+    """Capitalised product names that end like the business's own ("Cabin VIP Suite" when its products
     are named Standard Queen Room, Presidential Suite ...) but use a word no product of the business
     has: (name, head). Never a name the sentence says as a known one, a Title Case heading, or a
     negated name."""
@@ -2955,7 +2963,7 @@ def count_findings(s: str, ok: list[dict]) -> list[dict]:
     return out
 
 
-_VILLA_HEADS = frozenset("villa suite tent bungalow cottage chalet cabin apartment penthouse tukul".split())
+_VILLA_HEADS = frozenset("villa suite tent bungalow cottage chalet cabin apartment penthouse".split())
 
 
 def type_findings(s: str, head_refs: dict, fact_words: set) -> list[dict]:
@@ -3017,7 +3025,7 @@ def _base_words(text: str) -> tuple:
 
 def size_catalog(live: list[dict]) -> dict[tuple, dict]:
     """product base words -> {canonical size: as written}, from the subject names ending in a size
-    ("Heineken 33cl", "Buckler 0.0% 33cl") and from the facts' own words ("Harar in 33cl and 50cl")."""
+    ("Brand A 33cl", "Brand F 0.0% 33cl") and from the facts' own words ("Brand B in 33cl and 50cl")."""
     cat: dict[tuple, dict] = {}
     for f in live:
         ref = F.subject_ref(f) or ""
@@ -3068,7 +3076,7 @@ _NEG_SIZE = re.compile(r"(?i)\b(?:no|not|never|without|don['’]t|doesn['’]t|i
 
 
 def size_findings(s: str, cat: dict) -> list[dict]:
-    """A product named with a size / variant it does not come in ("Heineken 50cl" when its facts only
+    """A product named with a size / variant it does not come in ("Brand A 50cl" when its facts only
     have 33cl). wrong_scope, no fact key: the product exists, the size does not."""
     out = []
     for base, seen, a, b in mentions_of_sizes(s, cat):
@@ -3093,9 +3101,9 @@ def fact_sizes(live: list[dict]) -> set:
 
 
 def unknown_size_findings(s: str, cat: dict, sizes: set) -> list[dict]:
-    """A priced product line in a size no fact of the business writes at all ("Kiboko 66cl ... 1,900 birr"
+    """A priced product line in a size no fact of the business writes at all ("Tundra 66cl ... 1,900 kora"
     when the business sells 33cl and 50cl): the size is not sold. wrong_scope, no fact key."""
-    if not cat or not MONEY_PRE.search(s) and not MONEY_POST.search(s) and not ETH_POST.search(s):
+    if not cat or not MONEY_PRE.search(s) and not MONEY_POST.search(s) and not (SCRIPT_POST and SCRIPT_POST.search(s)):
         return []
     for a, b, canon, written in sizes_in(s):
         if canon[0] == "pack" or canon in sizes:
@@ -3106,7 +3114,7 @@ def unknown_size_findings(s: str, cat: dict, sizes: set) -> list[dict]:
             continue
         name = f"{m.group(1)} {written}" if m and m.group(1).lower() not in NAME_LEAD else None
         if name is None and (NEW_SIZE_BEFORE.search(s[max(0, a - 24):a]) or SIZE_CONTAINER.match(s, b)):
-            # round 17: "New 25cl cans, 24 per pack, 1,400 birr per crate": a priced size no fact sells, with
+            # round 17: "New 25cl cans, 24 per pack, 1,400 kora per crate": a priced size no fact sells, with
             # no product named (introduced as new, or as the size of cans / bottles)
             name = written
         if name is None:
@@ -3139,7 +3147,7 @@ def pack_specs(live: list[dict]) -> list[tuple]:
 
 
 def pack_findings(s: str, packs: list[tuple]) -> list[dict]:
-    """"Harar 33cl 20-bottle crate", "crates hold 24 bottles of 50cl", "(20 x 33cl)" against the spec
+    """"Brand B 33cl 20-bottle crate", "crates hold 24 bottles of 50cl", "(20 x 33cl)" against the spec
     fact that says what a crate of that size holds."""
     if not packs:
         return []
@@ -3196,18 +3204,15 @@ def _business_sense(s: str, word: str) -> bool:
 
 APPROX_CUE = re.compile(r"(?i)\b(?:more\s+than|over|nearly|almost|about|around|close\s+to|roughly|some|"
                         r"just\s+(?:under|over)|approximately|approx\.?|upwards\s+of|well\s+over)\s*$")
-KNOWN_PLACES = ("Addis Ababa", "Hawassa", "Awasa", "Wolaita Sodo", "Sodo", "Jimma", "Konso", "Jinka", "Bahir Dar",
-                "Gondar", "Mekelle", "Adama", "Nazret", "Dire Dawa", "Dessie", "Harar", "Arba Minch", "Dilla",
-                "Shashemene", "Hosaena", "Hossana", "Debre Markos", "Debre Birhan", "Debre Zeit", "Bishoftu",
-                "Gambela", "Jijiga", "Semera", "Assosa", "Nekemte", "Axum", "Lalibela", "Woldia", "Mizan Teferi",
-                "Bonga", "Yirgalem", "Butajira", "Welkite", "Durame", "Kombolcha", "Sodo Town", "Chencha", "Arbaminch")
+# towns of the market the business works in ("our lodge in <town>"): from the local add-on (words.yaml "places")
+KNOWN_PLACES = L.places()
 _PLACE_NAME = r"[A-Z][a-z]{3,}(?:\s[A-Z][a-z]{2,})?"
 _PLACE_CHAIN = re.compile(r"\b(?:in|to|across|throughout|around)\s+(?P<c>" + _PLACE_NAME + r"(?:\s*(?:,|&|\band\b|\bor\b)\s*"
                           + _PLACE_NAME + r")*)")
-_PLACE_STOP = frozenset("""ethiopia africa telegram facebook instagram whatsapp linkedin tiktok youtube google amharic english
+_PLACE_STOP = frozenset("""africa europe asia telegram facebook instagram whatsapp linkedin tiktok youtube google english
     monday tuesday wednesday thursday friday saturday sunday january february march april may june july august september october
-    november december birr order orders stock store shops shop bars bar hotels hotel trade price prices crate crates
-    selam welcome thanks hello dear reply message page bulk partners partner retailers customers friends""".split())
+    november december order orders stock store shops shop bars bar hotels hotel trade price prices crate crates
+    welcome thanks hello dear reply message page bulk partners partner retailers customers friends""".split()) | L.not_places()
 SERVICE_VERB = re.compile(r"(?i)\b(?:suppl(?:y|ies|ying|ied)|serv(?:e|es|ed|ing)|deliver\w*|ship(?:s|ping|ped)?|distribut\w+|"
                           r"stock(?:s|ed|ing|ists?)?|availab\w+|dispatch\w*|cover(?:s|ing)?|operat(?:e|es|ing)|launch\w*|"
                           r"reach(?:es|ing)?|now\s+in|(?:find|visit|see|meet)\s+us|located|based|situated)\b")
@@ -3267,21 +3272,21 @@ def place_findings(s: str, idx: dict | None, all_words: set) -> list[dict]:
                        f'your facts are scoped to {", ".join(sorted(idx["served"])) or "one place"}'}]
 
 
-# round 17: a branch of the business in a town no fact has ("Our Hawassa lodge", "Paradise Lodge Jinka sleeps
+# round 17: a branch of the business in a town no fact has ("Our Easton lodge", "Lakeside Lodge Westford sleeps
 # 300", "from our new Bahir Dar depot")
 _BRANCH_NOUN = (r"(?:lodge|hotel|branch|depot|shop|store|camp|resort|property|location|office|warehouse|outlet|site|"
                 r"showroom|restaurant)")
 BRANCH_OUR = re.compile(r"(?i:\b(?:our|an?|the|new)\s+(?:(?:new|newest|sister|second)\s+)?)(?P<p>" + _PLACE_NAME + r")\s+(?i:(?P<n>" +
                         _BRANCH_NOUN + r")s?)\b")
-# real-9: the town after the noun ("Our sister lodge in Hawassa", "our lodge in Gondar")
+# real-9: the town after the noun ("Our sister lodge in Easton", "our lodge in Northgate")
 BRANCH_IN = re.compile(r"(?i:\b(?:our|an?|the|new)\s+(?:(?:new|newest|sister|second|other)\s+)?(?P<n>" + _BRANCH_NOUN +
                        r")s?\s+(?:in|at)\s+)(?P<p>" + _PLACE_NAME + r")")
 _BRAND_VERB = r"(?:has|have|sleeps|offers|features|boasts|welcomes|is|opens|with|hosts|can|will|also)"
 
 
 def site_brands(live: list[dict]) -> tuple[set, set]:
-    """({"Paradise Lodge"}, {"arbaminch", "turmi"}): the brand words and the town words of the site facts
-    ("Paradise Lodge Arba Minch" for the site "arbaminch")."""
+    """({"Lakeside Lodge"}, {"riverton", "hillview"}): the brand words and the town words of the site facts
+    ("Lakeside Lodge Riverton" for the site "riverton")."""
     brands, towns = set(), set()
     for f in live:
         if F.subject_kind(f) != "site":
@@ -3297,8 +3302,8 @@ def site_brands(live: list[dict]) -> tuple[set, set]:
 
 
 def branch_findings(s: str, idx: dict | None, brands: set, towns: set, ref_words: set, all_words: set) -> list[dict]:
-    """A lodge / depot / shop of the business in a town that is no scope value and no fact's site: "Our Hawassa
-    lodge", "Paradise Lodge Jinka" (the brand of the real sites + another town). wrong_scope, no fact key."""
+    """A lodge / depot / shop of the business in a town that is no scope value and no fact's site: "Our Easton
+    lodge", "Lakeside Lodge Westford" (the brand of the real sites + another town). wrong_scope, no fact key."""
     if not idx or s.rstrip().endswith("?") or _PLACE_NEG.search(s) or _title_case_line(s):
         return []
     known = {_norm_place(k) for k in KNOWN_PLACES}
@@ -3343,7 +3348,7 @@ DELIVERY_TIME = re.compile(r"(?i)\bdeliver\w*\b[^.!?\n]{0,40}?\b(?:in|within|und
 
 
 def unit_header_said(text: str, sentence: str, disclosure: str) -> bool:
-    """A list line ("• Harar 33cl: 1,700 birr") under a line of the piece that says the unit of the
+    """A list line ("• Brand B 33cl: 1,700 kora") under a line of the piece that says the unit of the
     prices ("Crate prices this week:", "prices are per crate") has that unit's disclosure ("per crate")."""
     m = re.fullmatch(r"\s*per\s+([a-z]+)\s*", disclosure.lower())
     if not m:
@@ -3368,7 +3373,6 @@ def unit_header_said(text: str, sentence: str, disclosure: str) -> bool:
 
 
 UNIT_DISC = re.compile(r"(?i)^\s*per\s+([a-z]+)(?:\s+per\s+([a-z]+))?\s*$")
-ETHIOPIC = re.compile(r"[\u1200-\u137f]")
 
 
 def _unit_words(disclosure: str) -> set:
@@ -3378,9 +3382,9 @@ def _unit_words(disclosure: str) -> set:
 
 def _unit_dropped(key: str, f: dict, disc: list[str], strong_used: dict, by_key: dict, text: str) -> list[str]:
     """real-7: the odd line out in a price list. The piece says the unit ("per crate") on its other price
-    lines, but this price's own sentence has no unit word at all ("Walia 33cl is 1,300 birr."). Only for a
+    lines, but this price's own sentence has no unit word at all ("Brand C 33cl is 1,300 kora."). Only for a
     unit disclosure, only when another price line says it literally, never when a line without a price says
-    it for all ("All prices are per crate") or a list heading does, never for Ethiopic text."""
+    it for all ("All prices are per crate") or a list heading does, never for text in another script."""
     if not (f.get("fact_type") == "price" and isinstance(f.get("value"), (int, float))):
         return []
     units = [(d, _unit_words(d)) for d in disc if _unit_words(d)]
@@ -3394,7 +3398,7 @@ def _unit_dropped(key: str, f: dict, disc: list[str], strong_used: dict, by_key:
                 priced.setdefault(s2, set()).add(k2)
     out = []
     for sentence in strong_used.get(key) or []:
-        if not sentence or ETHIOPIC.search(sentence) or priced.get(sentence, set()) - {key}:
+        if not sentence or NON_LATIN.search(sentence) or priced.get(sentence, set()) - {key}:
             continue
         low = sentence.lower()
         ref = (F.subject_ref(f) or "").lower()
@@ -3402,7 +3406,7 @@ def _unit_dropped(key: str, f: dict, disc: list[str], strong_used: dict, by_key:
             low = low.replace(ref, " ")      # "Standard Twin Room …" names the room, it doesn't say "per room"
         for d, words in units:
             if all(re.search(r"(?<![a-z])" + w + r"(?:s|ly)?(?![a-z])", low) for w in words):
-                continue                     # "a crate of …", "birr/crate", "a night per room"
+                continue                     # "a crate of …", "kora/crate", "a night per room"
             if unit_header_said(text, sentence, d) or per_unit_said(sentence, d):
                 continue
             literal = re.compile(r"(?i)(?<![a-z])" + r"\s+".join(re.escape(x) for x in d.split()) + r"(?![a-z])|"
@@ -3421,7 +3425,7 @@ def _unit_dropped(key: str, f: dict, disc: list[str], strong_used: dict, by_key:
 
 
 def per_unit_said(sentence: str, disclosure: str) -> bool:
-    """The unit of a price said as the thing priced: "A crate of Heineken 33cl is 2,080 birr" (or "for a
+    """The unit of a price said as the thing priced: "A crate of Brand A 33cl is 2,080 kora" (or "for a
     crate", "one crate costs") for the disclosure "per crate". Only for a one-word "per <unit>"."""
     m = re.fullmatch(r"\s*per\s+([a-z]+)\s*", disclosure.lower())
     if not m or m.group(1) in ("person", "night", "month", "year", "week", "day", "head", "guest"):
@@ -3429,7 +3433,7 @@ def per_unit_said(sentence: str, disclosure: str) -> bool:
     u = re.escape(m.group(1))
     return bool(re.search(r"(?i)\b(?:a|an|one|1|each|every)\s+" + u + r"s?\s+(?:of\s+|is\s+|costs?\s+|will\s+cost\s+)|"
                           r"\bfor\s+(?:a|an|one|1|each|every)\s+" + u + r"\b|"
-                          # round 6: the unit after the price: "1,300 birr a crate", "£4 each bottle", "$9 apiece"
+                          # round 6: the unit after the price: "1,300 kora a crate", "£4 each bottle", "$9 apiece"
                           r"(?:\d|[£$€])[\d,.]*\s*(?:[A-Za-z]{2,5}\.?\s+)?(?:a|an|each|every|per|for\s+(?:a|an|each|every|one))\s+"
                           + u + r"(?![\w-])", sentence))
 
@@ -3869,16 +3873,16 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             elif v.kind == "qty" and not any(_overlaps([(m.start(), m.end())], v.start, v.end)
                                              for m in UNSOURCED_RX.finditer(s)):
                 s_find.append(_finding(s, "review", None, None, f"{v.text}: no fact mentions it"))
-        # 1a0. a product name the business does not have ("Tukul VIP Suite" among Standard Queen Room,
+        # 1a0. a product name the business does not have ("Cabin VIP Suite" among Standard Queen Room,
         #      Presidential Suite ...): same head noun as its products, a word none of them uses
         if heads_many:
             for nm, hd in _invented_names(s, ref_toks, heads_many):
                 s_find.append(_finding(s, "no_source", None, None,
                                        f'"{nm}": no fact names this {hd}; the business\'s are named differently',
                                        blocking=True))
-        # 1a0b. a product named with a size / variant it does not come in ("Heineken 50cl" when its facts
+        # 1a0b. a product named with a size / variant it does not come in ("Brand A 50cl" when its facts
         #       only have 33cl); a pack count that contradicts the spec fact ("a 33cl crate of 20 bottles");
-        #       a place served that no fact names ("bars in Addis Ababa and Hawassa")
+        #       a place served that no fact names ("bars in Capital City and Easton")
         if size_cat:
             s_find += size_findings(s, size_cat)
         s_find += pack_findings(s, packs)
@@ -3889,7 +3893,7 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             y["blocking"] and y["fact_key"] == x["fact_key"] and y["label"] == x["label"] for y in s_find)]
         br_find = branch_findings(s, places, brands, towns, ref_words, fact_words)
         if br_find:
-            # an invented branch's numbers are not the real site's ("Paradise Lodge Hawassa has 120 rooms")
+            # an invented branch's numbers are not the real site's ("Lakeside Lodge Easton has 120 rooms")
             ok_keys = {g["key"] for g in fs.ok}
             s_find = [x for x in s_find if not (x["fact_key"] in ok_keys and x["label"] in ("match", "conflict_or_expired"))]
             s_find += br_find
@@ -4297,7 +4301,7 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
             # and a bare attribute term are WEAK: review only.
             strong = (bool(attr_hit) or phrase_in(F.subject_ref(f), s)
                       or any(w not in ok_terms for pr in pair_hit for w in pr))
-            # round 15: "fly south to the Omo Valley", "tent nights in the Omo Valley": the words are only a
+            # round 15: "fly south to the Red Valley", "tent nights in the Red Valley": the words are only a
             # region named as a destination, not a use of the site's fact (no value / offer of it is said)
             if strong and not attr_hit and pair_hit and not phrase_in(F.subject_ref(f), s) and (
                     F.subject_kind(f) in ("site", "business") or f.get("fact_type") == "claim"):
@@ -4472,8 +4476,8 @@ def check_text(text: str, all_facts: list[dict], day: date, scope: dict,
                 s_find.append(_finding(s, "wrong_scope", f, _quote(f),
                                        f"{ref} with {', '.join(sorted(clash))}: {ref} is {_why(fs, f)}"))
             elif _other_site_named(f, fs, s):
-                # round 17: another SITE named outright by its full subject ("Paradise Lodge Turmi is in
-                # Turmi" in an Arba Minch task): STRONG; only a bare region word is WEAK
+                # round 17: another SITE named outright by its full subject ("Lakeside Lodge Hillview is in
+                # Hillview" in an Riverton task): STRONG; only a bare region word is WEAK
                 s_find.append(_finding(s, "wrong_scope", f, _quote(f),
                                        f"{ref} is {_why(fs, f)}: this task is not for that site"))
             elif _expired_subject_named(f, fs, s, ok_terms):
@@ -4598,11 +4602,9 @@ _DISC_EQUIV = [
      r"\b(?:each|every)\s+(?:guest|person|adult|diner|visitor)s?\b|"
      r"(?<![\w.])p\.p\.(?!\w)", "qperperson"),
     (_AMT + r"\s?(?:pp\b|p/p\b|a\s+head\b|a\s+person\b|apiece\b|each\b(?!\s+way\b))", "qperperson"),
-    # round 17: Amharic (only when Ethiopic script is there): "በአንድ ሳጥን" / "በሳጥን" = per crate, "በአንድ ሰው" /
-    # "በሰው" = per person, "በአዳር" = per night
-    (r"(?<![\w])(?:በአንድ\s+ሳጥን|በሳጥን)(?![\w])", "per crate"),
-    (r"(?<![\w])(?:በአንድ\s+ሰው|በሰው)(?![\w])", "qperperson"),
-    (r"(?<![\w])በአዳር(?![\w])", "qpernight"),
+    # a market's own wording for a disclosure (local add-on, words.yaml "disclosure_words": a pattern and what
+    # it means, e.g. a local-language "per crate")
+    *[(rx.pattern, means) for rx, means in L.disclosure_words()],
     # round 13: per room per night, said with the room after the night: "a night for the room", "a night
     # for the whole room", "for the room, per night", "per room, per night", "per room/night"
     (r"\bper\s+(?P<u>" + _ROOMS + r")[\s,/]+(?:per\s+|a\s+|each\s+)?night(?:ly)?\b|"
@@ -4745,7 +4747,7 @@ def _num_word(m: re.Match) -> str:
 
 
 _DISC_NORM = [
-    # trial: a unit after a slash is "per": "2,080 birr/crate" = "2,080 birr per crate", "$75/night" = "$75 per night"
+    # trial: a unit after a slash is "per": "2,080 kora/crate" = "2,080 kora per crate", "$75/night" = "$75 per night"
     (re.compile(r"(?<=[\d\w$£€])\s*/\s*(?=(?:crate|bottle|case|room|night|person|guest|day|hour|month|year|unit|pack|kg|item)s?\b)", re.I),
      " per "),
     # numbers in words past twelve: "thirty" = "30", "twenty-five" = "25" (one to twelve are compared
@@ -5160,7 +5162,7 @@ def _rating_finding(fs: FactSets, s: str, start: int, kw: str, kind: str, use) -
                                      f'another tier of {" ".join(sorted(rest))}: {held}', blocking=True)]
     ok = [f for f in fs.ok if _rating_supports(f, kind, kw, s, start)]
     if not ok and re.match(r"(?i)best[\s-]?sell", kw):
-        # held-out trial: "BEST-SELLER" for the fact "Harar 33cl is our best-selling crate"
+        # held-out trial: "BEST-SELLER" for the fact "Brand B 33cl is our best-selling crate"
         ok = [f for f in fs.ok if re.search(r"(?i)best[\s-]?sell", _blob(f))]
     if ok:
         f = _best(ok, s)

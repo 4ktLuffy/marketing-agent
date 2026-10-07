@@ -28,6 +28,7 @@ from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import arith, evidence, extras, pack, paste, quote, selfaudit, services, slots, templates_render
+from . import local as L
 from . import facts as F
 from .db import approved_examples, db, event, meta_get, meta_set, now, write
 
@@ -343,7 +344,7 @@ def model_findings(text: str, fact_lines: list[str], findings: list[dict]) -> tu
 _NUMWORD = (r"two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|"
             r"sixty|seventy|eighty|ninety|hundred|thousand|million|half|dozen|double|twice")
 REVIEW_CUE = re.compile(
-    r"\d|[£$€%]|\b(?:" + _NUMWORD + r")\b|\b(?:pounds?|quid|pence|dollars?|euros?|birr|cents?|per\s*cent|percent)\b|"
+    r"\d|[£$€%]|\b(?:" + _NUMWORD + r")\b|\b(?:pounds?|quid|pence|dollars?|euros?|cents?|per\s*cent|percent" + "".join("|" + w for w in evidence._LATIN_WORDS) + r")\b|"
     r"\bfree\b|\bon\s+(?:us|the\s+house)\b|\b(?:for|4)\s+(?:one|1|the\s+price\s+of)\b|\bbogo\b|\bhalf[\s-]+price\b|"
     r"\bdiscount|\bsave\b|\boff\s+(?:your|the|all|every|any)\b|\bcheapest\b|\bguarantee|"
     r"\b(?:every|all|any|each)\s+(?:(?:of\s+)?(?:our|the)\s+)?(?:branch|shop|store|site|location|clinic|outlet|"
@@ -427,7 +428,7 @@ def review_findings(text: str, fact_lines: list[str], findings: list[dict], know
 
 
 def _amount_of(detail: str) -> str | None:
-    """The amount a price finding is about ("12,480 birr differs from …" -> "12480")."""
+    """The amount a price finding is about ("12,480 kora differs from …" -> "12480")."""
     m = re.match(r"\s*[$£€]?\s?(\d[\d,]*(?:\.\d+)?)", detail)
     if not m:
         return None
@@ -451,14 +452,14 @@ def check_piece(text: str, snapshot: dict, known: dict, day: date, scope: dict, 
     fill = slots.fill(text, snapshot, known, day, scope)
     found, used = evidence.check_text(fill.text, list(known.values()), day, scope, fill.used)
     sums = arith.check(fill.text, list(known.values()), day, scope)
-    # real-10: "Six crates at 2,080 birr per crate cost 12,480 birr": a total the arithmetic proves is not a
+    # real-10: "Six crates at 2,080 kora per crate cost 12,480 kora": a total the arithmetic proves is not a
     # wrong price for the product
     for m in [x for x in sums if x["label"] == "match" and x.get("total_amount")]:
         found = [f for f in found if not (f["sentence"] == m["sentence"] and f["label"] == "conflict_or_expired"
                                           and _amount_of(f.get("detail") or "") == _amount_of(m["total_amount"]))]
     findings = fill.findings + found + sums
     if extras_on():
-        # a product the business doesn't carry ("Castel 33cl at 1,450 birr"): say that, not "wrong price"
+        # a product the business doesn't carry ("Corvo 33cl at 1,450 kora"): say that, not "wrong price"
         for u in extras.unknown_products(fill.text, list(known.values())):
             findings = [f for f in findings if not (f["sentence"] == u["sentence"] and f["label"] == "conflict_or_expired")] + [u]
         flagged = {f["sentence"] for f in findings if f.get("blocking")}
@@ -850,42 +851,41 @@ def extras_on() -> bool:
 
 
 def calendar_lines(publish_on: str) -> list[str] | None:
-    """For the pack: the publish date in the local calendar, occasions near it (short) and the clock-time
-    rule. Only with OCCASIONS=ethiopia; None otherwise (the pack is unchanged)."""
-    if occasions_country() != "ethiopia":
+    """For the pack: the publish date in the local calendar, occasions near it (short) and the plugin's own
+    notes. Only with a local calendar plugin (LOCAL_DIR/occasions.py); None otherwise (the pack is unchanged)."""
+    cal = L.occasions_plugin()
+    if cal is None:
         return None
-    from . import ethiopia
     day = F.parse_day(publish_on)
-    lines = [f"Publish date {publish_on} = {ethiopia.format_ec(day)} (Ethiopian calendar)."]
-    for o in ethiopia.occasions_near(day, days=21, past_days=3)[:4]:
+    lines = []
+    local_day = cal.format_date(day) if hasattr(cal, "format_date") else None
+    if local_day:
+        lines.append(f"Publish date {publish_on} = {local_day}.")
+    for o in cal.occasions_near(day, days=21, past_days=3)[:4]:
         when = str(o["date"]) + (f" to {o['end']}" if o.get("end") and o["end"] != o["date"] else "")
         note = f" {o['notes']}" if o.get("notes") else ""
-        flag = "" if o.get("verified") else " (date not confirmed)"
+        flag = "" if o.get("verified", True) else " (date not confirmed)"
         lines.append(f"{o['name']}: {when}{flag}.{note}"[:220])
-    lines.append("Write clock times in 24-hour format (Ethiopian clock time is 6 hours off: 3:00 can mean 09:00).")
+    lines += [str(x)[:220] for x in getattr(cal, "PACK_NOTES", [])]
     return lines
-
-
-def occasions_country() -> str:
-    """OCCASIONS=ethiopia turns on the Ethiopian calendar and occasions; empty = off."""
-    return os.environ.get("OCCASIONS", "").strip().lower()
 
 
 @app.get("/occasions", dependencies=[Depends(require_key)])
 def occasions(on: str | None = Query(None, max_length=10), days: int = Query(45, ge=1, le=366)):
-    """Dated occasions near a publish date (holidays, seasons, fasts), with notes for marketers.
-    Only Ethiopia is built in (OCCASIONS=ethiopia)."""
-    if occasions_country() != "ethiopia":
-        return {"country": None, "occasions": [], "note": "occasions are off (set OCCASIONS=ethiopia)"}
-    from . import ethiopia
+    """Dated occasions near a publish date (holidays, seasons), with notes for marketers, from the local
+    calendar plugin (LOCAL_DIR/occasions.py). Off without one."""
+    cal = L.occasions_plugin()
+    if cal is None:
+        return {"calendar": None, "occasions": [], "note": "no local calendar (add LOCAL_DIR/occasions.py)"}
     day = F.parse_day(on) if on else date.today()
-    items = [{k: o.get(k) for k in ("name", "date", "end", "ec", "kind", "movable", "verified", "notes", "source")}
-             for o in ethiopia.occasions_near(day, days=days, past_days=3)]
+    items = [{k: o.get(k) for k in ("name", "date", "end", "local_date", "kind", "movable", "verified", "notes", "source")}
+             for o in cal.occasions_near(day, days=days, past_days=3)]
     for o in items:
         o["date"] = str(o["date"]) if o.get("date") else None
         o["end"] = str(o["end"]) if o.get("end") else None
-    return {"country": "ethiopia", "on": day.isoformat(), "on_ec": ethiopia.format_ec(day), "occasions": items,
-            "note": ethiopia.EAT_NOTE}
+    return {"calendar": getattr(cal, "NAME", "local"), "on": day.isoformat(),
+            "on_local": cal.format_date(day) if hasattr(cal, "format_date") else None, "occasions": items,
+            "note": getattr(cal, "NOTE", None)}
 
 
 @app.post("/check", dependencies=[Depends(require_key), Depends(rate_limit)])

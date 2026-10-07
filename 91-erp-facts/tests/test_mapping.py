@@ -8,7 +8,7 @@ from .conftest import EXAMPLE
 
 BASE = {"name": "m", "model": "product.template", "domain": [["sale_ok", "=", True]],
         "fields": ["name", "list_price"], "subject": {"kind": "product", "ref_template": "{name}"},
-        "key_template": "p-{name|slug}", "value_field": "list_price", "currency": "ETB",
+        "key_template": "p-{name|slug}", "value_field": "list_price", "currency": "GBP",
         "text_template": "{name} is {value_fmt}"}
 
 
@@ -26,7 +26,7 @@ def errs(**over):
 
 def test_example_file_loads():
     ms = mapping.load(EXAMPLE)
-    assert len(ms.mappings["hotel-rooms"].specs) == 4 and len(ms.mappings["beer-crates"].specs) == 1
+    assert len(ms.mappings["service-plans"].specs) == 2 and len(ms.mappings["drink-crates"].specs) == 1
 
 
 def test_validation_errors():
@@ -35,7 +35,7 @@ def test_validation_errors():
     assert "not a listed field" in errs(text_template="{ghost}")
     assert "domain operator" in errs(domain=[["sale_ok", "DROP", True]])
     assert "domain term" in errs(domain=["bad"])
-    assert "3-letter" in errs(currency="birr")
+    assert "3-letter" in errs(currency="pounds")
     assert "fact_type" in errs(fact_type="vibes")
     assert "subject.kind" in errs(subject={"kind": "thing", "ref_template": "x"})
     assert "basis" in errs(basis="per_moon")
@@ -82,7 +82,7 @@ def test_build_skip_and_key_rules():
 
 
 def test_duplicate_keys_reported(client, odoo):
-    odoo.records["product.template"].append({"id": 99, "name": "Harer 33cl", "company_id": 3, "sale_ok": True,
-                                             "list_price": 1300.0, "write_date": "x"})
+    odoo.records["product.template"].append({"id": 99, "name": "Cola 33cl", "company_id": 3, "sale_ok": True,
+                                             "list_price": 13.0, "write_date": "x"})
     d = client.get("/drift").json()
     assert any("duplicate key" in s["reason"] for s in d["skipped"])

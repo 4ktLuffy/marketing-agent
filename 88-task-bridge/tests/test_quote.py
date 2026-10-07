@@ -12,9 +12,9 @@ def price(key, ref, value, cur="USD", unit="night", **kw):
 
 def setup(stack):
     stack.facts = [
-        price("room", "Harar Room", 75, basis="per_room", required_disclosures=["per room per night, 2 sharing"]),
+        price("room", "Brand B Room", 75, basis="per_room", required_disclosures=["per room per night, 2 sharing"]),
         price("crate", "Yirga coffee", 17.5, unit="crate", required_disclosures=["VAT excluded"]),
-        price("birr-room", "Local Room", 1700, cur="ETB", basis="per_room"),
+        price("kora-room", "Local Room", 1700, cur="XKR", basis="per_room"),
         price("tour-rate", "Operator rate", 55, basis="per_room", sensitivity="internal"),
         price("old-room", "Old Room", 60, valid_to="2026-08-31"),
         price("secret", "Cost", 9, sensitivity="restricted"),
@@ -34,8 +34,8 @@ def test_rooms_times_nights_and_disclosures(client, stack):
     assert out["total"] == 4500 and out["currency"] == "USD"
     ln = out["lines"][0]
     assert (ln["unit_price"], ln["quantity"], ln["nights"], ln["line_total"]) == (75, 20, 3, 4500)
-    assert ln["disclosures"] == ["per room per night, 2 sharing"] and ln["subject"] == "Harar Room"
-    assert "Harar Room: 20 × 3 nights × $75 = $4,500" in out["text"]
+    assert ln["disclosures"] == ["per room per night, 2 sharing"] and ln["subject"] == "Brand B Room"
+    assert "Brand B Room: 20 × 3 nights × $75 = $4,500" in out["text"]
     assert "Total: $4,500" in out["text"] and "per room per night, 2 sharing" in out["text"]
     assert "confidential" not in out["text"]
 
@@ -49,10 +49,10 @@ def test_crates_decimals_and_total_of_several_lines(client, stack):
     assert "VAT excluded" in out["text"] and "Total: $132.50" in out["text"]
 
 
-def test_birr_total_text(client, stack):
+def test_kora_total_text(client, stack):
     setup(stack)
-    out = post(client, [{"fact_key": "birr-room", "quantity": 20, "nights": 2}]).json()
-    assert out["total"] == 68000 and "= 68,000 birr" in out["text"] and out["currency"] == "ETB"
+    out = post(client, [{"fact_key": "kora-room", "quantity": 20, "nights": 2}]).json()
+    assert out["total"] == 68000 and "= 68,000 kora" in out["text"] and out["currency"] == "XKR"
 
 
 def test_internal_fact_refused_by_default_and_without_header(client, stack):
@@ -80,9 +80,9 @@ def test_restricted_never(client, stack):
 
 def test_mixed_currency_is_422(client, stack):
     setup(stack)
-    r = post(client, [{"fact_key": "room", "quantity": 1}, {"fact_key": "birr-room", "quantity": 1}])
+    r = post(client, [{"fact_key": "room", "quantity": 1}, {"fact_key": "kora-room", "quantity": 1}])
     assert r.status_code == 422 and "mixed currencies" in r.text
-    assert post(client, [{"fact_key": "birr-room", "quantity": 1}], currency="USD").status_code == 422
+    assert post(client, [{"fact_key": "kora-room", "quantity": 1}], currency="USD").status_code == 422
 
 
 def test_expired_or_unknown_fact_refused(client, stack):

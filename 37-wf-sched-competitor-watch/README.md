@@ -1,6 +1,6 @@
 # 37 · Competitor watch
 
-Deploy **37 of 91** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **37 of 91** of the marketing agent. This deploy is an n8n scheduled workflow.
 
 Every 6 hours it diffs the competitor pages you watch (09) and, when `AD_LIBRARY_URL` is set, syncs the competitors' ads from the official Meta Ad Library API (78 `POST /sync`, EU-delivered ads only) and reads the week's new, changed or stopped ads (78 `GET /ads`) and the manual-check links (78 `GET /links`). It goes on when a page changed or an ad appeared, changed or stopped since the last run. The LLM (prompt `competitor_changes`, with the ad texts) explains what changed and whether to react.
 

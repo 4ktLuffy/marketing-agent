@@ -1,6 +1,6 @@
 # feed-optimizer
 
-Deploy **87 of 91** of the local-LLM marketing agent. It writes **better product titles** (and,
+Deploy **87 of 91** of the marketing agent. It writes **better product titles** (and,
 if you want, descriptions) for a small shop's **Google Merchant Center product feed**.
 
 - **Upload the feed you already have.** A CSV or TSV file with a header row, the format Merchant

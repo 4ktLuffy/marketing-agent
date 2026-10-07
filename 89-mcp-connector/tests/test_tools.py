@@ -226,12 +226,12 @@ def test_custom_text_cap(fake):
 
 def test_single_site_business_gets_a_scope_hint(fake, server):
     from .conftest import fact
-    site = {"sites": ["arbaminch"], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
+    site = {"sites": ["lakeside"], "regions": [], "channels": [], "segments": [], "plan_tiers": [], "variants": []}
     fake.facts = [fact(f"f{i}", f"Fact {i}.", None, f"text {i}", scope=site) for i in range(4)]
     out = call(server, "get_business_facts", {}).structured_content
-    assert out["facts"] == [] and "site=['arbaminch']" in out["hint"]
+    assert out["facts"] == [] and "site=['lakeside']" in out["hint"]
     assert "text 0" not in out["hint"]                     # scope values only, never fact values
-    out = call(server, "get_business_facts", {"site": "arbaminch"}).structured_content
+    out = call(server, "get_business_facts", {"site": "lakeside"}).structured_content
     assert len(out["facts"]) == 4 and "hint" not in out
 
 
@@ -244,7 +244,7 @@ def test_get_occasions(fake, server):
     r = call(server, "get_occasions", {"on_date": "2026-12-20", "days": 30})
     assert not r.is_error, dump(r)
     out = r.structured_content
-    assert out["occasions"][0]["name"] == "Genna" and out["on"] == "2026-12-20"
+    assert out["occasions"][0]["name"] == "Spring Festival" and out["on"] == "2026-12-20"
     assert call(server, "get_occasions", {"days": 0}).is_error
 
 

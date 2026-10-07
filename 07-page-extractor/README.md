@@ -1,6 +1,6 @@
 # page-extractor
 
-Deploy **07 of 91** of the local-LLM marketing agent. It turns a web page (by URL or raw HTML)
+Deploy **07 of 91** of the marketing agent. It turns a web page (by URL or raw HTML)
 into clean fields the LLM can work with: title, meta description, headings, main text, link
 counts and Open Graph tags. It also reads the text of a PDF (brochure, price list, menu) page by
 page, uploaded or by URL. Navigation, headers, footers, sidebars, forms and scripts are

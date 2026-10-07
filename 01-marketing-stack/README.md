@@ -1,6 +1,6 @@
 # marketing-stack
 
-Deploy **1 of 91** of the local-LLM marketing agent. This repo holds the one
+Deploy **1 of 91** of the marketing agent. This repo holds the one
 `docker compose` file that runs n8n, Postgres and the services on one private network (27
 containers on the core profile, 39 on growth, 45 on full), plus the installer and the scripts that
 load the n8n workflows. Ollama runs next to it on the host.

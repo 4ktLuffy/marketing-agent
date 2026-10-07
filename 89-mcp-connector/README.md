@@ -1,6 +1,6 @@
 # mcp-connector
 
-Deploy **89 of 91** of the local-LLM marketing agent. It is an **MCP server** that lets Claude use
+Deploy **89 of 91** of the marketing agent. It is an **MCP server** that lets Claude use
 the business's facts and the task bridge directly: Claude Desktop and Claude Code on your machine,
 or claude.ai through **one custom remote connector** (the Free plan allows one). It needs no model
 and holds no key that can approve anything.
@@ -51,7 +51,7 @@ approve or publish.**
 | `check_text(text, publish_on, scope?, channel?)` | 88 `POST /check` | `blocked`, `findings` |
 | `get_task(task_id)` | 88 `GET /tasks/{id}` | pieces, drafts, export readiness, pack |
 | `list_blockers()` | 88 `GET /blockers` | `[{kind, count, text, link}]` |
-| `get_occasions(on_date?, days?)` | 88 `GET /occasions` | holidays, seasons, fasts near a date (when OCCASIONS is on) |
+| `get_occasions(on_date?, days?)` | 88 `GET /occasions` | holidays, seasons, fasts near a date (with a local calendar plugin, see 01-marketing-stack/local.example) |
 | `render_template(template, channel, publish_on, scope?)` | 88 `POST /templates/render` | a price list / rate card / digest from facts, zero model tokens |
 | `post_from_template(template, channels, publish_on, scope?)` | 88 `POST /templates/task` | the same, sent for checks and human review |
 | `make_quote(lines, publish_on, scope?)` | 88 `POST /quote` | exact quote from PUBLIC prices (internal prices never) |

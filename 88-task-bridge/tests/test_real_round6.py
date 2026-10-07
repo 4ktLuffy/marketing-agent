@@ -5,9 +5,9 @@ a. an expired price stated truthfully in a PAST frame ("was X until <end date>",
    "moved from X to Y on <date>", "used to be X") is a match; the same old price said as current, or with a
    date that is not the fact's end / its successor's start, still conflicts; the past date is not "before
    the publish date";
-b. the unit said after the price ("1,200 birr a crate", "each crate", "$56 a night for the whole tent") is
+b. the unit said after the price ("1,200 kora a crate", "each crate", "$56 a night for the whole tent") is
    the disclosure, and "breakfast comes with it" = breakfast included;
-c. an expired offer is not named by a kind noun alone ("safari package" for the valid "Omo Valley safari");
+c. an expired offer is not named by a kind noun alone ("safari package" for the valid "Red Valley safari");
 d. a price change said in percent is checked against the old and new price facts.
 """
 from datetime import date
@@ -22,9 +22,9 @@ DAY = date(2026, 11, 10)
 
 
 def beer(key, ref, value, valid_from=None, valid_to=None, status="active"):
-    return fact(key, f"{ref}: {value:,} birr per crate.", f"{value:,} birr per crate",
+    return fact(key, f"{ref}: {value:,} kora per crate.", f"{value:,} kora per crate",
                 subject={"kind": "product", "ref": ref}, fact_type="price", attribute="crate price", value=value,
-                currency="ETB", unit="crate", basis="per_unit", required_disclosures=["per crate"],
+                currency="XKR", unit="crate", basis="per_unit", required_disclosures=["per crate"],
                 valid_from=valid_from, valid_to=valid_to, status=status, sites=["main"])
 
 
@@ -61,30 +61,30 @@ def blocking(text, **kw):
 # ---- a. a past price, truthfully dated
 
 @pytest.mark.parametrize("text", [
-    "Amber Ale 33cl was 1,050 birr per crate until 31 August 2026 and is now 1,200 birr per crate.",
-    "Amber Ale 33cl is now 1,200 birr per crate (was 1,050 until 31 Aug 2026).",
-    "Up to 31 August 2026 a crate of Amber Ale 33cl cost 1,050 birr; since 1 September it costs 1,200 birr per crate.",
-    "Stout 50cl moved from 1,650 birr to 1,800 birr for each crate on 1 September 2026.",
-    "Stout 50cl was 1,650 birr per crate up to 31 August 2026.",
-    "Amber Ale 33cl used to be 1,050 birr per crate before the September change.",
-    "Stout 50cl: 1,800 birr per crate, up from 1,650 birr on 1 September.",
+    "Amber Ale 33cl was 1,050 kora per crate until 31 August 2026 and is now 1,200 kora per crate.",
+    "Amber Ale 33cl is now 1,200 kora per crate (was 1,050 until 31 Aug 2026).",
+    "Up to 31 August 2026 a crate of Amber Ale 33cl cost 1,050 kora; since 1 September it costs 1,200 kora per crate.",
+    "Stout 50cl moved from 1,650 kora to 1,800 kora for each crate on 1 September 2026.",
+    "Stout 50cl was 1,650 kora per crate up to 31 August 2026.",
+    "Amber Ale 33cl used to be 1,050 kora per crate before the September change.",
+    "Stout 50cl: 1,800 kora per crate, up from 1,650 kora on 1 September.",
 ])
 def test_a_a_past_price_truthfully_dated_is_not_a_conflict(text):
     assert blocking(text) == []
 
 
 def test_a_the_past_price_is_a_match_with_its_expired_fact():
-    got = run("Amber Ale 33cl was 1,050 birr per crate until 31 August 2026.")
+    got = run("Amber Ale 33cl was 1,050 kora per crate until 31 August 2026.")
     assert any(x["label"] == "match" and x["fact_key"] == "amber-33-old" and "past price" in x["detail"] for x in got)
 
 
 @pytest.mark.parametrize("text", [
-    "Amber Ale 33cl is 1,050 birr per crate this week.",
-    "Amber Ale 33cl is still 1,050 birr per crate.",
-    "Amber Ale 33cl costs 1,050 birr per crate right now.",
-    "Amber Ale 33cl was 1,050 birr per crate until 30 October 2026.",
-    "Stout 50cl moved from 1,650 birr to 1,800 birr for each crate on 15 October 2026.",
-    "Amber Ale 33cl was 1,050 birr per crate until 31 August 2026 and still is.",
+    "Amber Ale 33cl is 1,050 kora per crate this week.",
+    "Amber Ale 33cl is still 1,050 kora per crate.",
+    "Amber Ale 33cl costs 1,050 kora per crate right now.",
+    "Amber Ale 33cl was 1,050 kora per crate until 30 October 2026.",
+    "Stout 50cl moved from 1,650 kora to 1,800 kora for each crate on 15 October 2026.",
+    "Amber Ale 33cl was 1,050 kora per crate until 31 August 2026 and still is.",
 ])
 def test_a_an_old_price_said_as_current_or_wrongly_dated_still_conflicts(text):
     assert any(x["label"] == "conflict_or_expired" for x in blocking(text))
@@ -92,22 +92,22 @@ def test_a_an_old_price_said_as_current_or_wrongly_dated_still_conflicts(text):
 
 def test_a_a_wrong_old_value_in_a_past_frame_is_not_excused():
     assert any(x["label"] == "no_source" or x["label"] == "conflict_or_expired"
-               for x in blocking("Amber Ale 33cl was 1,111 birr per crate until 31 August 2026."))
+               for x in blocking("Amber Ale 33cl was 1,111 kora per crate until 31 August 2026."))
 
 
 # ---- b. the unit after the price
 
 @pytest.mark.parametrize("text", [
-    "Amber Ale 33cl costs 1,200 birr a crate.",
-    "Amber Ale 33cl is 1,200 birr for each crate.",
-    "Amber Ale 33cl is 1,200 birr each crate.",
+    "Amber Ale 33cl costs 1,200 kora a crate.",
+    "Amber Ale 33cl is 1,200 kora for each crate.",
+    "Amber Ale 33cl is 1,200 kora each crate.",
 ])
 def test_b_the_unit_said_after_the_price_is_the_disclosure(text):
     assert [x for x in blocking(text) if x["label"] == "missing_disclosure"] == []
 
 
 def test_b_a_price_with_no_unit_still_needs_it():
-    assert any(x["label"] == "missing_disclosure" for x in blocking("Amber Ale 33cl costs 1,200 birr."))
+    assert any(x["label"] == "missing_disclosure" for x in blocking("Amber Ale 33cl costs 1,200 kora."))
 
 
 @pytest.mark.parametrize("text", [
@@ -141,12 +141,12 @@ def test_c_the_expired_offer_named_for_real_still_conflicts():
 
 def test_d_a_right_percentage_change_is_a_match():
     assert blocking("Amber Ale 33cl is up 14% since August.") == []
-    assert blocking("Amber Ale 33cl is up 14% from 1,050 birr per crate to 1,200 birr per crate.") == []
+    assert blocking("Amber Ale 33cl is up 14% from 1,050 kora per crate to 1,200 kora per crate.") == []
 
 
 @pytest.mark.parametrize("text", [
     "Amber Ale 33cl is up 25% since August.",
-    "Amber Ale 33cl is up 25% from 1,050 birr per crate to 1,200 birr per crate.",
+    "Amber Ale 33cl is up 25% from 1,050 kora per crate to 1,200 kora per crate.",
     "Amber Ale 33cl is down 14% since August.",
 ])
 def test_d_a_wrong_percentage_change_conflicts_with_the_current_price(text):
@@ -155,4 +155,4 @@ def test_d_a_wrong_percentage_change_conflicts_with_the_current_price(text):
 
 
 def test_a_a_bare_was_with_no_date_is_not_enough():
-    assert any(x["label"] == "conflict_or_expired" for x in blocking("Amber Ale 33cl was 1,050 birr per crate."))
+    assert any(x["label"] == "conflict_or_expired" for x in blocking("Amber Ale 33cl was 1,050 kora per crate."))

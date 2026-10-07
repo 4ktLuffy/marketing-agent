@@ -1,6 +1,6 @@
 # control-room
 
-Deploy **72 of 91** of the local-LLM marketing agent. A small, mobile-first web app for the one
+Deploy **72 of 91** of the marketing agent. A small, mobile-first web app for the one
 person who approves the agent's work:
 
 1. **Login**: one owner from `CONTROL_USER` / `CONTROL_PASSWORD`, or named people with roles
@@ -235,11 +235,11 @@ default `/data/users.json` when `/data` exists). **Add yourself as owner first**
 exists, it alone decides who can log in and `CONTROL_PASSWORD` stops working.
 
 ```bash
-docker compose exec control-room python -m app.users add henos owner --display "Henos"
-docker compose exec control-room python -m app.users add abebe approver --display "Abebe Kebede"
+docker compose exec control-room python -m app.users add alex owner --display "Alex"
+docker compose exec control-room python -m app.users add sam approver --display "Sam Parker"
 docker compose exec control-room python -m app.users add sara writer --display "Sara"
 docker compose exec control-room python -m app.users list
-docker compose exec control-room python -m app.users passwd abebe
+docker compose exec control-room python -m app.users passwd sam
 docker compose exec control-room python -m app.users remove sara
 ```
 
@@ -441,7 +441,7 @@ defaults there.
 (don't edit it by hand). `POST <n8n>/webhook/mkt-apply-decisions` with header `X-Control-Key`:
 
 ```json
-{"reviewer": "henos", "decisions": [{"id": 12, "decision": "edit", "text": "…", "reason": "shorter", "publish_at": "2026-10-03 08:30"}]}
+{"reviewer": "alex", "decisions": [{"id": 12, "decision": "edit", "text": "…", "reason": "shorter", "publish_at": "2026-10-03 08:30"}]}
 ```
 
 → `{"ok", "summary": ["#12: edited and approved for 2026-10-03 08:30 UTC"], "not_in_review": [], "failed": [], "message"}`.

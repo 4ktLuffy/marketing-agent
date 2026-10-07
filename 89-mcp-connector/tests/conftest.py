@@ -218,9 +218,9 @@ def fake():
         m.post(f"{TASKS}/audit").mock(side_effect=guarded(lambda r: httpx.Response(200, json={
             "sources": [], "totals": {"sources": 1, "drift": 1, "errors": 0}})))
         m.get(f"{TASKS}/occasions").mock(side_effect=guarded(lambda r: httpx.Response(200, json={
-            "country": "ethiopia", "on": r.url.params.get("on") or "2026-10-01", "on_ec": "21 Meskerem 2019 E.C.",
-            "occasions": [{"name": "Genna", "date": "2027-01-07", "kind": "public_holiday", "verified": True}],
-            "note": "Ethiopian clock time runs 6 hours off"})))
+            "calendar": "demoland", "on": r.url.params.get("on") or "2026-10-01", "on_local": "21 Fourthmonth 2019 AC",
+            "occasions": [{"name": "Spring Festival", "date": "2027-01-07", "kind": "public_holiday", "verified": True}],
+            "note": "Local clock time runs 6 hours off"})))
         m.post(url__regex=rf"^{TASKS}/tasks/(?P<tid>[^/]+)/paste$").mock(side_effect=record("paste", paste))
         m.post(url__regex=rf"^{TASKS}/tasks/(?P<tid>[^/]+)/drafts/(?P<did>\d+)/split$").mock(
             side_effect=record("split", split))

@@ -8,34 +8,34 @@ from .conftest import AUTH, BRAND, canon
 from .data import fact
 
 PUB = data.PUBLISH
-OVER21 = "Selling to persons under 21 is prohibited."
+OVER21 = "No sales to anyone under 21."
 KIT = [{"kind": "required_disclosure", "phrase": OVER21, "why": "any alcohol advertisement", "status": "active"},
        {"kind": "required_disclosure", "phrase": "Draft only. Hold for human review.", "why": "note", "status": "active"},
        {"kind": "forbidden_phrase", "phrase": "official beer of", "why": "x", "status": "active"}]
-SCOPE = {"sites": ["arbaminch"]}
+SCOPE = {"sites": ["riverton"]}
 
 
 def crate(key, ref, value, **kw):
-    return fact(key, f"{ref}: {value:,} birr per crate.", f"{value:,} birr per crate", subject={"kind": "product", "ref": ref},
-                fact_type="price", value=value, currency="ETB", unit="crate", required_disclosures=["per crate"],
-                sites=["arbaminch"], **kw)
+    return fact(key, f"{ref}: {value:,} kora per crate.", f"{value:,} kora per crate", subject={"kind": "product", "ref": ref},
+                fact_type="price", value=value, currency="XKR", unit="crate", required_disclosures=["per crate"],
+                sites=["riverton"], **kw)
 
 
 def beer():
     return [
-        crate("p-heineken", "Heineken 33cl", 2080),
-        crate("p-harar", "Harar 33cl", 1700),
-        crate("p-bedele", "Bedele 50cl", 1620),
-        crate("p-old", "Heineken 33cl", 1980, valid_to="2026-08-16"),        # expired
-        fact("p-internal", "Partner crate price", "1,111 birr per crate", subject={"kind": "product", "ref": "Walia 33cl"},
-             fact_type="price", value=1111, currency="ETB", sensitivity="internal", required_disclosures=["per crate"],
-             sites=["arbaminch"]),
-        fact("p-secret", "Cost", "999 birr per crate", subject={"kind": "product", "ref": "Sofi 33cl"},
-             fact_type="price", value=999, currency="ETB", sensitivity="restricted", sites=["arbaminch"]),
-        fact("p-otherSite", "Other site", "1,000 birr per crate", subject={"kind": "product", "ref": "Bale 33cl"},
-             fact_type="price", value=1000, currency="ETB", sites=["hawassa"], required_disclosures=["per crate"]),
-        fact("hours", "Open 8am to 6pm.", "8am to 6pm", subject={"kind": "site", "ref": "Arba Minch depot"},
-             fact_type="hours", sites=["arbaminch"]),
+        crate("p-brand-a", "Brand A 33cl", 2080),
+        crate("p-brand-b", "Brand B 33cl", 1700),
+        crate("p-brand-d", "Brand D 50cl", 1620),
+        crate("p-old", "Brand A 33cl", 1980, valid_to="2026-08-16"),        # expired
+        fact("p-internal", "Partner crate price", "1,111 kora per crate", subject={"kind": "product", "ref": "Brand C 33cl"},
+             fact_type="price", value=1111, currency="XKR", sensitivity="internal", required_disclosures=["per crate"],
+             sites=["riverton"]),
+        fact("p-secret", "Cost", "999 kora per crate", subject={"kind": "product", "ref": "Sofi 33cl"},
+             fact_type="price", value=999, currency="XKR", sensitivity="restricted", sites=["riverton"]),
+        fact("p-otherSite", "Other site", "1,000 kora per crate", subject={"kind": "product", "ref": "Bale 33cl"},
+             fact_type="price", value=1000, currency="XKR", sites=["easton"], required_disclosures=["per crate"]),
+        fact("hours", "Open 8am to 6pm.", "8am to 6pm", subject={"kind": "site", "ref": "Riverton depot"},
+             fact_type="hours", sites=["riverton"]),
     ]
 
 
@@ -61,14 +61,14 @@ def render(client, stack, facts, **kw):
 def test_price_list_public_only_and_disclosure_once(client, stack):
     out = render(client, stack, beer())
     t = out["text"]
-    assert "2,080 birr" in t and "1,700 birr" in t and "1,620 birr" in t
-    for bad in ("1,980", "1,111", "999", "1,000 birr", "Walia", "Sofi", "Bale", "[[", "8am"):
+    assert "2,080 kora" in t and "1,700 kora" in t and "1,620 kora" in t
+    for bad in ("1,980", "1,111", "999", "1,000 kora", "Brand C", "Sofi", "Bale", "[[", "8am"):
         assert bad not in t, bad
     assert t.count("per crate") == 1 and "Prices per crate:" in t
-    assert sorted(out["facts_used"]) == ["p-bedele", "p-harar", "p-heineken"]
+    assert sorted(out["facts_used"]) == ["p-brand-a", "p-brand-b", "p-brand-d"]
     assert out["chars"] == len(t)
     # sorted by subject
-    assert t.index("Bedele") < t.index("Harar") < t.index("Heineken")
+    assert t.index("Brand A") < t.index("Brand B") < t.index("Brand D")
 
 
 def test_kit_disclosure_only_when_rules_active(client, stack):
@@ -95,10 +95,10 @@ def test_no_markdown_channel_uses_plain_bullets(client, stack):
 
 
 def test_subject_filter_and_digest(client, stack):
-    t = render(client, stack, beer(), subjects=["harar"])["text"]
-    assert "Harar" in t and "Heineken" not in t
+    t = render(client, stack, beer(), subjects=["brand b"])["text"]
+    assert "Brand B" in t and "Brand A" not in t
     d = render(client, stack, beer(), template="facts_digest")
-    assert "Arba Minch depot: 8am to 6pm" in d["text"] and "p-internal" not in d["facts_used"]
+    assert "Riverton depot: 8am to 6pm" in d["text"] and "p-internal" not in d["facts_used"]
 
 
 def test_sms_compact_under_160(client, stack):
@@ -165,7 +165,7 @@ def test_rate_card_and_digest_pass_own_checker(client, stack):
 
 def test_forbidden_phrase_in_title_is_warned(client, stack):
     stack.kit_rules = KIT
-    out = render(client, stack, beer(), title="The official beer of Arba Minch")
+    out = render(client, stack, beer(), title="The official beer of Riverton")
     assert any("official beer of" in n for n in out["notes"])
 
 

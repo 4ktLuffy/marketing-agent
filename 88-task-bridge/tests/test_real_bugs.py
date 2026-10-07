@@ -8,7 +8,7 @@ tour-operator rates; a beer distributor with an internal sales volume). Every ru
 2. an internal (or restricted) value written out ("special rate of $95", "38,450 crates") is blocked
    as slot_blocked: it may only travel as a [[slot]]; a public fact with the same value makes it
    ambiguous (review, not a block); a slot filled in the same sentence is fine;
-3. "Best eco-lodge in Ethiopia, voted by our guests!" is an invented ranking / vote with no fact.
+3. "Best eco-lodge in Portugal, voted by our guests!" is an invented ranking / vote with no fact.
 """
 from datetime import date
 
@@ -140,20 +140,20 @@ def test_a_slot_filled_internal_value_is_fine():
 
 
 BEER = [
-    fact("best-seller-volume", "Harar 33cl: 38,450 crates sold July to September 2026 (internal).", "38,450 crates",
-         subject={"kind": "product", "ref": "Harar 33cl"}, fact_type="result", value=38450, unit="crates",
+    fact("best-seller-volume", "Brand B 33cl: 38,450 crates sold July to September 2026 (internal).", "38,450 crates",
+         subject={"kind": "product", "ref": "Brand B 33cl"}, fact_type="result", value=38450, unit="crates",
          sensitivity="internal"),
-    fact("crate-price", "A crate of Harar 33cl is 480 birr.", "480 birr", subject={"kind": "product", "ref": "Harar 33cl"},
-         fact_type="price", value=480, unit="birr"),
-    fact("secret-margin", "Our margin on Harar is 31 points.", "31 points", fact_type="result", value=31, unit="points",
+    fact("crate-price", "A crate of Brand B 33cl is 480 kora.", "480 kora", subject={"kind": "product", "ref": "Brand B 33cl"},
+         fact_type="price", value=480, unit="kora"),
+    fact("secret-margin", "Our margin on Brand B is 31 points.", "31 points", fact_type="result", value=31, unit="points",
          sensitivity="restricted"),
 ]
 
 
 @pytest.mark.parametrize("text", [
-    "We sold 38,450 crates of Harar this quarter",
-    "We sold 38450 crates of Harar this quarter.",
-    "Over 38,450 pints of Harar poured.",
+    "We sold 38,450 crates of Brand B this quarter",
+    "We sold 38450 crates of Brand B this quarter.",
+    "Over 38,450 pints of Brand B poured.",
 ])
 def test_internal_quantity_written_out_is_blocked(text):
     f = run(text, BEER)
@@ -162,32 +162,32 @@ def test_internal_quantity_written_out_is_blocked(text):
 
 
 def test_restricted_quantity_written_out_is_blocked():
-    f = run("Our margin on Harar is 31 points.", BEER)
+    f = run("Our margin on Brand B is 31 points.", BEER)
     assert blocking(f) == [("slot_blocked", "secret-margin")]
 
 
 def test_quantity_controls():
-    assert blocking(run("We sold 12 crates of Harar this week.", BEER)) == []
-    assert blocking(run("Since 2026 we sold Harar across Addis.", BEER)) == []
+    assert blocking(run("We sold 12 crates of Brand B this week.", BEER)) == []
+    assert blocking(run("Since 2026 we sold Brand B across Capital City.", BEER)) == []
     # a public fact has the same number: not secret
     beer = BEER + [fact("pub-crates", "Every pallet holds 38,450 crates? No: the depot stores 38,450 crates.",
                         "38,450 crates", subject={"kind": "site", "ref": "Depot"}, fact_type="spec", value=38450,
                         unit="crates")]
-    assert blocking(run("We sold 38,450 crates of Harar this quarter", beer)) == []
+    assert blocking(run("We sold 38,450 crates of Brand B this quarter", beer)) == []
     # the slot is filled here
-    assert blocking(run("We sold 38,450 crates of Harar this quarter", BEER, ["best-seller-volume"])) == []
+    assert blocking(run("We sold 38,450 crates of Brand B this quarter", BEER, ["best-seller-volume"])) == []
 
 
 # ================================================================ 3. invented superlatives / awards / votes
 
 @pytest.mark.parametrize("text", [
-    "Best eco-lodge in Ethiopia, voted by our guests!",
-    "Best eco-lodge in Ethiopia.",
+    "Best eco-lodge in Portugal, voted by our guests!",
+    "Best eco-lodge in Portugal.",
     "Top safari camp in Kenya.",
     "Voted by our guests, we are a lake favourite.",
     "Voted by over 2,000 travellers.",
     "Our award-winning lodge sits on the lake.",
-    "Number 1 lodge in Gondar.",
+    "Number 1 lodge in Northgate.",
 ])
 def test_invented_ranking_needs_a_fact(text):
     f = run(text)
@@ -195,7 +195,7 @@ def test_invented_ranking_needs_a_fact(text):
 
 
 def test_best_eco_lodge_gets_both_claims():
-    f = run("Best eco-lodge in Ethiopia, voted by our guests!")
+    f = run("Best eco-lodge in Portugal, voted by our guests!")
     assert len([x for x in f if x["label"] == "no_source"]) == 2
 
 
@@ -215,18 +215,18 @@ def test_ordinary_best_top_voted_is_not_a_claim(text):
 
 
 def test_a_fact_that_says_it_supports_it():
-    facts = HOTEL + [fact("vote", "Voted best eco-lodge in Ethiopia by guests in the 2026 Travel Poll.",
-                          "Voted best eco-lodge in Ethiopia", fact_type="result", claim_class="result",
-                          allowed_phrasing=["Best eco-lodge in Ethiopia"])]
-    f = run("Best eco-lodge in Ethiopia.", facts)
+    facts = HOTEL + [fact("vote", "Voted best eco-lodge in Portugal by guests in the 2026 Travel Poll.",
+                          "Voted best eco-lodge in Portugal", fact_type="result", claim_class="result",
+                          allowed_phrasing=["Best eco-lodge in Portugal"])]
+    f = run("Best eco-lodge in Portugal.", facts)
     assert blocking(f) == []
 
 
 def test_business_health_words_and_place_highlights():
     from app import evidence as E
-    assert E._business_sense("At 1,700 birr per crate it still moves fast and keeps margins healthy.", "healthy")
-    assert not E._business_sense("Sofi Malt is a healthy drink for your family.", "healthy")
+    assert E._business_sense("At 1,700 kora per crate it still moves fast and keeps margins healthy.", "healthy")
+    assert not E._business_sense("Maltex is a healthy drink for your family.", "healthy")
     import re
     best = [rx for name, rx in E.CLAIM_PATTERNS if name == "best"][0] if hasattr(E, "CLAIM_PATTERNS") else None
     if best:
-        assert not re.search(best, "Our packages hit the best of Arba Minch.")
+        assert not re.search(best, "Our packages hit the best of Riverton.")

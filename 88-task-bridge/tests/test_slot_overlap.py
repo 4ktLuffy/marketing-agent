@@ -5,7 +5,7 @@ from app.slots import _trim_overlap
 
 
 @pytest.mark.parametrize("value,before,after,want", [
-    ("1,700 birr per crate", "Harar: ", " per crate", "1,700 birr"),
+    ("1,700 kora per crate", "Brand B: ", " per crate", "1,700 kora"),
     ("$111 per room per night", "only ", " per room per night, breakfast", "$111"),
     ("$111 per room per night", "only $", " for two", "111 per room per night"),
     ("24 x 33cl bottles", "holds ", " bottles each", "24 x 33cl"),
@@ -15,7 +15,7 @@ def test_overlap_is_dropped(value, before, after, want):
 
 
 @pytest.mark.parametrize("value,before,after", [
-    ("1,700 birr per crate", "Harar: ", ", order now"),        # nothing repeated
+    ("1,700 kora per crate", "Brand B: ", ", order now"),        # nothing repeated
     ("5 minutes", "a ", " minute walk"),                          # different word
     ("$111 per room per night", "only ", " per roommate"),        # not a whole-word repeat
     ("per crate", "", " per crate"),                              # never empties the value

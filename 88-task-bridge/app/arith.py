@@ -7,6 +7,7 @@ from datetime import date
 from decimal import Decimal
 
 from . import evidence as E
+from . import local as L
 from . import facts as F
 
 SYMBOL = {"GBP": "£", "USD": "$", "EUR": "€"}
@@ -55,13 +56,13 @@ def fmt(amount: Decimal, cur: str) -> str:
     s = f"{q:,.2f}"
     if s.endswith(".00"):
         s = s[:-3]
-    return f"{SYMBOL[cur]}{s}" if cur in SYMBOL else f"{s} {'birr' if cur == 'ETB' else cur}"
+    return f"{SYMBOL[cur]}{s}" if cur in SYMBOL else f"{s} {L.currency_names().get(cur, cur)}"
 
 
 def _bare(amount: Decimal, cur: str) -> str:
     """The stated number as written ("32,000"), with a symbol for symbol currencies."""
     t = fmt(amount, cur)
-    return t[:-5] if t.endswith(" birr") else t
+    return t.rsplit(" ", 1)[0] if cur not in SYMBOL else t
 
 
 def _num(s: str) -> Decimal:
@@ -174,7 +175,7 @@ def _sum_findings(s: str, ok: list[dict]) -> list[dict]:
         cands = [(nm.start(), Decimal(1), "room", "")]
     pos, n, noun, _w = min(cands, key=lambda c: abs(c[0] - total.start))
     nights = _num(nm.group("n")) if nm else None
-    # unit price stated in the text ("at $75", "1,700 birr each", "$75 a night")
+    # unit price stated in the text ("at $75", "1,700 kora each", "$75 a night")
     stated = None
     for v in monies:
         if v is total:
@@ -386,7 +387,7 @@ UNCHANGED = re.compile(r"\b(?:holds?|held|holding|stays?|stayed|remains?|remaine
 
 
 def _unchanged_findings(s: str, ok: list[dict], all_facts: list[dict], by_key: dict, day: date) -> list[dict]:
-    """held-out trial: "Heineken 33cl holds at 2,080 birr per crate" when it rose from 1,980 on 17 August: a
+    """held-out trial: "Brand A 33cl holds at 2,080 kora per crate" when it rose from 1,980 on 17 August: a
     price said to be unchanged that changed (its previous fact had another value) since its own valid_from."""
     if not UNCHANGED.search(s):
         return []

@@ -16,7 +16,7 @@ def h(text: str) -> str:
 
 
 def make_link(item_ids, pin="123456", days=7, label="Acme October posts", headers=API_ONLY):
-    r = client.post("/client-links", headers={**headers, "X-Actor": "Henos"},
+    r = client.post("/client-links", headers={**headers, "X-Actor": "Alex"},
                     json={"item_ids": item_ids, "label": label, "days": days, "pin": pin})
     assert r.status_code == 201, r.text
     return r.json()
@@ -62,7 +62,7 @@ def test_create_returns_the_token_once_and_stores_only_hashes():
     link = make_link([a["id"]])
     token = link["token"]
     assert len(token) >= 43 and link["item_ids"] == [a["id"]] and link["label"] == "Acme October posts"
-    assert link["expires_at"] > link["created_at"] and link["created_by"] == "Henos"
+    assert link["expires_at"] > link["created_at"] and link["created_by"] == "Alex"
     [row] = db_rows("SELECT * FROM client_links")
     assert row["token_sha256"] == hashlib.sha256(token.encode()).hexdigest()
     flat = repr(row)
@@ -123,7 +123,7 @@ def test_endpoints_need_the_internal_key():
 def test_revoke():
     a = item_in("in_review")
     link = make_link([a["id"]])
-    r = client.post(f"/client-links/{link['id']}/revoke", headers={**API_ONLY, "X-Actor": "Henos"})
+    r = client.post(f"/client-links/{link['id']}/revoke", headers={**API_ONLY, "X-Actor": "Alex"})
     assert r.status_code == 200 and r.json()["state"] == "revoked"
     r = resolve(link["token"])
     assert r.status_code == 410 and "withdrawn" in r.json()["detail"]

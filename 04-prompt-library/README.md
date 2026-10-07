@@ -1,6 +1,6 @@
 # prompt-library
 
-Deploy **4 of 91** of the local-LLM marketing agent. It holds the marketing prompts,
+Deploy **4 of 91** of the marketing agent. It holds the marketing prompts,
 one YAML file each, that the LLM gateway (03) runs. They're kept in their own repo so
 you can change what the agent writes without redeploying code, and so every prompt
 change is reviewed and versioned.
@@ -100,7 +100,7 @@ example_vars: {...}           # used by tests and scripts/try_prompt.py
   facts' details ("medium roast") instead of the claim's ("dark roast").
 - **Give the writer the approved facts, and ban numbers that aren't in them.** With only
   the brand summary, writing prompts invented tasting notes ("citrus and honey",
-  "chocolate and caramel" for an Ethiopian light roast) and stray numbers. The gateway now
+  "chocolate and caramel" for an Colombian light roast) and stray numbers. The gateway now
   injects `{{ facts }}` into the writing prompts, which state that no numbers, dates or
   statistics may appear unless they are in the facts or the input. Measured on qwen2.5:7b
   (3 runs per case): the blog case went from 0/3 to 3/3 on invented numbers, and invented

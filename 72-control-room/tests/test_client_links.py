@@ -86,7 +86,7 @@ def no_leaks(text: str):
     for url in URLS.values():
         assert url.split("//")[1].split(":")[0] not in text, url
     assert "X-API-Key" not in text and "owner-margin" not in text and "award-winning" not in text
-    assert "henos" not in text   # the owner's user name
+    assert "alex" not in text   # the owner's user name
 
 
 # ---------- the client page (no login)
@@ -309,7 +309,7 @@ def test_make_link_shows_link_and_pin_once(owner, monkeypatch):
     # never again: the list has neither
     mock.get(f"{CAL}/client-links").respond(json=[{"id": 3, "label": "October posts", "item_ids": [7, 8],
                                                    "expires_at": "2026-10-07T10:00:00Z", "state": "active",
-                                                   "uses": 1, "wrong_pins": 0, "created_by": "henos"}])
+                                                   "uses": 1, "wrong_pins": 0, "created_by": "alex"}])
     listed = c.get("/client-links")
     assert listed.status_code == 200 and "October posts" in listed.text
     assert TOKEN not in listed.text and pin not in listed.text
@@ -364,7 +364,7 @@ def test_client_signoff_from_notes():
     assert views.client_signoff(changes) == {"approved": False, "name": "Sam", "version": 1, "earlier": True}
     both = {"notes": ok["notes"] + "\n" + changes["notes"], "version": 2}
     assert views.client_signoff(both)["approved"] is False     # the latest answer counts
-    assert views.client_signoff({"notes": "approved by Henos"}) is None
+    assert views.client_signoff({"notes": "approved by Alex"}) is None
     assert views.client_signoff({"notes": None}) is None
 
 

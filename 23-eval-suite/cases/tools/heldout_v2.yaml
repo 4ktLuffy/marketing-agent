@@ -3,7 +3,7 @@
 # strings; after this set is used for a decision, write v3 for the next change.
 - {say: "Caption for a Threads post about our cold brew kit", expect: write_social_posts}
 - {say: "Give me something to post on Facebook about the October giveaway", expect: write_social_posts}
-- {say: "Draft three tweets announcing our new Ethiopia roast", expect: write_social_posts}
+- {say: "Draft three tweets announcing our new Colombia roast", expect: write_social_posts}
 - {say: "Mastodon post about roast day please", expect: write_social_posts}
 - {say: "Make a LinkedIn carousel text about brewing at the office", expect: write_social_posts}
 - {say: "Here's our press release, make social posts out of it: Northwind opens a second roastery in Leeds", expect: repurpose_content}

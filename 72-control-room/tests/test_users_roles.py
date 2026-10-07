@@ -18,8 +18,8 @@ from .conftest import CAL, PASSWORD, URLS, WEBHOOK, csrf_of, flush, item, login
 BRAND = URLS["BRAND_URL"]
 TASKS = "http://tasks.internal:8000"
 TID = "T-7K2M9Q"
-PW = {"olive": "owner-pw-" + "Zr4Xk9Lm2Q", "abebe": "appr-pw-" + "Hq7Tn3Vc8W", "wanda": "writer-pw-" + "Bp5Ys1Jd6E"}
-PEOPLE = [("olive", "Olive Owner", "owner"), ("abebe", "Abebe Kebede", "approver"), ("wanda", "Hénos Writer", "writer")]
+PW = {"olive": "owner-pw-" + "Zr4Xk9Lm2Q", "sam": "appr-pw-" + "Hq7Tn3Vc8W", "wanda": "writer-pw-" + "Bp5Ys1Jd6E"}
+PEOPLE = [("olive", "Olive Owner", "owner"), ("sam", "Sam Parker", "approver"), ("wanda", "Álex Writer", "writer")]
 
 
 def write_file(path, people=PEOPLE):
@@ -92,20 +92,20 @@ def test_wrong_password_and_unknown_user(cl):
     assert r.status_code == 401 and "Wrong user or password." in r.text
     # the environment's single login no longer works once the file exists
     assert login(cl).status_code == 401
-    assert login(cl, password=PW["abebe"], user="olive").status_code == 401   # someone else's password
+    assert login(cl, password=PW["sam"], user="olive").status_code == 401   # someone else's password
 
 
 def test_single_user_fallback_is_owner(authed):
     c, _ = authed
-    assert "Signed in as <b>henos</b> (owner)" in c.get("/more").text
+    assert "Signed in as <b>alex</b> (owner)" in c.get("/more").text
 
 
 def test_fallback_display_is_the_reviewer(monkeypatch, mock):
-    monkeypatch.setenv("CONTROL_REVIEWER", "Henos T.")
+    monkeypatch.setenv("CONTROL_REVIEWER", "Alex T.")
     from app.main import create_app
     with TestClient(create_app(), follow_redirects=False) as c:
         assert login(c).status_code == 303
-        assert "Signed in as <b>Henos T.</b> (owner)" in c.get("/more").text
+        assert "Signed in as <b>Alex T.</b> (owner)" in c.get("/more").text
 
 
 def test_missing_file_falls_back_to_env_user(tmp_path, monkeypatch, mock):
@@ -141,7 +141,7 @@ def test_user_added_without_restart_and_removed_user_is_logged_out(cl, ufile):
 def test_role_change_applies_at_the_next_request(cl, ufile, mock):
     token = as_(cl, "wanda")
     assert cl.post("/decide", data={"id": 7, "decision": "approve", "csrf": token}).status_code == 403
-    write_file(ufile, [PEOPLE[0], PEOPLE[1], ("wanda", "Hénos Writer", "approver")])
+    write_file(ufile, [PEOPLE[0], PEOPLE[1], ("wanda", "Álex Writer", "approver")])
     assert cl.post("/decide", data={"id": 7, "decision": "approve", "csrf": token}).status_code == 303
 
 
@@ -175,7 +175,7 @@ def test_writer_may_write_drafts(cl, mock):
                                     "claim_class": "none", "risk": "low", "key": "open-hours"})
     assert r.status_code == 303 and made.called
     # X-Actor names the writer; non-ASCII folded for the header
-    assert made.calls.last.request.headers["x-actor"] == "Henos Writer"
+    assert made.calls.last.request.headers["x-actor"] == "Alex Writer"
 
 
 def test_csrf_is_checked_before_the_role(cl, mock):
@@ -185,7 +185,7 @@ def test_csrf_is_checked_before_the_role(cl, mock):
 
 
 def test_approver_decides_but_cannot_confirm_facts(cl, mock):
-    token = as_(cl, "abebe")
+    token = as_(cl, "sam")
     conf = mock.post(f"{BRAND}/facts/v2/some-fact/confirm").respond(json={})
     r = cl.post("/facts/some-fact/confirm", data={"csrf": token})
     assert r.status_code == 403 and "Your role (approver)" in r.text and not conf.called
@@ -231,7 +231,7 @@ def test_buttons_hidden_by_role(cl, mock):
     mock.get(f"{BRAND}/facts/v2").respond(json={"facts": FACTS})
     mock.get(f"{BRAND}/questions").respond(json={"questions": []})
     mock.get(f"{BRAND}/disclosure-wordings").respond(json={"wordings": []})
-    as_(cl, "abebe")
+    as_(cl, "sam")
     h = cl.get("/facts").text
     assert 'action="/facts/quayside-delivery/confirm"' not in h and "/facts/quayside-delivery/edit" in h
     as_(cl, "olive")
@@ -242,7 +242,7 @@ def test_buttons_hidden_by_role(cl, mock):
 
 def test_decisions_are_sent_once_per_reviewer(cl, app_u, mock):
     route = mock.post(WEBHOOK).respond(json={"ok": True, "summary": ["done"]})
-    t = as_(cl, "abebe")
+    t = as_(cl, "sam")
     cl.post("/decide", data={"id": 7, "decision": "approve", "csrf": t})
     cl.post("/decide", data={"id": 8, "decision": "reject_drop", "csrf": t})
     t = as_(cl, "olive")
@@ -250,27 +250,27 @@ def test_decisions_are_sent_once_per_reviewer(cl, app_u, mock):
     res = flush(cl, app_u)
     assert len(res) == 2 and route.call_count == 2
     sent = {json.loads(c.request.content)["reviewer"]: json.loads(c.request.content)["decisions"] for c in route.calls}
-    assert [d["id"] for d in sent["Abebe Kebede"]] == [7, 8] and [d["id"] for d in sent["Olive Owner"]] == [9]
+    assert [d["id"] for d in sent["Sam Parker"]] == [7, 8] and [d["id"] for d in sent["Olive Owner"]] == [9]
     assert all(set(json.loads(c.request.content)) == {"reviewer", "decisions"} for c in route.calls)
 
 
 def test_client_link_names_the_person(cl, mock):
-    token = as_(cl, "abebe")
+    token = as_(cl, "sam")
     made = mock.post(f"{CAL}/client-links").respond(json={"id": 1, "token": "t" * 43, "item_ids": [7]})
     r = cl.post("/client-links/new", data={"csrf": token, "item_id": "7", "label": "Oct", "days": "7"})
     assert r.status_code == 201, r.text[:300]
-    assert made.calls.last.request.headers["x-actor"] == "Abebe Kebede"
+    assert made.calls.last.request.headers["x-actor"] == "Sam Parker"
 
 
 def test_accept_by_is_the_display_name(cl, mock):
     from .test_tasks import blocked_md_task
-    token = as_(cl, "abebe")
+    token = as_(cl, "sam")
     mock.get(f"{TASKS}/tasks/{TID}").respond(json=blocked_md_task())
     route = mock.post(f"{TASKS}/tasks/{TID}/pieces/p1/accept").respond(json={"blocked": False})
     r = cl.post(f"/tasks/{TID}/accept", data={"csrf": token, "piece_key": "p1", "finding": "1", "sha": "1" * 64,
                                              "note": "said as per room"})
     assert r.status_code == 200
-    assert json.loads(route.calls.last.request.content)["by"] == "Abebe Kebede"
+    assert json.loads(route.calls.last.request.content)["by"] == "Sam Parker"
 
 
 def test_password_never_in_responses_or_logs(cl, ufile, caplog):
@@ -304,12 +304,12 @@ def test_cli_add_passwd_remove_list(tmp_path, monkeypatch, capsys):
     assert stat.S_IMODE(os.stat(f).st_mode) == 0o600
     rows = json.loads(f.read_text())["users"]
     assert rows[0]["display"] == "Olive Owner" and rows[0]["pw_hash"].startswith("scrypt$") and secret not in f.read_text()
-    assert cli(monkeypatch, capsys, "add", "abebe", "approver", "--password-stdin", stdin="short\n")[0] != 0
-    assert cli(monkeypatch, capsys, "add", "abebe", "approver", "--password-stdin", stdin="approver-pw-1\n")[0] == 0
-    assert cli(monkeypatch, capsys, "add", "abebe", "writer", "--password-stdin", stdin="approver-pw-1\n")[0] != 0
+    assert cli(monkeypatch, capsys, "add", "sam", "approver", "--password-stdin", stdin="short\n")[0] != 0
+    assert cli(monkeypatch, capsys, "add", "sam", "approver", "--password-stdin", stdin="approver-pw-1\n")[0] == 0
+    assert cli(monkeypatch, capsys, "add", "sam", "writer", "--password-stdin", stdin="approver-pw-1\n")[0] != 0
     assert cli(monkeypatch, capsys, "add", "bad name!", "writer", "--password-stdin", stdin="whatever-pw\n")[0] != 0
     code, out, _ = cli(monkeypatch, capsys, "list")
-    assert code == 0 and "olive\towner\tOlive Owner" in out and "abebe\tapprover\tabebe" in out and "scrypt" not in out
+    assert code == 0 and "olive\towner\tOlive Owner" in out and "sam\tapprover\tsam" in out and "scrypt" not in out
 
     class S:
         users_file, user, password, reviewer = str(f), "x", "", ""
@@ -321,7 +321,7 @@ def test_cli_add_passwd_remove_list(tmp_path, monkeypatch, capsys):
     assert cli(monkeypatch, capsys, "passwd", "nobody", "--password-stdin", stdin=new + "\n")[0] != 0
     code, _, _ = cli(monkeypatch, capsys, "remove", "olive")
     assert code != 0   # the last owner stays
-    assert cli(monkeypatch, capsys, "remove", "abebe")[0] == 0
+    assert cli(monkeypatch, capsys, "remove", "sam")[0] == 0
     assert [u["name"] for u in json.loads(f.read_text())["users"]] == ["olive"]
     assert stat.S_IMODE(os.stat(f).st_mode) == 0o600
 

@@ -2,7 +2,7 @@
 
 The users file (`CONTROL_USERS_FILE`, default `/data/users.json` when `/data` exists) is JSON:
 
-    {"users": [{"name": "henos", "display": "Henos", "role": "owner", "pw_hash": "scrypt$<salt>$<hash>"}]}
+    {"users": [{"name": "alex", "display": "Alex", "role": "owner", "pw_hash": "scrypt$<salt>$<hash>"}]}
 
 Roles, highest first: owner > approver > writer. Everyone logged in reads every page; what a role
 may change is decided per route in app/main.py (`need(role)`).
@@ -254,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     a = sub.add_parser("add", help="add a person")
     a.add_argument("name")
     a.add_argument("role", choices=ROLES)
-    a.add_argument("--display", default="", help='name shown on decisions, e.g. "Henos Tadesse"')
+    a.add_argument("--display", default="", help='name shown on decisions, e.g. "Alex Morgan"')
     a.add_argument("--password-stdin", action="store_true")
     p = sub.add_parser("passwd", help="set a new password")
     p.add_argument("name")

@@ -1,6 +1,6 @@
 # 50 · Learn from reviews
 
-Deploy **50 of 91** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **50 of 91** of the marketing agent. This deploy is an n8n scheduled workflow.
 
 Every Friday it asks the learning service (46) to look at the week's edits and rejections and propose general writing rules (for example "no rhetorical questions in openers"). New proposals are posted to your webhook with a link to the rules form (51). Nothing is used until you keep it.
 

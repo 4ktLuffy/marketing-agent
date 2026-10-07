@@ -1,6 +1,6 @@
 # 76 · Review experiments
 
-Deploy **76 of 91** of the local-LLM marketing agent. This deploy is an n8n form workflow.
+Deploy **76 of 91** of the marketing agent. This deploy is an n8n form workflow.
 
 A web form listing the experiments the agent (74) or a person proposed, each with its hypothesis, the two versions, and the stopping rule stated up front. **Approve** moves it to `approved` in the campaign service (45; the call carries the approver key, which only n8n holds); the next plan of the content engine (61) then assigns the two versions to planned slots, balanced by weekday and hour, and the experiment runs. **Reject** stops it. Every post of an experiment still goes through the approval form (38).
 

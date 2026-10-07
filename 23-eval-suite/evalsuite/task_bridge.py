@@ -279,7 +279,8 @@ class Stack:
 
     def env(self, name: str) -> dict:
         base = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "SYSTEMROOT",
-                                                             "PROMISE_CHECK", "EXTRAS_CHECK")}
+                                                             "PROMISE_CHECK", "EXTRAS_CHECK", "LOCAL_DIR",
+                                                             "STARTER_KITS_EXTRA_DIR")}
         base["PYTHONDONTWRITEBYTECODE"] = "1"
         if name == "brand":
             brand = {"name": self.company["name"], "website": "https://example.invalid"}
@@ -774,7 +775,7 @@ def main(argv=None) -> int:
     ap.add_argument("--claims-gateway", default="", help="optional model check: a running 03 gateway URL for 44")
     ap.add_argument("--verifier-model", default="", help="VERIFIER_MODEL for 44 (default: the gateway's MODEL)")
     ap.add_argument("--claims-timeout", type=float, default=300, help="CLAIMS_TIMEOUT for 88 and 44 (seconds)")
-    ap.add_argument("--kits", default="", help="comma-separated starter kits to apply and confirm (e.g. ethiopia-alcohol, or beer-:ethiopia-alcohol for slugs starting beer-)")
+    ap.add_argument("--kits", default="", help="comma-separated starter kits to apply and confirm (e.g. spirits-demo, or beer-:spirits-demo for slugs starting beer-)")
     ap.add_argument("--model-check-mode", choices=("auto", "review"), default="auto",
                     help="MODEL_CHECK for 88 with --claims-gateway: auto (whole piece) or review (unsure sentences)")
     a = ap.parse_args(argv)

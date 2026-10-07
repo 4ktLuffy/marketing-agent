@@ -2,7 +2,7 @@
 
 A mapping reads ONLY the fields it lists (plus `id` and `write_date`, which carry no personal
 data). Models that hold personal data are refused unless `allow_models` names them. `outputs`
-lets one mapping make several facts per record (hotel: rack and tour rate, single and double).
+lets one mapping make several facts per record (e.g. a public list price and an internal cost).
 """
 from __future__ import annotations
 

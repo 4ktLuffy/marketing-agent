@@ -6,9 +6,9 @@ a. a count of countable things an in-scope fact counts otherwise ("three functio
 b. hours and minutes are one unit ("a two-hour kayak trip" against a 90-minute excursion);
 c. a named room type the business has none of ("Lagoon Villa" among rooms and tents): wrong_scope;
 d. a place said with "find us in", "visit us in", "based in" that no fact serves: wrong_scope;
-e. a priced product line in a size no fact sells at all ("Kiboko 66cl" among 33cl and 50cl);
+e. a priced product line in a size no fact sells at all ("Tundra 66cl" among 33cl and 50cl);
 f. a size said with "in" ("Lager 0.0% in 1 litre bottles") is a use of that product's sizes;
-g. "a crate of Pale Ale is 1,200 birr" says the unit "per crate".
+g. "a crate of Pale Ale is 1,200 kora" says the unit "per crate".
 """
 from datetime import date
 
@@ -162,15 +162,15 @@ def test_ordinary_find_us_and_visit_us_sentences_are_not_places(text):
 # ===================================================================== beer: sizes and units
 
 BREW = [
-    fact("lager-33", "Pale Lager 33cl (24 x 33cl): 1,700 birr per crate.", "1,700 birr per crate",
+    fact("lager-33", "Pale Lager 33cl (24 x 33cl): 1,700 kora per crate.", "1,700 kora per crate",
          subject={"kind": "product", "ref": "Pale Lager 33cl"}, fact_type="price", attribute="price",
-         value=1700, unit="crate", currency="ETB", required_disclosures=["per crate"], sites=["town"]),
-    fact("stout-50", "Black Stout 50cl (20 x 50cl): 2,000 birr per crate.", "2,000 birr per crate",
+         value=1700, unit="crate", currency="XKR", required_disclosures=["per crate"], sites=["town"]),
+    fact("stout-50", "Black Stout 50cl (20 x 50cl): 2,000 kora per crate.", "2,000 kora per crate",
          subject={"kind": "product", "ref": "Black Stout 50cl"}, fact_type="price", attribute="price",
-         value=2000, unit="crate", currency="ETB", required_disclosures=["per crate"], sites=["town"]),
-    fact("zero-33", "Lager 0.0% 33cl (24 x 33cl): 1,500 birr per crate.", "1,500 birr per crate",
+         value=2000, unit="crate", currency="XKR", required_disclosures=["per crate"], sites=["town"]),
+    fact("zero-33", "Lager 0.0% 33cl (24 x 33cl): 1,500 kora per crate.", "1,500 kora per crate",
          subject={"kind": "product", "ref": "Lager 0.0% 33cl"}, fact_type="price", attribute="price",
-         value=1500, unit="crate", currency="ETB", required_disclosures=["per crate"], sites=["town"]),
+         value=1500, unit="crate", currency="XKR", required_disclosures=["per crate"], sites=["town"]),
 ]
 
 
@@ -179,38 +179,38 @@ def brew(text):
 
 
 @pytest.mark.parametrize("text", [
-    "Kiboko 66cl (12 x 66cl): 1,900 birr per crate.",
-    "Kiboko 1 litre is 2,400 birr per crate.",
+    "Tundra 66cl (12 x 66cl): 1,900 kora per crate.",
+    "Tundra 1 litre is 2,400 kora per crate.",
 ])
 def test_e_a_priced_line_in_a_size_no_fact_has_is_wrong_scope(text):
     assert ("wrong_scope", None) in blocking(brew(text)), text
 
 
 @pytest.mark.parametrize("text", [
-    "Pale Lager 33cl (24 x 33cl): 1,700 birr per crate.",
-    "Black Stout 50cl (20 x 50cl): 2,000 birr per crate.",
+    "Pale Lager 33cl (24 x 33cl): 1,700 kora per crate.",
+    "Black Stout 50cl (20 x 50cl): 2,000 kora per crate.",
     "Our bottles come in 66cl bars of soap in the gift shop.",
-    "Kiboko is a name we like, and 66cl is a lot of beer.",
+    "Tundra is a name we like, and 66cl is a lot of beer.",
 ])
 def test_known_sizes_and_unpriced_or_nameless_mentions_are_not_flagged(text):
     assert ("wrong_scope", None) not in blocking(brew(text)), text
 
 
 def test_f_a_size_said_with_in_is_a_use_of_the_products_sizes():
-    out = blocking(brew("Lager 0.0% in 1 litre bottles is 2,100 birr per crate."))
+    out = blocking(brew("Lager 0.0% in 1 litre bottles is 2,100 kora per crate."))
     assert ("wrong_scope", None) in out
-    assert ("wrong_scope", None) not in blocking(brew("Lager 0.0% in 33cl bottles is 1,500 birr per crate."))
+    assert ("wrong_scope", None) not in blocking(brew("Lager 0.0% in 33cl bottles is 1,500 kora per crate."))
 
 
 @pytest.mark.parametrize("text", [
-    "A crate of Pale Lager 33cl is 1,700 birr.",
-    "Black Stout 50cl is 2,000 birr for a crate of twenty bottles.",
-    "One crate costs 1,700 birr for Pale Lager 33cl.",
+    "A crate of Pale Lager 33cl is 1,700 kora.",
+    "Black Stout 50cl is 2,000 kora for a crate of twenty bottles.",
+    "One crate costs 1,700 kora for Pale Lager 33cl.",
 ])
 def test_g_a_price_said_as_the_price_of_a_crate_says_per_crate(text):
     assert not [x for x in blocking(brew(text)) if x[0] == "missing_disclosure"], text
 
 
 def test_g_a_bare_price_still_needs_its_unit():
-    assert [x for x in blocking(brew("Pale Lager 33cl is 1,700 birr.")) if x[0] == "missing_disclosure"]
-    assert [x for x in blocking(brew("The crate is red. Pale Lager 33cl is 1,700 birr.")) if x[0] == "missing_disclosure"]
+    assert [x for x in blocking(brew("Pale Lager 33cl is 1,700 kora.")) if x[0] == "missing_disclosure"]
+    assert [x for x in blocking(brew("The crate is red. Pale Lager 33cl is 1,700 kora.")) if x[0] == "missing_disclosure"]

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from . import facts as F
+from . import local as L
 
 _INNER = r"[^\[\]{}\n\\⟦⟧【】]{1,80}?"
 SLOT_RE = re.compile(
@@ -92,7 +93,7 @@ def fill(text: str, snapshot: dict[str, dict], known: dict[str, dict], day: date
     hits = find(text, bare_keys)
     parts, used, blocked, pos, cursor = [], [], [], 0, 0
     cites = _citations(text, hits)
-    for h in hits:                       # "… Lake Abaya [[arbaminch-views]].": the words before already say it
+    for h in hits:                       # "… Lake Ora [[riverton-views]].": the words before already say it
         f = (snapshot or {}).get(h.key) or known.get(h.key)
         if id(h) not in cites and f and _restates(text[:h.start], f):
             cites.add(id(h))
@@ -178,8 +179,9 @@ def _restates(before: str, f: dict) -> bool:
 
 
 def _echo(value: str, after: str) -> int:
-    """Length of a " = $71" / ": 1,700 birr" right after a filled slot that repeats the value's own amount."""
-    m = re.match(r"\s*[=:]\s*(?P<amt>[$£€]?\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:birr|usd|etb|dollars?))?)", after, re.I)
+    """Length of a " = $71" / ": 1,700 kora" right after a filled slot that repeats the value's own amount."""
+    words = "|".join(["usd", "eur", "gbp", "dollars?", "euros?", "pounds?"] + [re.escape(w) for w in L.currency()])
+    m = re.match(r"\s*[=:]\s*(?P<amt>[$£€]?\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:" + words + r")(?![\w]))?)", after, re.I)
     if not m:
         return 0
     num = re.sub(r"[^\d.]", "", m.group("amt"))
@@ -189,7 +191,7 @@ def _echo(value: str, after: str) -> int:
 
 def _trim_overlap(value: str, before: str, after: str) -> str:
     """Writers often repeat around a slot what its value already says: "[[rate]] per crate" with the
-    value "1,700 birr per crate", or "$[[rate]]" with "$111 per room". Drop the value's own copy so
+    value "1,700 kora per crate", or "$[[rate]]" with "$111 per room". Drop the value's own copy so
     the filled text says it once (the words the writer typed stay)."""
     words = value.split()
     nxt = after.lstrip(" \t").lower()

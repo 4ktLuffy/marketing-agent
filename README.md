@@ -1,9 +1,11 @@
-# Local-LLM marketing agent
+# Marketing agent
 
-A marketing agent that runs on **your own model (Ollama)** and is orchestrated by **n8n**.
-You chat with it, or it works on a schedule. It plans campaigns, writes posts, emails, ads
-and SEO briefs, fact-checks every draft against your approved facts, learns from your
-edits, and publishes only what you approve.
+A marketing agent that works **on top of any AI**: a free or paid chatbot (ChatGPT, Claude, Gemini)
+through copy-paste task packs, Claude directly through its connector, a hosted OpenAI-compatible
+model, or your own local model (Ollama). It is orchestrated by **n8n**: you chat with it, or it works
+on a schedule. Whichever AI writes, the agent keeps it honest: every price, offer and claim is checked
+against your approved facts. It plans campaigns, writes posts, emails, ads and SEO briefs, learns
+from your edits, and publishes only what a person approves.
 
 - **Start here:** [START-HERE.md](START-HERE.md) has what it does, the deploy order and test results.
 - **Architecture and API contracts:** [BLUEPRINT.md](BLUEPRINT.md)

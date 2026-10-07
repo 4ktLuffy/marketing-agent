@@ -291,7 +291,7 @@ class Backends:
         return (ACTOR.get() or self.s.reviewer or "control room")[:80]
 
     def _actor(self) -> dict:
-        # A header value must be ASCII: accents are folded ("Hénos" -> "Henos"), anything else dropped.
+        # A header value must be ASCII: accents are folded ("Álex" -> "Alex"), anything else dropped.
         folded = unicodedata.normalize("NFKD", self.who()).encode("ascii", "ignore").decode()
         clean = "".join(ch for ch in folded if 32 <= ord(ch) < 127).strip()
         return {"X-Actor": clean or (self.s.reviewer or "control room")[:80]}
@@ -418,7 +418,7 @@ class Backends:
         return [t for t in ts if isinstance(t, dict)] if isinstance(ts, list) else []
 
     async def occasions(self, days: int = 45) -> dict:
-        """88 GET /occasions: holidays/seasons near today (empty when OCCASIONS is off). Never raises:
+        """88 GET /occasions: holidays/seasons near today (empty without a local calendar plugin). Never raises:
         the New task page works without it."""
         try:
             body = await self._tasks("GET", "/occasions", params={"days": days})

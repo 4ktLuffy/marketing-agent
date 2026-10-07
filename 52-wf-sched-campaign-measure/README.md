@@ -1,6 +1,6 @@
 # 52 · Measure campaigns
 
-Deploy **52 of 91** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **52 of 91** of the marketing agent. This deploy is an n8n scheduled workflow.
 
 Every morning it measures each active campaign against its targets (clicks from the link shortener, visits and conversions from analytics), completes campaigns past their end date, and lists campaigns that ended with a target that was never measured.
 

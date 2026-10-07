@@ -191,9 +191,9 @@ def test_calendar_down_mid_batch_is_failed(client, stack):
 
 def test_a_name_outside_latin1_falls_back_to_the_note(client, stack):
     it = stack.create()
-    decide(client, {"id": it["id"], "decision": "approve"}, reviewer="ሰላም Abebe")
-    assert stack.audit(it["id"])[-1]["actor"] == "ሰላም"
-    assert "approved by ሰላም Abebe" in stack.item(it["id"])["notes"]
+    decide(client, {"id": it["id"], "decision": "approve"}, reviewer="Σοφία Sam")
+    assert stack.audit(it["id"])[-1]["actor"] == "Σοφία"
+    assert "approved by Σοφία Sam" in stack.item(it["id"])["notes"]
 
 
 def test_a_latin1_name_is_kept_whole(client, stack):

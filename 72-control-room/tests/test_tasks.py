@@ -482,21 +482,21 @@ def test_accept_refused_by_88_says_reload(bridge):
 def test_accepted_finding_shows_who_and_no_button(bridge):
     c, _, mock = bridge
     mock.get(f"{TASKS}/tasks/{TID}").respond(json=blocked_md_task(
-        accepted={"by": "Henos", "note": "said as per room, two sharing", "at": "2026-09-30T02:00:00Z"}))
+        accepted={"by": "Alex", "note": "said as per room, two sharing", "at": "2026-09-30T02:00:00Z"}))
     h = c.get(f"/tasks/{TID}").text
-    assert "accepted</span> by Henos" in h and "said as per room, two sharing" in h
+    assert "accepted</span> by Alex" in h and "said as per room, two sharing" in h
     assert "It’s there, in other words" not in h
 
 
 def test_new_task_page_shows_occasions_when_88_has_them(bridge):
     c, _, mock = bridge
-    mock.get(f"{TASKS}/occasions").respond(json={"country": "ethiopia", "on_ec": "21 Meskerem 2019 E.C.",
-        "occasions": [{"name": "Genna (Ethiopian Christmas)", "date": "2027-01-07", "ec": "29 Tahsas 2019 E.C.",
+    mock.get(f"{TASKS}/occasions").respond(json={"calendar": "demoland", "on_local": "21 Fourthmonth 2019 AC",
+        "occasions": [{"name": "Spring Festival (Local Spring Festival)", "date": "2027-01-07", "local_date": "29 Sixthmonth 2019 AC",
                        "verified": True, "notes": "No alcohol sponsorship of holidays."},
                       {"name": "Eid al-Fitr", "date": "2027-03-10", "verified": False}],
-        "note": "Ethiopian clock time runs 6 hours off"})
+        "note": "Local clock time runs 6 hours off"})
     h = c.get("/tasks/new").text
-    assert "Coming up" in h and "21 Meskerem 2019 E.C." in h and "Genna (Ethiopian Christmas)" in h
+    assert "Coming up" in h and "21 Fourthmonth 2019 AC" in h and "Spring Festival (Local Spring Festival)" in h
     assert "date not confirmed" in h and "No alcohol sponsorship" in h
 
 

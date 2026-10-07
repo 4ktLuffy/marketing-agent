@@ -1,6 +1,6 @@
 # 28 · Email newsletter
 
-Deploy **28 of 91** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **28 of 91** of the marketing agent. This deploy is an n8n sub-workflow.
 
 Writes a newsletter: subject, preheader, body and CTA. It uses brand facts from the knowledge base, runs the quality gate on the body, checks the subject length, renders email-safe HTML (18) and saves a draft to the calendar.
 

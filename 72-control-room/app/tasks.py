@@ -191,16 +191,16 @@ def export_state(task: dict) -> tuple[bool, list[str]]:
 
 
 def occasion_view(body: dict) -> dict | None:
-    """88 /occasions answer -> {on_ec, items[{name, when, flag, notes}], note} or None when off/empty."""
+    """88 /occasions answer -> {on_local, items[{name, when, flag, notes}], note} or None when off/empty."""
     items = [o for o in (body or {}).get("occasions") or [] if isinstance(o, dict) and o.get("name")]
     if not items:
         return None
     out = []
     for o in items[:8]:
         when = str(o.get("date") or "")[:10] + (f" to {str(o['end'])[:10]}" if o.get("end") and o.get("end") != o.get("date") else "")
-        out.append({"name": str(o["name"])[:80], "when": when, "ec": str(o.get("ec") or "")[:40],
+        out.append({"name": str(o["name"])[:80], "when": when, "local_date": str(o.get("local_date") or "")[:40],
                     "flag": "" if o.get("verified") else "date not confirmed", "notes": str(o.get("notes") or "")[:200]})
-    return {"on_ec": str(body.get("on_ec") or "")[:40], "items": out, "note": str(body.get("note") or "")[:200]}
+    return {"on_local": str(body.get("on_local") or "")[:40], "items": out, "note": str(body.get("note") or "")[:200]}
 
 
 def blocker_view(b: dict) -> dict:

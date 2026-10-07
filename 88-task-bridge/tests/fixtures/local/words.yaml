@@ -1,0 +1,15 @@
+# Test add-ons (LOCAL_DIR for the test suite): an invented market with its own currency word ("kora", XKR),
+# towns, and words in another script (Greek here, for the script-only paths).
+currency:
+  kora: XKR
+  xkr: XKR
+  κόρα: XKR
+  δολάρια: USD
+currency_names:
+  XKR: kora
+places: [Riverton, Hillview, Easton, Northgate, Westford, Capital City, Southby, Lakeport, Eastbridge, Hillcrest,
+         Oakford, Stonebury, Northmoor]
+not_places: [kora]
+disclosure_words:
+  - {pattern: '(?<![\w])(?:ανά\s+κιβώτιο|το\s+κιβώτιο)(?![\w])', means: per crate}
+  - {pattern: '(?<![\w])ανά\s+άτομο(?![\w])', means: qperperson}

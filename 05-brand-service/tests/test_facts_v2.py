@@ -435,7 +435,7 @@ def test_questions_crud():
 
 # --- starter kits -------------------------------------------------------------------------
 
-KITS = {"hospitality", "manufacturing", "saas", "retail", "clinic", "restaurant", "consultancy", "ethiopia-alcohol", "ethiopia-hospitality"}
+KITS = {"hospitality", "manufacturing", "saas", "retail", "clinic", "restaurant", "consultancy"}
 
 
 def test_starter_kits_load_and_validate():
@@ -542,3 +542,17 @@ def test_parallel_writes_keep_versions_and_seq_consistent(owner):
     assert [v["version"] for v in one["versions"]] == list(range(1, 49))
     seqs = [c["seq"] for c in client.get("/facts/changes").json()["changes"]]
     assert seqs == sorted(set(seqs)) and len(seqs) == 6 * 8 * 2
+
+
+def test_an_install_can_add_its_own_kits(monkeypatch, tmp_path):
+    from app import facts_store
+    src = sorted((facts_store.kits_dir()).glob("*.yaml"))[0]
+    import yaml
+    raw = yaml.safe_load(src.read_text(encoding="utf-8"))
+    raw["id"] = "my-local-kit"
+    extra = tmp_path / "local-kits"
+    extra.mkdir()
+    (extra / "my-local-kit.yaml").write_text(yaml.safe_dump(raw, allow_unicode=True), encoding="utf-8")
+    monkeypatch.setenv("STARTER_KITS_EXTRA_DIR", str(extra))
+    kits = facts_store.load_starter_kits()
+    assert "my-local-kit" in kits and src.stem in kits

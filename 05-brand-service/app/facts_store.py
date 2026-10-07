@@ -847,8 +847,12 @@ def load_starter_kits() -> dict[str, dict]:
     """Every kit, validated. A broken kit file is a packaging bug: it raises (500), never
     silently shows a partial rule set."""
     out = {}
-    folder = kits_dir()
-    for path in sorted(folder.glob("*.yaml")) if folder.is_dir() else []:
+    folders = [kits_dir()]
+    extra = os.environ.get("STARTER_KITS_EXTRA_DIR", "").strip()
+    if extra:
+        folders.append(Path(extra))      # an install's own kits (e.g. a mounted local folder), on top
+    paths = [p for folder in folders if folder.is_dir() for p in sorted(folder.glob("*.yaml"))]
+    for path in paths:
         raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         if not isinstance(raw, dict):
             raise ValueError(f"starter kit {path.name}: must be a yaml mapping")

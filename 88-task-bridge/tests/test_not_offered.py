@@ -54,18 +54,18 @@ def test_a_variant_that_does_not_exist_is_a_conflict():
 
 
 def test_a_product_not_carried_is_wrong_scope():
-    beer = [{"key": "p-heineken", "subject": {"kind": "product", "ref": "Heineken 33cl"}, "fact_type": "price", "value": 2080,
-             "status": "active", "sensitivity": "public", "scope": {}, "text": "Heineken 33cl: 2,080 birr per crate."}]
-    hit = extras.unknown_products("Our Castel 33cl crates are on sale at 1,450 birr per crate.", beer)
+    beer = [{"key": "p-brand-a", "subject": {"kind": "product", "ref": "Brand A 33cl"}, "fact_type": "price", "value": 2080,
+             "status": "active", "sensitivity": "public", "scope": {}, "text": "Brand A 33cl: 2,080 kora per crate."}]
+    hit = extras.unknown_products("Our Corvo 33cl crates are on sale at 1,450 kora per crate.", beer)
     assert hit and hit[0]["label"] == "wrong_scope"
-    assert not extras.unknown_products("Heineken 33cl is 2,080 birr per crate.", beer)
-    assert not extras.unknown_products("We don't carry Castel 33cl.", beer)
+    assert not extras.unknown_products("Brand A 33cl is 2,080 kora per crate.", beer)
+    assert not extras.unknown_products("We don't carry Corvo 33cl.", beer)
     assert not extras.unknown_products("Each 33cl crate holds 24.", beer)
-    assert not extras.unknown_products("Castel 33cl is popular.", FACTS)      # no sized products at all: no opinion
+    assert not extras.unknown_products("Corvo 33cl is popular.", FACTS)      # no sized products at all: no opinion
 
 
 def test_common_words_before_a_size_are_not_brands():
-    beer = [{"key": "p-heineken", "subject": {"kind": "product", "ref": "Heineken 33cl"}, "fact_type": "price", "value": 2080,
-             "status": "active", "sensitivity": "public", "scope": {}, "text": "Heineken 33cl: 2,080 birr per crate."}]
-    assert not extras.unknown_products("Other 33cl: Buckler 0.0% 1,535 / Sofi Malt 1,500 birr/crate.", beer)
+    beer = [{"key": "p-brand-a", "subject": {"kind": "product", "ref": "Brand A 33cl"}, "fact_type": "price", "value": 2080,
+             "status": "active", "sensitivity": "public", "scope": {}, "text": "Brand A 33cl: 2,080 kora per crate."}]
+    assert not extras.unknown_products("Other 33cl: Brand F 0.0% 1,535 / Maltex 1,500 kora/crate.", beer)
     assert not extras.unknown_products("Premium 33cl options for your bar.", beer)

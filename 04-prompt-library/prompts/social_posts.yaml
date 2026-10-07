@@ -81,9 +81,9 @@ template: |
   Use one of these hook styles where it fits the channel: {{ prefer_hooks }}
   {% endif %}
 example_vars:
-  topic: New single-origin Ethiopian roast, limited batch
+  topic: New single-origin Colombian roast, limited batch
   channels: x, linkedin, instagram
-  link: https://example.com/ethiopia
+  link: https://example.com/colombia
 schema:
   type: object
   required: [posts]

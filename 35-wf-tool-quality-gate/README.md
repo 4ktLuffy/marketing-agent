@@ -1,6 +1,6 @@
 # 35 · Quality gate
 
-Deploy **35 of 91** of the local-LLM marketing agent. This deploy is an n8n sub-workflow.
+Deploy **35 of 91** of the marketing agent. This deploy is an n8n sub-workflow.
 
 Checks a piece of copy against the brand rules (05), the platform limits (14), readability (13), the approved facts (claim checker, 44) and, when `REVIEWS_URL` is set, the proof bank (58): every quotation in double quotes must be a real testimonial with consent, word for word, or it is an error (the FTC rule on fake reviews and testimonials, 16 CFR Part 465). If there are errors (including claims the facts don't support), it asks the LLM for a minimal rewrite and checks everything again. What still fails goes back as `problems` for a human.
 

@@ -98,7 +98,7 @@ def readme(num, wf: Workflow, meta: dict) -> str:
             "scheduled workflow" if "schedule" in meta else
             "form workflow" if "form" in wf.name.lower() else "workflow")
     lines = [f"# {num} · {wf.name.split('· ')[-1]}", "",
-             f"Deploy **{num} of {TOTAL_DEPLOYS}** of the local-LLM marketing agent. This deploy is an n8n {kind}.", "",
+             f"Deploy **{num} of {TOTAL_DEPLOYS}** of the marketing agent. This deploy is an n8n {kind}.", "",
              meta["summary"], "",
              "## Where to deploy", "",
              "Import it into the **n8n** of `01-marketing-stack`. The stack's import script does it for you:",

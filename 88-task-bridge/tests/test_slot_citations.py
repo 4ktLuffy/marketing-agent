@@ -12,8 +12,8 @@ def fact(key, text, value_text=None, sensitivity="public"):
 
 
 SPA = fact("cave-spa", "The Cave Spa has a steam room and a sauna.")
-VIEWS = fact("views", "The lodge overlooks Lake Chamo and Lake Abaya from a cliff.")
-VOL = fact("vol", "Harar 33cl: 38,450 crates sold.", "38,450 crates", sensitivity="internal")
+VIEWS = fact("views", "The lodge overlooks Lake Lumo and Lake Ora from a cliff.")
+VOL = fact("vol", "Brand B 33cl: 38,450 crates sold.", "38,450 crates", sensitivity="internal")
 RATE = fact("rate", "Queen Room: $111 per room per night.", "$111 per room per night")
 SNAP = {f["key"]: f for f in (SPA, VIEWS, VOL, RATE)}
 
@@ -25,12 +25,12 @@ def run(text):
 def test_trailing_citations_are_removed_not_blocked():
     r = run("Relax in the Cave Spa with a steam room and sauna. [[cave-spa]]")
     assert r.text == "Relax in the Cave Spa with a steam room and sauna." and not r.findings and r.used == ["cave-spa"]
-    r = run("Harar 33cl is our best seller (July to September 2026 sales). [[cave-spa]] [[vol]]")
-    assert r.text == "Harar 33cl is our best seller (July to September 2026 sales)." and "38,450" not in r.text
+    r = run("Brand B 33cl is our best seller (July to September 2026 sales). [[cave-spa]] [[vol]]")
+    assert r.text == "Brand B 33cl is our best seller (July to September 2026 sales)." and "38,450" not in r.text
 
 
 def test_inline_citation_after_words_that_say_the_fact():
-    r = run("From a cliff the lodge overlooks Lake Chamo and Lake Abaya [[views]], so bring a camera.")
+    r = run("From a cliff the lodge overlooks Lake Lumo and Lake Ora [[views]], so bring a camera.")
     assert "[[views]]" not in r.text and not r.findings
 
 
@@ -47,8 +47,8 @@ def test_the_pack_form_copied_back_is_not_doubled():
 
 
 def test_citations_between_sentences_and_on_bullets():
-    r = run("Harar 33cl is our best seller (July to September 2026 sales). [[cave-spa]] [[vol]] Buckler is alcohol-free.")
-    assert r.text == "Harar 33cl is our best seller (July to September 2026 sales). Buckler is alcohol-free." and not r.findings
+    r = run("Brand B 33cl is our best seller (July to September 2026 sales). [[cave-spa]] [[vol]] Brand F is alcohol-free.")
+    assert r.text == "Brand B 33cl is our best seller (July to September 2026 sales). Brand F is alcohol-free." and not r.findings
     r = run("- Relax in the Cave Spa with steam room and sauna [[cave-spa]]\n- Lake views")
     assert "[[cave-spa]]" not in r.text and not r.findings
     assert run("- See all room types here: [[cave-spa]]").findings          # a label: the slot is the content

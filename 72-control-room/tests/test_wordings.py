@@ -9,7 +9,7 @@ from .test_tasks import TASKS, TID, blocked_md_task
 
 BRAND = URLS["BRAND_URL"]
 DRAFT = {"id": 5, "fact_key": "weekday-rate", "disclosure": "per room per night, 2 sharing",
-         "wording": "per room, two sharing", "status": "draft", "proposed_by": "Abebe Kebede", "task_id": TID,
+         "wording": "per room, two sharing", "status": "draft", "proposed_by": "Sam Parker", "task_id": TID,
          "created_at": "2026-09-30T08:15:00Z", "decided_by": None, "decided_at": None}
 FORM = {"piece_key": "p1", "finding": "1", "sha": "1" * 64, "note": "said as per room, two sharing"}
 
@@ -94,7 +94,7 @@ def test_facts_page_lists_draft_wordings_with_a_badge(facts, mock):
     assert 'data-wordings="1"' in h
     h = c.get("/facts?show=wordings").text
     assert "weekday-rate" in h and "per room per night, 2 sharing" in h and "per room, two sharing" in h
-    assert "Abebe Kebede" in h and f'href="/tasks/{TID}"' in h
+    assert "Sam Parker" in h and f'href="/tasks/{TID}"' in h
     assert 'action="/facts/wordings/5/confirm"' in h and 'action="/facts/wordings/5/dismiss"' in h
 
 
@@ -116,7 +116,7 @@ def test_owner_confirms_or_dismisses_with_owner_key(facts, mock, action):
     assert r.status_code == 303 and r.headers["location"] == f"/facts?show=wordings&done=wording:{action}ed"
     h = route.calls.last.request.headers
     assert h["x-owner-key"] == KEYS["FACT_OWNER_KEY"] and h["x-api-key"] == KEYS["INTERNAL_API_KEY"]
-    assert h["x-actor"] == "henos"
+    assert h["x-actor"] == "alex"
     assert c.post("/facts/wordings/5/approve", data={"csrf": token}).status_code == 404
 
 
@@ -144,7 +144,7 @@ def test_confirm_off_without_owner_key(monkeypatch, mock):
 def test_non_owner_sees_wordings_without_buttons(tmp_path, monkeypatch, mock):
     from app.users import hash_password
     f = tmp_path / "users.json"
-    f.write_text(json.dumps({"users": [{"name": "abebe", "display": "Abebe", "role": "approver",
+    f.write_text(json.dumps({"users": [{"name": "sam", "display": "Sam", "role": "approver",
                                         "pw_hash": hash_password("approver-pw-1")}]}))
     monkeypatch.setenv("CONTROL_USERS_FILE", str(f))
     from app.main import create_app
@@ -153,7 +153,7 @@ def test_non_owner_sees_wordings_without_buttons(tmp_path, monkeypatch, mock):
     mock.get(f"{BRAND}/disclosure-wordings").respond(json={"wordings": [DRAFT]})
     route = mock.post(f"{BRAND}/disclosure-wordings/5/confirm").respond(json={})
     with TestClient(create_app(), follow_redirects=False) as c:
-        assert login(c, password="approver-pw-1", user="abebe").status_code == 303
+        assert login(c, password="approver-pw-1", user="sam").status_code == 303
         token = csrf_of(c.get("/more").text)
         h = c.get("/facts?show=wordings").text
         assert "per room, two sharing" in h and "/facts/wordings/5/confirm" not in h

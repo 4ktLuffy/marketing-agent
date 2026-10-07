@@ -214,8 +214,11 @@ services:
       # control room hold it), so no AI-driven caller can turn a draft into a fact.
       FACTS_DB: /data/facts.sqlite
       FACT_OWNER_KEY: ${FACT_OWNER_KEY:?set FACT_OWNER_KEY in .env}
+      # Your own starter kits (local/starter-kits/*.yaml), offered next to the built-in ones.
+      STARTER_KITS_EXTRA_DIR: /local/starter-kits
     # A client of several (install.sh --client) gets its own copy in clients/<slug>/brand.
-    volumes: ["${BRAND_CONFIG_DIR:-../05-brand-service/config}:/config:ro", "brand_data:/data"]
+    volumes: ["${BRAND_CONFIG_DIR:-../05-brand-service/config}:/config:ro", "brand_data:/data",
+              "${LOCAL_ADDONS_DIR:-./local}:/local:ro"]
 
   knowledge-base:
     <<: *service
@@ -860,11 +863,12 @@ services:
       MODEL_CHECK: ${TASKS_MODEL_CHECK:-off}
       CLAIMS_URL: ${TASKS_CLAIMS_URL:-}
       PACK_MAX_CHARS: ${TASKS_PACK_MAX_CHARS:-8000}
-      # Ethiopian calendar, holidays and the 24-hour clock rule in packs and GET /occasions: "ethiopia" or empty.
-      OCCASIONS: ${TASKS_OCCASIONS:-}
+      # Your market's own add-ons (currency words, towns, local wording, a holiday calendar plugin), read
+      # from the local folder mounted at /local. See local.example/README.md. Empty folder = none.
+      LOCAL_DIR: /local
       # Content drift audit (POST /audit): web pages and text PDFs are read through the page extractor (07).
       EXTRACTOR_URL: http://page-extractor:8000
-    volumes: [task_data:/data]
+    volumes: [task_data:/data, "${LOCAL_ADDONS_DIR:-./local}:/local:ro"]
 
   # Approval service (90): applies the control room's decisions (approve / edit / reject / back to
   # draft) to the calendar without n8n. Besides n8n it is the only service holding APPROVER_KEY;

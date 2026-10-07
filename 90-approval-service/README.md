@@ -1,6 +1,6 @@
 # approval-service
 
-Deploy **90 of 91** of the local-LLM marketing agent. It applies the approver's decisions from the
+Deploy **90 of 91** of the marketing agent. It applies the approver's decisions from the
 control room (72) to the content calendar (19) **without n8n**. It needs no model and no database.
 
 Until now every approval from the control room went through n8n: 72 posted the decisions to the

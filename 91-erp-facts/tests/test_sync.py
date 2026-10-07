@@ -11,7 +11,7 @@ def sync(client, q=""):
 
 def test_health_open_and_lists_mappings(client):
     r = client.get("/health", headers={"X-API-Key": ""})
-    assert r.status_code == 200 and r.json()["mappings"] == ["beer-crates", "hotel-rooms"]
+    assert r.status_code == 200 and r.json()["mappings"] == ["drink-crates", "service-plans"]
     assert r.json()["erp_configured"] is True
 
 
@@ -39,33 +39,32 @@ def test_drift_detects_changed_price_and_reports_write_date(client, b05):
     assert r.status_code == 200
     d = r.json()
     ch = {c["key"]: c for c in d["changed"]}
-    assert ch["rate-deluxe-lake-rack-single"] == {"key": "rate-deluxe-lake-rack-single", "served_value": 150,
+    assert ch["price-starter-plan-list"] == {"key": "price-starter-plan-list", "served_value": 150,
                                                   "erp_value": 180, "erp_write_date": "2026-09-30 08:00:00"}
-    assert d["unchanged"] == 1  # Harer matches 05
+    assert d["unchanged"] == 1  # Cola matches 05
     assert b05.writes == []
 
 
 def test_new_facts_for_both_examples(client):
     d = client.get("/drift").json()
     keys = {n["key"] for n in d["new"]}
-    assert {"rate-deluxe-lake-rack-double", "rate-deluxe-lake-tour-single", "rate-deluxe-lake-tour-double",
-            "rate-standard-garden-rack-double", "price-st-george-24x33cl-crate"} <= keys
-    assert "price-harer-33cl-crate" not in keys  # unchanged
+    assert {"price-starter-plan-cost", "price-trial-plan-list", "price-lemonade-24x33cl-crate"} <= keys
+    assert "price-cola-33cl-crate" not in keys  # unchanged
 
 
 def test_placeholder_and_missing_prices_skipped_and_reported(client):
     d = client.get("/drift").json()
     sk = [(s["record"], s["reason"]) for s in d["skipped"]]
-    assert any("Walia" in r and "placeholder" in v for r, v in sk)
-    assert any("Standard Garden" in r and "placeholder" in v for r, v in sk)  # rack single = 1
-    assert any("Standard Garden" in r and "no value" in v for r, v in sk)      # tour single = False
-    assert any("Standard Garden" in r and "<= 1" in v for r, v in sk)          # tour double = 0
+    assert any("Tonic" in r and "placeholder" in v for r, v in sk)
+    assert any("Basic Plan" in r and "placeholder" in v for r, v in sk)  # list price = 1
+    assert any("Basic Plan" in r and "no value" in v for r, v in sk)      # cost = False
+    assert any("Trial Plan" in r and "<= 1" in v for r, v in sk)          # cost = 0
     keys = {n["key"] for n in d["new"]}
-    assert "price-walia-20x50cl-crate" not in keys
-    assert "rate-standard-garden-rack-single" not in keys
-    assert "rate-standard-garden-rack-double" in keys
-    # other companies, not-for-sale and non-rooms are filtered by the domain, never read
-    assert not any("Other company" in r or "Conference" in r or "Not for sale" in r for r, _ in sk)
+    assert "price-tonic-20x50cl-crate" not in keys
+    assert "price-basic-plan-list" not in keys
+    assert "price-trial-plan-list" in keys
+    # other companies, not-for-sale and non-services are filtered by the domain, never read
+    assert not any("Other company" in r or "Hardware" in r or "Not for sale" in r for r, _ in sk)
 
 
 def test_real_run_posts_new_drafts_and_puts_changed_only(client, b05):
@@ -75,23 +74,23 @@ def test_real_run_posts_new_drafts_and_puts_changed_only(client, b05):
     assert {m for m, _, _ in b05.writes} == {"POST", "PUT"}
     assert b05.bad == []  # no import, confirm, retire, owner key
     put = [w for w in b05.writes if w[0] == "PUT"][0]
-    assert put[1] == "/facts/v2/rate-deluxe-lake-rack-single"
+    assert put[1] == "/facts/v2/price-starter-plan-list"
     body = put[2]
-    assert body["value"] == 180 and body["currency"] == "USD"
+    assert body["value"] == 180 and body["currency"] == "GBP"
     assert body["source"] == {"kind": "doc", "ref": "Odoo product.template #10 write_date 2026-09-30 08:00:00"}
     assert "status" not in body  # never claims active
-    assert body["scope"]["sites"] == ["Lakeside Lodge"] and body["sensitivity"] == "public"
+    assert body["scope"]["sites"] == ["Example Services Ltd"] and body["sensitivity"] == "public"
 
 
 def test_bodies_match_examples(client, b05):
     sync(client, "dry_run=false")
     by = {b["key"]: b for m, _, b in b05.writes}
-    tour = by["rate-deluxe-lake-tour-single"]
-    assert tour["sensitivity"] == "internal" and tour["value"] == 120
-    crate = by["price-st-george-24x33cl-crate"]
-    assert crate["currency"] == "ETB" and crate["unit"] == "crate" and crate["basis"] == "per_unit"
+    cost = by["price-starter-plan-cost"]
+    assert cost["sensitivity"] == "internal" and cost["value"] == 120
+    crate = by["price-lemonade-24x33cl-crate"]
+    assert crate["currency"] == "GBP" and crate["unit"] == "crate" and crate["basis"] == "per_unit"
     assert "24 bottles of 33cl" in crate["text"]
-    assert "price-walia-20x50cl-crate" not in by
+    assert "price-tonic-20x50cl-crate" not in by
     # the facts validate against 05's real model when it is importable
     try:
         import sys
@@ -102,33 +101,33 @@ def test_bodies_match_examples(client, b05):
 
 
 def test_pending_draft_not_rewritten(client, b05):
-    b05.facts["rate-deluxe-lake-rack-single"] = fact05("rate-deluxe-lake-rack-single", 150, "USD", latest=2)
-    b05.versions["rate-deluxe-lake-rack-single"] = [
-        {"version": 1, "data": {"value": 150, "currency": "USD"}},
-        {"version": 2, "data": {"value": 180, "currency": "USD"}}]
+    b05.facts["price-starter-plan-list"] = fact05("price-starter-plan-list", 150, "GBP", latest=2)
+    b05.versions["price-starter-plan-list"] = [
+        {"version": 1, "data": {"value": 150, "currency": "GBP"}},
+        {"version": 2, "data": {"value": 180, "currency": "GBP"}}]
     d = sync(client, "dry_run=false")
-    assert "rate-deluxe-lake-rack-single" in d["pending"]
+    assert "price-starter-plan-list" in d["pending"]
     assert not [w for w in b05.writes if w[0] == "PUT"]
 
 
 def test_retired_fact_is_skipped_not_revived(client, b05):
-    b05.facts["price-harer-33cl-crate"] = fact05("price-harer-33cl-crate", 999, "ETB", status="retired")
+    b05.facts["price-cola-33cl-crate"] = fact05("price-cola-33cl-crate", 9.99, "GBP", status="retired")
     d = sync(client, "dry_run=false")
     assert any("retired" in s["reason"] for s in d["skipped"])
-    assert all(w[2]["key"] != "price-harer-33cl-crate" for w in b05.writes)
+    assert all(w[2]["key"] != "price-cola-33cl-crate" for w in b05.writes)
 
 
 def test_erp_price_change_shows_as_drift(client, odoo):
     for r in odoo.records["product.template"]:
         if r["id"] == 20:
-            r["list_price"] = 1350.0
+            r["list_price"] = 13.5
     ch = {c["key"]: c for c in client.get("/drift").json()["changed"]}
-    assert ch["price-harer-33cl-crate"]["served_value"] == 1200 and ch["price-harer-33cl-crate"]["erp_value"] == 1350
+    assert ch["price-cola-33cl-crate"]["served_value"] == 12 and ch["price-cola-33cl-crate"]["erp_value"] == 13.5
 
 
 def test_single_mapping_only(client, odoo):
-    d = sync(client, "mapping=beer-crates")
-    assert d["mappings"] == ["beer-crates"] and all("price-" in n["key"] for n in d["new"])
+    d = sync(client, "mapping=drink-crates")
+    assert d["mappings"] == ["drink-crates"] and all("price-" in n["key"] for n in d["new"])
     assert all(c["model"] == "product.template" for c in odoo.calls if c["method"] == "search_read")
 
 
@@ -145,5 +144,5 @@ def test_brand_down_is_502_and_erp_missing_creds_503(client, b05, odoo):
 
 def test_05_write_rejection_reported_in_errors(client, b05):
     b05.post_status = 409
-    d = client.post("/sync?mapping=beer-crates&dry_run=false").json()
+    d = client.post("/sync?mapping=drink-crates&dry_run=false").json()
     assert d["errors"] and d["written"]["created"] == 0

@@ -1,6 +1,6 @@
 # 60 · Review replies
 
-Deploy **60 of 91** of the local-LLM marketing agent. This deploy is an n8n scheduled workflow.
+Deploy **60 of 91** of the marketing agent. This deploy is an n8n scheduled workflow.
 
 Every morning it drafts replies to new customer reviews. It takes the reviews with status `new` from the review hub (58), at most `REVIEW_REPLIES_PER_RUN` per run, oldest first, and one at a time: gets the reply context (58), writes a reply with the `review_reply` prompt through the gateway (03, with the approved facts), and saves it to the content calendar (19) as channel `review_reply`, titled `Reply to <source> review #<id> (<rating>★)`. The body is the reply, a line `---`, and the original review quoted. A review that mentions health, safety or legal action (decided in code by 58, or by the model's `needs_human`) is saved as a `draft` with the note `needs a person: <why>`, and a member of the team handles it. Every other reply goes through the quality gate (35, report only): with no problems it goes to the approval form as `in_review`, otherwise it stays a `draft` with the problems in its notes. Then the review is marked `drafted` in 58, so the next run skips it (a review that already has a reply draft in the calendar is never drafted twice).
 

@@ -1,6 +1,8 @@
-# Local-LLM marketing agent: start here
+# Marketing agent: start here
 
-A marketing agent that runs on **your own model (Ollama)**, is orchestrated by **n8n**, and
+A marketing agent that works **on top of any AI**: a free or paid chatbot (ChatGPT, Claude, Gemini)
+through copy-paste task packs, Claude through its connector, a hosted model, or your own local model
+(Ollama). It is orchestrated by **n8n**, checks every draft against your approved facts, and
 works two ways:
 
 - **You chat with it** in n8n's chat: "write an X + LinkedIn post about our decaf",

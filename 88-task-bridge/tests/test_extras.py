@@ -83,12 +83,12 @@ def test_more_invented_extras_block(text):
 
 
 def test_alcohol_free_does_not_support_free_offers():
-    facts = FACTS + [fact("buckler", "Buckler 0.0% is an alcohol-free beer.")]
+    facts = FACTS + [fact("brand-f", "Brand F 0.0% is an alcohol-free beer.")]
     assert blocked("Order 10 crates and get 1 crate free.", facts)
 
 
 @pytest.mark.parametrize("text", [
-    "Serving Arba Minch since 1998.",
+    "Serving Riverton since 1998.",
     "Our crates are cheaper than any supermarket.",
     "We'll beat any other distributor's price.",
     "The largest beer distributor in the south.",
@@ -119,7 +119,7 @@ def test_claim_negatives(text):
     "Our order line answers until midnight every night.",
     "Every hotel account has a named account manager.",
     "There is a photography hide by the lake.",
-    "It is the only lodge in southern Ethiopia with Tukul rooms.",
+    "It is the only lodge in southern Portugal with Cabin rooms.",
 ])
 def test_framed_extras_block(text):
     assert blocked(text), text
@@ -152,7 +152,7 @@ def test_framed_extra_backed_by_a_fact_passes():
     "Our merchandiser visits weekly to arrange your shelves.",
     "We lend chilled storage tubs for your wedding day.",
     "Our team trains your shop staff on stock rotation.",
-    "A sunrise canoe paddle on Lake Chamo is arranged privately for newlyweds.",
+    "A sunrise canoe paddle on Lake Lumo is arranged privately for newlyweds.",
     "Guided night walks with a naturalist are offered after dinner.",
 ])
 def test_service_promises_block(text):

@@ -36,7 +36,7 @@ def test_decisions_go_to_the_approval_service(approval_client, approval_app, moc
     flush(c, approval_app)
     assert svc.call_count == 1 and not hook.called
     req = svc.calls.last.request
-    assert json.loads(req.content) == {"reviewer": "henos", "decisions": [{"id": 7, "decision": "approve"}]}
+    assert json.loads(req.content) == {"reviewer": "alex", "decisions": [{"id": 7, "decision": "approve"}]}
     assert req.headers["X-Control-Key"] == KEYS["CONTROL_ROOM_KEY"]
     assert "X-API-Key" not in req.headers and "X-Approver-Key" not in req.headers
     assert "#7: approved for 2026-10-01 09:00 UTC" in c.get("/results").text

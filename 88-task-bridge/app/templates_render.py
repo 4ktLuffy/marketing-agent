@@ -287,7 +287,7 @@ def render(template: str, channel: str, facts: list[dict], day, scope: dict, kit
         return {"text": full, "parts": [full], "facts_used": used_all, "chars": len(full), "notes": notes}
 
     if canon == "sms":
-        # a compact single message: "Prices per crate: Heineken 33cl: 2,080 birr; ..." as many lines as fit
+        # a compact single message: "Prices per crate: Brand A 33cl: 2,080 kora; ..." as many lines as fit
         compact_rows = [r[1][len(bullet):] for r in rows]
         lead = (header + " ") if header else ""
         tail = ("\n" + "\n".join(kit)) if kit else ""

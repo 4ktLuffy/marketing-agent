@@ -16,13 +16,13 @@
 - id: social_posts_channels_and_limits
   prompt: social_posts
   vars:
-    topic: New limited Ethiopian single-origin roast
+    topic: New limited Colombian single-origin roast
     channels: x, linkedin, instagram
-    link: https://example.com/ethiopia
+    link: https://example.com/colombia
   checks:
     - {type: channels_match, path: "posts[*].channel", var: channels}
     - {type: platform_ok, path: "posts[*]"}
-    - {type: contains, path: "posts[*].text", value: "https://example.com/ethiopia"}
+    - {type: contains, path: "posts[*].text", value: "https://example.com/colombia"}
     - {type: brand_ok, path: "posts[*].text"}
 
 - id: social_posts_no_invented_stats

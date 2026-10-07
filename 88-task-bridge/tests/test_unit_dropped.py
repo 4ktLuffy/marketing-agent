@@ -1,4 +1,4 @@
-"""real-7: the odd line out in a price list drops the unit its neighbours say ("Walia 33cl is 1,300 birr.")."""
+"""real-7: the odd line out in a price list drops the unit its neighbours say ("Brand C 33cl is 1,300 kora.")."""
 from datetime import date
 
 from app import evidence as E
@@ -7,13 +7,13 @@ DAY = date(2026, 10, 12)
 
 
 def price(key, ref, n):
-    return {"key": key, "subject": {"kind": "product", "ref": ref}, "fact_type": "price", "value": n, "currency": "ETB",
-            "unit": "crate", "basis": "per_unit", "value_text": f"{n:,} birr per crate", "status": "active",
+    return {"key": key, "subject": {"kind": "product", "ref": ref}, "fact_type": "price", "value": n, "currency": "XKR",
+            "unit": "crate", "basis": "per_unit", "value_text": f"{n:,} kora per crate", "status": "active",
             "sensitivity": "public", "required_disclosures": ["per crate"], "valid_from": "2026-08-17",
-            "text": f"{ref}: {n:,} birr per crate.", "scope": {}}
+            "text": f"{ref}: {n:,} kora per crate.", "scope": {}}
 
 
-FACTS = [price("p-heineken", "Heineken 33cl", 2080), price("p-walia", "Walia 33cl", 1300), price("p-harar", "Harar 50cl", 1590)]
+FACTS = [price("p-brand-a", "Brand A 33cl", 2080), price("p-brand-c", "Brand C 33cl", 1300), price("p-brand-b", "Brand B 50cl", 1590)]
 
 
 def missing(text):
@@ -22,21 +22,21 @@ def missing(text):
 
 
 def test_odd_line_out_is_flagged():
-    assert missing("Heineken 33cl is 2,080 birr per crate.\nWalia 33cl is 1,300 birr.\nHarar 50cl is 1,590 birr per crate.") == ["p-walia"]
+    assert missing("Brand A 33cl is 2,080 kora per crate.\nBrand C 33cl is 1,300 kora.\nBrand B 50cl is 1,590 kora per crate.") == ["p-brand-c"]
 
 
 def test_unit_said_another_way_passes():
-    assert missing("Heineken 33cl is 2,080 birr per crate.\nWalia 33cl is 1,300 birr/crate.") == []
-    assert missing("Heineken 33cl is 2,080 birr per crate.\nA crate of Walia 33cl is 1,300 birr.") == []
+    assert missing("Brand A 33cl is 2,080 kora per crate.\nBrand C 33cl is 1,300 kora/crate.") == []
+    assert missing("Brand A 33cl is 2,080 kora per crate.\nA crate of Brand C 33cl is 1,300 kora.") == []
 
 
 def test_a_general_line_covers_every_price():
-    assert missing("All prices are per crate.\nHeineken 33cl is 2,080 birr per crate.\nWalia 33cl is 1,300 birr.") == []
+    assert missing("All prices are per crate.\nBrand A 33cl is 2,080 kora per crate.\nBrand C 33cl is 1,300 kora.") == []
 
 
 def test_no_other_line_says_it_leaves_the_piece_rule():
     # nobody says "per crate" on a price line: the piece-wide rule decides (and flags both)
-    assert missing("Heineken 33cl is 2,080 birr.\nWalia 33cl is 1,300 birr.") == ["p-heineken", "p-walia"]
+    assert missing("Brand A 33cl is 2,080 kora.\nBrand C 33cl is 1,300 kora.") == ["p-brand-a", "p-brand-c"]
 
 
 def room(key, ref, n):
@@ -75,9 +75,9 @@ def test_room_lists_as_chatbots_write_them():
 
 
 def test_slash_unit_counts_as_the_disclosure():
-    sms = "Heineken 33cl 2,080 birr/crate. Harar 50cl 1,590 birr/crate. Walia 33cl 1,300 birr."
-    assert missing(sms) == ["p-walia"]
-    assert missing("Heineken 33cl 2,080 birr/crate. Harar 50cl 1,590 birr/crate.") == []
+    sms = "Brand A 33cl 2,080 kora/crate. Brand B 50cl 1,590 kora/crate. Brand C 33cl 1,300 kora."
+    assert missing(sms) == ["p-brand-c"]
+    assert missing("Brand A 33cl 2,080 kora/crate. Brand B 50cl 1,590 kora/crate.") == []
 
 
 def test_breakfast_promised_for_every_room():
@@ -92,9 +92,9 @@ def test_breakfast_promised_for_every_room():
 
 def test_slash_separated_items_keep_their_own_prices():
     def crate(key, ref, n):
-        return {"key": key, "subject": {"kind": "product", "ref": ref}, "fact_type": "price", "value": n, "currency": "ETB",
-                "unit": "crate", "value_text": f"{n:,} birr per crate", "status": "active", "sensitivity": "public",
-                "text": f"{ref}: {n:,} birr per crate.", "scope": {}}
-    facts = [crate("b", "Buckler 0.0% 33cl", 1535), crate("s", "Sofi Malt 33cl", 1500)]
-    fs, _ = E.check_text("Buckler 0.0% 33cl 1,535 / Sofi Malt 1,500 birr/crate.", facts, DAY, {})
+        return {"key": key, "subject": {"kind": "product", "ref": ref}, "fact_type": "price", "value": n, "currency": "XKR",
+                "unit": "crate", "value_text": f"{n:,} kora per crate", "status": "active", "sensitivity": "public",
+                "text": f"{ref}: {n:,} kora per crate.", "scope": {}}
+    facts = [crate("b", "Brand F 0.0% 33cl", 1535), crate("s", "Maltex 33cl", 1500)]
+    fs, _ = E.check_text("Brand F 0.0% 33cl 1,535 / Maltex 1,500 kora/crate.", facts, DAY, {})
     assert not [f for f in fs if f["label"] == "conflict_or_expired"], fs

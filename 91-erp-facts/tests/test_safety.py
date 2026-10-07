@@ -81,10 +81,9 @@ def test_personal_looking_fields_refused():
 
 
 def test_only_listed_fields_are_read(client, odoo):
-    client.post("/sync?mapping=hotel-rooms&dry_run=true")
+    client.post("/sync?mapping=service-plans&dry_run=true")
     reads = [c for c in odoo.calls if c["method"] == "search_read"]
-    allowed = {"name", "hotel_rack_rate_single", "hotel_rack_rate_double", "hotel_tour_rate_single",
-               "hotel_tour_rate_double", "hotel_rate_currency_id", "x_room_view_type", "hotel_id", "write_date"}
+    allowed = {"name", "default_code", "list_price", "standard_price", "currency_id", "company_id", "write_date"}
     assert reads and all(set(c["fields"]) == allowed for c in reads)
     assert "partner_id" not in allowed
 

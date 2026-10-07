@@ -70,15 +70,15 @@ def test_origin_is_validated():
 
 def test_body_patch_writes_a_new_version_and_audit_row():
     item = create()
-    r = client.patch(f"/items/{item['id']}", headers={**AUTH, "X-Actor": "Henos"},
+    r = client.patch(f"/items/{item['id']}", headers={**AUTH, "X-Actor": "Alex"},
                      json={"body": "We launched v2."})
     assert r.status_code == 200 and r.json()["version"] == 2
     assert r.json()["body_sha256"] == h("We launched v2.")
     vs = versions(item["id"])
-    assert [v["n"] for v in vs] == [1, 2] and vs[1]["created_by"] == "Henos"
+    assert [v["n"] for v in vs] == [1, 2] and vs[1]["created_by"] == "Alex"
     assert vs[0]["body"] == "We launched." and vs[1]["body"] == "We launched v2."
     last = audit(item["id"])[-1]
-    assert last["action"] == "edit" and last["actor"] == "Henos" and "body" in last["detail"]
+    assert last["action"] == "edit" and last["actor"] == "Alex" and "body" in last["detail"]
 
 
 def test_media_patch_is_a_new_version_but_a_reschedule_is_only_audited():
@@ -127,12 +127,12 @@ def test_status_change_without_note_is_audited_with_actor_from_note_or_header():
     item = create(status="in_review")
     assert move(item["id"], "draft").status_code == 200                      # no note
     assert move(item["id"], "in_review", note="ready by Aster").status_code == 200
-    assert status(item["id"], "approved", headers={**AUTH, "X-Actor": "Henos"}).status_code == 200
+    assert status(item["id"], "approved", headers={**AUTH, "X-Actor": "Alex"}).status_code == 200
     rows = audit(item["id"])[1:]
     assert [(a["action"], a["from_status"], a["to_status"], a["actor"]) for a in rows] == [
         ("status", "in_review", "draft", "unknown"),
         ("status", "draft", "in_review", "Aster"),
-        ("status", "in_review", "approved", "Henos"),
+        ("status", "in_review", "approved", "Alex"),
     ]
     assert rows[0]["detail"] is None and "ready by Aster" in rows[1]["detail"]
     assert all(a["body_sha256"] == item["body_sha256"] for a in rows)

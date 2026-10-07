@@ -24,7 +24,7 @@ def test_approve_waits_for_undo_window_then_posts_once(authed, app, mock):
     flush(c, app)
     assert hook.call_count == 1
     req = hook.calls.last.request
-    assert json.loads(req.content) == {"reviewer": "henos", "decisions": [{"id": 7, "decision": "approve"}]}
+    assert json.loads(req.content) == {"reviewer": "alex", "decisions": [{"id": 7, "decision": "approve"}]}
     assert req.headers["X-Control-Key"] == KEYS["CONTROL_ROOM_KEY"]
     assert "X-API-Key" not in req.headers and "X-Approver-Key" not in req.headers
     flush(c, app)

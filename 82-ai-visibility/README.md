@@ -1,6 +1,6 @@
 # ai-visibility
 
-Deploy **82 of 91** of the local-LLM marketing agent. It is a **GEO tracker**: when buyers ask
+Deploy **82 of 91** of the marketing agent. It is a **GEO tracker**: when buyers ask
 AI assistants about your category, does the answer **name** your brand, **cite** your site,
 put you **high in the list**, and say **true things** about you, compared with your competitors?
 

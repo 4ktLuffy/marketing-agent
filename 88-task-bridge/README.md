@@ -1,6 +1,6 @@
 # task-bridge
 
-Deploy **88 of 91** of the local-LLM marketing agent. It lets **any business use any chatbot**,
+Deploy **88 of 91** of the marketing agent. It lets **any business use any chatbot**,
 free plans included, and still only publish **facts it can stand behind**. It needs **no model**.
 
 - **A task pack for any chatbot.** `POST /tasks` (goal, pieces, scope, publish date) builds plain
@@ -39,10 +39,10 @@ free plans included, and still only publish **facts it can stand behind**. It ne
   phrase**, **missing disclosure**, or **review** (never blocks).
 - **Arithmetic in code.** Chatbots get sums wrong. `POST /quote` computes quantity × price (× nights)
   in exact decimals from public facts valid on the publish date, with their disclosures, and returns a
-  ready text block. In every check (`/check`, submit) a stated total ("20 crates ... 32,000 birr"), a
+  ready text block. In every check (`/check`, submit) a stated total ("20 crates ... £32,000"), a
   percentage change ("prices up 10%") or a saving ("was 2,000, now 1,700, save 500") is recomputed from
   the known price or the prices in the text: a wrong one is a blocking `conflict_or_expired` ("20 ×
-  1,700 birr = 34,000 birr, not 32,000"), a right one a `match` showing the sum. Text with no computation
+  £1,700 = £34,000, not £32,000"), a right one a `match` showing the sum. Text with no computation
   is never blocked.
 - **Approval bound to the exact text.** Each piece becomes a content-calendar (19) item with
   `origin=task-bridge` and `require_bound_approval`. A clean piece goes to review; a blocked

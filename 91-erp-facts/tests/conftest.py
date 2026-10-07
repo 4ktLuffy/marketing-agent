@@ -24,30 +24,30 @@ ODOO_KEY = "SENTINEL-ODOO-KEY-9f3a"
 ODOO_LOGIN = "SENTINEL-LOGIN@example.com"
 ODOO_DB = "SENTINEL-DB"
 
-HOTEL = [
-    {"id": 10, "name": "Deluxe Lake", "is_room_type": True, "hotel_rack_rate_single": 180.0,
-     "hotel_rack_rate_double": 220.0, "hotel_tour_rate_single": 120.0, "hotel_tour_rate_double": 150.0,
-     "hotel_rate_currency_id": [2, "USD"], "x_room_view_type": "Lake view", "hotel_id": [1, "Lakeside Lodge"],
+SERVICES = [
+    {"id": 10, "name": "Starter Plan", "type": "service", "default_code": "STR-01", "list_price": 180.0,
+     "standard_price": 120.0, "currency_id": [2, "GBP"], "company_id": [1, "Example Services Ltd"],
      "write_date": "2026-09-30 08:00:00", "partner_id": [99, "SENTINEL-PERSON"]},
-    {"id": 11, "name": "Standard Garden", "is_room_type": True, "hotel_rack_rate_single": 1.0,
-     "hotel_rack_rate_double": 100.0, "hotel_tour_rate_single": False, "hotel_tour_rate_double": 0.0,
-     "hotel_rate_currency_id": [2, "USD"], "x_room_view_type": "Garden", "hotel_id": [1, "Lakeside Lodge"],
+    {"id": 11, "name": "Basic Plan", "type": "service", "default_code": "BAS-01", "list_price": 1.0,
+     "standard_price": False, "currency_id": [2, "GBP"], "company_id": [1, "Example Services Ltd"],
      "write_date": "2026-09-29 08:00:00"},
-    {"id": 12, "name": "Conference Hall", "is_room_type": False, "hotel_rack_rate_single": 999.0,
-     "hotel_rack_rate_double": 999.0, "hotel_tour_rate_single": 999.0, "hotel_tour_rate_double": 999.0,
-     "hotel_rate_currency_id": [2, "USD"], "x_room_view_type": False, "hotel_id": [1, "Lakeside Lodge"],
+    {"id": 13, "name": "Trial Plan", "type": "service", "default_code": "TRI-01", "list_price": 100.0,
+     "standard_price": 0.0, "currency_id": [2, "GBP"], "company_id": [1, "Example Services Ltd"],
+     "write_date": "2026-09-29 08:00:00"},
+    {"id": 12, "name": "Hardware Kit", "type": "consu", "default_code": "HW-01", "list_price": 999.0,
+     "standard_price": 999.0, "currency_id": [2, "GBP"], "company_id": [1, "Example Services Ltd"],
      "write_date": "2026-09-29 08:00:00"},
 ]
-BEER = [
-    {"id": 20, "name": "Harer 33cl", "company_id": 3, "sale_ok": True, "list_price": 1200.0,
+DRINKS = [
+    {"id": 20, "name": "Cola 33cl", "company_id": 3, "sale_ok": True, "list_price": 12.0,
      "write_date": "2026-09-28 10:00:00"},
-    {"id": 21, "name": "St George 24x33cl", "company_id": 3, "sale_ok": True, "list_price": 2100.0,
+    {"id": 21, "name": "Lemonade 24x33cl", "company_id": 3, "sale_ok": True, "list_price": 21.0,
      "write_date": "2026-09-28 10:00:00"},
-    {"id": 22, "name": "Walia 20x50cl", "company_id": 3, "sale_ok": True, "list_price": 1.0,
+    {"id": 22, "name": "Tonic 20x50cl", "company_id": 3, "sale_ok": True, "list_price": 1.0,
      "write_date": "2026-09-28 10:00:00"},
-    {"id": 23, "name": "Other company beer", "company_id": 2, "sale_ok": True, "list_price": 500.0,
+    {"id": 23, "name": "Other company drink", "company_id": 2, "sale_ok": True, "list_price": 5.0,
      "write_date": "2026-09-28 10:00:00"},
-    {"id": 24, "name": "Not for sale", "company_id": 3, "sale_ok": False, "list_price": 500.0,
+    {"id": 24, "name": "Not for sale", "company_id": 3, "sale_ok": False, "list_price": 5.0,
      "write_date": "2026-09-28 10:00:00"},
 ]
 
@@ -69,7 +69,7 @@ class FakeOdoo:
 
     def reset(self):
         self.calls.clear()
-        self.records["product.template"] = copy.deepcopy(HOTEL + BEER)
+        self.records["product.template"] = copy.deepcopy(SERVICES + DRINKS)
 
     def _log(self, name, args):
         self.calls.append({"method": name})
@@ -116,8 +116,8 @@ def fact05(key, value, currency, status="active", version=1, latest=None, text="
 
 class Fake05:
     def __init__(self):
-        self.facts = {"rate-deluxe-lake-rack-single": fact05("rate-deluxe-lake-rack-single", 150, "USD"),
-                      "price-harer-33cl-crate": fact05("price-harer-33cl-crate", 1200, "ETB")}
+        self.facts = {"price-starter-plan-list": fact05("price-starter-plan-list", 150, "GBP"),
+                      "price-cola-33cl-crate": fact05("price-cola-33cl-crate", 12, "GBP")}
         self.writes: list[tuple[str, str, dict]] = []
         self.bad: list[str] = []
         self.versions: dict[str, list] = {}

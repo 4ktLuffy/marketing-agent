@@ -261,7 +261,7 @@ def clean_actor(value: str | None) -> str | None:
 
 
 def actor_of(x_actor: str | None, note: str | None = None) -> str:
-    """Who acted: the X-Actor header, else "by X" in the note (n8n writes "approved by Henos"),
+    """Who acted: the X-Actor header, else "by X" in the note (n8n writes "approved by Alex"),
     else "unknown"."""
     if clean_actor(x_actor):
         return clean_actor(x_actor)

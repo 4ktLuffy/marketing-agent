@@ -3,6 +3,8 @@ mocked fails the test). The fake 05 query is its own small implementation of con
 not the service's code, so a disagreement shows up as a failing test."""
 import hashlib
 import json
+import os
+from pathlib import Path
 from dataclasses import dataclass, field
 
 import httpx
@@ -10,7 +12,10 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from app.main import app
+# the suite's own local add-ons (an invented market): set before the app reads them
+os.environ.setdefault("LOCAL_DIR", str(Path(__file__).resolve().parent / "fixtures" / "local"))
+
+from app.main import app  # noqa: E402
 
 from . import data
 

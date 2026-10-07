@@ -1,22 +1,22 @@
 # Eval scoreboard (task bridge, zero model)
 
-Generated from `23-eval-suite/results/*.json` by `python -m evalsuite.scoreboard` (2026-10-01, refreshed after real-7). Every
+Generated from `23-eval-suite/results/*.json` by `python -m evalsuite.scoreboard` (2026-10-07). Every
 set was written by a separate agent that never read the checker code. **First seen** = the run before
 any fix used that set; **after fixes** = the current code (`final-*` runs). "Traps caught" counts expected
 findings (sentence + label + fact); "false alarms" are blocking findings on other sentences; "truthful
 blocked" are blocking findings on sentences marked must-not-flag.
 
-## Real businesses (facts read from the ERP, read-only; 2026-10-01)
+## Real businesses (facts read from an ERP, read-only; the data itself stays private)
 
-Each real set was held out twice: from the code before tonight (commit 52f0d74) and from tonight's code
+Each real set was held out twice: from the old code (commit 52f0d74) and from the new code
 at the moment it was first scored (the fixing agents never saw it).
 
-| Held-out real set | Before tonight (commit 52f0d74) | Tonight, first time the set was seen | False alarms / truthful blocked (before → tonight) |
+| Held-out real set | Old code (commit 52f0d74) | New code, first time the set was seen | False alarms / truthful blocked (old → new) |
 |---|---|---|---|
-| real-paradise (lodge, set 1) | 52/70 (74%) | 58/70 (83%) | 6/4 → 6/3 |
-| real-beer (distributor) | 35/62 (56%) | 47/62 (76%) | 1/1 → 1/2 |
-| real-paradise-2 (lodge, set 2) | 48/72 (67%) | 53/72 (74%) | 3/4 → 3/1 |
-| real-mixed-3 (both, Amharic lines) | 27/59 (46%) | 50/59 (85%) | 1/6 → 1/2 |
+| real-hotel-1 (hotel, set 1) | 52/70 (74%) | 58/70 (83%) | 6/4 → 6/3 |
+| real-drinks-1 (drinks distributor) | 35/62 (56%) | 47/62 (76%) | 1/1 → 1/2 |
+| real-hotel-2 (hotel, set 2) | 48/72 (67%) | 53/72 (74%) | 3/4 → 3/1 |
+| real-mixed-3 (both, local-language lines) | 27/59 (46%) | 50/59 (85%) | 1/6 → 1/2 |
 | real-4 (both) | 33/81 (41%) | 65/81 (80%) | 1/3 → 1/4 |
 | real-5 (both) | 44/90 (49%) | 68/90 (76%) | 1/12 → 1/11 |
 | real-6 (both, invented extras) | 48/103 (47%) | 84/103 (82%) | 0/0 → 0/0 |
@@ -27,7 +27,7 @@ at the moment it was first scored (the fixing agents never saw it).
 | **All 11 real sets** | **497/1226 (41%)** | **866/1226 (71%)** | **18/50 → 20/32** |
 
 **End to end with a real chatbot** (a separate model answering real packs from today's facts, plainly and
-nudged to "add perks"; pasted back and submitted): before tonight's fixes 16 of 16 pieces were blocked,
+nudged to "add perks"; pasted back and submitted): before the new fixes 16 of 16 pieces were blocked,
 mostly falsely (slots used as citations, the pack's own grouped room lines, correct totals). After: 2 of 16,
 both correct (the chatbot wrote [[missing: group rates]]). A manual read of the 14 passing pieces found one
 subtle slip ("delivers" where the facts say "supplies").
@@ -35,19 +35,19 @@ subtle slip ("delivers" where the facts say "supplies").
 **Small model as the chatbot** (Haiku; free chatbots are usually small): it invents far more. Two held-out
 rounds, labelled by hand before the checker ran:
 - Round A (first sight): 0 of 6 hard errors caught, 3 false blocks ("Other 33cl" read as a brand, "the best of
-  Arba Minch", "margins healthy"). After fixing on it: 5 of 5 (one label dropped as debatable), 0 false blocks.
+  <our town>", "margins healthy"). After fixing on it: 5 of 5 (one label dropped as debatable), 0 false blocks.
 - Round B (first sight, after round A's fixes): 2 of 3 hard errors (kit: health framing, missing under-21
   line; missed "designated drivers"), 0 of 7 medium (urgency, rivals, draught), 3 kinds of false block.
   After fixing on it: 3 of 3 hard, 6 of 7 medium, 1 debatable label.
 The pattern is clear: each new round of a small model finds new things, first sight is far below the
 after-fix number, and a person must approve every post.
 
-Notes: real-paradise's "tonight" column is after the first real-data fix round (the set had not been
-used for it). real-beer uses the confirmed Ethiopia alcohol starter kit (`--kits ethiopia-alcohol`);
-before tonight no such kit existed. Two real-beer expected labels look wrong (an expired price marked
+Notes: real-hotel-1's "new code" column is after the first real-data fix round (the set had not been
+used for it). real-drinks-1 uses a confirmed local alcohol-advertising starter kit (kept private);
+before, no such kit existed. Two real-drinks-1 expected labels look wrong (an expired price marked
 must-not-flag; "happy hour" marked must-not-flag while the kit forbids it) and are left as written.
 real-7's first-seen false alarms include 3 fixture omissions: subject lines with an unsourced claim
-("Win a trip with your first order", "The best birding lodge in Ethiopia", "The region's most trusted
+("Win a trip with your first order", "The best birding lodge in the country", "The region's most trusted
 retreat venue") that the fixture's own notes call traps but did not list. They are counted as false
 alarms anyway.
 
@@ -67,9 +67,9 @@ alarms anyway.
 | companies-v11 | commercial and domestic cleaning company (B2B focus), e-bike shop (sales and workshop), HR and payroll SaaS (Essentials / Growth / Scale), car garage and MOT centre (Canal Street + Ashby Road), children's party entertainer (sole trader) | 56/60 (93%) | 0 / 8 | 63/63 (100%) | 0 / 0 |
 | companies-v12 | community pharmacy (two branches), craft brewery with taproom and webshop, removals company (home and business moves), managed security provider (B2B, plan tiers), music school (group, one-to-one and parent & child lessons) | 47/65 (72%) | 1 / 8 | 67/69 (97%) | 0 / 0 |
 | companies-v13 | B2B bike courier, florist (2 shops), saas (B2B CRM), caravan and holiday park, children's swim school | 26/33 (79%) | 0 / 4 | 39/47 (83%) | 0 / 3 |
-| real-paradise | hospitality, hospitality, hospitality, hospitality, hospitality | 52/70 (74%) | 6 / 4 | 69/70 (99%) | 0 / 0 |
-| real-beer | beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B) | 47/62 (76%) | 1 / 2 | 58/62 (94%) | 0 / 2 |
-| real-paradise-2 | hospitality, hospitality, hospitality, hospitality, hospitality | 53/72 (74%) | 3 / 1 | 70/72 (97%) | 0 / 0 |
+| real-hotel-1 | hospitality, hospitality, hospitality, hospitality, hospitality | 52/70 (74%) | 6 / 4 | 69/70 (99%) | 0 / 0 |
+| real-drinks-1 | beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B) | 47/62 (76%) | 1 / 2 | 58/62 (94%) | 0 / 2 |
+| real-hotel-2 | hospitality, hospitality, hospitality, hospitality, hospitality | 53/72 (74%) | 3 / 1 | 70/72 (97%) | 0 / 0 |
 | real-mixed-3 | beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), hospitality, hospitality | 50/59 (85%) | 1 / 2 | 59/59 (100%) | 1 / 0 |
 | real-4 | beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), hospitality, hospitality | 65/81 (80%) | 1 / 4 | 80/81 (99%) | 1 / 0 |
 | real-5 | beverage distribution (B2B), beverage distribution (B2B), beverage distribution (B2B), hospitality, hospitality | 68/90 (76%) | 1 / 11 | 76/90 (84%) | 0 / 0 |

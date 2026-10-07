@@ -47,7 +47,7 @@ cases:
     group: uncovered
     say: "Which country is this month's single origin from?"
     expect: [handoff, answer]
-    must_not: ["ethiopia", "colombia", "kenya", "brazil", "guatemala"]
+    must_not: ["peru", "colombia", "kenya", "brazil", "guatemala"]
   - id: ho_pause_reword
     group: covered
     say: "Going on holiday for three weeks — can deliveries just stop while I'm away?"

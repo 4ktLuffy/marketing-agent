@@ -1,13 +1,13 @@
 """Owner-confirmed starter-kit rules applied to copy in /check (and so in every 88 submit).
 
 Forbidden phrasings are errors. A required disclosure is enforced only when its `when` text says
-when in a way we can test (a price, an offer, Amharic text, or "any … advertisement / post"); the
+when in a way we can test (a price, an offer, non-Latin script text, or "any … advertisement / post"); the
 rest are notes for people (e.g. "hold for human review") and are never demanded in the copy."""
 import re
 
-MONEY = re.compile(r"(?:[$£€]|\b(?:ETB|USD|EUR|GBP|birr|br)\b)\s?\d|\d[\d,.]*\s?(?:birr|ETB|USD|br)\b", re.I)
+MONEY = re.compile(r"(?:[$£€]|\b(?:USD|EUR|GBP)\b)\s?\d|\d[\d,.]*\s?(?:USD|EUR|GBP)\b", re.I)
 OFFER = re.compile(r"\b(?:package|offer|deal|discount|promotion|promo|% off|free)\b", re.I)
-ETHIOPIC = re.compile(r"[ሀ-፿]")
+NON_LATIN = re.compile("[\u0370-\u03ff\u0400-\u052f\u0590-\u06ff\u1200-\u137f]")  # Greek, Cyrillic, Hebrew/Arabic and other non-Latin scripts
 
 
 def applies(when: str | None, text: str) -> bool | None:
@@ -15,8 +15,8 @@ def applies(when: str | None, text: str) -> bool | None:
     w = (when or "").lower()
     if not w or "recommendation" in w or "owner must confirm" in w:
         return None
-    if "amharic" in w:
-        return bool(ETHIOPIC.search(text))
+    if "non-latin" in w:
+        return bool(NON_LATIN.search(text))
     if re.search(r"\b(?:rate|price|prices|rates)\b", w):
         return bool(MONEY.search(text))
     if re.search(r"\b(?:offer|package|promotion|deal)\b", w):

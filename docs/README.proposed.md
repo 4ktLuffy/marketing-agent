@@ -1,6 +1,6 @@
 <!-- Proposed replacement for the root README.md. Links are written relative to the repo root. -->
 
-# Local-LLM marketing agent
+# Marketing agent
 
 A marketing agent that runs on a 7B model on your own machine (Ollama, `qwen2.5:7b`),
 orchestrated by n8n. You chat with it, or it works on a schedule. It plans campaigns with

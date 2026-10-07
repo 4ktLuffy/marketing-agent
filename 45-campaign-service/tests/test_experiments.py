@@ -56,7 +56,7 @@ def create(**kw):
 
 
 def approve(eid):
-    r = client.post(f"/experiments/{eid}/status", json={"status": "approved", "by": "Henos"}, headers=APPROVE)
+    r = client.post(f"/experiments/{eid}/status", json={"status": "approved", "by": "Alex"}, headers=APPROVE)
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -106,7 +106,7 @@ def test_approval_needs_approver_key():
     r = client.post(f"/experiments/{e['id']}/status", json={"status": "approved"}, headers=AUTH)
     assert r.status_code == 403
     a = approve(e["id"])
-    assert a["status"] == "approved" and a["approved_by"] == "Henos" and a["approved_at"]
+    assert a["status"] == "approved" and a["approved_by"] == "Alex" and a["approved_at"]
 
 
 def test_transitions():

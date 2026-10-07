@@ -448,7 +448,7 @@ def build_server(cfg: Config) -> MCPServer:
         days: Annotated[int, Field(ge=1, le=366, description="How many days ahead")] = 45,
     ) -> dict[str, Any]:
         """Holidays, seasons and fasts near a publish date, with the local calendar date and notes for
-        marketers (e.g. alcohol brands may not sponsor holidays in Ethiopia). Use it before planning a
+        marketers (e.g. alcohol brands may not sponsor holidays in some countries). Use it before planning a
         campaign. Movable or unverified dates say so."""
         limiter.hit()
         params: dict[str, Any] = {"days": days}

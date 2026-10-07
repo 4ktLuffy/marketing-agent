@@ -1,0 +1,12 @@
+# Copy to local/words.yaml and edit. All sections optional.
+currency:                 # word -> ISO code; said after or before the amount ("1,700 kora", "kora 1,700")
+  kora: XKR
+currency_names:           # how an amount in that currency is written back
+  XKR: kora
+places:                   # towns of your market ("our shop in <town>" is checked against your facts)
+  - Riverton
+  - Hillview
+not_places:               # capitalised words never read as a town
+  - kora
+disclosure_words:         # local ways to say a disclosure (a regex and the disclosure it means)
+  - {pattern: '\bthe\s+crate\b', means: per crate}

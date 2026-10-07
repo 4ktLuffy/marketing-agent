@@ -59,7 +59,7 @@ def test_wrong_user_fails(client):
 def test_login_needs_the_login_csrf_cookie(client):
     token = csrf_of(client.get("/login").text)
     client.cookies.clear()
-    r = client.post("/login", data={"user": "henos", "password": PASSWORD, "csrf": token})
+    r = client.post("/login", data={"user": "alex", "password": PASSWORD, "csrf": token})
     assert r.status_code == 403
 
 
@@ -113,7 +113,7 @@ def test_new_session_on_login(client):
 
 def test_open_redirect_blocked(client):
     token = csrf_of(client.get("/login").text)
-    r = client.post("/login", data={"user": "henos", "password": PASSWORD, "csrf": token, "next": "//evil.test/x"})
+    r = client.post("/login", data={"user": "alex", "password": PASSWORD, "csrf": token, "next": "//evil.test/x"})
     assert r.headers["location"] == "/"
 
 

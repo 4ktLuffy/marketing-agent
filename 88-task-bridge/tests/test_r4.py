@@ -160,8 +160,8 @@ def test_hyphenated_identifier_negative_controls(text):
 # ---------- 4. a conformity mark that covers another product line
 
 MARKS = [
-    fact("mark-hinges", "Castellan SoftClose hinges are UKCA and CE marked. Bespoke cabinets are not marked.",
-         "UKCA and CE marked", subject={"kind": "product", "ref": "Castellan SoftClose hinges"},
+    fact("mark-hinges", "Corvolan SoftClose hinges are UKCA and CE marked. Bespoke cabinets are not marked.",
+         "UKCA and CE marked", subject={"kind": "product", "ref": "Corvolan SoftClose hinges"},
          fact_type="certification", attribute="conformity_marking", claim_class="safety_cert", variants=["hardware"]),
     fact("cabinet-lead", "Bespoke cabinets are made to order in 6 weeks.", "6 weeks",
          subject={"kind": "product", "ref": "Bespoke cabinets"}, fact_type="spec", value=6, unit="weeks",
@@ -171,7 +171,7 @@ CAB = {"variants": ["cabinets"]}
 
 
 @pytest.mark.parametrize("text", [
-    "Subject: UKCA-marked cabinets from Castellan",
+    "Subject: UKCA-marked cabinets from Corvolan",
     "Every cabinet we build is CE marked.",
 ])
 def test_mark_limited_to_another_line_is_wrong_scope(text):

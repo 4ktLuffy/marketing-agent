@@ -4,17 +4,17 @@ from app import pack
 from .conftest import make_task
 
 RULES = [
-    {"kind": "required_disclosure", "phrase": "Selling to persons under 21 is prohibited.", "why": "any alcohol advertisement or public post", "status": "active", "kit": "ethiopia-alcohol"},
-    {"kind": "required_disclosure", "phrase": "Draft only. Hold for human review; do not auto-publish.", "why": "any alcohol copy is drafted (recommendation, not a statutory text)", "status": "active", "kit": "ethiopia-alcohol"},
-    {"kind": "forbidden_phrase", "phrase": "official beer of", "why": "Art. 60(3)", "status": "active", "kit": "ethiopia-alcohol"},
-    {"kind": "forbidden_phrase", "phrase": "prize draw", "why": "Art. 60(5)", "status": "draft", "kit": "ethiopia-alcohol"},
+    {"kind": "required_disclosure", "phrase": "No sales to anyone under 21.", "why": "any alcohol advertisement or public post", "status": "active", "kit": "spirits-demo"},
+    {"kind": "required_disclosure", "phrase": "Draft only. Hold for human review; do not auto-publish.", "why": "any alcohol copy is drafted (recommendation, not a statutory text)", "status": "active", "kit": "spirits-demo"},
+    {"kind": "forbidden_phrase", "phrase": "official beer of", "why": "Rule 3", "status": "active", "kit": "spirits-demo"},
+    {"kind": "forbidden_phrase", "phrase": "prize draw", "why": "Rule 5", "status": "draft", "kit": "spirits-demo"},
 ]
 
 
 def test_lines_keep_rules_and_drop_notes_and_drafts():
     lines = pack.kit_rule_lines(RULES)
     text = "\n".join(lines)
-    assert "Selling to persons under 21 is prohibited." in text and '"official beer of"' in text
+    assert "No sales to anyone under 21." in text and '"official beer of"' in text
     assert "Hold for human review" not in text          # a procedural note, not copy
     assert "prize draw" not in text                     # still a draft rule
 

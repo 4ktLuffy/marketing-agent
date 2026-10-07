@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from . import facts as F
+from . import local as L
 
 
 @dataclass(frozen=True)
@@ -314,8 +315,9 @@ memories memory forward look looking help helps need needs want wants ready simp
 very really just like better place time times today tomorrow soon book booking contact call message order orders reply
 questions question details info information plan plans planning trip trips visit visiting stay staying wait reply
 email emails quote quotes quantities send list here's whatever thank thanks hold holds keep keeps
-sorry feedback honest thinking near approaches whole already dollars dollar birr decision simple different takes busy
+sorry feedback honest thinking near approaches whole already dollars dollar decision simple different takes busy
 season autumn summer winter spring week weeks year years month months""".split())
+FILLER = FILLER | frozenset(L.currency()) | frozenset(L.currency_names().values())
 CTA = _p(r"\b(?:reply|email|e-mail|call|ring|message|whatsapp|text|contact|dm)\b[^.!?\n]{0,60}\b(?:and|&)\s+(?:we'll|we\s+will|our)\b|"
          r"\b(?:glad|happy|delighted|love|pleased)\s+to\s+(?:receive|take|hear|welcome|help|see)\b")
 
@@ -414,11 +416,11 @@ others more extra premium value best both cold chilled fresh local small large b
 
 
 def unknown_products(text: str, facts: list[dict]) -> list[dict]:
-    """real-8/9: a brand + size the business has no fact for ("Castel 33cl", "Raya 33cl at 1,400 birr"), when
+    """real-8/9: a brand + size the business has no fact for ("Corvo 33cl", "Selva 33cl at 1,400 kora"), when
     the business does sell sized products (some fact names one). wrong_scope, no fact key."""
     known = " ".join(" ".join(str(x) for x in (F.subject_ref(f), f.get("text"), f.get("value_text")) if x)
                      for f in facts).lower()
-    if not PRODUCT_SIZE.search(" ".join(F.subject_ref(f) or "" for f in facts)):
+    if not re.search(r"\d{2,4}\s?(?:cl|ml|l|kg|g)\b", " ".join(F.subject_ref(f) or "" for f in facts), re.I):
         return []
     out = []
     for raw in SENT.split(text or ""):
@@ -428,7 +430,7 @@ def unknown_products(text: str, facts: list[dict]) -> list[dict]:
             if brand.lower() in _NOT_BRAND or re.search(r"(?<![a-z])" + re.escape(brand.lower()) + r"(?![a-z])", known):
                 continue
             if NEG.search(" ".join(s[:m.start()].split()[-4:])):
-                continue                 # "we don't carry Castel 33cl"
+                continue                 # "we don't carry Corvo 33cl"
             out.append({"sentence": s, "label": "wrong_scope", "fact_key": None, "quote": None, "blocking": True,
                         "detail": f"\"{m.group(0)}\": not a product in your facts — remove it, or add it as a fact if you sell it"})
             break

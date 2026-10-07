@@ -52,7 +52,7 @@ def calendar_items():
     return [
         item(1, title="Five brew tips", status="draft", created_at=ts(5), notes=None),
         item(2, title="How we roast our decaf", status="approved", created_at=ts(60 * 24 * 30),
-             notes=f"[{ts(60 * 24 * 30)}] draft -> in_review: gate ok\n[{ts(20)}] in_review -> approved: approved by henos"),
+             notes=f"[{ts(60 * 24 * 30)}] draft -> in_review: gate ok\n[{ts(20)}] in_review -> approved: approved by alex"),
         item(3, title="Old post", status="published", created_at=ts(60 * 24 * 40),
              notes=f"[{ts(60 * 24 * 40)}] approved -> published: x"),
     ]

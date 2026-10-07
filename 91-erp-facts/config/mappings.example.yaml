@@ -6,44 +6,34 @@
 # allow_models: []
 
 mappings:
-  # ---- Hotel: one product.template per room type, four rates per room ----
-  - name: hotel-rooms
+  # ---- Services: one product.template per plan, two prices per plan (list price public, cost internal) ----
+  - name: service-plans
     model: product.template
-    domain: [["is_room_type", "=", true]]
-    fields: [name, hotel_rack_rate_single, hotel_rack_rate_double, hotel_tour_rate_single, hotel_tour_rate_double,
-             hotel_rate_currency_id, x_room_view_type, hotel_id]
+    domain: [["type", "=", "service"]]
+    fields: [name, default_code, list_price, standard_price, currency_id, company_id]
     subject: {kind: product, ref_template: "{name}"}
     fact_type: price
-    attribute: rate
-    currency_field: hotel_rate_currency_id        # many2one to res.currency; its name is the ISO code
-    unit: night
-    basis: per_room
-    scope_fields: {sites: hotel_id}               # the hotel (many2one name) becomes the site scope
+    attribute: price
+    currency_field: currency_id                   # many2one to res.currency; its name is the ISO code
+    unit: month
+    basis: flat
+    scope_fields: {sites: company_id}             # the company (many2one name) becomes the site scope
     skip_if:                                      # 0 or 1 is a placeholder price, never a fact
       - {field: value, op: "<=", value: 1}
-    text_template: "{name} ({x_room_view_type}) costs {currency} {value_fmt} per room per night."
+    text_template: "{name} ({default_code}) costs {currency} {value_fmt} per month."
     outputs:
-      - key_template: "rate-{name|slug}-rack-single"
-        value_field: hotel_rack_rate_single
+      - key_template: "price-{name|slug}-list"
+        value_field: list_price
         sensitivity: public
-        conditions: [{key: occupancy, op: "=", value: single}]
-        required_disclosures: ["single occupancy"]
-      - key_template: "rate-{name|slug}-rack-double"
-        value_field: hotel_rack_rate_double
-        sensitivity: public
-        conditions: [{key: occupancy, op: "=", value: double}]
-        required_disclosures: ["double occupancy"]
-      - key_template: "rate-{name|slug}-tour-single"
-        value_field: hotel_tour_rate_single
-        sensitivity: internal                      # tour operator rates never leave as text
-        conditions: [{key: occupancy, op: "=", value: single}, {key: channel, op: "=", value: tour_operator}]
-      - key_template: "rate-{name|slug}-tour-double"
-        value_field: hotel_tour_rate_double
-        sensitivity: internal
-        conditions: [{key: occupancy, op: "=", value: double}, {key: channel, op: "=", value: tour_operator}]
+        conditions: [{key: channel, op: "=", value: retail}]
+        required_disclosures: ["excluding tax"]
+      - key_template: "price-{name|slug}-cost"
+        value_field: standard_price
+        sensitivity: internal                      # internal costs never leave as text
+        conditions: [{key: channel, op: "=", value: reseller}]
 
-  # ---- Beer distributor: price per crate in ETB; bottles per crate when the name says so ----
-  - name: beer-crates
+  # ---- Drinks distributor: price per crate in GBP; bottles per crate when the name says so ----
+  - name: drink-crates
     model: product.template
     domain: [["company_id", "=", 3], ["sale_ok", "=", true]]
     fields: [name, list_price]
@@ -52,13 +42,13 @@ mappings:
     attribute: price
     key_template: "price-{name|slug}-crate"
     value_field: list_price
-    currency: ETB
+    currency: GBP
     unit: crate
     basis: per_unit
     sensitivity: public
     skip_if:
       - {field: value, op: "<=", value: 1}
-    derive:                                        # "Harer 24x33cl" -> pack_count 24, volume_cl 33
+    derive:                                        # "Lemonade 24x33cl" -> pack_count 24, volume_cl 33
       - {from: name, regex: '(\d+)\s*x\s*(\d+)\s*cl', names: [pack_count, volume_cl]}
     text_variants:
       - requires: [pack_count, volume_cl]

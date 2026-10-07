@@ -1,6 +1,6 @@
 # llm-gateway
 
-Deploy **3 of 91** of the local-LLM marketing agent. Every LLM call the agent makes
+Deploy **3 of 91** of the marketing agent. Every LLM call the agent makes
 goes through this service. You call it with a **prompt name and variables**, and it
 returns **validated text or JSON**.
 

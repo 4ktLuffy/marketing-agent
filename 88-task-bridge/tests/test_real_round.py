@@ -172,7 +172,7 @@ def test_disclosure_equivalents_directly():
 @pytest.mark.parametrize("text", [
     "Book the Mango Loft Room for a weekend.",
     "Our Baobab Penthouse Suite has its own plunge pool.",
-    "Stay in the Tukul VIP Suite tonight.",
+    "Stay in the Cabin VIP Suite tonight.",
     "Guests love the Lagoon Terrace Room.",
 ])
 def test_invented_product_name_needs_a_source(text):

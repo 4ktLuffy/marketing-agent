@@ -11,15 +11,15 @@ from .data import fact
 DAY = date(2026, 11, 10)
 
 FACTS = [
-    fact("harar-room", "Harar Room: 1,700 birr per room per night.", "1,700 birr per room per night",
-         subject={"kind": "variant", "ref": "Harar Room"}, fact_type="price", attribute="rate", value=1700,
-         unit="night", currency="ETB", basis="per_room", valid_from="2026-09-01"),
-    fact("harar-room-old", "Harar Room: 1,600 birr per room per night.", "1,600 birr per room per night",
-         subject={"kind": "variant", "ref": "Harar Room"}, fact_type="price", attribute="rate", value=1600,
-         unit="night", currency="ETB", basis="per_room", valid_to="2026-08-31", status="expired"),
-    fact("coffee-crate", "A crate of Yirga coffee is 1,700 birr.", "1,700 birr per crate",
+    fact("brand-b-room", "Brand B Room: 1,700 kora per room per night.", "1,700 kora per room per night",
+         subject={"kind": "variant", "ref": "Brand B Room"}, fact_type="price", attribute="rate", value=1700,
+         unit="night", currency="XKR", basis="per_room", valid_from="2026-09-01"),
+    fact("brand-b-room-old", "Brand B Room: 1,600 kora per room per night.", "1,600 kora per room per night",
+         subject={"kind": "variant", "ref": "Brand B Room"}, fact_type="price", attribute="rate", value=1600,
+         unit="night", currency="XKR", basis="per_room", valid_to="2026-08-31", status="expired"),
+    fact("coffee-crate", "A crate of Yirga coffee is 1,700 kora.", "1,700 kora per crate",
          subject={"kind": "product", "ref": "Yirga coffee"}, fact_type="price", attribute="price", value=1700,
-         unit="crate", currency="ETB"),
+         unit="crate", currency="XKR"),
     fact("flight", "A tasting flight is $9.", "$9 per flight", subject={"kind": "service", "ref": "Tasting flight"},
          fact_type="price", value=9, unit="flight", currency="USD"),
     fact("city-tour", "City tour: $75 per guest.", "$75 per person", subject={"kind": "service", "ref": "City tour"},
@@ -33,10 +33,10 @@ def run(text, facts=FACTS):
 
 
 @pytest.mark.parametrize("text, detail", [
-    ("20 crates of Yirga coffee cost 32,000 birr.", "20 × 1,700 birr = 34,000 birr, not 32,000"),
-    ("Order 20 crates of Yirga coffee = 32,000 birr.", "34,000 birr, not 32,000"),
+    ("20 crates of Yirga coffee cost 32,000 kora.", "20 × 1,700 kora = 34,000 kora, not 32,000"),
+    ("Order 20 crates of Yirga coffee = 32,000 kora.", "34,000 kora, not 32,000"),
     ("20 rooms for 3 nights at $75 = $5,000.", "20 × 3 nights × $75 = $4,500, not $5,000"),
-    ("Ten Harar Room rooms for 2 nights come to 30,000 birr.", "34,000 birr, not 30,000"),
+    ("Ten Brand B Room rooms for 2 nights come to 30,000 kora.", "34,000 kora, not 30,000"),
 ])
 def test_wrong_total_is_a_strong_conflict(text, detail):
     out = run(text)
@@ -45,16 +45,16 @@ def test_wrong_total_is_a_strong_conflict(text, detail):
 
 
 def test_wrong_total_names_the_fact():
-    out = run("20 crates of Yirga coffee cost 32,000 birr.")
-    assert out[0]["fact_key"] == "coffee-crate" and out[0]["quote"] == "1,700 birr per crate"
+    out = run("20 crates of Yirga coffee cost 32,000 kora.")
+    assert out[0]["fact_key"] == "coffee-crate" and out[0]["quote"] == "1,700 kora per crate"
 
 
 @pytest.mark.parametrize("text, shown", [
-    ("20 crates of Yirga coffee cost 34,000 birr.", "20 × 1,700 birr = 34,000 birr"),
+    ("20 crates of Yirga coffee cost 34,000 kora.", "20 × 1,700 kora = 34,000 kora"),
     ("20 rooms for 3 nights at $75 = $4,500.", "20 × 3 nights × $75 = $4,500"),
-    ("5 Harar Room rooms for 2 nights cost 17,000 birr.", "5 × 2 nights × 1,700 birr = 17,000 birr"),
+    ("5 Brand B Room rooms for 2 nights cost 17,000 kora.", "5 × 2 nights × 1,700 kora = 17,000 kora"),
     ("4 guests on the City tour come to $300.", "4 × $75 = $300"),
-    ("20 crates of Yirga coffee cost about 34k birr.", "34,000 birr"),
+    ("20 crates of Yirga coffee cost about 34k kora.", "34,000 kora"),
 ])
 def test_correct_total_is_a_match_showing_the_sum(text, shown):
     out = run(text)
@@ -67,17 +67,17 @@ def test_rounding_to_the_currency_unit_is_not_a_conflict():
               value=3.33, unit="box", currency="USD")]
     assert KINDS(run("3 boxes of Tea cost $10.", f)) == [("match", False)]          # 9.99 rounds to 10
     assert KINDS(run("3 boxes of Tea cost $10.50.", f)) == [("conflict_or_expired", True)]
-    assert KINDS(run("3 crates of Yirga coffee cost 5.1k birr.")) == [("match", False)]
+    assert KINDS(run("3 crates of Yirga coffee cost 5.1k kora.")) == [("match", False)]
 
 
 @pytest.mark.parametrize("text", [
     "20 crates of Yirga coffee are on their way.",                  # no computation
-    "Our rooms start at 1,700 birr.",
-    "We opened in 2019 and have 20 rooms; call +251 911 223344 for 1,000 birr deals.",
-    "Book 3 nights for 2,000 birr at the Harar Room.",              # no qty-noun before a total
-    "Order 20 crates today for 5,000 birr.",                        # no fact for 'crates' by subject... unit crate is unique
+    "Our rooms start at 1,700 kora.",
+    "We opened in 2019 and have 20 rooms; call +251 911 223344 for 1,000 kora deals.",
+    "Book 3 nights for 2,000 kora at the Brand B Room.",              # no qty-noun before a total
+    "Order 20 crates today for 5,000 kora.",                        # no fact for 'crates' by subject... unit crate is unique
     "20 rooms at $75 each, 3 nights.",
-    "A room for 1,700 birr a night.",
+    "A room for 1,700 kora a night.",
     "In 2026 our 12 guides cost nothing.",
     "2 guests for $150 per night.",
     "Four tasters come as a flight for nine dollars.",              # contents of a unit, not units
@@ -87,31 +87,31 @@ def test_no_computation_or_unrelated_numbers_say_nothing_wrong(text):
 
 
 def test_nothing_without_a_known_price_or_text_price():
-    assert run("20 widgets for 32,000 birr.") == []
-    assert run("20 rooms for 3 nights = 5,000 birr.") == []         # Harar not named, 'rooms' has no unit match
+    assert run("20 widgets for 32,000 kora.") == []
+    assert run("20 rooms for 3 nights = 5,000 kora.") == []         # Brand B not named, 'rooms' has no unit match
 
 
 # (b) percentage change
 def test_wrong_percentage_change_conflicts():
-    out = run("Harar Room prices are up 10% this season.")
+    out = run("Brand B Room prices are up 10% this season.")
     assert KINDS(out) == [("conflict_or_expired", True)]
-    assert "1,600 birr → 1,700 birr = +6.25%" in out[0]["detail"] and out[0]["fact_key"] == "harar-room"
+    assert "1,600 kora → 1,700 kora = +6.25%" in out[0]["detail"] and out[0]["fact_key"] == "brand-b-room"
 
 
 def test_right_percentage_change_matches():
-    out = run("Harar Room prices are up 6% this season.")
+    out = run("Brand B Room prices are up 6% this season.")
     assert KINDS(out) == [("match", False)] and "+6.25%" in out[0]["detail"]
 
 
 def test_percentage_with_text_prices_and_direction():
-    assert KINDS(run("Rooms went from 1,600 birr to 1,700 birr, up 10%.")) == [("conflict_or_expired", True)]
-    assert KINDS(run("Rooms went from 1,600 birr to 1,700 birr, up 6.25%.")) == [("match", False)]
-    assert KINDS(run("Rooms went from 1,700 birr to 1,600 birr, down 6%.")) == [("match", False)]
-    assert KINDS(run("Rooms went from 1,700 birr to 1,600 birr, up 6%.")) == [("conflict_or_expired", True)]
+    assert KINDS(run("Rooms went from 1,600 kora to 1,700 kora, up 10%.")) == [("conflict_or_expired", True)]
+    assert KINDS(run("Rooms went from 1,600 kora to 1,700 kora, up 6.25%.")) == [("match", False)]
+    assert KINDS(run("Rooms went from 1,700 kora to 1,600 kora, down 6%.")) == [("match", False)]
+    assert KINDS(run("Rooms went from 1,700 kora to 1,600 kora, up 6%.")) == [("conflict_or_expired", True)]
 
 
 @pytest.mark.parametrize("text", [
-    "Harar Room: 10% off for groups.",                               # a discount, not a change
+    "Brand B Room: 10% off for groups.",                               # a discount, not a change
     "We are 10% up on last year's bookings.",                        # no price words, no fact pair
     "Yirga coffee prices up 10% this year.",                         # about something with no change on record
     "Save 10% and prices are fixed.",
@@ -122,9 +122,9 @@ def test_percentage_negatives(text):
 
 # (c) saving
 def test_saving_amount_and_percent_arithmetic():
-    assert KINDS(run("Was 2,000 birr, now 1,700 birr: save 300 birr.")) == [("match", False)]
-    out = run("Was 2,000 birr, now 1,700 birr: save 500 birr.")
-    assert KINDS(out) == [("conflict_or_expired", True)] and "300 birr, not 500" in out[0]["detail"]
+    assert KINDS(run("Was 2,000 kora, now 1,700 kora: save 300 kora.")) == [("match", False)]
+    out = run("Was 2,000 kora, now 1,700 kora: save 500 kora.")
+    assert KINDS(out) == [("conflict_or_expired", True)] and "300 kora, not 500" in out[0]["detail"]
     assert KINDS(run("Was $100, now $75, so 25% off.")) == [("match", False)]
     assert KINDS(run("Was $100, now $75, so 20% off.")) == [("conflict_or_expired", True)]
 
@@ -138,11 +138,11 @@ def test_saving_negatives():
 # integration: /check and submit carry the arithmetic findings
 def test_check_endpoint_includes_arith_findings(client, stack):
     stack.facts = [dict(f, version=1) for f in FACTS]
-    r = client.post("/check", json={"text": "20 crates of Yirga coffee cost 32,000 birr.", "publish_on": "2026-11-10"},
+    r = client.post("/check", json={"text": "20 crates of Yirga coffee cost 32,000 kora.", "publish_on": "2026-11-10"},
                     headers=AUTH).json()
     assert r["blocked"] is True
     assert any(f["label"] == "conflict_or_expired" and "34,000" in f["detail"] for f in r["findings"])
-    ok = client.post("/check", json={"text": "20 crates of Yirga coffee cost 34,000 birr.", "publish_on": "2026-11-10"},
+    ok = client.post("/check", json={"text": "20 crates of Yirga coffee cost 34,000 kora.", "publish_on": "2026-11-10"},
                      headers=AUTH).json()
     assert any(f["label"] == "match" and "arithmetic" in f["detail"] for f in ok["findings"])
     assert not any(f["label"] == "conflict_or_expired" and "arithmetic" in f["detail"] for f in ok["findings"])
@@ -155,7 +155,7 @@ def test_submit_blocks_a_wrong_total(client, stack):
                                     "scope": {}, "publish_on": "2026-11-10"}, headers=AUTH)
     assert t.status_code == 201, t.text
     tid = t.json()["id"]
-    d = client.post(f"/tasks/{tid}/paste", json={"text": "=== 1 EMAIL ===\n20 crates of Yirga coffee cost 32,000 birr.",
+    d = client.post(f"/tasks/{tid}/paste", json={"text": "=== 1 EMAIL ===\n20 crates of Yirga coffee cost 32,000 kora.",
                                                  "provider": "chatgpt"}, headers=AUTH).json()
     s = client.post(f"/tasks/{tid}/submit", json={"draft_id": d["draft_id"]}, headers=AUTH)
     assert s.status_code == 200, s.text
@@ -174,9 +174,9 @@ _FX = [
      "value_text": "£1,200", "status": "active", "sensitivity": "public", "scope": {}, "text": "The Tempo 3 hybrid costs £1,200."},
     {"key": "cartons", "subject": {"kind": "product", "ref": "Printed cartons"}, "fact_type": "price", "value": 640, "currency": "GBP",
      "value_text": "£640 for 1,000 cartons", "status": "active", "sensitivity": "public", "scope": {}, "text": "1,000 printed cartons cost £640 plus VAT."},
-    {"key": "harar", "subject": {"kind": "product", "ref": "Harar 33cl"}, "fact_type": "price", "value": 1700, "currency": "ETB",
-     "unit": "crate", "basis": "per_unit", "value_text": "1,700 birr per crate", "status": "active", "sensitivity": "public",
-     "scope": {}, "text": "Harar 33cl: 1,700 birr per crate."},
+    {"key": "brand-b", "subject": {"kind": "product", "ref": "Brand B 33cl"}, "fact_type": "price", "value": 1700, "currency": "XKR",
+     "unit": "crate", "basis": "per_unit", "value_text": "1,700 kora per crate", "status": "active", "sensitivity": "public",
+     "scope": {}, "text": "Brand B 33cl: 1,700 kora per crate."},
 ]
 
 
@@ -184,14 +184,14 @@ _FX = [
     "A Class 4 MOT at our garage costs £45.",
     "The Tempo 3 hybrid costs £1,200 in every size.",
     "1,000 printed cartons cost £640 plus VAT.",
-    "A crate of 24 Harar 33cl bottles is 1,700 birr.",
+    "A crate of 24 Brand B 33cl bottles is 1,700 kora.",
 ])
 def test_names_and_pack_sizes_are_not_counts(text):
     assert not [f for f in arith.check(text, _FX, _date(2026, 10, 5), {}) if f["blocking"]]
 
 
 def test_real_wrong_total_still_blocks():
-    got = arith.check("20 crates of Harar 33cl cost 32,000 birr.", _FX, _date(2026, 10, 5), {})
+    got = arith.check("20 crates of Brand B 33cl cost 32,000 kora.", _FX, _date(2026, 10, 5), {})
     assert got and got[0]["blocking"] and "34,000" in got[0]["detail"]
 
 
@@ -222,7 +222,7 @@ def test_percent_between_two_prices():
     assert bad and bad[0]["label"] == "conflict_or_expired" and "12.1%" in bad[0]["detail"]
     ok = arith._compare_findings("The Queen Room (Lake View) at $111 costs 12 percent more than the Queen Room (Garden View) at $99.")
     assert ok and ok[0]["label"] == "match"
-    cheap = arith._compare_findings("Harar 33cl at 1,700 birr is 18% cheaper than Heineken 33cl at 2,080 birr.")
+    cheap = arith._compare_findings("Brand B 33cl at 1,700 kora is 18% cheaper than Brand A 33cl at 2,080 kora.")
     assert cheap and cheap[0]["label"] == "match"
     assert not arith._compare_findings("Book 25 percent more rooms than last year.")
 
@@ -230,11 +230,11 @@ def test_percent_between_two_prices():
 def test_rounded_internal_value_is_still_blocked():
     from datetime import date
     from app import evidence as E
-    vol = {"key": "best-seller-volume", "subject": {"kind": "product", "ref": "Harar 33cl"}, "fact_type": "result",
+    vol = {"key": "best-seller-volume", "subject": {"kind": "product", "ref": "Brand B 33cl"}, "fact_type": "result",
            "value": 38450, "unit": "crates", "value_text": "38,450 crates", "status": "active", "sensitivity": "internal",
-           "text": "Harar 33cl: 38,450 crates sold July to September 2026 (internal).", "scope": {}}
+           "text": "Brand B 33cl: 38,450 crates sold July to September 2026 (internal).", "scope": {}}
     day = date(2026, 10, 14)
-    for t in ["Harar 33cl sold more than 38,000 crates from July to September 2026.", "We sold 38,450 crates of Harar."]:
+    for t in ["Brand B 33cl sold more than 38,000 crates from July to September 2026.", "We sold 38,450 crates of Brand B."]:
         fs, _ = E.check_text(t, [vol], day, {})
         assert any(f["label"] == "slot_blocked" for f in fs), t
     fs, _ = E.check_text("We have delivered 40,000 crates since we opened.", [vol], day, {})
@@ -264,11 +264,11 @@ def test_a_changed_price_said_to_hold():
     from app import arith
 
     def p(key, n, **kw):
-        return {"key": key, "subject": {"kind": "product", "ref": "Heineken 33cl"}, "fact_type": "price", "value": n,
-                "currency": "ETB", "unit": "crate", "status": "active", "sensitivity": "public", "scope": {},
-                "value_text": f"{n:,} birr per crate", **kw}
+        return {"key": key, "subject": {"kind": "product", "ref": "Brand A 33cl"}, "fact_type": "price", "value": n,
+                "currency": "XKR", "unit": "crate", "status": "active", "sensitivity": "public", "scope": {},
+                "value_text": f"{n:,} kora per crate", **kw}
     facts = [p("h-now", 2080, valid_from="2026-08-17"), p("h-old", 1980, valid_to="2026-08-16")]
-    bad = arith.check("Heineken 33cl holds at 2,080 birr per crate.", facts, date(2026, 10, 16), {})
+    bad = arith.check("Brand A 33cl holds at 2,080 kora per crate.", facts, date(2026, 10, 16), {})
     assert bad and bad[0]["label"] == "conflict_or_expired" and "1,980" in bad[0]["detail"]
-    assert not [f for f in arith.check("Heineken 33cl is 2,080 birr per crate.", facts, date(2026, 10, 16), {})
+    assert not [f for f in arith.check("Brand A 33cl is 2,080 kora per crate.", facts, date(2026, 10, 16), {})
                 if f["label"] == "conflict_or_expired"]

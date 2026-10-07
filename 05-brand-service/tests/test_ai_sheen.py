@@ -23,8 +23,8 @@ def test_ai_phrases_are_flagged(text, label):
 
 @pytest.mark.parametrize("text", [
     "Fresh Desk Blend, roasted Monday and at your door by Thursday.",
-    "Our rooms look over Lake Chamo and Lake Abaya.",
-    "Book now: call +251 46 881 3390.",
+    "Our rooms look over Lake Marlow and Lake Ashby.",
+    "Book now: call +44 20 7946 0958.",
     "The delivery van leaves at 8 — call before then.",          # one em dash is fine
     "We unlocked the gate at 6am for the early boat ride.",     # 'unlock' without the cliché
 ])

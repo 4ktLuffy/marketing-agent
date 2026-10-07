@@ -44,7 +44,7 @@ def item(id, **kw):
 def env(monkeypatch):
     for k, v in {**KEYS, **URLS}.items():
         monkeypatch.setenv(k, v)
-    monkeypatch.setenv("CONTROL_USER", "henos")
+    monkeypatch.setenv("CONTROL_USER", "alex")
     monkeypatch.setenv("CONTROL_PASSWORD", PASSWORD)
     monkeypatch.setenv("N8N_PUBLIC_URL", "https://n8n.example.test/")
     monkeypatch.setenv("UNDO_SECONDS", "30")   # tests flush explicitly
@@ -76,7 +76,7 @@ def csrf_of(html: str) -> str:
     return m.group(1)
 
 
-def login(client, password=PASSWORD, user="henos"):
+def login(client, password=PASSWORD, user="alex"):
     page = client.get("/login")
     token = csrf_of(page.text)
     return client.post("/login", data={"user": user, "password": password, "csrf": token, "next": "/"})

@@ -6,8 +6,8 @@ from app import pack
 from . import data
 from .data import fact
 
-GOAL = "Fill lake-view rooms in Arba Minch for weekends in October"
-AUDIENCE = "couples and families in Addis Ababa, foreign travellers"
+GOAL = "Fill lake-view rooms in Riverton for weekends in October"
+AUDIENCE = "couples and families in Capital City, foreign travellers"
 PIECES = [{"key": f"p{i}", "channel": c, "kind": "post"} for i, c in enumerate(("facebook", "instagram", "telegram"), 1)]
 ROOMS = [("Twin Room", "Lake View", 125), ("Twin Room", "Garden View", 95), ("Double Room", "Lake View", 140),
          ("Double Room", "Garden View", 105), ("Family Room", "Lake View", 190), ("Family Room", "Garden View", 150),
@@ -38,7 +38,7 @@ def hotel():
                 fs.append(rate(f"rate-{slug}-{period}-g{guests}", room, view, guests, period, n))
                 fs.append(rate(f"tour-{slug}-{period}-g{guests}", room, view, guests, period, n - 30,
                                internal=True, segment=TOUR))
-    fs += [fact("site-hotel", "Lakeside Lodge is a 48-room hotel on the shore of Lake Chamo in Arba Minch.",
+    fs += [fact("site-hotel", "Lakeside Lodge is a 48-room hotel on the shore of Lake Lumo in Riverton.",
                 "48-room lakeshore hotel", subject={"kind": "business", "ref": "Lakeside Lodge"}, fact_type="identity"),
            fact("contact-phone", "Reservations: +251 46 881 0000.", "+251 46 881 0000",
                 subject={"kind": "contact", "ref": "Reservations"}, fact_type="contact"),
@@ -50,7 +50,7 @@ def hotel():
                 fact_type="service")]
     for i, (name, hrs) in enumerate([("Crocodile Market boat trip", "2 hours"), ("Nechisar National Park",
                                                                                "half day"), ("Dorze village visit", "full day"),
-                                     ("Forty Springs walk", "2 hours"), ("Lake Chamo sunset cruise", "1 hour"),
+                                     ("Forty Springs walk", "2 hours"), ("Lake Lumo sunset cruise", "1 hour"),
                                      ("Bridge of God viewpoint", "1 hour"), ("Hot springs visit", "half day"),
                                      ("Coffee ceremony", "1 hour")]):
         fs.append(fact(f"exc-{i}", f"{name} takes {hrs} and starts from the hotel.", hrs,
@@ -114,14 +114,14 @@ def test_internal_segment_rates_are_kept_for_a_tour_operator_task():
 
 
 def test_variants_not_asked_for_stay_when_the_task_names_none():
-    b = run(hotel(), goal="Weekend stays at the hotel in Arba Minch")
+    b = run(hotel(), goal="Weekend stays at the hotel in Riverton")
     assert any("garden" in s["key"] for s in b.snapshot)
 
 
 def test_target_chars_default_and_hard_cap():
-    big = run(hotel(), goal="Weekend stays at the hotel in Arba Minch", target_chars=3000)
+    big = run(hotel(), goal="Weekend stays at the hotel in Riverton", target_chars=3000)
     assert len(big.text) <= 3000
-    b = run(hotel(), goal="Weekend stays at the hotel in Arba Minch", target_chars=100_000)
+    b = run(hotel(), goal="Weekend stays at the hotel in Riverton", target_chars=100_000)
     assert len(b.text) <= 8000
 
 

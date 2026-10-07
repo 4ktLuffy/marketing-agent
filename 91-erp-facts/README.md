@@ -1,6 +1,6 @@
 # erp-facts
 
-Deploy **91 of 91** of the local-LLM marketing agent. Chatbots do not know today's prices; the
+Deploy **91 of 91** of the marketing agent. Chatbots do not know today's prices; the
 ERP does. This service reads a business's ERP **read-only** (Odoo first, XML-RPC over HTTPS),
 turns configured records into **draft** scoped facts in the brand service (05), and reports
 **drift**: a value in the ERP that differs from the fact 05 serves. The owner re-confirms in 05,
@@ -70,16 +70,16 @@ socket) and a fake 05.
 mapping make several facts per record, each overriding the fields above. A bad mapping stops the
 service at start with every problem listed.
 
-### Example 1: hotel
-`product.template` where `is_room_type = True`. `hotel_rack_rate_single/double` become **public**
-facts, `hotel_tour_rate_single/double` **internal** ones (88 only ever slots those). Currency comes
-from `hotel_rate_currency_id`, the room view from `x_room_view_type`, and `hotel_id` becomes
-`scope.sites`. Keys: `rate-deluxe-lake-rack-single`, `...-tour-double`, ...
+### Example 1: service plans
+`product.template` where `type = service`. `list_price` becomes a **public** fact and
+`standard_price` an **internal** one (88 only ever slots those). Currency comes from `currency_id`,
+the plan code from `default_code`, and `company_id` becomes `scope.sites`. Keys:
+`price-starter-plan-list`, `price-starter-plan-cost`, ...
 
-### Example 2: beer distributor
-`product.template` with `company_id = 3` and `sale_ok = True`: `list_price` per crate in ETB,
-key `price-harer-33cl-crate`. A name such as `St George 24x33cl` also yields "24 bottles of 33cl"
-in the text; `Harer 33cl` has none and gets the plain text. A price of 1 or less is skipped.
+### Example 2: drinks distributor
+`product.template` with `company_id = 3` and `sale_ok = True`: `list_price` per crate in GBP,
+key `price-cola-33cl-crate`. A name such as `Lemonade 24x33cl` also yields "24 bottles of 33cl"
+in the text; `Cola 33cl` has none and gets the plain text. A price of 1 or less is skipped.
 
 ## Run
 
